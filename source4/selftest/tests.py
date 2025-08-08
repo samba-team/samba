@@ -1257,6 +1257,7 @@ planoldpythontestsuite("ad_member", "samba.tests.gpo_member", extra_args=['-U"$U
 planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planoldpythontestsuite("ad_dc", "samba.tests.sid_strings")
+planoldpythontestsuite("ad_dc", "samba.tests.key_credential_link_samdb")
 
 # Run the import test in environments that may not have the ad-dc built
 envs = ['fileserver_smb1', 'nt4_member', 'ktest', 'nt4_dc', 'nt4_dc_smb1_done', 'nt4_dc_smb1', 'simpleserver', 'fileserver_smb1_done', 'fileserver', 'maptoguest', 'nt4_dc_schannel']
