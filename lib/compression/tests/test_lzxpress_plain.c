@@ -363,6 +363,11 @@ static ssize_t attempt_round_trip(TALLOC_CTX *mem_ctx,
 					     comp_written,
 					     decompressed.data,
 					     decompressed.length);
+	if (decomp_written <= 0) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	debug_end_timer("decompress", original.length);
 	if (save_name != NULL && LZX_DEBUG_FILES) {
 		char s[300];
