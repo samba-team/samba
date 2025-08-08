@@ -342,6 +342,7 @@ static void print_progress(const char *name, time_t start, time_t now,
 		if (required > available) {
 			if (asprintf(&filename, "...%s",
 				     name + required - available + 3) == -1) {
+				free(status);
 				return;
 			}
 		} else {
