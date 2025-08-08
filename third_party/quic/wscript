@@ -19,6 +19,12 @@ def configure(conf):
         conf.SET_TARGET_TYPE('quic', 'EMPTY')
         return
 
+    if not conf.CHECK_DECLS('TLS_CIPHER_AES_GCM_256', headers='linux/tls.h'):
+        conf.DEFINE('TLS_CIPHER_AES_GCM_256', 52)
+
+    if not conf.CHECK_DECLS('TLS_CIPHER_AES_CCM_128', headers='linux/tls.h'):
+        conf.DEFINE('TLS_CIPHER_AES_CCM_128', 53)
+
     if not conf.CHECK_DECLS('TLS_CIPHER_CHACHA20_POLY1305', headers='linux/tls.h'):
         conf.DEFINE('TLS_CIPHER_CHACHA20_POLY1305', 54)
 
@@ -46,7 +52,7 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('quic',
                       source='''
-                      libquic/handshake.c
+                      libquic_handshake_wrapper.c
                       ''',
                       includes='libquic modules/include/uapi',
                       deps='replace',
