@@ -562,7 +562,7 @@ RPM_DISTS = {
         }
     },
     'fedora42': {
-        'docker_image': 'quay.io/fedora/fedora:42',
+        'docker_image': 'quay.io/fedora/fedora-minimal:42',
         'vagrant_box': 'fedora/42-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
