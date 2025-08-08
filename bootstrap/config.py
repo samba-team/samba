@@ -494,26 +494,6 @@ DEB_DISTS = {
             'landscape-common': '',
         }
     },
-    'ubuntu1804': {
-        'docker_image': 'ubuntu:18.04',
-        'vagrant_box': 'ubuntu/bionic64',
-        'replace': {
-            'liburing-dev': '',   # not available
-            'shfmt': '',
-            'landscape-common': '',
-            'mold': '',
-        }
-    },
-    'ubuntu1804-32bit': {
-        'docker_image': 'registry-1.docker.io/i386/ubuntu:18.04',
-        'vagrant_box': 'ubuntu/bionic32',
-        'replace': {
-            'liburing-dev': '',   # not available
-            'shfmt': '',
-            'landscape-common': '',
-            'mold': '',
-        }
-    },
     'ubuntu2004': {
         'docker_image': 'ubuntu:20.04',
         'vagrant_box': 'ubuntu/focal64',
@@ -707,7 +687,7 @@ def render_vagrantfile(dists):
     This make it easier to manage the fleet, e.g:
 
     start all: vagrant up
-    start one: vagrant up ubuntu1804
+    start one: vagrant up ubuntu2404
 
     All other commands apply to above syntax, e.g.: status, destroy, provision
     """

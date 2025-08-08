@@ -84,12 +84,12 @@ With Docker:
  cd ~/samba
  git clean -xdf
  docker login
- docker pull registry.gitlab.com/samba-team/devel/samba/samba-ci-ubuntu1804:${sha1sum}
- docker run -it -v $(pwd):/home/samba/samba samba-ci-ubuntu1804:${sha1sum} bash
+ docker pull registry.gitlab.com/samba-team/devel/samba/samba-ci-ubuntu2404:${sha1sum}
+ docker run -it -v $(pwd):/home/samba/samba samba-ci-ubuntu2404:${sha1sum} bash
 
 With podman:
 
-  podman run -ti --cap-add=SYS_PTRACE --security-opt seccomp=unconfined registry.gitlab.com/samba-team/devel/samba/samba-ci-ubuntu1804:${sha1sum} bash
+  podman run -ti --cap-add=SYS_PTRACE --security-opt seccomp=unconfined registry.gitlab.com/samba-team/devel/samba/samba-ci-ubuntu2404:${sha1sum} bash
 
 With Vagrant:
 

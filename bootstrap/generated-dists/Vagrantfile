@@ -66,20 +66,6 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "rocky8/locale.sh"
     end
 
-    config.vm.define "ubuntu1804" do |v|
-        v.vm.box = "ubuntu/bionic64"
-        v.vm.hostname = "ubuntu1804"
-        v.vm.provision :shell, path: "ubuntu1804/bootstrap.sh"
-        v.vm.provision :shell, path: "ubuntu1804/locale.sh"
-    end
-
-    config.vm.define "ubuntu1804-32bit" do |v|
-        v.vm.box = "ubuntu/bionic32"
-        v.vm.hostname = "ubuntu1804-32bit"
-        v.vm.provision :shell, path: "ubuntu1804-32bit/bootstrap.sh"
-        v.vm.provision :shell, path: "ubuntu1804-32bit/locale.sh"
-    end
-
     config.vm.define "ubuntu2004" do |v|
         v.vm.box = "ubuntu/focal64"
         v.vm.hostname = "ubuntu2004"
