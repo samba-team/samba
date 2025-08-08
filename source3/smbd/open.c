@@ -2269,7 +2269,7 @@ static bool delay_for_oplock_fn(
 
 	break_to = e_lease_type & ~state->delay_mask;
 
-	if (state->will_overwrite) {
+	if (state->will_overwrite && !(state->delay_mask & SMB2_LEASE_HANDLE)) {
 		break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_READ);
 	}
 
@@ -2288,7 +2288,7 @@ static bool delay_for_oplock_fn(
 		return false;
 	}
 
-	if (state->will_overwrite) {
+	if (state->will_overwrite && !(state->delay_mask & SMB2_LEASE_HANDLE)) {
 		/*
 		 * If we break anyway break to NONE directly.
 		 * Otherwise vfs_set_filelen() will trigger the
