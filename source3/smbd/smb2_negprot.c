@@ -217,6 +217,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_context *in_preauth = NULL;
 	struct smb2_negotiate_context *in_cipher = NULL;
 	struct smb2_negotiate_context *in_sign_algo = NULL;
+	struct smb2_negotiate_context *in_transport_caps = NULL;
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
 	const struct smb311_capabilities default_smb3_capabilities =
 		smb311_capabilities_parse("server",
@@ -379,6 +380,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 					SMB2_ENCRYPTION_CAPABILITIES);
 	in_sign_algo = smb2_negotiate_context_find(&in_c,
 					SMB2_SIGNING_CAPABILITIES);
+	in_transport_caps =  smb2_negotiate_context_find(&in_c,
+					SMB2_TRANSPORT_CAPABILITIES);
 
 	/* negprot_spnego() returns the server guid in the first 16 bytes */
 	negprot_spnego_blob = negprot_spnego(req, xconn);
@@ -684,6 +687,40 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			if (!NT_STATUS_IS_OK(status)) {
 				return smbd_smb2_request_error(req, status);
 			}
+		}
+	}
+
+	if (in_transport_caps != NULL) {
+		uint32_t caps_flags;
+
+		if (in_transport_caps->data.length != 4) {
+			return smbd_smb2_request_error(
+				req, NT_STATUS_INVALID_PARAMETER);
+		}
+
+		caps_flags = PULL_LE_U32(in_transport_caps->data.data, 0);
+
+		if ((xconn->transport.type == SMB_TRANSPORT_TYPE_QUIC) &&
+		    (caps_flags & SMB2_ACCEPT_TRANSPORT_LEVEL_SECURITY) &&
+		    !lp_server_smb_encryption_over_quic())
+		{
+			uint8_t buf[4];
+
+			PUSH_LE_U32(buf,
+				    0,
+				    SMB2_ACCEPT_TRANSPORT_LEVEL_SECURITY);
+
+			status = smb2_negotiate_context_add(
+				req,
+				&out_c,
+				SMB2_TRANSPORT_CAPABILITIES,
+				buf,
+				sizeof(buf));
+			if (!NT_STATUS_IS_OK(status)) {
+				return smbd_smb2_request_error(req, status);
+			}
+
+			xconn->transport.trusted_quic = true;
 		}
 	}
 

@@ -346,6 +346,7 @@ struct smbXsrv_connection {
 		int sock;
 		struct tevent_fd *fde;
 		enum smb_transport_type type;
+		bool trusted_quic;
 
 		struct {
 			bool got_session;
