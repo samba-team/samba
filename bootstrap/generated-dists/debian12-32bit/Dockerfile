@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM registry-1.docker.io/i386/debian:12
+FROM registry-1.docker.io/i386/debian:12-slim
 
 # pass in with --build-arg while build
 ARG SHA1SUM

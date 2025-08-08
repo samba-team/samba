@@ -453,7 +453,7 @@ end
 
 DEB_DISTS = {
     'debian11': {
-        'docker_image': 'debian:11',
+        'docker_image': 'debian:11-slim',
         'vagrant_box': 'debian/bullseye64',
         'replace': {
             'language-pack-en': '',   # included in locales
@@ -464,7 +464,7 @@ DEB_DISTS = {
         }
     },
     'debian11-32bit': {
-        'docker_image': 'debian:11',  # specify the platform in .gitlab-ci.yaml
+        'docker_image': 'debian:11-slim',  # specify the platform in .gitlab-ci.yaml
         'vagrant_box': 'debian/bullseye32',
         'replace': {
             'language-pack-en': '',   # included in locales
@@ -475,7 +475,7 @@ DEB_DISTS = {
         }
     },
     'debian12': {
-        'docker_image': 'debian:12',
+        'docker_image': 'debian:12-slim',
         'vagrant_box': 'debian/bookworm64',
         'replace': {
             'language-pack-en': '',   # included in locales
@@ -485,7 +485,7 @@ DEB_DISTS = {
         }
     },
     'debian12-32bit': {
-        'docker_image': 'registry-1.docker.io/i386/debian:12',
+        'docker_image': 'registry-1.docker.io/i386/debian:12-slim',
         'vagrant_box': 'debian/bookworm32',
         'replace': {
             'language-pack-en': '',   # included in locales

@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM debian:12
+FROM debian:12-slim
 
 # pass in with --build-arg while build
 ARG SHA1SUM
