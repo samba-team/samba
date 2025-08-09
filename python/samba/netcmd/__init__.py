@@ -500,3 +500,21 @@ class CommandError(Exception):
 
     def __repr__(self):
         return "CommandError(%s)" % self.message
+
+
+def exception_to_command_error(*exceptions):
+    """If you think all instances of a particular exceptions can be
+    turning to a CommandError, do this:
+
+    @exception_to_command_error(ValueError, LdbError):
+    def run(self, username, ...):
+        # continue as normal
+    """
+    def wrap2(f):
+        def wrap(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except exceptions as e:
+                raise CommandError(e)
+        return wrap
+    return wrap2
