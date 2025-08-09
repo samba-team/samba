@@ -3719,6 +3719,75 @@ done:
 	return ret;
 }
 
+/*
+ * Verifies an existing RWH lease on a file is only broken to RW when a
+ * contending create fails with STATUS_SHARING_VIOLATION.
+ *
+ * Client 1: open file with lease=RWH sharemode=none
+ * Client 2: open file, expect STATUS_PENDING
+ * Server: send lease break to RW to client 1
+ * Client 2: expect open to fail with STATUS_SHARING_VIOLATION.
+ */
+static bool test_lease_sharing_violation(struct torture_context *tctx,
+					 struct smb2_tree *tree1,
+					 struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io1 = {};
+	struct smb2_create io2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_lease ls2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	const char *fname = __FUNCTION__;
+	bool ret = true;
+	NTSTATUS status;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
+
+	/* Set up handlers. */
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	tree2->session->transport->lease.handler = torture_lease_handler;
+	tree2->session->transport->lease.private_data = tree2;
+
+	smb2_util_unlink(tree1, fname);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Open a handle on tree1. */
+	smb2_lease_create_share(&io1, &ls1, false, fname,
+				smb2_util_share_access(""),
+				LEASE1,
+				smb2_util_lease_state("RWH"));
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RWH", true, LEASE1, 0);
+
+	/* Open a second handle on tree2. */
+	smb2_lease_create_share(&io2, &ls2, false, fname,
+				smb2_util_share_access("RWD"),
+				LEASE2,
+				smb2_util_lease_state("RWH"));
+	io2.in.create_disposition = NTCREATEX_DISP_OVERWRITE;
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+	/* And LEASE1 got broken to RW. */
+	CHECK_BREAK_INFO("RWH", "RW", LEASE1);
+
+done:
+	smb2_util_close(tree1, h1);
+	smb2_util_close(tree2, h2);
+
+	smb2_util_unlink(tree1, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_lease_complex1(struct torture_context *tctx,
 				struct smb2_tree *tree1a)
 {
@@ -6051,6 +6120,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "lock1", test_lease_lock1);
 	torture_suite_add_2smb2_test(suite, "lock2", test_lease_lock2);
 	torture_suite_add_2smb2_test(suite, "lock3", test_lease_lock3);
+	torture_suite_add_2smb2_test(suite, "sharing_violation", test_lease_sharing_violation);
 	torture_suite_add_1smb2_test(suite, "complex1", test_lease_complex1);
 	torture_suite_add_1smb2_test(suite, "v2_flags_breaking", test_lease_v2_flags_breaking);
 	torture_suite_add_1smb2_test(suite, "v2_flags_parentkey", test_lease_v2_flags_parentkey);
