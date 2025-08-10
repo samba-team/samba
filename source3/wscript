@@ -1836,7 +1836,8 @@ int main(void) {
                                       'vfs_preopen', 'vfs_catia',
                                       'vfs_media_harmony', 'vfs_unityed_media', 'vfs_fruit', 'vfs_shell_snap',
                                       'vfs_commit', 'vfs_worm', 'vfs_crossrename', 'vfs_linux_xfs_sgid',
-                                      'vfs_time_audit', 'vfs_offline', 'vfs_virusfilter', 'vfs_widelinks'])
+                                      'vfs_time_audit', 'vfs_offline', 'vfs_virusfilter', 'vfs_widelinks',
+                                      'vfs_aio_ratelimit'])
     if host_os.rfind('linux') > -1:
         default_shared_modules.extend(['vfs_snapper'])
 

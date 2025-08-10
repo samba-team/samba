@@ -647,3 +647,11 @@ bld.SAMBA3_MODULE('vfs_widelinks',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_widelinks'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_widelinks'))
+
+bld.SAMBA3_MODULE('vfs_aio_ratelimit',
+                 subsystem='vfs',
+                 source='vfs_aio_ratelimit.c',
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_aio_ratelimit'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_aio_ratelimit'))
