@@ -14,3 +14,7 @@
 # with the last password, see https://bugzilla.samba.org/show_bug.cgi?id=14054
 #
 ^samba4.ldap.login_basics.python.*.__main__.BasicUserAuthTests.test_login_basics_krb5
+#
+# MIT does not currently support key trust logons.
+#
+^samba.tests.krb5.key_trust_tests.*

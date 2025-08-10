@@ -2536,6 +2536,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             'logon_hours': None,
             'smartcard_required': False,
             'enabled': True,
+            'keycredlink' : None,
         }
 
         account_opts = {
@@ -2595,7 +2596,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                             assigned_silo,
                             logon_hours,
                             smartcard_required,
-                            enabled):
+                            enabled,
+                            keycredlink):
         self.assertNotEqual(account_type, self.AccountType.TRUST)
         if account_type is self.AccountType.USER:
             self.assertIsNone(delegation_to_spn)
@@ -2666,6 +2668,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         if assigned_silo is not None:
             details['msDS-AssignedAuthNPolicySilo'] = assigned_silo
+
+        if keycredlink is not None:
+            details['msDS-KeyCredentialLink'] = keycredlink
 
         if selective_auth_allowed_sid is not None:
             if account_type is self.AccountType.GROUP_MANAGED_SERVICE:
