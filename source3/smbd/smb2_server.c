@@ -2829,21 +2829,6 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	return NT_STATUS_OK;
 }
 
-bool smbXsrv_is_encrypted(uint8_t encryption_flags)
-{
-	return (!(encryption_flags & SMBXSRV_PROCESSED_UNENCRYPTED_PACKET)
-		&&
-		(encryption_flags & (SMBXSRV_PROCESSED_ENCRYPTED_PACKET |
-				     SMBXSRV_ENCRYPTION_DESIRED |
-				     SMBXSRV_ENCRYPTION_REQUIRED)));
-}
-
-bool smbXsrv_is_partially_encrypted(uint8_t encryption_flags)
-{
-	return ((encryption_flags & SMBXSRV_PROCESSED_ENCRYPTED_PACKET) &&
-		(encryption_flags & SMBXSRV_PROCESSED_UNENCRYPTED_PACKET));
-}
-
 /* Set a flag if not already set, return true if set */
 bool smbXsrv_set_crypto_flag(uint8_t *flags, uint8_t flag)
 {
@@ -2910,23 +2895,6 @@ out:
 	*update_session_globalp = update_session;
 	*update_tcon_globalp = update_tcon;
 	return;
-}
-
-bool smbXsrv_is_signed(uint8_t signing_flags)
-{
-	/*
-	 * Signing is always enabled, so unless we got an unsigned
-	 * packet and at least one signed packet that was not
-	 * encrypted, the session or tcon is "signed".
-	 */
-	return (!(signing_flags & SMBXSRV_PROCESSED_UNSIGNED_PACKET) &&
-		(signing_flags & SMBXSRV_PROCESSED_SIGNED_PACKET));
-}
-
-bool smbXsrv_is_partially_signed(uint8_t signing_flags)
-{
-	return ((signing_flags & SMBXSRV_PROCESSED_UNSIGNED_PACKET) &&
-		(signing_flags & SMBXSRV_PROCESSED_SIGNED_PACKET));
 }
 
 static NTSTATUS smbd_smb2_request_dispatch_update_counts(
