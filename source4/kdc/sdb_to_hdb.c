@@ -22,7 +22,11 @@
 */
 
 #include "includes.h"
+#include "hdb_asn1.h"
 #include <hdb.h>
+#include <krb5.h>
+#include <hx_locl.h>
+#include "rfc2459_asn1.h"
 #include "sdb.h"
 #include "sdb_hdb.h"
 #include "lib/krb5_wrap/krb5_samba.h"
@@ -193,11 +197,118 @@ static int sdb_event_to_Event(krb5_context context,
 	return 0;
 }
 
+
+/**
+* @brief Convert a sdb_pub_key to a HDB_Ext_KeyTrust_val
+*
+* @param s[in]     A public key in sdb
+* @param h[in,out] The HDb_Ext_KeyTrust_val to populate
+*
+* @return 0 no error
+*         >0 an error occurred
+*/
+static int sdb_pub_key_to_hdb_key_trust_val(const struct sdb_pub_key *s,
+					    struct HDB_Ext_KeyTrust_val *h)
+{
+	krb5_error_code ret;
+	SubjectPublicKeyInfo spki = {};
+	RSAPublicKey rsa = {};
+	krb5_data buf = {};
+	AlgorithmIdentifier alg = {};
+	HEIM_ANY parameters = {};
+	uint8_t none[] = {0x05, 0x00};
+	size_t size = 0;
+
+	rsa.publicExponent.length = s->exponent.length;
+	rsa.publicExponent.data = s->exponent.data;
+	rsa.publicExponent.negative = 0;
+
+	rsa.modulus.length = s->modulus.length;
+	rsa.modulus.data = s->modulus.data;
+	rsa.modulus.negative = 0;
+
+	ASN1_MALLOC_ENCODE(
+		RSAPublicKey, buf.data , buf.length, &rsa, &size, ret);
+	if (ret != 0) {
+		goto out;
+	}
+
+	spki.subjectPublicKey.data = buf.data;
+	/*
+	 * The public key length is in bits, but the buffer len is in bytes
+	 * so need to convert it to bits.
+	 */
+	spki.subjectPublicKey.length = buf.length * 8;
+
+	ret = der_copy_oid(ASN1_OID_ID_PKCS1_RSAENCRYPTION, &alg.algorithm);
+	if (ret != 0) {
+		goto out1;
+	}
+	parameters.data = &none;
+	parameters.length = sizeof(none);
+	alg.parameters = &parameters;
+	spki.algorithm = alg;
+
+	/*
+	 * This will be freed when sdb_pub_keys_to_hdb calls
+	 * free_HDB_Ext_KeyTrust
+	 */
+	ASN1_MALLOC_ENCODE(SubjectPublicKeyInfo,
+		    h->pub_key.data,
+		    h->pub_key.length,
+		    &spki,
+		    &size,
+		    ret);
+	if (ret != 0) {
+		goto out2;
+	}
+
+out2:
+	der_free_oid(&alg.algorithm);
+out1:
+        der_free_octet_string(&buf);
+out:
+	return ret;
+}
+
+/**
+* @brief Convert any public keys for key trust authentication.
+*
+* @param s[in]  The public keys that can be used for authentication
+* @param h[out] The converted public keys
+* @return  0 if there are no errors
+*         >0 an error occurred
+*/
+static int sdb_pub_keys_to_hdb_ext(const struct sdb_pub_keys *s,
+				   HDB_Ext_KeyTrust *h)
+{
+	int ret, i;
+	*h = (struct HDB_Ext_KeyTrust) {};
+
+	if (s->keys != NULL) {
+		h->val = malloc(s->len * sizeof(heim_octet_string));
+		if (h->val == NULL) {
+			return ENOMEM;
+		}
+		for (i = 0; i < s->len; i++) {
+			ret = sdb_pub_key_to_hdb_key_trust_val(
+				&s->keys[i], &h->val[i]);
+			if (ret != 0) {
+				free_HDB_Ext_KeyTrust(h);
+				return ret;
+			}
+			h->len++;
+		}
+	}
+	return 0;
+}
+
 int sdb_entry_to_hdb_entry(krb5_context context,
 			   const struct sdb_entry *s,
 			   hdb_entry *h)
 {
 	struct samba_kdc_entry *ske = s->skdc_entry;
+	struct HDB_Ext_KeyTrust kt = {};
 	unsigned int i;
 	int rc;
 
@@ -345,6 +456,22 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 
 		for (i = 0; i < h->session_etypes->len; ++i) {
 			h->session_etypes->val[i] = s->session_etypes->val[i];
+		}
+	}
+
+	rc = sdb_pub_keys_to_hdb_ext(&s->pub_keys, &kt);
+	if (rc != 0) {
+		goto error;
+	}
+	if (kt.len > 0) {
+		HDB_extension ext = {};
+		ext.mandatory = FALSE;
+		ext.data.element = choice_HDB_extension_data_key_trust;
+		ext.data.u.key_trust = kt;
+		rc = hdb_replace_extension(context, h, &ext);
+		free_HDB_Ext_KeyTrust(&kt);
+		if (rc != 0) {
+			goto error;
 		}
 	}
 

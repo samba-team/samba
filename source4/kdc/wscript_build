@@ -37,6 +37,17 @@ if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
                     for_selftest=True,
                     )
 
+    bld.SAMBA_BINARY('test_sdb_to_hdb',
+                    source='tests/sdb_to_hdb_test.c',
+                    deps='''
+                        sdb_hdb
+                        HDB_SAMBA4
+                        cmocka
+                        talloc
+                        ''',
+                    for_selftest=True,
+                    )
+
 if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
     bld.SAMBA_MODULE('service_kdc',
                      source='kdc-service-mit.c',

@@ -636,6 +636,8 @@ plantestsuite("samba.unittests.cmdline", "none",
 if have_heimdal_support:
     plantestsuite("samba.source4.kdc.tests.db_glue", "none",
                 [os.path.join(bindir(), "default/source4/kdc/test_db_glue")])
+    plantestsuite("samba.source4.kdc.tests.sdb_to_hdb", "none",
+                [os.path.join(bindir(), "default/source4/kdc/test_sdb_to_hdb")])
 
 # Run the Rust cargo tests
 planpythontestsuite("none", "samba.tests.rust")
