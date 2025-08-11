@@ -86,7 +86,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><emphasis>Effects for SMB2 and newer</emphasis></term>
+		<term><emphasis>Effects for SMB3.0 and newer</emphasis></term>
 		<listitem>
 		<para>
 		Native SMB transport encryption is available in SMB version 3.0
