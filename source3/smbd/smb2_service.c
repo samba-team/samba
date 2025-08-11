@@ -536,17 +536,18 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	conn_setup_case_options(conn);
 
 	conn->encrypt_level = lp_server_smb_encrypt(snum);
-	if (conn->encrypt_level > SMB_ENCRYPTION_OFF) {
-		if (lp_server_smb_encrypt(-1) == SMB_ENCRYPTION_OFF) {
-			if (conn->encrypt_level == SMB_ENCRYPTION_REQUIRED) {
-				DBG_ERR("Service [%s] requires encryption, but "
-					"it is disabled globally!\n",
-					lp_const_servicename(snum));
-				status = NT_STATUS_ACCESS_DENIED;
-				goto err_root_exit;
-			}
-			conn->encrypt_level = SMB_ENCRYPTION_OFF;
+
+	if ((conn->encrypt_level > SMB_ENCRYPTION_OFF) &&
+	    (lp_server_smb_encrypt(-1) == SMB_ENCRYPTION_OFF)) {
+
+		if (conn->encrypt_level == SMB_ENCRYPTION_REQUIRED) {
+			DBG_ERR("Service [%s] requires encryption, but "
+				"it is disabled globally!\n",
+				lp_const_servicename(snum));
+			status = NT_STATUS_ACCESS_DENIED;
+			goto err_root_exit;
 		}
+		conn->encrypt_level = SMB_ENCRYPTION_OFF;
 	}
 
 	conn->veto_list = NULL;
