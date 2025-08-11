@@ -209,7 +209,7 @@ interface smbXsrv
 		SMBXSRV_ENCRYPTION_DESIRED		= 0x02,
 		SMBXSRV_PROCESSED_ENCRYPTED_PACKET	= 0x04,
 		SMBXSRV_PROCESSED_UNENCRYPTED_PACKET	= 0x08
-	} smbXsrv_encrpytion_flags;
+	} smbXsrv_encryption_flags;
 
 	typedef [public,bitmap8bit] bitmap {
 		SMBXSRV_SIGNING_REQUIRED		= 0x01,
@@ -250,7 +250,7 @@ interface smbXsrv
 		GUID					client_guid;
 		smbXsrv_signing_flags			signing_flags;
 		uint16					signing_algo;
-		smbXsrv_encrpytion_flags		encryption_flags;
+		smbXsrv_encryption_flags		encryption_flags;
 		uint16					encryption_cipher;
 		[noprint] DATA_BLOB			signing_key_blob;
 		[ignore] smb2_signing_key		*signing_key;
@@ -361,7 +361,7 @@ interface smbXsrv
 		server_id				server_id;
 		NTTIME					creation_time;
 		[charset(UTF8),string] char		share_name[];
-		smbXsrv_encrpytion_flags		encryption_flags;
+		smbXsrv_encryption_flags		encryption_flags;
 		/*
 		 * for SMB1 this is the session that the tcon was opened on
 		 */
