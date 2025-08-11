@@ -267,6 +267,7 @@ static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
 				   ucs2 ? CH_UTF16LE : CH_DOS,
 				   str, str_len, &converted,
 				   &converted_size)) {
+		TALLOC_FREE(buf);
 		TALLOC_FREE(frame);
 		return NULL;
 	}
