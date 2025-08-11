@@ -1199,7 +1199,9 @@ static krb5_error_code samba_kdc_get_entry_principal(
  *   5) that KeyMaterial can be unpacked
  *
  * @param[in] mem_ctx  talloc memory context, that will own pub_key
- * @param[in] value    ldb value containing the raw KEYCREDENTIALLINK_BLOB
+ * @param[in] ldb      ldb database context
+ * @param[in] value    ldb value containing the KEYCREDENTIALLINK_BLOB
+ *                         BinaryDn
  * @param[out] pub_key the extracted public key
  *
  * @return 0 No error pub_key will be valid
@@ -1208,6 +1210,7 @@ static krb5_error_code samba_kdc_get_entry_principal(
  */
 static krb5_error_code unpack_key_credential_link_blob(
 	TALLOC_CTX *mem_ctx,
+	struct ldb_context *ldb,
 	struct ldb_val *value,
 	struct KeyMaterialInternal **pub_key)
 {
@@ -1216,6 +1219,8 @@ static krb5_error_code unpack_key_credential_link_blob(
 	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
 	struct KEYCREDENTIALLINK_BLOB blob = {};
 	DATA_BLOB key_material = data_blob_null;
+	struct dsdb_dn *dsdb_dn = NULL;
+
 	int key_usage = 0;
 
 	size_t i = 0;
@@ -1227,9 +1232,23 @@ static krb5_error_code unpack_key_credential_link_blob(
 	}
 	*pub_key = NULL;
 
+	/* Unpack the binary DN */
+	dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, value, DSDB_SYNTAX_BINARY_DN);
+	if (dsdb_dn == NULL) {
+		DBG_WARNING("Unable to parse KEYCREDENTIALLINK_BLOB, BinaryDn");
+		ret = EINVAL;
+		goto out;
+	}
+	if (dsdb_dn->extra_part.data == NULL ||
+	    dsdb_dn->extra_part.length == 0) {
+		DBG_WARNING("KEYCREDENTIALLINK_BLOB, BinaryDn is empty");
+		ret = EINVAL;
+		goto out;
+	}
+
 	/* Unpack the KEYCREDENTIALLINK_BLOB */
 	ndr_err = ndr_pull_struct_blob_all(
-		value,
+		&dsdb_dn->extra_part,
 		tmp_ctx,
 		&blob,
 		(ndr_pull_flags_fn_t)ndr_pull_KEYCREDENTIALLINK_BLOB);
@@ -1324,6 +1343,7 @@ out:
  * attribute, extracting all the valid public keys.
  *
  * @param mem_ctx[in] talloc memory context
+ * @param ldb[in]     ldb database context
  * @param msg[in]     ldb message containing the public keys
  * @param entry[out]  entry will be updated with the keys
  *
@@ -1335,6 +1355,7 @@ out:
  *         >0 Errors detected
  */
 static krb5_error_code get_key_trust_public_keys(TALLOC_CTX *mem_ctx,
+						 struct ldb_context *ldb,
 						 struct ldb_message *msg,
 						 struct sdb_entry *entry)
 {
@@ -1359,6 +1380,7 @@ static krb5_error_code get_key_trust_public_keys(TALLOC_CTX *mem_ctx,
 		struct KeyMaterialInternal *kmi = NULL;
 		struct sdb_pub_key pub_key = {};
 		r = unpack_key_credential_link_blob(tmp_ctx,
+						    ldb,
 						    &el->values[i],
 						    &kmi);
 		if (r == 0) {
@@ -2163,12 +2185,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	p->client_policy = talloc_steal(p, authn_client_policy);
 	p->server_policy = talloc_steal(p, authn_server_policy);
 
-	/*
-	 * get_key_trust_public_keys will return ENOENT if there are no
-	 * public keys loaded for an object, this is not an error condition
-	 */
-	ret = get_key_trust_public_keys(tmp_ctx, msg, entry);
-	if (ret != 0 && ret != ENOENT) {
+	ret = get_key_trust_public_keys(tmp_ctx, kdc_db_ctx->samdb, msg, entry);
+	if (ret != 0) {
 		goto out;
 	}
 

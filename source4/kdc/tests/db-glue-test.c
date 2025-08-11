@@ -59,15 +59,29 @@ int dsdb_functional_level(struct ldb_context *ldb)
 /******************************************************************************
  * Test helper functions
  *****************************************************************************/
-static void add_msDS_KeyCredentialLink(struct ldb_message *msg,
+static void add_msDS_KeyCredentialLink(TALLOC_CTX *mem_ctx,
+				       struct ldb_message *msg,
 				       size_t size,
 				       uint8_t *data)
 {
-	struct ldb_message_element *el = NULL;
 	DATA_BLOB key_cred_val = {.length = size, .data = data};
+	char *hex_value = data_blob_hex_string_upper(mem_ctx, &key_cred_val);
+	size_t hex_len = strlen(hex_value);
+	char *binary_dn = talloc_asprintf(
+		mem_ctx, "B:%zu:%s:DC=EXAMPLE,DC=COM", hex_len, hex_value);
+	TALLOC_FREE(hex_value);
 
 	/* Add the data to msDS-KeyCredentialLink */
-	ldb_msg_add_value(msg, "msDS-KeyCredentialLink", &key_cred_val, &el);
+	ldb_msg_add_string(msg, "msDS-KeyCredentialLink", binary_dn);
+}
+
+static void add_empty_msDS_KeyCredentialLink_DN(TALLOC_CTX *mem_ctx,
+						struct ldb_message *msg)
+{
+	char *binary_dn = talloc_asprintf(mem_ctx, "B:0::DC=EXAMPLE,DC=COM");
+
+	/* Add the data to msDS-KeyCredentialLink */
+	ldb_msg_add_string(msg, "msDS-KeyCredentialLink", binary_dn);
 }
 
 static struct ldb_message *create_ldb_message(TALLOC_CTX *mem_ctx)
@@ -449,7 +463,6 @@ static void empty_message2entry(void **state)
 
 	/* Set up */
 	kdc_db_ctx = create_kdc_db_ctx(mem_ctx);
-	;
 	realm_dn = ldb_dn_new(mem_ctx, ldb_ctx, "TEST.SAMBA.ORG");
 
 	smb_krb5_init_context_common(&krb5_ctx);
@@ -533,6 +546,63 @@ static void minimal_message2entry(void **state)
 	sdb_entry_free(&entry);
 	TALLOC_FREE(mem_ctx);
 }
+/*
+ * Test samba_kdc_message2entry mapping of an empty msDS-KeyCredentialLink
+ * binary dn
+ */
+static void empty_binary_dn_message2entry(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_context krb5_ctx = NULL;
+	struct samba_kdc_db_context *kdc_db_ctx = create_kdc_db_ctx(mem_ctx);
+	struct ldb_context *ldb_ctx = ldb_init(mem_ctx, NULL);
+	struct ldb_dn *realm_dn = ldb_dn_new(mem_ctx,
+					     ldb_ctx,
+					     "TEST.SAMBA.ORG");
+	struct ldb_message *msg = NULL;
+
+	krb5_principal principal = NULL;
+
+	enum samba_kdc_ent_type ent_type = SAMBA_KDC_ENT_TYPE_CLIENT;
+	unsigned int flags = 0;
+	krb5_kvno kvno = 0;
+
+	struct sdb_entry entry = {};
+	krb5_error_code err = 0;
+
+	/* Set up */
+	smb_krb5_init_context_common(&krb5_ctx);
+	kdc_db_ctx->samdb = ldb_ctx;
+	assert_non_null(krb5_ctx);
+	principal = get_principal(mem_ctx,
+				  krb5_ctx,
+				  "atestuser@test.samba.org");
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_empty_msDS_KeyCredentialLink_DN(mem_ctx, msg);
+
+	err = samba_kdc_message2entry(krb5_ctx,
+				      kdc_db_ctx,
+				      mem_ctx,
+				      principal,
+				      ent_type,
+				      flags,
+				      kvno,
+				      realm_dn,
+				      msg,
+				      &entry);
+
+	/* Expect the ldb message to be loaded */
+	assert_int_equal(0, err);
+	assert_null(entry.pub_keys.keys);
+	assert_int_equal(0, entry.pub_keys.len);
+
+	krb5_free_principal(krb5_ctx, principal);
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
 
 /*
  * Test samba_kdc_message2entry mapping of msDS-KeyCredentialLink.
@@ -560,6 +630,7 @@ static void msDS_KeyCredentialLink_message2entry(void **state)
 
 	/* Set up */
 	smb_krb5_init_context_common(&krb5_ctx);
+	kdc_db_ctx->samdb = ldb_ctx;
 	assert_non_null(krb5_ctx);
 	principal = get_principal(mem_ctx,
 				  krb5_ctx,
@@ -567,7 +638,8 @@ static void msDS_KeyCredentialLink_message2entry(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(BCRYPT_KEY_CREDENTIAL_LINK),
 				   BCRYPT_KEY_CREDENTIAL_LINK);
 
@@ -627,17 +699,19 @@ static void invalid_version_keycredlink(void **state)
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg,  &entry);
 
 	/* Expect the key credential link to be ignored */
 	assert_int_equal(0, err);
@@ -674,17 +748,19 @@ static void duplicate_key_material_keycredlink(void **state)
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	/* Expect the key credential link to be ignored */
 	assert_int_equal(0, err);
@@ -717,17 +793,19 @@ static void duplicate_key_usage_keycredlink(void **state)
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	/* Expect the key credential link to be ignored */
 	assert_int_equal(0, err);
@@ -759,17 +837,19 @@ static void invalid_key_usage_keycredlink(void **state)
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	/* Expect the key credential link to be ignored */
 	assert_int_equal(0, err);
@@ -801,17 +881,19 @@ static void invalid_key_material_keycredlink(void **state)
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = ldb_msg_new(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	/* Expect the key credential link to be ignored */
 	assert_int_equal(0, err);
@@ -832,17 +914,19 @@ static void keycred_bcrypt_key_material(void **state)
 
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(BCRYPT_KEY_CREDENTIAL_LINK),
 				   BCRYPT_KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	assert_int_equal(0, err);
 	assert_non_null(entry.pub_keys.keys);
@@ -875,17 +959,19 @@ static void keycred_tpm_key_material(void **state)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(TPM_KEY_CREDENTIAL_LINK),
 				   TPM_KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	assert_int_equal(0, err);
 	assert_non_null(entry.pub_keys.keys);
@@ -918,17 +1004,19 @@ static void keycred_der_key_material(void **state)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(DER_KEY_CREDENTIAL_LINK),
 				   DER_KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	assert_int_equal(0, err);
 	assert_non_null(entry.pub_keys.keys);
@@ -961,23 +1049,27 @@ static void keycred_multiple(void **state)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 	struct ldb_message *msg = NULL;
 	krb5_error_code err = 0;
 	struct sdb_entry entry = {};
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(DER_KEY_CREDENTIAL_LINK),
 				   DER_KEY_CREDENTIAL_LINK);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(TPM_KEY_CREDENTIAL_LINK),
 				   TPM_KEY_CREDENTIAL_LINK);
-	add_msDS_KeyCredentialLink(msg,
+	add_msDS_KeyCredentialLink(mem_ctx,
+				   msg,
 				   sizeof(BCRYPT_KEY_CREDENTIAL_LINK),
 				   BCRYPT_KEY_CREDENTIAL_LINK);
 
-	err = get_key_trust_public_keys(mem_ctx, msg, &entry);
+	err = get_key_trust_public_keys(mem_ctx, ldb, msg, &entry);
 
 	assert_int_equal(0, err);
 	assert_non_null(entry.pub_keys.keys);
@@ -1037,6 +1129,7 @@ int main(int argc, const char **argv)
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(empty_message2entry),
 		cmocka_unit_test(minimal_message2entry),
+		cmocka_unit_test(empty_binary_dn_message2entry),
 		cmocka_unit_test(msDS_KeyCredentialLink_message2entry),
 		cmocka_unit_test(invalid_version_keycredlink),
 		cmocka_unit_test(duplicate_key_material_keycredlink),
