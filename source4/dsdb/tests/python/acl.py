@@ -120,7 +120,7 @@ class AclTests(samba.tests.TestCase):
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
-    def get_ldb_connection(self, target_username, target_password):
+    def get_creds(self, target_username, target_password):
         creds_tmp = Credentials()
         creds_tmp.set_username(target_username)
         creds_tmp.set_password(target_password)
@@ -130,6 +130,10 @@ class AclTests(samba.tests.TestCase):
         creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
                                       | gensec.FEATURE_SEAL)
         creds_tmp.set_kerberos_state(DONT_USE_KERBEROS)  # kinit is too expensive to use in a tight loop
+        return creds_tmp
+
+    def get_ldb_connection(self, target_username, target_password):
+        creds_tmp = self.get_creds(target_username, target_password)
         ldb_target = SamDB(url=ldaphost, credentials=creds_tmp, lp=lp)
         return ldb_target
 
