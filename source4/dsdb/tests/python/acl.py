@@ -3788,8 +3788,6 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         except LdbError:
             self.fail()
 
-# enable these when we have search implemented
-
 
 class AclSearchTests(AclTests):
 
