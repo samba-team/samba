@@ -3106,11 +3106,13 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	req->async_internal = false;
 	req->do_signing = false;
-	if (opcode != SMB2_OP_SESSSETUP) {
-		req->do_encryption = encryption_desired;
-	} else {
+
+	if (opcode == SMB2_OP_SESSSETUP) {
 		req->do_encryption = false;
+	} else {
+		req->do_encryption = encryption_desired;
 	}
+
 	req->was_encrypted = false;
 	if (intf_v->iov_len == SMB2_TF_HDR_SIZE) {
 		const uint8_t *intf = SMBD_SMB2_IN_TF_PTR(req);
