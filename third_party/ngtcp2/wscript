@@ -38,6 +38,12 @@ def configure(conf):
     conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
                           '-Wno-error=strict-overflow',
                           testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-error=format-nonliteral',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-error=implicit-fallthrough',
+                          testflags=True)
 
     conf.DEFINE('HAVE_LIBNGTCP2', '1')
     return
