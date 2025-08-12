@@ -178,11 +178,14 @@ char **file_lines_ploadv(TALLOC_CTX *mem_ctx,
 {
 	char *p = NULL;
 	size_t size;
+	char **ret = NULL;
 
 	p = file_ploadv(argl, &size);
 	if (!p) {
 		return NULL;
 	}
 
-	return file_lines_parse(p, size, numlines, mem_ctx);
+	ret = file_lines_parse(p, size, numlines, mem_ctx);
+	TALLOC_FREE(p);
+	return ret;
 }
