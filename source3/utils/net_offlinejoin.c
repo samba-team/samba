@@ -320,6 +320,7 @@ int net_offlinejoin_requestodj(struct net_context *c,
 	if (provision_bin_data_size > UINT32_MAX) {
 		d_printf("provision binary data size too big: %zu\n",
 			 provision_bin_data_size);
+		TALLOC_FREE(provision_bin_data);
 		return -1;
 	}
 
@@ -331,10 +332,13 @@ int net_offlinejoin_requestodj(struct net_context *c,
 		/* NERR_JoinPerformedMustRestart */
 		printf("Failed to call NetRequestOfflineDomainJoin: %s\n",
 			libnetapi_get_error_string(c->netapi_ctx, status));
+		TALLOC_FREE(provision_bin_data);
 		return -1;
 	}
 
 	d_printf("Successfully requested Offline Domain Join\n");
+
+	TALLOC_FREE(provision_bin_data);
 
 	return 0;
 }
