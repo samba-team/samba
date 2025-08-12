@@ -187,7 +187,7 @@ def create_key_credential_link(samdb: SamDB,
 
     # always KEY_USAGE_NGC
     kcl_key_usage = kcl_entry_bytes(keycredlink.KeyUsage,
-                                    keycredlink.KEY_USAGE_NGC.to_bytes())
+                                    keycredlink.KEY_USAGE_NGC.to_bytes(1, byteorder='big'))
 
     # nttime for now
     kcl_creation = kcl_entry_bytes(keycredlink.KeyCreationTime,
