@@ -44,8 +44,6 @@ NTTIME gkdi_root_key_use_start_time(const NTTIME current_time);
 
 /*
  * Create and return a new GKDI root key.
- *
- * This function goes unused.
  */
 struct ldb_context;
 int gkdi_new_root_key(TALLOC_CTX *mem_ctx,

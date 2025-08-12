@@ -525,8 +525,6 @@ static const char *const root_key_attrs[] = {
 
 /*
  * Create and return a new GKDI root key.
- *
- * This function goes unused.
  */
 int gkdi_new_root_key(TALLOC_CTX *mem_ctx,
 		      struct ldb_context *const ldb,
