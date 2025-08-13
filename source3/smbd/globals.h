@@ -621,6 +621,7 @@ struct smbd_smb2_request {
 	uint32_t last_tid;
 
 	int current_idx;
+	/* Should we sign? */
 	bool do_signing;
 	/* Was the request encrypted? */
 	bool was_encrypted;
