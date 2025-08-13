@@ -32,7 +32,7 @@
  * <a href="http://wiki.samba.org/index.php/Using_Git_for_Samba_Development" target="_blank">Using Git for Samba Development</a>
  *
  * Once you have cloned the tree switch to the master branch and cd into the
- * lib/tevent directory.
+ * lib/talloc directory.
  *
  * To fetch via rsync use this command:
  *
