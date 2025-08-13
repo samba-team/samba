@@ -7,10 +7,12 @@ static void create_and_destroy_context (void)
 {
 	int i;
 	SMBCCTX *ctx;
+	char *option_name = strdup("debug_to_stderr");
 	ctx = smbc_new_context ();
 	/* Both should do the same thing */
 	smbc_setOptionDebugToStderr(ctx, 1);
-	smbc_option_set(ctx, strdup("debug_to_stderr"), 1);
+	smbc_option_set(ctx, option_name, 1);
+	free(option_name);
 	smbc_setDebug(ctx, 1);
 	i = smbc_getDebug(ctx);
 	if (i != 1) {
