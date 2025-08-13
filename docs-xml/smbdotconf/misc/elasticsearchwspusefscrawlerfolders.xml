@@ -1,0 +1,20 @@
+<samba:parameter name="elasticsearch:wsp use fscrawler folders"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+       When enabled the wsp server will additionally query the
+       associated fscrawler folder index (assumed to be named
+       'indexname_folder') where indexname
+       is the index name defined by
+       <smbconfoption name="elasticsearch:index"/>
+       Searching the folder index allow folders to be found,
+       without this setting enabled searching specifically for
+       'Folder' kind or finding results that are directories is
+       not possible.
+  </para>
+  </description>
+ <value type="default">false</value>
+
+</samba:parameter>
