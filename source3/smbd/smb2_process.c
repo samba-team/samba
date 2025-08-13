@@ -741,8 +741,7 @@ bool init_smb1_request(struct smb_request *req,
 
 	/* Ensure we have at least smb_size bytes. */
 	if (req_size < smb_size) {
-		DEBUG(0,("init_smb1_request: invalid request size %u\n",
-			(unsigned int)req_size ));
+		DBG_ERR("invalid request size %zu\n", req_size);
 		return false;
 	}
 
@@ -780,18 +779,18 @@ bool init_smb1_request(struct smb_request *req,
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
-		DEBUG(0,("init_smb1_request: invalid wct number %u (size %u)\n",
-			(unsigned int)req->wct,
-			(unsigned int)req_size));
+		DBG_ERR("invalid wct number %" PRIu8 " (size %zu)\n",
+			req->wct,
+			req_size);
 		return false;
 	}
 	/* Ensure bcc is correct. */
 	if (((const uint8_t *)smb_buf_const(inbuf)) + req->buflen > inbuf + req_size) {
-		DEBUG(0,("init_smb1_request: invalid bcc number %u "
-			"(wct = %u, size %u)\n",
-			(unsigned int)req->buflen,
-			(unsigned int)req->wct,
-			(unsigned int)req_size));
+		DBG_ERR("invalid bcc number %" PRIu16 " "
+			"(wct = %" PRIu8 ", size %zu)\n",
+			req->buflen,
+			req->wct,
+			req_size);
 		return false;
 	}
 

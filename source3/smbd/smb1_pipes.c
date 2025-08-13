@@ -162,9 +162,9 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		 * them (we don't trust the client). JRA.
 		 */
 		if (state->numtowrite < 2) {
-			DEBUG(0,("reply_pipe_write_and_X: start of message "
-				 "set and not enough data sent.(%u)\n",
-				 (unsigned int)state->numtowrite ));
+			DBG_ERR("start of message "
+				"set and not enough data sent.(%zu)\n",
+				state->numtowrite);
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
