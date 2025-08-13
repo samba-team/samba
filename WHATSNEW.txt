@@ -53,6 +53,20 @@ CTDB changes
   edit") while still allowing local administrators to add their own
   tunables settings (in one or more separate files).
 
+Per-share profiling stats
+-------------------------
+Starting with Samba 4.23, users can collect profile counters at a
+per-share level. This feature requires building Samba with profiling
+data enabled and adding an appropriate `smb.conf` parameter for
+specific shares. It's particularly useful for deployments with a large
+number of active shares, allowing administrators to monitor individual
+share activity and identify potential bottlenecks or hot-spots. When
+enabled, users can inspect current per-share profile information
+("Extended Profile") using the standard `smbstatus` utility.
+
+Currently, this functionality is supported only by the default and
+`ceph_new` VFS modules.
+
 
 REMOVED FEATURES
 ================
