@@ -300,8 +300,9 @@ class Command(object):
 
         return parser, optiongroups
 
-    def message(self, text):
-        self.outf.write(text + "\n")
+    def message(self, *text):
+        for t in text:
+            print(t, file=self.outf)
 
     def _resolve(self, path, *argv, outf=None, errf=None):
         """This is a leaf node, the command that will actually run."""
