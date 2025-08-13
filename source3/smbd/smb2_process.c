@@ -938,8 +938,9 @@ static void smbd_smb2_server_connection_read_handler(
 		xconn->client->sconn->trans_num++;
 		xconn->client->sconn->num_requests++;
 		return;
+	}
 
-	} else if (!smbd_is_smb2_header(buffer, bufferlen)) {
+	if (!smbd_is_smb2_header(buffer, bufferlen)) {
 		exit_server_cleanly("Invalid initial SMB2 packet");
 		return;
 	}
