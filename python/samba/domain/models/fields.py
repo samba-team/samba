@@ -64,7 +64,7 @@ class Field(metaclass=ABCMeta):
         # This ensures that fields with many=True are always lists.
         # If this is inconsistent anywhere, it isn't so great to use.
         if self.many and default is None:
-            self.default = []
+            self.default = lambda x: list()
         else:
             self.default = default
 
