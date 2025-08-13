@@ -8002,7 +8002,7 @@ static bool test_fruit_locking_conflict(struct torture_context *tctx,
 
 	/* Add AD_FILELOCK_RSRC_DENY_WR lock. */
 	el = (struct smb2_lock_element) {
-		.offset = 0xfffffffffffffffc,
+		.offset = 0x7ffffffffffffffc,
 		.length = 1,
 		.flags = SMB2_LOCK_FLAG_EXCLUSIVE,
 	};
