@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_aio_ratelimit.8">
+
+<refmeta>
+	<refentrytitle>vfs_aio_ratelimit</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+	<refname>vfs_aio_ratelimit</refname>
+	<refpurpose>Implement async-I/O rate-limiting for Samba</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = aio_ratelimit</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The <command>aio_ratelimit</command> VFS module enables run-time
+	rate-limiting on specific shares by enforcing upper limit on async I/O
+	operations. An administrator may define this limit as operations
+	per-second or bytes-per-second. When one of those limits is exceeded,
+	a delay value (in milliseconds) is calculated based on current I/O load
+	and injected to async I/O operations, yielding an implicit throughput
+	ceiling.
+	</para>
+
+	<para>
+	This module operates only on asynchronous VFS READ/WRITE operation.
+	</para>
+
+	<para>This module is stackable.</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>Straight forward use:</para>
+
+<programlisting>
+	<smbconfsection name="[share]"/>
+	<smbconfoption name="path">/path/to/share</smbconfoption>
+	<smbconfoption name="vfs objects">aio_ratelimit</smbconfoption>
+</programlisting>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>aio_ratelimit:read_iops_limit = count</term>
+		<listitem>
+		<para>
+			Upper limit of READ operations-per-second before
+			injecting delays. Zero value implies no limit.
+		</para>
+		<para>Default: 0, Max: 1000000</para>
+		<para>Example: aio_ratelimit:read_iops_limit = 1000</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>aio_ratelimit:read_bw_limit = count</term>
+		<listitem>
+		<para>
+			Upper limit of READ bandwidth (bytes-per-second) before
+			injecting delays. Zero value implies no limit.
+		</para>
+		<para>Default: 0, Max: 1T</para>
+		<para>Example: aio_ratelimit:read_bw_limit = 1000000</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>aio_ratelimit:read_delay_max = seconds</term>
+		<listitem>
+		<para>
+			Maximal allowed delay value, in seconds, for READ.
+		</para>
+		<para>Default: 30, Max: 300</para>
+		<para>Example: aio_ratelimit:read_delay_max = 15</para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>aio_ratelimit:write_iops_limit = count</term>
+		<listitem>
+		<para>
+			Upper limit of WRITE operations-per-second before
+			injecting delays. Zero value implies no limit.
+		</para>
+		<para>Default: 0, Max: 1000000</para>
+		<para>Example: aio_ratelimit:write_iops_limit = 1000</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>aio_ratelimit:write_bw_limit = count</term>
+		<listitem>
+		<para>
+			Upper limit of WRITE bandwidth (bytes-per-second)
+			before injecting delays. Zero value implies no limit.
+		</para>
+		<para>Default: 0, Max: 1T</para>
+		<para>Example: aio_ratelimit:write_bw_limit = 1000000</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>aio_ratelimit:write_delay_max = seconds</term>
+		<listitem>
+		<para>
+			Maximal allowed delay value, in seconds, for WRITE.
+		</para>
+		<para>Default: 30, Max: 300</para>
+		<para>Example: aio_ratelimit:write_delay_max = 20</para>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
