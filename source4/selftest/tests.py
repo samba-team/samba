@@ -2237,6 +2237,7 @@ planoldpythontestsuite("proclimitdc",
 
 planoldpythontestsuite("none", "samba.tests.usage")
 planpythontestsuite("fileserver", "samba.tests.dcerpc.mdssvc")
+planpythontestsuite("fileserver", "samba.tests.dcerpc.dfs")
 planoldpythontestsuite("none", "samba.tests.compression")
 planpythontestsuite("none", "samba.tests.security_descriptors")
 
