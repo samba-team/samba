@@ -151,7 +151,6 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 static NTSTATUS load_module_absolute_path(const char *module_path,
 					  bool is_probe)
 {
-	void *handle;
 	init_module_fn init;
 	NTSTATUS status;
 
@@ -159,7 +158,7 @@ static NTSTATUS load_module_absolute_path(const char *module_path,
 		 is_probe ? "Probing" : "Loading",
 		 module_path);
 
-	init = load_module(module_path, is_probe, &handle);
+	init = load_module(module_path, is_probe, NULL);
 	if (init == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -171,7 +170,6 @@ static NTSTATUS load_module_absolute_path(const char *module_path,
 		DBG_ERR("Module '%s' initialization failed: %s\n",
 			module_path,
 			get_friendly_nt_error_msg(status));
-		dlclose(handle);
 		return status;
 	}
 
