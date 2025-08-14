@@ -1,0 +1,46 @@
+<samba:parameter name="server smb encryption over quic"
+		 context="G"
+		 type="boolean"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    This parameter controls whether the SMB server requires SMB-level
+    encryption although the transport is encrypted via QUIC.
+  </para>
+  <para>
+    <parameter>server smb encrypt</parameter> controls the use of the
+    encryption mechanism introduced with SMB3.0. If <parameter>server
+    smb encryption over quic</parameter> value is set to
+    <emphasis>no</emphasis>, <emphasis>and</emphasis> the client
+    connects via a validated QUIC (and thus TLS) connection, the
+    server ignores the requirements from the parameter
+    <parameter>server smb encrypt</parameter> and accepts all
+    SMB-level packets inside the QUIC connection as encrypted in a
+    trustworthy way. This avoids costly double-encryption.
+  </para>
+  <para>
+    If <parameter>server smb encryption over
+    quic</parameter> is left at its default <emphasis>yes</emphasis>,
+    the client connects over normal TCP, or the client does not
+    indicate that it can trust the QUIC connection it uses, the
+    requirements from <parameter>server smb encrypt</parameter> apply.
+  </para>
+  <para>
+    Note that the QUIC-layer encryption is based on a TLS-level
+    certificate presented by the server. The SMB-layer encryption is
+    based on individual user sessions and as such essentially on
+    initial user credentials such as the user's password or equivalent
+    credentials used for logging on to a Windows session. This might
+    influence your security assessment regarding the <parameter>server
+    smb encryption over quic</parameter> parameter.
+  </para>
+  <para>
+    Windows has a similar SMB server setting with the
+    <parameter>DisableSmbEncryptionOnSecureConnection</parameter>
+    switch in the <command>Set-SmbServerConfiguration</command>
+    PowerShell commandlet.
+  </para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>

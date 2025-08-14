@@ -1013,6 +1013,8 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.himmelblaud_hello_enabled = false;
 	Globals.himmelblaud_sfa_fallback = false;
 
+	Globals.server_smb_encryption_over_quic = true;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
