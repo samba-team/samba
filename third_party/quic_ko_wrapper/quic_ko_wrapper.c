@@ -3518,15 +3518,12 @@ static void qwrap_msghdr_add_cmsghdr(struct msghdr *msg,
 {
 	size_t cmlen = CMSG_LEN(len);
 	size_t cmspace = CMSG_SPACE(len);
-	union {
-		uint64_t cmalign64;
-		uint8_t cmbuf[cmspace];
-	} cmu;
-	void *cast_ptr = (void *)cmu.cmbuf;
+	uint8_t cmbuf[cmspace];
+	void *cast_ptr = (void *)cmbuf;
 	struct cmsghdr *cm = (struct cmsghdr *)cast_ptr;
 	uint8_t *p;
 
-	memset(cmu.cmbuf, 0, cmspace);
+	memset(cmbuf, 0, cmspace);
 
 	if (msg->msg_controllen < cmlen) {
 		cmlen = msg->msg_controllen;
