@@ -42,6 +42,9 @@ def configure(conf):
     conf.ADD_NAMED_CFLAGS('LIBQUIC_UNPICKY_CFLAGS',
                           '-Wno-error=cast-qual',
                           testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBQUIC_UNPICKY_CFLAGS',
+                          '-Wno-error=format-nonliteral',
+                          testflags=True)
 
     conf.DEFINE('HAVE_LIBQUIC', '1')
     return
