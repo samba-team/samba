@@ -98,7 +98,7 @@ Test and debugging variable options
 	   PID file relative to CTDB_BASE.
 
 	   When testing with multiple local daemons on a single
-	   machine this does 3 extra things:
+	   machine this does some extra things:
 
 	   * Disables checks related to public IP addresses
 
@@ -106,6 +106,14 @@ Test and debugging variable options
 	     expense of some consistency checking
 
 	   * Disables real-time scheduling
+
+	   * Allows the CTDB_SOCKET environment variable to be used to
+	     specify ctdbd's Unix domain socket location.
+
+	   Do not use this variable outside a test environment to
+	   attempt to (for example) improve installation flexibility.
+	   This is unsupported, may cause unwanted security issues and
+	   may break in future releases.
 
        CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=FILENAME
 	   FILENAME specifies where log messages should go when
