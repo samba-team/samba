@@ -448,7 +448,7 @@ done:
 /**
  Load from a pipe into memory.
 **/
-char *file_ploadv(char * const argl[], size_t *size)
+static char *file_ploadv(char *const argl[], size_t *size)
 {
 	int fd, n;
 	char *p = NULL;
