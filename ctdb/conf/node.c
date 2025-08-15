@@ -193,21 +193,14 @@ static struct ctdb_node_map *ctdb_read_nodes_cmd(TALLOC_CTX *mem_ctx,
 {
 	char **lines = NULL;
 	int nlines;
-	char *p;
-	size_t size;
 	struct ctdb_node_map *nodemap = NULL;
 	char **argl = command_str_to_args(mem_ctx, nodes_cmd);
 
 	if (argl == NULL) {
 		return NULL;
 	}
-	p = file_ploadv(argl, &size);
-	if (!p) {
-		return NULL;
-	}
 
-	lines = file_lines_parse(p, size, &nlines, mem_ctx);
-	talloc_free(p);
+	lines = file_lines_ploadv(mem_ctx, argl, &nlines);
 	if (lines == NULL) {
 		return NULL;
 	}
