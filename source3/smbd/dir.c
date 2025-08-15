@@ -639,6 +639,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			smb_fname->st.st_ex_mode = (smb_fname->st.st_ex_mode &
 						    ~S_IFMT) |
 						   S_IFDIR;
+			smb_fname->fsp->fsp_name->st.st_ex_mode =
+				smb_fname->st.st_ex_mode;
 
 			mode = dos_mode_msdfs(conn, dname, &smb_fname->st);
 			get_dosmode = false;
