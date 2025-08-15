@@ -45,16 +45,24 @@ struct {
 	.vardir = CTDB_VARDIR,
 };
 
-static void path_set_basedir(void)
+static void path_set_test_mode(void)
 {
-	const char *t;
+	const char *t = NULL;
 
 	t = getenv("CTDB_TEST_MODE");
 	if (t == NULL) {
-		goto done;
+		return;
 	}
 
 	ctdb_paths.test_mode = true;
+}
+
+static void path_set_basedir(void)
+{
+	path_set_test_mode();
+	if (!ctdb_paths.test_mode) {
+		goto done;
+	}
 
 	ctdb_paths.basedir = getenv("CTDB_BASE");
 	if (ctdb_paths.basedir == NULL) {
