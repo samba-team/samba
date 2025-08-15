@@ -604,13 +604,12 @@ static int xattr_tdb_unlinkat(vfs_handle_struct *handle,
 	} else {
 		ret = SMB_VFS_NEXT_STAT(handle, full_fname);
 		if (ret == -1 && (errno == ENOENT || errno == ELOOP)) {
-			if (VALID_STAT(smb_fname->st) &&
-					S_ISLNK(smb_fname->st.st_ex_mode)) {
-				/*
-				 * Original name was a link - Could be
-				 * trying to remove a dangling symlink.
-				 */
-				ret = SMB_VFS_NEXT_LSTAT(handle, full_fname);
+			/*
+			 * Could be trying to remove a dangling symlink.
+			 */
+			ret = SMB_VFS_NEXT_LSTAT(handle, full_fname);
+			if (ret == 0 && !S_ISLNK(full_fname->st.st_ex_mode)) {
+				ret = -1;
 			}
 		}
 	}
