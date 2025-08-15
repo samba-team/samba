@@ -77,6 +77,10 @@ bool file_compare(const char *path1, const char *path2);
  */
 char *file_ploadv(char * const argl[], size_t *size);
 
+char **file_lines_ploadv(TALLOC_CTX *mem_ctx,
+			 char *const argl[],
+			 int *numlines);
+
 FILE *fdopen_keepfd(int fd, const char *mode);
 
 #endif

@@ -491,6 +491,29 @@ char *file_ploadv(char * const argl[], size_t *size)
 	return p;
 }
 
+/**
+ Load a pipe into memory and return an array of pointers to lines in the data
+ must be freed with TALLOC_FREE.
+**/
+
+char **file_lines_ploadv(TALLOC_CTX *mem_ctx,
+			 char *const argl[],
+			 int *numlines)
+{
+	char *p = NULL;
+	size_t size;
+	char **ret = NULL;
+
+	p = file_ploadv(argl, &size);
+	if (!p) {
+		return NULL;
+	}
+
+	ret = file_lines_parse(p, size, numlines, mem_ctx);
+	TALLOC_FREE(p);
+	return ret;
+}
+
 /*
  * fopen a dup'ed fd. Prevent fclose to close the fd passed in.
  *

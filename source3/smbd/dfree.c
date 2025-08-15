@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "lib/util_file.h"
+#include "lib/util/util_file.h"
 #include "lib/util/memcache.h"
 
 /****************************************************************************
