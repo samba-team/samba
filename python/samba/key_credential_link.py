@@ -195,7 +195,7 @@ class KeyCredentialLinkDn(BinaryDn):
         return pem.decode()
 
 
-def get_public_key(data:bytes, encoding:str):
+def get_public_key(data:bytes, encoding:Optional[str] = None) -> RSAPublicKey:
     """decode a key in PEM or DER format.
 
     If it turns out to be a certificate or something, we try to get
@@ -267,6 +267,9 @@ def create_key_credential_link(samdb: SamDB,
         res = samdb.search(base=target)
         if len(res) == 0:
             raise ValueError(f"link target {target} does not exist")
+
+    if encoding == 'auto':
+        encoding = None
 
     key = get_public_key(data, encoding)
 
