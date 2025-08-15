@@ -339,3 +339,16 @@ def create_key_credential_link(samdb: SamDB,
 
     k = KeyCredentialLinkDn.from_bytes_and_dn(samdb, kcl_bytes, target)
     return k
+
+def kcl_in_list(kcl: KeyCredentialLinkDn, others: Iterable[KeyCredentialLinkDn]):
+    """True if kcl is in the list, otherwise False, disregarding
+    everything except key material and DN for the comparison.
+    """
+    # this helps us avoid duplicate key credential links, which are
+    # otherwise disallowed only if all fields are identical, but which
+    # are generally useless.
+    km = kcl.key_material()
+    for other in others:
+        if km == other.key_material() and kcl.dn == other.dn:
+            return True
+    return False
