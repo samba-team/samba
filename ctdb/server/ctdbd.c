@@ -242,6 +242,13 @@ int main(int argc, const char *argv[])
 	 * Logging setup/options
 	 */
 
+
+	/*
+	 * Do not use CTDB_TEST_MODE outside a test environment to
+	 * attempt to (for example) improve installation flexibility.
+	 * This is unsupported, may cause unwanted security issues and
+	 * may break in future releases.
+	 */
 	test_mode = getenv("CTDB_TEST_MODE");
 
 	/* Log to stderr (ignoring configuration) when running as interactive */

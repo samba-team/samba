@@ -49,6 +49,12 @@ static void path_set_test_mode(void)
 {
 	const char *t = NULL;
 
+	/*
+	 * Do not use CTDB_TEST_MODE outside a test environment to
+	 * attempt to (for example) improve installation flexibility.
+	 * This is unsupported, may cause unwanted security issues and
+	 * may break in future releases.
+	 */
 	t = getenv("CTDB_TEST_MODE");
 	if (t == NULL) {
 		return;
@@ -196,11 +202,14 @@ char *path_config(TALLOC_CTX *mem_ctx)
 
 char *path_socket(TALLOC_CTX *mem_ctx, const char *daemon)
 {
-	if (strcmp(daemon, "ctdbd") == 0) {
-		const char *t = getenv("CTDB_SOCKET");
+	path_set_test_mode();
+	if (ctdb_paths.test_mode) {
+		if (strcmp(daemon, "ctdbd") == 0) {
+			const char *t = getenv("CTDB_SOCKET");
 
-		if (t != NULL) {
-			return talloc_strdup(mem_ctx, t);
+			if (t != NULL) {
+				return talloc_strdup(mem_ctx, t);
+			}
 		}
 	}
 
