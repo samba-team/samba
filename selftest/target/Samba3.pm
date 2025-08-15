@@ -4328,6 +4328,7 @@ sub provision_ctdb($$$$)
 		$ret{"CTDB_IFACE_IP_NODE${i}"} = $ip;
 	}
 
+	$ret{CTDB_TEST_MODE} = "yes";
 	$ret{CTDB_BASE} = $ret{CTDB_BASE_NODE0};
 	$ret{CTDB_SOCKET} = $ret{CTDB_SOCKET_NODE0};
 	$ret{CTDB_SERVER_NAME} = $ret{CTDB_SERVER_NAME_NODE0};
