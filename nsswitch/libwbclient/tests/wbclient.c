@@ -248,16 +248,18 @@ static bool test_wbc_guidtostring(struct torture_context *tctx)
 	struct wbcGuid guid;
 	const char *guid_string = "f7cf07b4-1487-45c7-824d-8b18cc580811";
 	char *guid_string2;
+	bool ret = true;
 
 	torture_assert_wbc_ok(tctx, wbcStringToGuid(guid_string, &guid),
 			      "wbcStringToGuid of %s failed", guid_string);
 	torture_assert_wbc_ok(tctx, wbcGuidToString(&guid, &guid_string2),
 			      "wbcGuidToString of %s failed", guid_string);
-	torture_assert_str_equal(tctx, guid_string, guid_string2,
+	torture_assert_str_equal_goto(tctx, guid_string, guid_string2, ret, done,
 				 "guid strings differ");
+ done:
 	wbcFreeMemory(guid_string2);
 
-	return true;
+	return ret;
 }
 
 static bool test_wbc_domain_info(struct torture_context *tctx)
