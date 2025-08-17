@@ -364,3 +364,19 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
                                        self.user2, GOOD_CERTS[0])
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(len(self.get_links(self.user2)), 2)
+
+
+class SambaToolComputesrKeyTrustTest(SambaToolUserKeyTrustTest):
+    cmd = "computer"
+    user1 = 'ADDC'
+    user2 = 'ADDC'
+    ou_name = 'OU=Domain Controllers'
+
+    def get_links(self, username):
+        if username[-1] != '$':
+            username += '$'
+        result = self.samdb.search(expression=f'sAMAccountName={username}',
+                                   attrs=['msDS-KeyCredentialLink'])
+        self.assertEqual(len(result), 1)
+        links = result[0].get('msDS-KeyCredentialLink', [])
+        return [kcl.KeyCredentialLinkDn(self.samdb, v) for v in links]
