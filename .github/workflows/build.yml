@@ -1,0 +1,104 @@
+name: build-samba
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            acl attr autoconf binutils bison ccache curl chrpath codespell flex \
+            gcc gdb git gzip jq lcov make mold patch perl rsync sed tar tree wget \
+            lmdb-utils zlib1g-dev libbsd-dev liburing-dev libarchive-dev libblkid-dev \
+            libcap-dev libacl1-dev libattr1-dev libutf8proc-dev libssl-dev \
+            libpopt-dev libreadline-dev libjansson-dev liblmdb-dev libncurses5-dev \
+            libsystemd-dev libkrb5-dev libldap2-dev libcups2-dev libpam0g-dev \
+            libgpgme-dev libgnutls28-dev gnutls-bin libtasn1-bin libtasn1-dev \
+            uuid-dev libavahi-common-dev libdbus-1-dev libpcap-dev libunwind-dev \
+            libglib2.0-dev libicu-dev heimdal-multidev libevent-dev locales \
+            bind9utils dnsutils xsltproc krb5-user krb5-config krb5-kdc \
+            pkg-config procps python3 python3-dev python3-iso8601 python3-gpg \
+            python3-markdown python3-dnspython python3-pyasn1 python3-setproctitle \
+            python3-requests libparse-yapp-perl xfslibs-dev glusterfs-common \
+            libcephfs-dev libtracker-sparql-3.0-dev build-essential debhelper \
+            docbook-xml docbook-xsl libkeyutils-dev xz-utils libnsl-dev libtirpc-dev
+          pkg-config --modversion gpgme
+          python3 -c "import gpg; print('gpg py ok')"
+          
+      - name: macOS deps + build
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew reinstall gpgme libassuan libgpg-error gettext
+          brew install gpgmepy gnupg gnutls popt python pkg-config openldap lmdb jansson libtirpc flex bison cups libarchive dbus glib autoconf automake libtool git gdb perl cpanminus swig krb5 readline libxcrypt icu4c utf8proc cmocka openssl@3 python-markdown
+          cpanm Parse::Yapp
+
+          B=$(brew --prefix)
+          GP=$(brew --prefix gpgme)
+          AS=$(brew --prefix libassuan)
+          GE=$(brew --prefix libgpg-error)
+          GT=$(brew --prefix gettext)
+          TI=$(brew --prefix libtirpc)
+          AR=$(brew --prefix libarchive)
+          KR=$(brew --prefix krb5)
+          OL=$(brew --prefix openldap)
+          CU=$(brew --prefix cups)
+          GN=$(brew --prefix gnutls)
+          RL=$(brew --prefix readline)
+          LX=$(brew --prefix libxcrypt)
+          IC=$(brew --prefix icu4c)
+          U8=$(brew --prefix utf8proc)
+          O3=$(brew --prefix openssl@3)
+          FB=$(brew --prefix bison)
+          FX=$(brew --prefix flex)
+
+          export PATH="$B/opt/python@3.13/libexec/bin:$FB/bin:$FX/bin:$GP/bin:$B/bin:$PATH"
+          export PKG_CONFIG_PATH="$IC/lib/pkgconfig:$U8/lib/pkgconfig:$GN/lib/pkgconfig:$GP/lib/pkgconfig:$AS/lib/pkgconfig:$GE/lib/pkgconfig:$TI/lib/pkgconfig:$AR/lib/pkgconfig:$KR/lib/pkgconfig:$OL/lib/pkgconfig:$CU/lib/pkgconfig:$O3/lib/pkgconfig:$B/lib/pkgconfig:$B/share/pkgconfig"
+          export CPPFLAGS="-I$RL/include -I$GN/include -I$LX/include -I$IC/include -I$U8/include -I$O3/include -I$B/include -I$GP/include -I$AS/include -I$GE/include -I$GT/include -I$AR/include -I$KR/include -I$OL/include -I$CU/include $CPPFLAGS"
+          export LDFLAGS="-L$RL/lib -L$GN/lib -L$LX/lib -L$IC/lib -L$U8/lib -L$O3/lib -L$GP/lib -L$AS/lib -L$GE/lib -L$GT/lib -L$AR/lib -L$KR/lib -L$OL/lib -L$CU/lib $LDFLAGS -lcrypt"
+
+          mkdir -p .ci
+          printf '%s\n' '#ifndef HAVE_REALLOCARRAY' '#define reallocarray(p,nmemb,size) realloc_array((p),(size),(nmemb),0)' '#endif' > .ci/compat_darwin.h
+
+          git checkout -- lib/ldb/wscript || true
+          if ! grep -q "test_ldb_comparison_fold'.*enabled=False" lib/ldb/wscript; then
+            sed -E -i '' "s/\('test_ldb_comparison_fold',/\('test_ldb_comparison_fold', enabled=False,/" lib/ldb/wscript
+          fi
+
+          cat > .ci/bison <<'EOF'
+          #!/bin/sh
+          REAL="$(brew --prefix bison)/bin/bison"
+          args=""
+          for a in "$@"; do
+            [ "$a" = "--no-line" ] && a="--no-lines"
+            args="$args \"$a\""
+          done
+          eval exec "$REAL" $args
+          EOF
+          chmod +x .ci/bison
+          export PATH="$(pwd)/.ci:$PATH"
+
+          $B/bin/python3 -m venv --system-site-packages .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dnspython iso8601 pyasn1 setproctitle requests markdown cryptography
+
+          PY="$(pwd)/.venv/bin/python"
+          CPPFLAGS="-include $(pwd)/.ci/compat_darwin.h $CPPFLAGS" CFLAGS="-include $(pwd)/.ci/compat_darwin.h $CFLAGS" \
+          PKG_CONFIG_PATH="$PKG_CONFIG_PATH" LDFLAGS="$LDFLAGS" PYTHON="$PY" \
+          ./configure --without-acl-support --without-gettext --bundled-libraries=ALL
+
+          make JOBS="$(sysctl -n hw.ncpu)"
