@@ -36,6 +36,8 @@ from samba.samdb import SamDB
 from samba.common import get_bytes
 from subprocess import check_call, CalledProcessError
 from . import common
+from .computer_keytrust import cmd_computer_keytrust
+
 
 from samba import (
     dsdb,
@@ -724,3 +726,4 @@ class cmd_computer(SuperCommand):
     subcommands["list"] = cmd_computer_list()
     subcommands["show"] = cmd_computer_show()
     subcommands["move"] = cmd_computer_move()
+    subcommands["keytrust"] = cmd_computer_keytrust()
