@@ -58,16 +58,22 @@ DUPLICATE_KEYS = [
 
 
 class SambaToolUserKeyTrustTest(SambaToolCmdTest):
+    cmd = 'user'
+    user1 = 'alice'
+    user2 = 'joe'
+    ou_name = 'CN=Users'
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.samdb = cls.getSamDB("-H", HOST, CREDS)
-        cls.runcmd("user", "key-trust", "delete",
+        cls.runcmd(cls.cmd, "keytrust", "delete",
                    "-H", HOST, CREDS,
-                   'joe', '--all')
-        cls.runcmd("user", "key-trust", "delete",
+                   cls.user1, '--all')
+        cls.runcmd(cls.cmd, "keytrust", "delete",
                    "-H", HOST, CREDS,
-                   'alice', '--all')
+                   cls.user2, '--all')
+        cls.ou = f"{cls.ou_name},{cls.samdb.domain_dn()}"
 
     def get_links(self, username):
         result = self.samdb.search(expression=f'sAMAccountName={username}',
@@ -78,60 +84,60 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
 
     def test_add_good_cert(self):
         """These ones should just succeed."""
-        links = self.get_links('joe')
+        links = self.get_links(self.user2)
         n = len(links)
         for f in GOOD_CERTS:
-            result, out, err = self.runcmd("user", "key-trust", "add",
+            result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                            "-H", HOST, CREDS,
-                                           'joe', f)
+                                           self.user2, f)
             self.assertCmdSuccess(result, out, err)
 
             n += 1
-            links = self.get_links('joe')
+            links = self.get_links(self.user2)
             self.assertEqual(len(links), n)
 
-        result, out, err = self.runcmd("user", "key-trust", "delete",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "delete",
                                        "-H", HOST, CREDS,
-                                       'joe', '--all')
+                                       self.user2, '--all')
         self.assertCmdSuccess(result, out, err)
 
         for link in links:
             self.assertIn(f"Deleted {link}", out)
 
-        links = self.get_links('joe')
+        links = self.get_links(self.user2)
         self.assertEqual(links, [])
 
     def test_add_and_delete_good_keys(self):
         """Add known good keys, and also check the view and delete commands."""
-        links = self.get_links('alice')
+        links = self.get_links(self.user1)
         self.assertEqual(links, [])
 
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
-                                       'alice', GOOD_KEYS[0])
+                                       self.user1, GOOD_KEYS[0])
         self.assertCmdSuccess(result, out, err)
-        links = self.get_links('alice')
+        links = self.get_links(self.user1)
         self.assertEqual(len(links), 1)
 
-        result, out, err = self.runcmd("user", "key-trust", "view",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "view",
                                        "-H", HOST, CREDS,
-                                       'alice')
+                                       self.user1)
         self.assertCmdSuccess(result, out, err)
-        self.assertIn('alice has 1 key credential link\n', out)
-        self.assertIn('Link target: CN=alice,CN=Users,DC=addom,DC=samba,DC=example,DC=com\n', out)
+        self.assertIn(f'{self.user1} has 1 key credential link\n', out)
+        self.assertIn(f'Link target: CN={self.user1},{self.ou}\n', out)
         self.assertIn('Number of key entries:            5', out)
 
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
-                                       'alice', GOOD_KEYS[1])
+                                       self.user1, GOOD_KEYS[1])
         self.assertCmdSuccess(result, out, err)
-        result, out, err = self.runcmd("user", "key-trust", "view",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "view",
                                        "-H", HOST, CREDS,
-                                       'alice', '--verbose')
+                                       self.user1, '--verbose')
         self.assertCmdSuccess(result, out, err)
-        self.assertIn('alice has 2 key credential links\n', out)
+        self.assertIn(f'{self.user1} has 2 key credential links\n', out)
 
-        links = self.get_links('alice')
+        links = self.get_links(self.user1)
         fingerprints = [('16:CD:1B:C2:7A:0B:FC:C9:4B:95:11:9F:AD:97:EC:1B:'
                          'ED:BD:64:91:42:2E:AF:CA:CB:1E:C3:EE:86:6D:F1:5A'),
                         ('86:61:6D:B2:6A:3A:04:BD:E0:59:10:13:21:9A:2B:2C:'
@@ -141,9 +147,9 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
                          set(fingerprints))
 
         # test delete --dry-run / -n
-        result, out, err = self.runcmd("user", "key-trust", "delete",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "delete",
                                        "-H", HOST, CREDS,
-                                       'alice', '--all', '-n')
+                                       self.user1, '--all', '-n')
         self.assertCmdSuccess(result, out, err)
         self.assertIn('Without --dry-run, this would happen:\n', out)
         self.assertIn(f'DELETE {links[0]} (fingerprint {links[0].fingerprint()})',
@@ -151,11 +157,11 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
         self.assertIn(f'DELETE {links[1]} (fingerprint {links[1].fingerprint()})',
                       out)
         self.assertNotIn('KEEP', out)
-        self.assertIn('alice would now have 0 key credential links\n', out)
+        self.assertIn(f'{self.user1} would now have 0 key credential links\n', out)
 
-        result, out, err = self.runcmd("user", "key-trust", "delete",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "delete",
                                        "-H", HOST, CREDS,
-                                       'alice', '--fingerprint=whatever',
+                                       self.user1, '--fingerprint=whatever',
                                        '--dry-run')
         self.assertCmdSuccess(result, out, err)
         self.assertIn('NO key credential links are deleted\n', out)
@@ -164,11 +170,11 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
                       out)
         self.assertIn(f'KEEP {links[1]} (fingerprint {links[1].fingerprint()})',
                       out)
-        self.assertIn('alice would now have 2 key credential links\n', out)
+        self.assertIn(f'{self.user1} would now have 2 key credential links\n', out)
 
-        result, out, err = self.runcmd("user", "key-trust", "delete",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "delete",
                                        "-H", HOST, CREDS,
-                                       'alice',
+                                       self.user1,
                                        '--fingerprint',
                                        fingerprints[1],
                                        '--dry-run')
@@ -177,132 +183,132 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
                       out)
         self.assertIn(f'KEEP {links[0]} (fingerprint {links[0].fingerprint()})',
                       out)
-        self.assertIn('alice would now have 1 key credential link\n', out)
+        self.assertIn(f'{self.user1} would now have 1 key credential link\n', out)
 
         # this time deleting for real
-        result, out, err = self.runcmd("user", "key-trust", "delete",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "delete",
                                        "-H", HOST, CREDS,
-                                       'alice', '--all')
+                                       self.user1, '--all')
         self.assertCmdSuccess(result, out, err)
-        links = self.get_links('alice')
+        links = self.get_links(self.user1)
         self.assertEqual(links, [])
 
-        result, out, err = self.runcmd("user", "key-trust", "view",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "view",
                                        "-H", HOST, CREDS,
-                                       'alice')
+                                       self.user1)
         self.assertCmdSuccess(result, out, err)
-        self.assertIn('alice has 0 key credential links\n', out)
+        self.assertIn(f'{self.user1} has 0 key credential links\n', out)
 
     def test_add_duplicate_keys(self):
         """You should not be able to add the same link twice."""
 
-        self.addCleanup(self.runcmd, "user", "key-trust", "delete",
+        self.addCleanup(self.runcmd, self.cmd, "keytrust", "delete",
                         "-H", HOST, CREDS,
-                        'alice', '--all')
+                        self.user1, '--all')
 
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
-                                       'alice', DUPLICATE_KEYS[0])
+                                       self.user1, DUPLICATE_KEYS[0])
         self.assertCmdSuccess(result, out, err)
 
         # This source file is different, but contains the same public
         # key. samba-tool should notice this and fail *before* it
         # fails in the dsdb layer with ERR_ATTRIBUTE_OR_VALUE_EXISTS
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
-                                       'alice', DUPLICATE_KEYS[1])
+                                       self.user1, DUPLICATE_KEYS[1])
         self.assertCmdFail(result)
         self.assertNotIn('ATTRIBUTE_OR_VALUE_EXISTS', err)
 
         # adding the first file again should also fail.
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
-                                       'alice', DUPLICATE_KEYS[0])
+                                       self.user1, DUPLICATE_KEYS[0])
         self.assertCmdFail(result)
 
         # adding to a different DN is OK
         base_dn = self.samdb.domain_dn()
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        "--link-target", base_dn,
-                                       'alice', DUPLICATE_KEYS[1])
+                                       self.user1, DUPLICATE_KEYS[1])
         self.assertCmdSuccess(result, out, err)
 
-        self.assertEqual(len(self.get_links('alice')), 2)
+        self.assertEqual(len(self.get_links(self.user1)), 2)
 
     def test_add_wrong_size_keys(self):
         """You should not be able to add the same link twice."""
 
-        self.addCleanup(self.runcmd, "user", "key-trust", "delete",
+        self.addCleanup(self.runcmd, self.cmd, "keytrust", "delete",
                         "-H", HOST, CREDS,
-                        'joe', '--all')
+                        self.user2, '--all')
 
         for fn in WRONG_SIZE_CERTS:
-            result, out, err = self.runcmd("user", "key-trust", "add",
+            result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                            "-H", HOST, CREDS,
-                                           'joe', fn)
+                                           self.user2, fn)
             self.assertCmdFail(result)
             self.assertIn('ERROR: 2048 bit RSA key expected, not', err)
 
-        self.assertEqual(self.get_links('joe'), [])
+        self.assertEqual(self.get_links(self.user2), [])
 
         for fn in WRONG_SIZE_CERTS:
             # it will work with --force
-            result, out, err = self.runcmd("user", "key-trust", "add",
+            result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                            "-H", HOST, CREDS,
                                            '--force',
-                                           'joe', fn)
+                                           self.user2, fn)
 
             self.assertCmdSuccess(result, out, err)
 
-        self.assertEqual(len(self.get_links('joe')), 2)
+        self.assertEqual(len(self.get_links(self.user2)), 2)
 
     def test_add_non_rsa_keys(self):
         """You should not be able to add the same link twice."""
 
-        self.addCleanup(self.runcmd, "user", "key-trust", "delete",
+        self.addCleanup(self.runcmd, self.cmd, "keytrust", "delete",
                         "-H", HOST, CREDS,
-                        'joe', '--all')
+                        self.user2, '--all')
 
         for fn in NON_RSA_CERTS:
-            result, out, err = self.runcmd("user", "key-trust", "add",
+            result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                            "-H", HOST, CREDS,
-                                           'joe', fn)
+                                           self.user2, fn)
             self.assertCmdFail(result)
             self.assertIn('only RSA Public Keys are supported', err)
 
-        self.assertEqual(self.get_links('joe'), [])
+        self.assertEqual(self.get_links(self.user2), [])
 
         for fn in NON_RSA_CERTS:
             # it will NOT work with --force
-            result, out, err = self.runcmd("user", "key-trust", "add",
+            result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                            "-H", HOST, CREDS,
                                            '--force',
-                                           'joe', fn)
+                                           self.user2, fn)
 
             self.assertCmdFail(result)
             self.assertIn('only RSA Public Keys are supported', err)
 
-        self.assertEqual(self.get_links('joe'), [])
+        self.assertEqual(self.get_links(self.user2), [])
 
     def test_add_good_cert_bad_dn(self):
         """Fails differently with --force"""
-        links = self.get_links('joe')
+        links = self.get_links(self.user2)
         n = len(links)
         target = f"CN=an RDN that is not there,{self.samdb.domain_dn()}"
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        '--link-target', target,
-                                       'joe', GOOD_CERTS[0])
+                                       self.user2, GOOD_CERTS[0])
         self.assertCmdFail(result)
         self.assertIn(f"ERROR: Link target '{target}' does not exist", err)
         self.assertEqual(len(links), 0)
 
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        '--link-target', target,
                                        '--force',
-                                       'joe', GOOD_CERTS[1])
+                                       self.user2, GOOD_CERTS[1])
         self.assertCmdFail(result)
         self.assertIn("ERROR(ldb): uncaught exception", err)
         self.assertIn("LDAP_CONSTRAINT_VIOLATION", err)
@@ -311,50 +317,50 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
     def test_add_good_cert_bad_encoding(self):
         """If we use --encoding=pem with a DER file or vice versa, it
         should fail."""
-        self.addCleanup(self.runcmd, "user", "key-trust", "delete",
+        self.addCleanup(self.runcmd, self.cmd, "keytrust", "delete",
                         "-H", HOST, CREDS,
-                        'joe', '--all')
+                        self.user2, '--all')
 
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        '--encoding', 'der',
-                                       'joe', GOOD_CERTS[0])
+                                       self.user2, GOOD_CERTS[0])
         self.assertCmdFail(result)
         self.assertIn("ERROR: could not decode public key", err)
-        self.assertEqual(self.get_links('joe'), [])
+        self.assertEqual(self.get_links(self.user2), [])
 
         # try to --force this one, to no avail
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        '--force',
                                        '--encoding', 'pem',
-                                       'joe', GOOD_KEYS[0])
+                                       self.user2, GOOD_KEYS[0])
         self.assertCmdFail(result)
         self.assertIn("ERROR: could not decode public key", err)
-        self.assertEqual(self.get_links('joe'), [])
+        self.assertEqual(self.get_links(self.user2), [])
 
         with self.assertRaises(SystemExit):
             # we can't catch result and output here because it fails
             # in optparse which prints straight to stderr.
-            self.runcmd("user", "key-trust", "add",
+            self.runcmd(self.cmd, "keytrust", "add",
                         "-H", HOST, CREDS,
                         '--encoding', 'pineapple',
-                        'joe', GOOD_CERTS[1])
+                        self.user2, GOOD_CERTS[1])
         self.assertCmdFail(result)
-        self.assertEqual(self.get_links('joe'), [])
+        self.assertEqual(self.get_links(self.user2), [])
 
         # right encoding
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        '--encoding', 'pem',
-                                       'joe', GOOD_CERTS[1])
+                                       self.user2, GOOD_CERTS[1])
         self.assertCmdSuccess(result, out, err)
-        self.assertEqual(len(self.get_links('joe')), 1)
+        self.assertEqual(len(self.get_links(self.user2)), 1)
 
         # 'auto' encoding
-        result, out, err = self.runcmd("user", "key-trust", "add",
+        result, out, err = self.runcmd(self.cmd, "keytrust", "add",
                                        "-H", HOST, CREDS,
                                        '--encoding', 'auto',
-                                       'joe', GOOD_CERTS[0])
+                                       self.user2, GOOD_CERTS[0])
         self.assertCmdSuccess(result, out, err)
-        self.assertEqual(len(self.get_links('joe')), 2)
+        self.assertEqual(len(self.get_links(self.user2)), 2)
