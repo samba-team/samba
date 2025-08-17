@@ -23,14 +23,13 @@
 import samba.getopt as options
 import ldb
 import socket
-import samba
 import re
 import os
 import tempfile
 from samba import sd_utils
 from samba.dcerpc import dnsserver, dnsp, security
 from samba.dnsserver import ARecord, AAAARecord
-from samba.ndr import ndr_unpack, ndr_pack, ndr_print
+from samba.ndr import ndr_unpack
 from samba.remove_dc import remove_dns_references
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -39,9 +38,7 @@ from subprocess import check_call, CalledProcessError
 from . import common
 
 from samba import (
-    credentials,
     dsdb,
-    Ldb,
     werror,
     WERRORError
 )
