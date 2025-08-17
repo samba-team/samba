@@ -352,3 +352,30 @@ def kcl_in_list(kcl: KeyCredentialLinkDn, others: Iterable[KeyCredentialLinkDn])
         if km == other.key_material() and kcl.dn == other.dn:
             return True
     return False
+
+
+def filter_kcl_list(samdb: SamDB,
+                    keycredlinks: Iterable[KeyCredentialLinkDn],
+                    link_target: Optional[str] = None,
+                    fingerprint: Optional[str] = None) -> list:
+    """Select only the input links that match at least one of the
+    criteria.
+    """
+    # used in samba-tool X keytrust delete
+    selected = []
+    filters = []
+    if link_target is not None:
+        target_dn = Dn(samdb, link_target)
+        filters.append(lambda x: x.dn == target_dn)
+
+    if fingerprint is not None:
+        fingerprint = fingerprint.upper()
+        filters.append(lambda x: x.fingerprint() == fingerprint)
+
+    for x in keycredlinks:
+        for fn in filters:
+            if fn(x):
+                selected.append(x)
+                break
+
+    return selected
