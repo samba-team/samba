@@ -24,7 +24,7 @@
 		<arg choice="opt">-W myworkgroup</arg>
 		<arg choice="opt">-U user</arg>
 		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">--v</arg>
+		<arg choice="opt">-V</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
