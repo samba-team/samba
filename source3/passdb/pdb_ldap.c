@@ -2195,6 +2195,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	filter = talloc_strdup(attr_list, "(uid=%u)");
 	if (!filter) {
 		status = NT_STATUS_NO_MEMORY;
+		TALLOC_FREE(escape_user);
 		goto fn_exit;
 	}
 	filter = talloc_all_string_sub(attr_list, filter, "%u", escape_user);

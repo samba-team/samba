@@ -1907,8 +1907,14 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 	}
 	if (timelimit != 0) {
 		struct timeval end;
+		bool ok;
+
 		end = timeval_current_ofs(timelimit * 1.5F, 0);
-		tevent_req_set_endtime(subreq, ev, end);
+		ok = tevent_req_set_endtime(subreq, ev, end);
+		if (!ok) {
+			tevent_req_oom(req);
+			return tevent_req_post(req, ev);
+		}
 	}
 	tevent_req_set_callback(subreq, tldap_search_done, req);
 	return req;
