@@ -296,6 +296,96 @@
 </refsect3>
 
 <refsect2>
+	<title>computer keytrust</title>
+	<para>Manage Key Credential Links for a computer.</para>
+	<para>This can populate, describe or delete  msDS-KeyCredentialLink attributes.</para>
+</refsect2>
+
+
+<refsect3>
+<title>computer keytrust add <replaceable>computername</replaceable>  <replaceable>public-key-or-certificate</replaceable>[options]</title>
+<para>Add a key-credential-link, which is a linked attribute that holds a public key in a binary field.
+</para>
+<para>
+  The second argument is a filename that should refer to a 2048 bit RSA key (or a certificate containing that key) in PEM or DER format. By default the encoding format will be detected automatically, but you can attempt to override this with <constant>--encoding</constant> option. Other types of public key are not supported, though the <constant>--force</constant> option can be used to add a non-2048 bit key.
+</para>
+
+<variablelist>
+<!--Options-->
+	  <varlistentry>
+	    <term>--link-target=DN</term>
+	    <listitem><para>link to this DN (default: the computer's DN)</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--encoding=ENCODING</term>
+	    <listitem><para>Key format, either <constant>pem</constant>,  <constant>der</constant>, or  <constant>auto</constant>. The default is <constant>auto</constant>, which is likely to detect the correct format in all circumstances.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--force</term>
+	    <listitem><para>proceed with operations that seems ill-fated</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+<refsect3>
+
+<title>computer keytrust delete <replaceable>computername</replaceable> [options]</title>
+<para>Delete a key-credential-link.
+</para>
+<para>The link to be deleted can be selected in a number of ways. <constant>--all</constant> will delete all key credential links for the computer (often there will only be one). The  <constant>--link-target</constant> option selects a key credential link based on the DN targeted by the link. The <constant>--fingerprint</constant> option selects a link to delete based on the key fingerprint. This is the SHA256 of the DER-encoded  key material, expressed as hex-pairs separated by colons. See <constant>computer keytrust view</constant> to get a list of links and their fingerprints.
+</para>
+
+<para>If more than one of <constant>--link-target</constant>, <constant>--fingerprint</constant>, and <constant>--all</constant> are used, links matched by any of them will be deleted.
+</para>
+
+<para>The <constant>--dry-run</constant> option will prevent links from being deleted, and instead indicate what would happen if it was omitted.
+</para>
+
+<variablelist>
+<!--Options-->
+	  <varlistentry>
+	    <term>--link-target=DN</term>
+	    <listitem><para>Delete this key credential link (a DN)</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--fingerprint=HH:HH:..</term>
+	    <listitem><para>Delete the key credential link with this key fingerprint</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--all</term>
+	    <listitem><para>Delete all key credential links</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>-n, --dry-run</term>
+	    <listitem><para>Do nothing but print what would happen</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+<refsect3>
+
+<title>computer keytrust view <replaceable>computername</replaceable> [options]</title>
+
+<para>View a computer's key credential links. This can be used to find a link's fingerprint and target DN for <title>computer keytrust delete</title>.
+
+The <constant>--verbose</constant> includes more, probably useless, information.
+</para>
+
+<variablelist>
+<!--Options-->
+	  <varlistentry>
+	    <term>-h, --help</term>
+	    <listitem><para>show this help message and exit</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>-v, --verbose</term>
+	    <listitem><para>Be verbose</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+
+<refsect2>
 	<title>contact</title>
 	<para>Manage contacts.</para>
 </refsect2>
@@ -621,7 +711,7 @@
 	return code will not indicate error. </para></listitem>
 	</varlistentry>
 	</variablelist>
-	
+
 </refsect3>
 
 
