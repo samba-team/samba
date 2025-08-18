@@ -231,16 +231,18 @@ static bool test_wbc_sidtostring(struct torture_context *tctx)
 	struct wbcDomainSid sid;
 	const char *sid_string = "S-1-5-32";
 	char *sid_string2;
+	bool ret = true;
 
 	torture_assert_wbc_ok(tctx, wbcStringToSid(sid_string, &sid),
 			      "wbcStringToSid of %s failed", sid_string);
 	torture_assert_wbc_ok(tctx, wbcSidToString(&sid, &sid_string2),
 			      "wbcSidToString of %s failed", sid_string);
-	torture_assert_str_equal(tctx, sid_string, sid_string2,
+	torture_assert_str_equal_goto(tctx, sid_string, sid_string2, ret, done,
 		"sid strings differ");
+ done:
 	wbcFreeMemory(sid_string2);
 
-	return true;
+	return ret;
 }
 
 static bool test_wbc_guidtostring(struct torture_context *tctx)
