@@ -82,6 +82,7 @@
 #include "source3/librpc/gen_ndr/ads.h"
 #include "lib/util/time_basic.h"
 #include "libds/common/flags.h"
+#include "source3/smbd/globals.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -4934,5 +4935,15 @@ int lp_smb3_directory_leases(void)
 
 int lp_server_smb_encrypt(struct smbXsrv_connection *xconn, int snum)
 {
-	return lp__server_smb_encrypt(snum);
+	enum smb_encryption_setting enc = lp__server_smb_encrypt(snum);
+
+	if (xconn->transport.trusted_quic) {
+		/*
+		 * Our transport is already encrypted in a trustworthy
+		 * way, don't request SMB level double-encryption
+		 */
+		enc = MIN(enc, SMB_ENCRYPTION_IF_REQUIRED);
+	}
+
+	return enc;
 }
