@@ -213,7 +213,10 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		tevent_fd_set_auto_close(state->fde_status);
 
 		if (!timeval_is_zero(&endtime)) {
-			tevent_req_set_endtime(req, ev, endtime);
+			bool ok = tevent_req_set_endtime(req, ev, endtime);
+			if (!ok) {
+				return tevent_req_post(req, ev);
+			}
 		}
 
 		return req;
