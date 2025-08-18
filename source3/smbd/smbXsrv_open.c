@@ -307,10 +307,6 @@ static void smbXsrv_open_global_lookup_fn(struct db_record *rec,
 							 key,
 							 val,
 							 &state->global);
-	if (!NT_STATUS_IS_OK(state->status)) {
-		return;
-	}
-	return;
 }
 
 static NTSTATUS smbXsrv_open_global_lookup(
