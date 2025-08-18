@@ -33,6 +33,7 @@
  * SUCH DAMAGE.
  */
 
+#include "hdb_asn1.h"
 #include "kdc_locl.h"
 
 #ifdef PKINIT
@@ -384,6 +385,85 @@ get_dh_param(krb5_context context,
     return ret;
 }
 
+/**
+ * @brief Check to see if the certificate's public key matches any
+ *        of the trusted keys for this client.
+ *
+ * @param context[in] krb5_context
+ * @param client[in]  client hdb record
+ * @param cert[in]    certificate used to sign the request.
+ *
+ * @return 0 no error
+ *         KRB5_KDC_ERR_CLIENT_NOT_TRUSTED certificate public key does not
+ *                                         match any of the trusted keys for
+ *                                         this client
+ *         otherwise an error occurred processing the request.
+ */
+static krb5_error_code
+pk_check_key_trust( krb5_context context, hdb_entry *client, hx509_cert *cert)
+{
+
+    krb5_error_code ret = 0;
+    SubjectPublicKeyInfo spki;
+    HDB_extension *ext = NULL;
+    krb5_data buf;
+    size_t size = 0;
+    HDB_Ext_KeyTrust keys;
+    unsigned int i = 0;
+    krb5_boolean matched = FALSE;
+
+    memset(&spki, 0, sizeof(spki));
+    memset(&buf, 0, sizeof(buf));
+    memset(&keys, 0, sizeof(keys));
+
+    ext = hdb_find_extension(client, choice_HDB_extension_data_key_trust);
+    if (ext == NULL) {
+	ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
+	krb5_set_error_message(context, ret, "Client has no public keys");
+	goto out;
+    }
+    ret = hx509_cert_get_SPKI(context->hx509ctx, *cert, &spki);
+    if (ret) {
+	ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
+	krb5_set_error_message(
+	    context, ret, "Unable to get certificate public key");
+	goto out1;
+    }
+
+    /*
+     * Does the certificates public key match any of the trusted public
+     * keys for this client?
+     */
+    ASN1_MALLOC_ENCODE(
+	SubjectPublicKeyInfo, buf.data , buf.length, &spki, &size, ret);
+    if (ret) {
+	krb5_set_error_message(
+	    context, ret, "Unable to encode certificate public key");
+	goto out2;
+    }
+
+    keys = ext->data.u.key_trust;
+    for (i = 0; i < keys.len; i++) {
+	if (der_heim_octet_string_cmp(&buf, &keys.val[i].pub_key) == 0) {
+	    matched = TRUE;
+	    break;
+	}
+    }
+    if (!matched) {
+	ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
+	krb5_set_error_message(
+	    context, ret, "Client public keys do not match");
+    }
+    der_free_octet_string(&buf);
+
+out2:
+    free_SubjectPublicKeyInfo(&spki);
+out1:
+    free_HDB_extension(ext);
+out:
+    return ret;
+}
+
 krb5_error_code
 _kdc_pk_rd_padata(astgs_request_t priv,
 		  const PA_DATA *pa,
@@ -634,21 +714,64 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 				      &eContentType,
 				      &eContent,
 				      &signer_certs);
-	if (ret) {
+	if (ret == 0) {
+	    if (signer_certs) {
+		ret = hx509_get_one_cert(
+		    context->hx509ctx, signer_certs, &cp->cert);
+		hx509_certs_free(&signer_certs);
+	    }
+	    if (ret) {
+		goto out;
+	    }
+	} else if (ret == HX509_CMS_NO_RECIPIENT_CERTIFICATE ||
+		   ret == HX509_ISSUER_NOT_FOUND) {
+	    /*
+	     * Certificate not in the chain of trust,
+	     * however it could be a self signed certificate for key trust
+	     * logon.
+	    */
+	    int f = flags;
+	    f |= HX509_CMS_VS_NO_VALIDATE;
+	    ret = hx509_cms_verify_signed(context->hx509ctx,
+					  cp->verify_ctx,
+					  f,
+					  signed_content.data,
+					  signed_content.length,
+					  NULL,
+					  kdc_identity->certpool,
+					  &eContentType,
+					  &eContent,
+					  &signer_certs);
+	    if (ret != 0) {
+		char *s = hx509_get_error_string(context->hx509ctx, ret);
+		krb5_warnx(context,
+			   "PKINIT: failed to verify signature: %s: %d",
+			   s,
+			   ret);
+		free(s);
+		goto out;
+	    }
+	    if (signer_certs == NULL) {
+		ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
+		goto out;
+	    }
+	    ret = hx509_get_one_cert(
+		context->hx509ctx, signer_certs, &cp->cert);
+	    hx509_certs_free(&signer_certs);
+	    if (ret != 0) {
+		goto out;
+	    }
+	    ret = pk_check_key_trust(context, client, &cp->cert);
+	    if (ret) {
+		goto out;
+	    }
+	} else {
 	    char *s = hx509_get_error_string(context->hx509ctx, ret);
 	    krb5_warnx(context, "PKINIT: failed to verify signature: %s: %d",
 		       s, ret);
 	    free(s);
 	    goto out;
 	}
-
-	if (signer_certs) {
-	    ret = hx509_get_one_cert(context->hx509ctx, signer_certs,
-				     &cp->cert);
-	    hx509_certs_free(&signer_certs);
-	}
-	if (ret)
-	    goto out;
     }
 
     /* Signature is correct, now verify the signed message */

@@ -29,6 +29,7 @@ gen_files_hdb = \
 	asn1_HDB_Ext_Constrained_delegation_acl.c \
 	asn1_HDB_Ext_KeyRotation.c \
 	asn1_HDB_Ext_KeySet.c \
+	asn1_HDB_Ext_KeyTrust.c \
 	asn1_HDB_Ext_Lan_Manager_OWF.c \
 	asn1_HDB_Ext_Password.c \
 	asn1_HDB_Ext_PKINIT_acl.c \

@@ -192,6 +192,10 @@ KeyRotation ::= SEQUENCE {
 
 HDB-Ext-KeyRotation ::= SEQUENCE SIZE (1..3) OF KeyRotation
 
+HDB-Ext-KeyTrust ::= SEQUENCE OF SEQUENCE {
+	pub_key[0] OCTET STRING
+}
+
 HDB-extension ::= SEQUENCE {
         mandatory[0]    BOOLEAN,        -- kdc MUST understand this extension,
                                         --   if not the whole entry must
@@ -213,6 +217,7 @@ HDB-extension ::= SEQUENCE {
 		principal-id[13]		INTEGER(-9223372036854775808..9223372036854775807),
 		key-rotation[14]		HDB-Ext-KeyRotation,
 		krb5-config[15]		        OCTET STRING,
+		key-trust[16]			HDB-Ext-KeyTrust,
 		...
 	},
 	...

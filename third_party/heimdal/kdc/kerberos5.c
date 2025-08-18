@@ -32,6 +32,7 @@
  */
 
 #include "kdc_locl.h"
+#include "krb5_err.h"
 
 #ifdef TIME_T_SIGNED
 #if SIZEOF_TIME_T == 4
@@ -558,8 +559,10 @@ pa_pkinit_validate(astgs_request_t r, const PA_DATA *pa)
 
     ret = _kdc_pk_rd_padata(r, pa, &pkp);
     if (ret || pkp == NULL) {
-	if (ret == HX509_CERT_REVOKED) {
-	    ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;	
+	if (ret == HX509_CERT_REVOKED ||
+	    ret == KRB5_KDC_ERR_CLIENT_NOT_TRUSTED) {
+
+	    ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
 	} else {
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 	}
