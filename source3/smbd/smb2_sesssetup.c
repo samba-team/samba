@@ -255,12 +255,12 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->global->signing_flags = SMBXSRV_SIGNING_REQUIRED;
 	}
 
-	if ((lp_server_smb_encrypt(-1) >= SMB_ENCRYPTION_DESIRED) &&
+	if ((lp_server_smb_encrypt(xconn, -1) >= SMB_ENCRYPTION_DESIRED) &&
 	    (xconn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
 		x->global->encryption_flags = SMBXSRV_ENCRYPTION_DESIRED;
 	}
 
-	if (lp_server_smb_encrypt(-1) == SMB_ENCRYPTION_REQUIRED) {
+	if (lp_server_smb_encrypt(xconn, -1) == SMB_ENCRYPTION_REQUIRED) {
 		x->global->encryption_flags = SMBXSRV_ENCRYPTION_REQUIRED |
 			SMBXSRV_ENCRYPTION_DESIRED;
 	}

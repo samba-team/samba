@@ -1805,7 +1805,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					return;
 				}
 
-				if (lp_server_smb_encrypt(SNUM(conn)) ==
+				if (lp_server_smb_encrypt(xconn, SNUM(conn)) ==
 				    SMB_ENCRYPTION_OFF) {
 					reply_nterror(
 						req,

@@ -2,7 +2,7 @@
 		 context="S"
 		 type="enum"
 		 enumlist="enum_smb_encryption_vals"
-		 function="server_smb_encrypt"
+		 function="_server_smb_encrypt"
 		 synonym="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

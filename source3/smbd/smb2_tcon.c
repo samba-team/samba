@@ -306,13 +306,13 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		TALLOC_FREE(proxy);
 	}
 
-	if ((lp_server_smb_encrypt(snum) >= SMB_ENCRYPTION_DESIRED) &&
+	if ((lp_server_smb_encrypt(conn, snum) >= SMB_ENCRYPTION_DESIRED) &&
 	    (conn->smb2.server.cipher != 0))
 	{
 		encryption_desired = true;
 	}
 
-	if (lp_server_smb_encrypt(snum) == SMB_ENCRYPTION_REQUIRED) {
+	if (lp_server_smb_encrypt(conn, snum) == SMB_ENCRYPTION_REQUIRED) {
 		encryption_desired = true;
 		encryption_required = true;
 	}

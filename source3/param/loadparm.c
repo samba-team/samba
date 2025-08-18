@@ -249,7 +249,7 @@ static const struct loadparm_service _sDefault =
 	.aio_read_size = 1,
 	.aio_write_size = 1,
 	.map_readonly = MAP_READONLY_NO,
-	.server_smb_encrypt = SMB_ENCRYPTION_DEFAULT,
+	._server_smb_encrypt = SMB_ENCRYPTION_DEFAULT,
 	.kernel_share_modes = false,
 	.durable_handles = true,
 	.check_parent_directory_delete_on_close = false,
@@ -4928,4 +4928,9 @@ int lp_smb3_directory_leases(void)
 	dirleases &= lp_oplocks(GLOBAL_SECTION_SNUM);
 	dirleases &= !lp_kernel_oplocks(GLOBAL_SECTION_SNUM);
 	return dirleases;
+}
+
+int lp_server_smb_encrypt(struct smbXsrv_connection *xconn, int snum)
+{
+	return lp__server_smb_encrypt(snum);
 }

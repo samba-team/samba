@@ -1,6 +1,7 @@
 <samba:parameter name="server smb encrypt"
 		 context="S"
 		 type="enum"
+		 function="_server_smb_encrypt"
 		 enumlist="enum_smb_encryption_vals"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

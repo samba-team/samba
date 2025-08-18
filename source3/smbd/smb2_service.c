@@ -535,10 +535,10 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	/* Case options for the share. */
 	conn_setup_case_options(conn);
 
-	conn->encrypt_level = lp_server_smb_encrypt(snum);
+	conn->encrypt_level = lp_server_smb_encrypt(xconn, snum);
 
 	if ((conn->encrypt_level > SMB_ENCRYPTION_OFF) &&
-	    (lp_server_smb_encrypt(-1) == SMB_ENCRYPTION_OFF)) {
+	    (lp_server_smb_encrypt(xconn, -1) == SMB_ENCRYPTION_OFF)) {
 
 		if (conn->encrypt_level == SMB_ENCRYPTION_REQUIRED) {
 			DBG_ERR("Service [%s] requires encryption, but "

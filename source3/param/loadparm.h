@@ -72,6 +72,9 @@ enum samba_weak_crypto lp_weak_crypto(void);
 bool lp_strict_rename(int snum);
 int lp_smb3_directory_leases(void);
 
+struct smbXsrv_connection;
+int lp_server_smb_encrypt(struct smbXsrv_connection *xconn, int snum);
+
 int lp_wi_scan_global_parametrics(
 	const char *regex, size_t max_matches,
 	bool (*cb)(const char *string, regmatch_t matches[],
