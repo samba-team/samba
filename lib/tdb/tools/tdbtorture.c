@@ -374,12 +374,12 @@ int main(int argc, char * const *argv)
 		goto done;
 	}
 
-	pids = (pid_t *)calloc(sizeof(pid_t), num_procs);
+	pids = (pid_t *)calloc(num_procs, sizeof(pid_t));
 	if (pids == NULL) {
 		perror("Unable to allocate memory for pids");
 		exit(1);
 	}
-	done = (int *)calloc(sizeof(int), num_procs);
+	done = (int *)calloc(num_procs, sizeof(int));
 	if (done == NULL) {
 		perror("Unable to allocate memory for done");
 		exit(1);
