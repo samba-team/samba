@@ -37,13 +37,20 @@ jobs:
             docbook-xml docbook-xsl libkeyutils-dev xz-utils libnsl-dev libtirpc-dev
           pkg-config --modversion gpgme
           python3 -c "import gpg; print('gpg py ok')"
-          
+
+      - name: Linux build
+        if: runner.os == 'Linux'
+        run: |
+          ./configure --without-acl-support --without-gettext --bundled-libraries=ALL
+          make -j$(nproc)
+
       - name: macOS deps + build
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew reinstall gpgme libassuan libgpg-error gettext
-          brew install gpgmepy gnupg gnutls popt python pkg-config openldap lmdb jansson libtirpc flex bison cups libarchive dbus glib autoconf automake libtool git gdb perl cpanminus swig krb5 readline libxcrypt icu4c utf8proc cmocka openssl@3 python-markdown
+          for pkg in gpgme libassuan libgpg-error gettext gpgmepy gnupg gnutls popt python pkg-config openldap lmdb jansson libtirpc flex bison cups libarchive dbus glib autoconf automake libtool git gdb perl cpanminus swig krb5 readline libxcrypt icu4c utf8proc cmocka openssl@3 python-markdown; do
+            brew list "$pkg" >/dev/null 2>&1 || brew install "$pkg"
+          done
           cpanm Parse::Yapp
 
           B=$(brew --prefix)
@@ -102,3 +109,28 @@ jobs:
           ./configure --without-acl-support --without-gettext --bundled-libraries=ALL
 
           make JOBS="$(sysctl -n hw.ncpu)"
+
+      - name: Archive
+        id: pack
+        shell: bash
+        run: |
+          set -e
+          mkdir -p out
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            find bin -type f -perm -111 -print0 | xargs -0 -I{} cp {} out/ || true
+          else
+            find bin -type f -executable -print0 | xargs -0 -I{} cp {} out/ || true
+          fi
+          if [ -n "$(ls -A out 2>/dev/null)" ]; then
+            tar -czf "samba-${{ matrix.os }}.tar.gz" -C out .
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ steps.pack.outputs.created == 'true' }}
+        with:
+          name: samba-${{ matrix.os }}
+          path: samba-${{ matrix.os }}.tar.gz
+          if-no-files-found: error
