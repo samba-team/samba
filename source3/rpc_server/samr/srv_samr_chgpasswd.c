@@ -201,18 +201,24 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 
 	/* Make slave stdin/out/err of child. */
 
-	if (dup2(slave, STDIN_FILENO) != STDIN_FILENO)
+	if ((slave != STDIN_FILENO) &&
+	    (dup2(slave, STDIN_FILENO) != STDIN_FILENO))
 	{
+		close(slave);
 		DEBUG(3, ("Could not re-direct stdin\n"));
 		return (False);
 	}
-	if (dup2(slave, STDOUT_FILENO) != STDOUT_FILENO)
+	if ((slave != STDOUT_FILENO) &&
+	    (dup2(slave, STDOUT_FILENO) != STDOUT_FILENO))
 	{
+		close(slave);
 		DEBUG(3, ("Could not re-direct stdout\n"));
 		return (False);
 	}
-	if (dup2(slave, STDERR_FILENO) != STDERR_FILENO)
+	if ((slave != STDERR_FILENO) &&
+	    (dup2(slave, STDERR_FILENO) != STDERR_FILENO))
 	{
+		close(slave);
 		DEBUG(3, ("Could not re-direct stderr\n"));
 		return (False);
 	}
