@@ -11,7 +11,7 @@ NODEMAP
 2       192.168.20.43   0x0
 EOF
 
-result_filter ()
+result_filter()
 {
 	_weekday="[A-Z][a-z][a-z]"
 	_month="[A-Z][a-z][a-z]"
@@ -21,8 +21,8 @@ result_filter ()
 	_date_time="${_weekday} ${_month}  *${_date} ${_time} ${_year}"
 	_duration="(000 00:00:[0-9][0-9])"
 	sed -e "s|${_date_time}\$|DATE/TIME|" \
-	    -e "s|[.0-9]* seconds|SEC seconds|" \
-	    -e "s|${_duration}|(DURATION)|"
+		-e "s|[.0-9]* seconds|SEC seconds|" \
+		-e "s|${_duration}|(DURATION)|"
 }
 
 
