@@ -32,9 +32,16 @@ Initial version of smb_prometheus_endpoint
 ------------------------------------------
 todo
 
-samba-tool improvements
------------------------
-todo
+samba-tool domain backup --no-secrets avoids confidential attributes
+--------------------------------------------------------------------
+
+The --no-secrets option creates a back-up without secret attributes
+(e.g. passwords), suitable for use in a lab domain. Until now it could
+still contain confidential attributes, including BitLocker recovery
+data and KDS root keys. Objects in the classes msKds-ProvRootKey,
+msFVE-RecoveryInformation, and msTPM-InformationObject will now be
+entirely removed from the backup, as these objects are required by
+schema to have confidential attributes and are no use without them.
 
 CTDB changes
 ------------
