@@ -3445,7 +3445,9 @@ static void cli_full_connection_creds_enc_start(struct tevent_req *req)
 				"SMB3 encryption - failing connect\n");
 			tevent_req_nterror(req, status);
 			return;
-		} else if (!NT_STATUS_IS_OK(status)) {
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("Encryption required and "
 				"setup failed with error %s.\n",
 				nt_errstr(status));
