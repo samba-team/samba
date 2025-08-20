@@ -24,11 +24,11 @@ required_result()
 			# test is run in a sub-shell, which strips
 			# trailing newlines.
 			# shellcheck disable=SC2116
-			required_output=$(echo "$2")
+			required_output=$(echo "$2" | result_filter)
 		fi
 	else
 		if ! tty -s; then
-			required_output=$(cat)
+			required_output=$(cat | result_filter)
 		else
 			required_output=""
 		fi

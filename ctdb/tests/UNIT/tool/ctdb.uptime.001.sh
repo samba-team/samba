@@ -11,6 +11,7 @@ NODEMAP
 2       192.168.20.43   0x0
 EOF
 
+# Don't panic.  tests/scripts/common.sh sets LANG=C  :-)
 result_filter()
 {
 	_weekday="[A-Z][a-z][a-z]"
@@ -25,12 +26,11 @@ result_filter()
 		-e "s|${_duration}|(DURATION)|"
 }
 
-
 ok <<EOF
-Current time of node 0        :                DATE/TIME
-Ctdbd start time              : (DURATION) DATE/TIME
-Time of last recovery/failover: (DURATION) DATE/TIME
-Duration of last recovery/failover: SEC seconds
+Current time of node 0        :                Wed Aug 20 11:58:40 2025
+Ctdbd start time              : (000 00:00:32) Wed Aug 20 11:58:08 2025
+Time of last recovery/failover: (000 00:00:27) Wed Aug 20 11:58:13 2025
+Duration of last recovery/failover: 0.033143 seconds
 EOF
 
 simple_test

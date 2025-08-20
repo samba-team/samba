@@ -256,9 +256,9 @@ EOF
 	done
 
 	ok <<EOF
-===== Start of debug locks PID=PID =====
+===== Start of debug locks PID=1234 =====
 $_out
-===== End of debug locks PID=PID =====
+===== End of debug locks PID=1234 =====
 EOF
 
 	# shellcheck disable=SC2154

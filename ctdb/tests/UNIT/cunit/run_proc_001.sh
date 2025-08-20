@@ -124,18 +124,10 @@ Child = PID
 EOF
 unit_test run_proc_test 1 -1 "$prog"
 
-result_filter ()
-{
-	_header="  *PID  *TTY  *TIME  *CMD"
-	_header2=" *PID  *TT  *STAT  *TIME  *COMMAND"
-	sed -e "s|^${_header}|HEADER|" -e "s|^${_header2}|HEADER|"
-}
-
 pid=$(cat "$pidfile")
 required_result 1 <<EOF
-HEADER
 EOF
-unit_test ps -p "$pid"
+unit_test ps -p "$pid" -o comm=
 
 # Redirect stdin
 cat >"$prog" <<EOF
