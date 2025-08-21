@@ -1,0 +1,40 @@
+<samba:parameter name="client smb encryption over quic"
+		 context="G"
+		 type="boolean"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    This parameter controls whether the client requires SMB level
+    encryption even when the transport is already encrypted via QUIC
+    and thus TLS.
+  </para>
+  <para>
+    <parameter>client smb encrypt</parameter> controls the use of the
+    encryption mechanism introduced with SMB3.0. If <parameter>client
+    smb encryption over quic</parameter> value is set to
+    <emphasis>no</emphasis>, <emphasis>and</emphasis> the client
+    connects via a validated QUIC (and thus TLS) connection, the
+    client ignores the requirements from the parameter
+    <parameter>client smb encrypt</parameter> to avoid double
+    encryption.
+  </para>
+  <para>
+    If <parameter>client smb encryption over quic</parameter> is left
+    at its default <emphasis>yes</emphasis>, the client connects over
+    normal TCP, or the <parameter>tls verify peer</parameter> was set
+    to anything less than <constant>ca_and_name</constant>, the
+    requirements from <parameter>client smb encrypt</parameter> apply.
+  </para>
+  <para>
+    Note that the QUIC-layer encryption is based on a TLS-level
+    certificate presented by the server. The SMB-layer encryption is
+    based on individual user sessions and as such essentially on
+    initial user credentials such as the user's password or equivalent
+    credentials used for logging on to a Windows session. This might
+    influence your security assessment regarding the <parameter>client
+    smb encryption over quic</parameter> parameter.
+  </para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
