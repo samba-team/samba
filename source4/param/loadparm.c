@@ -61,9 +61,11 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 		.max_credits = WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK,
 		.transports = smb_transports_parse("client smb transports",
 			lpcfg_client_smb_transports(lp_ctx)),
-		.smb3_capabilities = smb311_capabilities_parse("client",
+		.smb3_capabilities = smb311_capabilities_parse(
+			"client",
 			lpcfg_client_smb3_signing_algorithms(lp_ctx),
-			lpcfg_client_smb3_encryption_algorithms(lp_ctx)),
+			lpcfg_client_smb3_encryption_algorithms(lp_ctx),
+			lpcfg_client_smb_encryption_over_quic(lp_ctx)),
 	};
 }
 

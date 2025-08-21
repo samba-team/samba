@@ -71,14 +71,17 @@ struct smb3_encryption_capabilities {
 struct smb311_capabilities {
 	struct smb3_signing_capabilities signing;
 	struct smb3_encryption_capabilities encryption;
+	bool smb_encryption_over_quic;
 };
 
 const char *smb3_signing_algorithm_name(uint16_t algo);
 const char *smb3_encryption_algorithm_name(uint16_t algo);
 
-struct smb311_capabilities smb311_capabilities_parse(const char *role,
-				const char * const *signing_algos,
-				const char * const *encryption_algos);
+struct smb311_capabilities smb311_capabilities_parse(
+	const char *role,
+	const char *const *signing_algos,
+	const char *const *encryption_algos,
+	bool smb_encryption_over_quic);
 
 NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
 				   const char *debug_prefix,
