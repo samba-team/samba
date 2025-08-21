@@ -88,9 +88,9 @@ Output (Exit status: ${_rc}):
 --------------------------------------------------
 EOF
 		# Avoid echo, which might expand unintentional escapes
-		printf '%s\n' "$_out" |
-			result_filter |
-			cat "${CTDB_TEST_CAT_RESULTS_OPTS:--}"
+		_fout=$(printf '%s\n' "$_out" | result_filter 2>/dev/null) ||
+			_fout="$_out"
+		printf '%s\n' "$_fout" | cat "${CTDB_TEST_CAT_RESULTS_OPTS:--}"
 	fi
 
 	if ! $_passed; then
@@ -165,7 +165,8 @@ result_check()
 	_rc=$?
 
 	# Avoid echo, which might expand unintentional escapes
-	_fout=$(printf '%s\n' "$_out" | result_filter)
+	_fout=$(printf '%s\n' "$_out" | result_filter 2>/dev/null) ||
+		_fout="$_out"
 
 	if [ "$_fout" = "$required_output" ] &&
 		[ "$_rc" = "$required_rc" ]; then
