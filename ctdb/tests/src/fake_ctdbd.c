@@ -4572,8 +4572,8 @@ static void signal_handler(int sig)
 	exit(0);
 }
 
-static void start_server(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			 struct ctdbd_context *ctdb, int fd, int pfd)
+static int start_server(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			struct ctdbd_context *ctdb, int fd, int pfd)
 {
 	struct tevent_req *req;
 	int ret = 0;
@@ -4598,17 +4598,16 @@ static void start_server(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	tevent_req_poll(req, ev);
 
 	server_recv(req, &ret);
-	if (ret != 0) {
-		exit(1);
-	}
+
+	return ret;
 }
 
 int main(int argc, const char *argv[])
 {
-	TALLOC_CTX *mem_ctx;
-	struct ctdbd_context *ctdb;
-	struct tevent_context *ev;
-	poptContext pc;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ctdbd_context *ctdb = NULL;
+	struct tevent_context *ev = NULL;
+	poptContext pc = NULL;
 	int opt, fd, ret, pfd[2];
 	ssize_t len;
 	pid_t pid;
@@ -4618,79 +4617,79 @@ int main(int argc, const char *argv[])
 			    POPT_CONTEXT_KEEP_FIRST);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		fprintf(stderr, "Invalid option %s\n", poptBadOption(pc, 0));
-		exit(1);
+		goto fail;
 	}
 
 	if (options.dbdir == NULL) {
 		fprintf(stderr, "Please specify database directory\n");
 		poptPrintHelp(pc, stdout, 0);
-		exit(1);
+		goto fail;
 	}
 
 	if (options.sockpath == NULL) {
 		fprintf(stderr, "Please specify socket path\n");
 		poptPrintHelp(pc, stdout, 0);
-		exit(1);
+		goto fail;
 	}
 
 	if (options.pidfile == NULL) {
 		fprintf(stderr, "Please specify pid file\n");
 		poptPrintHelp(pc, stdout, 0);
-		exit(1);
+		goto fail;
 	}
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		fprintf(stderr, "Memory error\n");
-		exit(1);
+		goto fail;
 	}
 
 	ret = logging_init(mem_ctx, "file:", options.debuglevel, "fake-ctdbd");
 	if (ret != 0) {
 		fprintf(stderr, "Invalid debug level\n");
 		poptPrintHelp(pc, stdout, 0);
-		exit(1);
+		goto fail;
 	}
 
 	ctdb = ctdbd_setup(mem_ctx, options.dbdir);
 	if (ctdb == NULL) {
-		exit(1);
+		goto fail;
 	}
 
 	if (! ctdbd_verify(ctdb)) {
-		exit(1);
+		goto fail;
 	}
 
 	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		fprintf(stderr, "Memory error\n");
-		exit(1);
+		goto fail;
 	}
 
 	fd = socket_init(options.sockpath);
 	if (fd == -1) {
-		exit(1);
+		goto fail;
 	}
 
 	ret = pipe(pfd);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to create pipe\n");
 		cleanup();
-		exit(1);
+		goto fail;
 	}
 
 	pid = fork();
 	if (pid == -1) {
 		fprintf(stderr, "Failed to fork\n");
 		cleanup();
-		exit(1);
+		goto fail;
 	}
 
 	if (pid == 0) {
 		/* Child */
 		close(pfd[0]);
-		start_server(mem_ctx, ev, ctdb, fd, pfd[1]);
-		exit(1);
+		ret = start_server(mem_ctx, ev, ctdb, fd, pfd[1]);
+		goto done;
 	}
 
 	/* Parent */
@@ -4702,7 +4701,7 @@ int main(int argc, const char *argv[])
 		fprintf(stderr, "len = %zi\n", len);
 		fprintf(stderr, "Failed to get message from child\n");
 		kill(pid, SIGTERM);
-		exit(1);
+		goto fail;
 	}
 
 	fp = fopen(options.pidfile, "w");
@@ -4710,10 +4709,17 @@ int main(int argc, const char *argv[])
 		fprintf(stderr, "Failed to open pid file %s\n",
 			options.pidfile);
 		kill(pid, SIGTERM);
-		exit(1);
+		goto fail;
 	}
 	fprintf(fp, "%d\n", pid);
 	fclose(fp);
 
-	return 0;
+	ret = 0;
+done:
+	(void)poptFreeContext(pc);
+	talloc_free(mem_ctx);
+	return ret;
+fail:
+	ret = 1;
+	goto done;
 }
