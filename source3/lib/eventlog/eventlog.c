@@ -193,8 +193,8 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32_t needed,
 	nbytes = 0;
 
 	DEBUG( 3,
-	       ( "MaxSize [%d] Retention [%d] Current Time [%u]  exp_time [%u]\n",
-		 MaxSize, Retention, (unsigned int)current_time, (unsigned int)exp_time ) );
+	       ( "MaxSize [%d] Retention [%d] Current Time [%ju]  exp_time [%ju]\n",
+		 MaxSize, Retention, (uintmax_t)current_time, (uintmax_t)exp_time ) );
 	DEBUG( 3,
 	       ( "Start Record [%u] End Record [%u]\n",
 		(unsigned int)start_record,
