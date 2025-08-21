@@ -149,6 +149,7 @@ struct smbXcli_conn {
 			uint16_t security_mode;
 			struct GUID guid;
 			struct smb311_capabilities smb3_capabilities;
+			bool requested_transport_level_security;
 		} client;
 
 		struct {
@@ -3577,6 +3578,14 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (conn->smb2.server.transport_trusted) {
+		/*
+		 * We as a client agreed with the server that quic
+		 * encryption is enough
+		 */
+		state->smb2.should_encrypt = false;
+	}
+
 	if (state->smb2.should_encrypt) {
 		state->smb2.should_sign = false;
 	}
@@ -5459,7 +5468,10 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 
 		verify_peer = conn->transport->verify_peer;
 
-		if (tstream_tls_verify_peer_trusted(verify_peer)) {
+		if (tstream_tls_verify_peer_trusted(verify_peer) &&
+		    !conn->smb2.client.smb3_capabilities
+			     .smb_encryption_over_quic)
+		{
 			uint8_t cap_buf[sizeof(uint32_t)];
 
 			PUSH_LE_U32(cap_buf,
@@ -5475,6 +5487,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 			if (!NT_STATUS_IS_OK(status)) {
 				return NULL;
 			}
+			conn->smb2.client
+				.requested_transport_level_security = true;
 		}
 
 		ok = convert_string_talloc(state,
@@ -5956,8 +5970,10 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		conn->smb2.server.cipher = cipher_selected;
 	}
 
-	transport_caps = smb2_negotiate_context_find(
-		state->out_ctx, SMB2_TRANSPORT_CAPABILITIES);
+	if (conn->smb2.client.requested_transport_level_security) {
+		transport_caps = smb2_negotiate_context_find(
+			state->out_ctx, SMB2_TRANSPORT_CAPABILITIES);
+	}
 	if (transport_caps != NULL) {
 		uint32_t caps;
 
