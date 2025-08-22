@@ -45,7 +45,8 @@ class SafeTarFileTestCase(TestCaseInTempDir):
         # If we have data_filter, we have a patched python to address
         # CVE-2007-4559.
         if hasattr(tarfile, "data_filter"):
-            self.assertRaises(tarfile.OutsideDestinationError,
+            self.assertRaises((tarfile.OutsideDestinationError,
+                               NotADirectoryError),
                               stf.extractall,
                               tarname)
         else:
