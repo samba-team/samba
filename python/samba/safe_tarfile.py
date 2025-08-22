@@ -28,9 +28,24 @@ class TarFile(UnsafeTarFile):
     """
 
     try:
-        # New in version 3.11.4 (also has been backported)
+        # In 3.8.18 (the last 3.8) and post 2023-08-22 versions of
+        # 3.9+ (including all of 3.12 and greater), Python's standard
+        # tarfile module uses the extraction_filter method for
+        # preventing path traversal. See:
+        #
         # https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extraction_filter
         # https://peps.python.org/pep-0706/
+        #
+        # The default filter is 'fully_trusted', which allows
+        # extraction outside the directory, but in Python 3.14 the
+        # default is expected to change to the stricter 'data' filter.
+        # The 'data' filter preserves no permissions so we select the
+        # intermediate 'tar' filter here which prevents escape but
+        # preserves permissions.
+        #
+        # When we no longer support versions less than 3.8 or 3.9, we
+        # should remove this whole try...except and just have this
+        # next line as the whole class body:
         extraction_filter = staticmethod(tarfile.tar_filter)
     except AttributeError:
         def extract(self, member, path="", set_attrs=True, *,
