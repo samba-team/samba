@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate release of Samba 4.23.  This is *not*
+This is the second release candidate release of Samba 4.23.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -88,6 +88,21 @@ smb.conf changes
   client smb transports                   New             tcp, nbt
   server smb transports                   New             tcp, nbt
   winbind varlink service                 New             no
+
+CHANGES SINCE 4.23.0rc1
+=======================
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 15896: libquic build fixes.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15844: getpwuid does not shift to new DC when current DC is down.
+   * BUG 15876: Windows security hardening locks out schannel'ed netlogon dc
+     calls like netr_DsRGetDCName.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 15896: libquic build fixes.
+
 
 KNOWN ISSUES
 ============
