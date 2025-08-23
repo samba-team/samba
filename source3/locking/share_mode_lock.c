@@ -155,6 +155,16 @@ static bool locking_init_internal(bool read_only)
 
 bool locking_init(void)
 {
+	struct server_id server_id;
+	NTSTATUS status;
+
+	server_id = messaging_server_id(global_messaging_context());
+	status = smbXsrv_version_global_init(&server_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smbXsrv_version_global_init() failed\n");
+		return false;
+	}
+
 	return locking_init_internal(false);
 }
 
