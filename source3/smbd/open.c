@@ -3816,7 +3816,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * which adds FILE_WRITE_DATA to open_access_mask.
 		 */
 		if (is_oplock_stat_open(open_access_mask) && lease == NULL) {
-			oplock_request = NO_OPLOCK;
+			oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 		}
 	}
 
@@ -5163,7 +5163,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		/*
 		 * No oplocks on directories, only leases
 		 */
-		oplock_request = NO_OPLOCK;
+		oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 	}
 
 	lck_state = (struct open_ntcreate_lock_state) {
@@ -6169,7 +6169,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if (req == NULL) {
-		oplock_request |= INTERNAL_OPEN_ONLY;
+		oplock_request = INTERNAL_OPEN_ONLY;
 	}
 
 	if (lease != NULL) {
