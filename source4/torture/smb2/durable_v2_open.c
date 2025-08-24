@@ -5890,6 +5890,872 @@ static bool test_persistent_leaselevels_so(struct torture_context *tctx,
 	return ret;
 }
 
+struct persistent_reconnect_contend_results {
+	/* Parameters for the first client's persistent open */
+	const char *held_lease;
+	const char *share_mode;
+	bool do_brlck;
+	const char *reconnect_lease;
+	const char *broken_to_lease;
+
+	/* Parameters for the second client's contending open */
+	uint32_t desired_access;
+	bool overwrite;
+	NTSTATUS status;
+	bool async;
+	const char *new_lease;
+	const char *new_granted;
+};
+
+#define RO (SEC_RIGHTS_FILE_READ)
+#define RW (SEC_RIGHTS_FILE_READ|SEC_RIGHTS_FILE_WRITE)
+#define RWD (SEC_RIGHTS_FILE_READ|SEC_RIGHTS_FILE_WRITE|SEC_STD_DELETE)
+
+static struct persistent_reconnect_contend_results contend_results_fo[] = {
+	/* L,	SM,	brlck,	RL,	BL,	DA,	DO,	status,				async,	NL,	NG */
+	{"",	"",	false,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	false,	"RH",	"R",	RO,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"",	false,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	false,	"RWH",	"RW",	RO,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	false,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	false,	"RH",	"RH",	RO,	false,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"R",	false,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	false,	"RWH",	"RH",	RO,	false,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RW",	false,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	false,	"RH",	"RH",	RO,	false,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RW",	false,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	false,	"RWH",	"RH",	RO,	false,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RWD",	false,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	false,	"RH",	"RH",	RO,	false,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RWD",	false,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	false,	"RWH",	"RH",	RO,	false,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{"",	"",	false,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	false,	"RH",	"R",	RO,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"",	false,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	false,	"RWH",	"RW",	RO,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	false,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	false,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	false,	"RH",	"",	RO,	true,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RW",	false,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	false,	"RWH",	"",	RO,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RWD",	false,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	false,	"RH",	"",	RO,	true,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RWD",	false,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	false,	"RWH",	"",	RO,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{"",	"",	false,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	false,	"RH",	"R",	RW,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"",	false,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	false,	"RWH",	"RW",	RW,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	false,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	false,	"RH",	"R",	RW,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"R",	false,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	false,	"RWH",	"RW",	RW,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	false,	"RH",	"RH",	RW,	false,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RW",	false,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	false,	"RWH",	"RH",	RW,	false,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RWD",	false,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	false,	"RH",	"RH",	RW,	false,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RWD",	false,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	false,	"RWH",	"RH",	RW,	false,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{"",	"",	false,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	false,	"RH",	"R",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"",	false,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	false,	"RWH",	"RW",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	false,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	false,	"RH",	"R",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"R",	false,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	false,	"RWH",	"RW",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	false,	"RH",	"",	RW,	true,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RW",	false,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	false,	"RWH",	"",	RW,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RWD",	false,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	false,	"RH",	"",	RW,	true,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RWD",	false,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	false,	"RWH",	"",	RW,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{"",	"",	false,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	false,	"RH",	"R",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"",	false,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	false,	"RWH",	"RW",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	false,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	false,	"RH",	"R",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"R",	false,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	false,	"RWH",	"RW",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	false,	"RH",	"R",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"RW",	false,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	false,	"RWH",	"RW",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	false,	"RH",	"RH",	RWD,	false,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RWD",	false,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	false,	"RWH",	"RH",	RWD,	false,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{"",	"",	false,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	false,	"RH",	"R",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"",	false,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	false,	"RWH",	"RW",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	false,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	false,	"RH",	"R",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"R",	false,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	false,	"RWH",	"RW",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	false,	"RH",	"R",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"RW",	"RW",	false,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	false,	"RWH",	"RW",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	false,	"RH",	"",	RWD,	true,	NT_STATUS_OK,			false,	"RWH",	"RH"},
+	{"RW",	"RWD",	false,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	false,	"RWH",	"",	RWD,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{"",	"",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"",	true,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	true,	"RWH",	"RW",	RO,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	true,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	true,	"RWH",	"RH",	RO,	false,	NT_STATUS_OK,			true,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RW",	true,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	true,	"RWH",	"RH",	RO,	false,	NT_STATUS_OK,			true,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	true,	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RWD",	true,	"RW",	"RW",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	true,	"RWH",	"RH",	RO,	false,	NT_STATUS_OK,			true,	"RWH",	""},
+	{"",	"",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"",	true,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	true,	"RWH",	"RW",	RO,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	true,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	/*
+	 * The next one has two bugs in Windows: return
+	 * STATUS_OBJECT_NAME_NOT_FOUND and breaks to RH instead of RW.
+	{"RWH",	"R",	true,	"RWH",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	true,	"RWH",	""},
+	 */
+	{"",	"RW",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RW",	true,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	true,	"RWH",	"",	RO,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RWD",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	true,	"",	"",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RWD",	true,	"RW",	"RW",	RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	true,	"RWH",	"",	RO,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"",	true,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	true,	"RWH",	"RW",	RW,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	true,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	true,	"RWH",	"RW",	RW,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RW",	true,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	true,	"RWH",	"RH",	RW,	false,	NT_STATUS_OK,			true,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	true,	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RWD",	true,	"RW",	"RW",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	true,	"RWH",	"RH",	RW,	false,	NT_STATUS_OK,			true,	"RWH",	""},
+	{"",	"",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"",	true,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	true,	"RWH",	"RW",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	true,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	true,	"RWH",	"RW",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RW",	true,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	true,	"RWH",	"",	RW,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"RWD",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	true,	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RWD",	true,	"RW",	"RW",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	true,	"RWH",	"",	RW,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+	{"",	"",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"",	true,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	true,	"RWH",	"RW",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	true,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	true,	"RWH",	"RW",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RW",	true,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	true,	"RWH",	"RW",	RWD,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	true,	"",	"",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RWD",	true,	"RW",	"RW",	RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	true,	"RWH",	"RH",	RWD,	false,	NT_STATUS_OK,			true,	"RWH",	""},
+	{"",	"",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"",	true,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"",	true,	"RWH",	"RW",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"R",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"R",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"R",	true,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"R",	true,	"RWH",	"RW",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RW",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RW",	true,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RW",	true,	"RWH",	"RW",	RWD,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RH",	"RWD",	true,	"",	"",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RW",	"RWD",	true,	"RW",	"RW",	RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"RWH",	"RWD",	true,	"RWH",	"",	RWD,	true,	NT_STATUS_OK,			true,	"RWH",	"RH"},
+
+	{NULL,	NULL,	false,	NULL,	NULL,	0,	false,	NT_STATUS_INTERNAL_ERROR,	false,	 NULL,	NULL}
+};
+
+static struct persistent_reconnect_contend_results contend_results_fo_win_broken[] = {
+	/*
+	 * The next one has a bug in Windows: it returns
+	 * STATUS_OBJECT_NAME_NOT_FOUND.
+	 */
+	{"RH",	"R",	false,	"RH",	"R",	RO,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	/*
+	 * The next one has two bugs in Windows: return
+	 * STATUS_OBJECT_NAME_NOT_FOUND and breaks to RH instead of NONE.
+	 */
+	{"RWH",	"R",	false,	"RWH",	"RW",	RO,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"RWH",	""},
+	{NULL,	NULL,	false,	NULL,	NULL,	0,	false,	NT_STATUS_INTERNAL_ERROR,	false,	 NULL,	NULL}
+};
+
+
+/*
+ * On a share with SMB2_SHARE_CAP_SCALEOUT the server doesn't grant W or H
+ * leases.
+ */
+static struct persistent_reconnect_contend_results contend_results_so[] = {
+	{"",	"",	false,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	false,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	false,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	false,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	false,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	false,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	false,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	false,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	false,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	false,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	false,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	false,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	false,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	false,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	false,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	false,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	false,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	false,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+
+	{"",	"",	true,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	true,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",     RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"R",	"R",    RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	true,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	true,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",     RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"R",	"R",    RO,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	true,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	true,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",     RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"R",	"R",    RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	true,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	true,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",     RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"R",	"R",    RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	true,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	true,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",     RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"R",	"R",    RWD,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"",	true,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"",	true,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"R",	true,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"R",	true,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RW",	true,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RW",	true,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"",	"RWD",	true,	"",	"",     RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+	{"R",	"RWD",	true,	"R",	"R",    RWD,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"RWH",	""},
+
+	{NULL,	NULL,	false,	NULL,	NULL,   0,	false,	NT_STATUS_INTERNAL_ERROR,	false,	 NULL,	NULL}
+};
+
+#undef RO
+#undef RW
+#undef RWD
+
+/*
+ * This tests trying to open a file with a disconnected persistent handle
+ * with various different lease levels, sharemodes and create disposition
+ * combinations.
+ *
+ * The client then disconnects and we try to open (contend) the now disconnected
+ * Persistent Handle from the first client. This will either fail with
+ * NT_STATUS_FILE_NOT_AVAILABLE or trigger a lease break which gets dispatched
+ * once the first client reconnects.
+ *
+ * The client must always be able to reconnect the disconnected open and the
+ * server guarantees that any operations which break W or H leases are blocked.
+ *
+ * The bottom line is:
+ *
+ * - incompatible opens without H-lease are blocked with
+ *   NT_STATUS_FILE_NOT_AVAILABLE
+ *
+ * - incompatible opens with a H lease trigger a lease break and are deferred
+ *   until the first client reconnects the handle
+ *
+ * - in addition to that, if the file has byterange locks the lease must include
+ *   W, otherwise contending opens are also blocked with
+ *   NT_STATUS_FILE_NOT_AVAILABLE
+ * */
+static bool test_persistent_reconnect_contended_do_one(
+		struct torture_context *tctx,
+		struct smb2_tree *_tree,
+		struct persistent_reconnect_contend_results *table,
+		int testnum)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smbcli_options options1 = _tree->session->transport->options;
+	struct smbcli_options options2 = _tree->session->transport->options;
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_request *req = NULL;
+	struct smb2_create io;
+	struct smb2_create io2;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+	struct smb2_lease *ls = NULL;
+	struct smb2_handle h1 = {};
+	struct smb2_handle rh = {};
+	struct smb2_handle h2 = {};
+	struct smb2_lock lck = {};
+	struct smb2_lock_element el[1];
+	uint64_t previous_session_id;
+	uint64_t lease1 = 1;
+	uint64_t lease2 = 2;
+	struct GUID create_guid = GUID_random();
+	char *fname = NULL;
+	int rc;
+	bool expect_break = false;
+	bool expect_acquire = false;
+	bool expect_block = false;
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	fname = talloc_asprintf(mem_ctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	status = torture_setup_simple_file(tctx, _tree, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_setup_simple_file failed\n");
+
+	torture_comment(tctx,
+			"%2d: "
+			"Lease [%-3s] "
+			"Sharemode [%-3s] "
+			"Brl [%s]. "
+			"Contend access [0x%0"PRIX32"] "
+			"Overwrite [%s] "
+			"Result [%18s]. "
+			"Reconnect [%-3s] "
+			"Break [%-3s]\n",
+			testnum,
+			table->held_lease,
+			table->share_mode,
+			table->do_brlck ? "yes" : "no ",
+			table->desired_access,
+			table->overwrite ? "yes" : "no ",
+			nt_errstr(table->status) + 10,
+			table->reconnect_lease,
+			table->broken_to_lease);
+
+	options1.client_guid = GUID_random();
+	options2.client_guid = GUID_random();
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options1, &tree1);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	previous_session_id = smb2cli_session_current_id(
+		tree1->session->smbXcli);
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+
+	if (smb2_util_lease_state(table->held_lease) == SMB2_LEASE_READ &&
+	    smb2_util_lease_state(table->reconnect_lease) == SMB2_LEASE_READ)
+	{
+		expect_acquire = true;
+	}
+
+	if (smb2_util_lease_state(table->reconnect_lease) !=
+	    smb2_util_lease_state(table->broken_to_lease))
+	{
+		expect_break = true;
+	}
+
+	if (NT_STATUS_EQUAL(table->status, NT_STATUS_FILE_NOT_AVAILABLE)) {
+		expect_block = true;
+	}
+
+	/*
+	 * Get persistent open
+	 */
+	if (table->held_lease[0] != '\0') {
+		ls = &ls1;
+	} else {
+		ls = NULL;
+	}
+	smb2_lease_v2_create_share(&io,
+				   ls,
+				   false,
+				   fname,
+				   smb2_util_share_access(table->share_mode),
+				   lease1,
+				   NULL,
+				   smb2_util_lease_state(table->held_lease),
+				   0);
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = true;
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree1, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io.out.file.handle;
+	rh = h1;
+
+	torture_assert_goto(
+		tctx, io.out.persistent_open == true,
+		ret, done, "Persistent open not granted\n");
+
+	if (io.in.lease_request_v2 != NULL) {
+		torture_assert_int_equal_goto(
+			tctx,
+			io.out.oplock_level,
+			SMB2_OPLOCK_LEVEL_LEASE,
+			ret, done,
+			"Bad lease level\n");
+		torture_assert_int_equal_goto(
+			tctx,
+			io.out.lease_response_v2.lease_state,
+			smb2_util_lease_state(table->held_lease),
+			ret, done,
+			"Bad lease level\n");
+	}
+
+	if (table->do_brlck) {
+		ZERO_ARRAY(el);
+		ZERO_STRUCT(lck);
+		el[0].offset = 0;
+		el[0].length = 1;
+		el[0].flags = SMB2_LOCK_FLAG_EXCLUSIVE |
+			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+		lck.in.locks = el;
+		lck.in.lock_count = 1;
+		lck.in.file.handle = h1;
+
+		status = smb2_lock(tree1, &lck);
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, NT_STATUS_OK,
+			ret, done, "smb2_lock failed\n");
+	}
+
+	/*
+	 * Now disconnect
+	 */
+	TALLOC_FREE(tree1);
+	ZERO_STRUCT(h1);
+	smb_msleep(1000);
+
+	/*
+	 * Contend durable open with second open from second client
+	 */
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options2, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2_lease_v2_create(&io2, &ls2, false, fname,
+			     lease2, NULL,
+			     smb2_util_lease_state(table->new_lease), 0);
+	io2.in.desired_access = table->desired_access;
+	if (table->overwrite) {
+		io2.in.create_disposition = NTCREATEX_DISP_OVERWRITE;
+	}
+
+	req = smb2_create_send(tree2, &io2);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "smb2_create_send failed\n");
+
+	while (!req->cancel.can_cancel &&
+	       (req->state < SMB2_REQUEST_DONE))
+	{
+		rc = tevent_loop_once(req->transport->ev);
+		torture_assert_goto(tctx, rc == 0, ret, done,
+				    "tevent_loop_once failed\n");
+	}
+
+	if (table->async) {
+		torture_assert_goto(tctx, req->state < SMB2_REQUEST_DONE,
+				    ret, done,
+				    "Expected async interim response\n");
+	} else {
+		torture_assert_goto(tctx, req->state == SMB2_REQUEST_DONE,
+				    ret, done,
+				    "Expected response\n");
+	}
+
+	/*
+	 * Now reconnect first client and the persistent handle
+	 */
+	ret = torture_smb2_connection_ext(tctx, previous_session_id,
+					  &options1, &tree1);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+
+	if (table->held_lease[0] != '\0') {
+		ls = &ls1;
+	} else {
+		ls = NULL;
+	}
+	smb2_lease_v2_create_share(&io,
+				   ls,
+				   false,
+				   fname,
+				   smb2_util_share_access(table->share_mode),
+				   lease1,
+				   NULL,
+				   smb2_util_lease_state(table->held_lease),
+				   128);
+	io.in.durable_handle_v2 = &rh;
+	io.in.create_guid = create_guid;
+	io.in.persistent_open = true;
+	status = smb2_create(tree1, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io.out.file.handle;
+
+	if (io.in.lease_request_v2 != NULL) {
+		int expect_epoch;
+
+		torture_assert_int_equal_goto(
+			tctx,
+			io.out.oplock_level,
+			SMB2_OPLOCK_LEVEL_LEASE,
+			ret, done,
+			"Bad lease level\n");
+		torture_assert_int_equal_goto(
+			tctx,
+			io.out.lease_response_v2.lease_state,
+			smb2_util_lease_state(table->reconnect_lease),
+			ret, done,
+			"Bad lease level\n");
+
+		if (expect_break) {
+			expect_epoch = 1;
+		} else if (expect_acquire) {
+			expect_epoch = 129;
+		} else if (expect_block) {
+			expect_epoch = 128;
+		} else {
+			expect_epoch = 1;
+		}
+
+		torture_assert_int_equal_goto(
+			tctx,
+			io.out.lease_response_v2.lease_epoch,
+			expect_epoch,
+			ret,
+			done,
+			"Bad lease epoch\n");
+
+		if (expect_break) {
+			CHECK_BREAK_INFO_V2(tree1->session->transport,
+					    table->held_lease,
+					    table->broken_to_lease,
+					    lease1,
+					    2);
+		} else {
+			CHECK_NO_BREAK(tctx);
+		}
+	}
+
+	status = smb2_create_recv(req, tctx, &io2);
+	if (!NT_STATUS_IS_OK(table->status)) {
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, table->status,
+			ret, done, "smb2_create failed\n");
+	} else {
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h2 = io2.out.file.handle;
+
+		if (io2.in.lease_request_v2 != NULL) {
+			torture_assert_int_equal_goto(
+				tctx,
+				io2.out.oplock_level,
+				SMB2_OPLOCK_LEVEL_LEASE,
+				ret, done,
+				"Bad lease level\n");
+			torture_assert_int_equal_goto(
+				tctx,
+				io2.out.lease_response_v2.lease_state,
+				smb2_util_lease_state(table->new_granted),
+				ret, done,
+				"Bad lease level\n");
+		}
+
+		status = smb2_util_close(tree2, h2);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_close failed\n");
+		ZERO_STRUCT(h2);
+	}
+
+	if ((smb2_util_share_access(table->share_mode) &
+	    NTCREATEX_SHARE_ACCESS_READ) &&
+	    table->do_brlck)
+	{
+		status = torture_smb2_testfile_access(
+			tree2, fname, &h2,
+			SEC_RIGHTS_FILE_READ);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+
+		ZERO_ARRAY(el);
+		ZERO_STRUCT(lck);
+		el[0].offset = 0;
+		el[0].length = 1;
+		el[0].flags = SMB2_LOCK_FLAG_SHARED |
+			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+		lck.in.locks = el;
+		lck.in.lock_count = 1;
+		lck.in.file.handle = h2;
+
+		status = smb2_lock(tree2, &lck);
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, NT_STATUS_LOCK_NOT_GRANTED,
+			ret, done, "smb2_lock failed\n");
+
+		status = smb2_util_close(tree2, h2);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_close failed\n");
+		ZERO_STRUCT(h2);
+	}
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_close failed\n");
+	ZERO_STRUCT(h1);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+	} else if (tree2 != NULL) {
+		smb2_util_unlink(tree2, fname);
+	}
+	TALLOC_FREE(tree1);
+	TALLOC_FREE(tree2);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+static bool test_persistent_reconnect_contended_do_table(
+		struct torture_context *tctx,
+		struct smb2_tree *_tree,
+		struct persistent_reconnect_contend_results *table)
+{
+	int i;
+	bool single;
+	bool ok;
+
+	i = torture_setting_int(tctx, "subtest", 0);
+	single = torture_setting_bool(tctx, "single", false);
+
+	for (; table[i].held_lease != NULL; i++) {
+		ok = test_persistent_reconnect_contended_do_one(
+			tctx, _tree, &table[i], i);
+		if (!ok) {
+			return false;
+		}
+		if (single) {
+			return true;
+		}
+	}
+	return true;
+}
+
+static bool test_persistent_reconnect_contended(struct torture_context *tctx,
+						struct smb2_tree *_tree)
+{
+	struct persistent_reconnect_contend_results *table = NULL;
+	uint32_t caps;
+	uint32_t tcon_caps;
+
+	caps = smb2cli_conn_server_capabilities(_tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		table = contend_results_so;
+	} else {
+		table = contend_results_fo;
+	}
+
+	return test_persistent_reconnect_contended_do_table(tctx, _tree, table);
+}
+
+static bool test_persistent_reconnect_contended_win_broken(
+	struct torture_context *tctx,
+	struct smb2_tree *_tree)
+{
+	uint32_t caps;
+	uint32_t tcon_caps;
+
+	caps = smb2cli_conn_server_capabilities(_tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		torture_skip(tctx, "SMB2_SHARE_CAP_SCALEOUT\n");
+	}
+
+	if (!TARGET_IS_SAMBA3(tctx)) {
+		torture_skip(tctx, "Broken on Windows\n");
+	}
+
+	return test_persistent_reconnect_contended_do_table(
+		tctx, _tree, contend_results_fo_win_broken);
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5901,6 +6767,8 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "leaselevels_fo", test_persistent_leaselevels_fo);
 	torture_suite_add_1smb2_test(suite, "leaselevels_fo_max_rwh", test_persistent_leaselevels_fo_max_rwh);
 	torture_suite_add_1smb2_test(suite, "leaselevels_so", test_persistent_leaselevels_so);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended", test_persistent_reconnect_contended);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-win-broken", test_persistent_reconnect_contended_win_broken);
 
 	return suite;
 }
