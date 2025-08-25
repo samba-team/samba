@@ -1477,6 +1477,8 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 						  smb2req->session,
 						  *state->create_guid,
 						  state->fname,
+						  false,
+						  false,
 						  now,
 						  &state->persistent_id,
 						  &state->op);
