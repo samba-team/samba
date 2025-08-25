@@ -1181,6 +1181,13 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	if (val.dsize == 0) {
 		struct smbXsrv_open_global_key_buf open_key_buf;
 
+		if (replay_operation && persistent_requested) {
+			DBG_DEBUG("Replay on Persistent Handle, "
+				  "no replay record found\n");
+			TALLOC_FREE(frame);
+			return NT_STATUS_FILE_NOT_AVAILABLE;
+		}
+
 		DBG_DEBUG("Fresh replay-cache record\n");
 
 		val = smbXsrv_open_global_id_to_key(0, &open_key_buf);
