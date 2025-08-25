@@ -8177,6 +8177,141 @@ done:
 	return ok;
 }
 
+/*
+ * Verifies rename a directory containing a disconnected Persistent Handle
+ * fails.
+ */
+static bool test_persistent_rename_dir_open_files(struct torture_context *tctx,
+						  struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_handle testdirh;
+	struct smb2_create c;
+	union smb_setfileinfo sinfo;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle ph = {{0}};
+	uint32_t tcon_caps;
+	struct smbcli_options options = tree1->session->transport->options;
+	struct GUID create_guid1 = GUID_random();
+	const char *dname = __func__;
+	const char *fname = NULL;
+	const char *newname = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	tcon_caps = smb2cli_tcon_capabilities(tree1->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	fname = talloc_asprintf(mem_ctx, "%s\\file", dname);
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	newname = talloc_asprintf(mem_ctx, "%s_renamed", dname);
+	torture_assert_not_null_goto(tctx, newname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	smb2_deltree(tree1, dname);
+
+	options.client_guid = GUID_random();
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	status = torture_smb2_testdir(tree2, dname, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed");
+	smb2_util_close(tree2, testdirh);
+
+	/*
+	 * Get persistent handle
+	 */
+
+	ZERO_STRUCT(c);
+	smb2_lease_v2_create(&c, NULL, false, fname, 0, NULL, 0, 0);
+	c.in.durable_open_v2 = true;
+	c.in.persistent_open = true;
+	c.in.create_guid = create_guid1;
+
+	status = smb2_create(tree2, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	ph = c.out.file.handle;
+
+	torture_assert_goto(tctx, c.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+
+	/*
+	 * Disconnect session
+	 */
+	TALLOC_FREE(tree2);
+
+	/*
+	 * Now try to rename parent directory of file with the disconnected
+	 * persistent handle.
+	 */
+
+	ZERO_STRUCT(c);
+	c.in.desired_access = SEC_FILE_ALL;
+	c.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	c.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	c.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	c.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	c.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	c.in.fname = dname;
+
+	status = smb2_create(tree1, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	h1 = c.out.file.handle;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h1;
+	sinfo.rename_information.in.new_name = newname;
+
+	status = smb2_setinfo_file(tree1, &sinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_ACCESS_DENIED, ret, done,
+		"smb2_setinfo_file failed\n");
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	/* Reconnect PH so we can delete it */
+
+	ZERO_STRUCT(c);
+	smb2_lease_v2_create(&c, NULL, false, fname, 0, NULL, 0, 0);
+	c.in.durable_handle_v2 = &ph;
+	c.in.create_guid = create_guid1;
+	c.in.persistent_open = true;
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	ph = c.out.file.handle;
+
+	status = smb2_util_close(tree1, ph);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(ph);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(ph)) {
+		smb2_util_close(tree1, ph);
+	}
+	smb2_deltree(tree1, dname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -8194,6 +8329,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-oplock", test_persistent_reconnect_contended_oplock);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-replay", test_persistent_reconnect_contended_replay);
 	torture_suite_add_1smb2_test(suite, "timeout_5", test_persistent_timeout_5);
+	torture_suite_add_1smb2_test(suite, "rename-dir-open-files", test_persistent_rename_dir_open_files);
 
 	return suite;
 }
