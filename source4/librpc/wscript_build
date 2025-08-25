@@ -576,6 +576,13 @@ bld.SAMBA_PYTHON('python_smbXsrv',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_file_id',
+        source='../../librpc/gen_ndr/py_file_id.c',
+        deps='%s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/file_id.so',
+        cflags_end=gen_cflags
+        )
+
 if bld.PYTHON_BUILD_IS_ENABLED():
     bld.SAMBA_SCRIPT('python_dcerpc_init',
 		    pattern='rpc/dcerpc.py',

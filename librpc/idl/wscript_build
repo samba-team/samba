@@ -88,7 +88,6 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     '''
                     bkupblobs.idl
                     cab.idl
-                    file_id.idl
                     fscc.idl
                     fsrvp_state.idl
                     named_pipe_auth.idl
@@ -130,6 +129,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     dns.idl
                     dnsp.idl
                     drsblobs.idl
+                    file_id.idl
                     gmsa.idl
                     idmap.idl
                     keycredlink.idl
