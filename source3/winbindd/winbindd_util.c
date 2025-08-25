@@ -2005,12 +2005,10 @@ bool parse_domain_user(TALLOC_CTX *ctx,
 		if (user == NULL) {
 			goto fail;
 		}
-		domain = talloc_strdup(ctx,
-				domuser);
+		domain = talloc_strndup(ctx, domuser, p - domuser);
 		if (domain == NULL) {
 			goto fail;
 		}
-		domain[PTR_DIFF(p, domuser)] = '\0';
 		namespace = talloc_strdup(ctx, domain);
 		if (namespace == NULL) {
 			goto fail;
