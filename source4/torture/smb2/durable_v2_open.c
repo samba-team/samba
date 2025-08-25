@@ -8024,6 +8024,159 @@ done:
 	return ret;
 }
 
+/*
+ * Verify that a disconnected Persistent Handle with a timeout of 5 seconds is
+ * reaped by the scavenger after the timeout expires, so another client can then
+ * open the file.
+ */
+static bool test_persistent_timeout_do(struct torture_context *tctx,
+				       struct smb2_tree *_tree,
+				       int requested,
+				       int expected)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smb2_tree *tree = NULL;
+	struct smb2_create c;
+	struct smb2_handle h = {0};
+	uint32_t caps;
+	uint32_t tcon_caps;
+	struct smbcli_options options = _tree->session->transport->options;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	char *fname = NULL;
+	struct timespec ts1;
+	struct timespec ts2;
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_comment(tctx,
+			"requested [%d] expected [%d]\n",
+			requested,
+			expected);
+
+	caps = smb2cli_conn_server_capabilities(_tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	fname = talloc_asprintf(frame, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	options.client_guid = GUID_random();
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	/*
+	 * Get persistent open
+	 */
+	smb2_lease_v2_create_share(&c, NULL, false, fname,
+				   smb2_util_share_access("RWD"),
+				   0, NULL, 0, 1);
+	c.in.durable_open_v2 = true;
+	c.in.persistent_open = true;
+	c.in.create_guid = create_guid1;
+	c.in.timeout = requested * 1000;
+	status = smb2_create(tree, frame, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h = c.out.file.handle;
+	torture_assert_goto(tctx, c.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+	torture_assert_int_equal_goto(tctx, c.out.timeout, expected * 1000,
+				      ret, done, "bad timeout\n");
+
+	TALLOC_FREE(tree);
+	ZERO_STRUCT(h);
+	clock_gettime_mono(&ts1);
+
+	sleep(1);
+
+	/*
+	 * Retry open until it succeeds and then check elapsed time
+	 */
+	options.client_guid = GUID_random();
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2_lease_v2_create(&c, NULL, false, fname, 0, NULL,
+			     0, 1);
+	c.in.durable_open_v2 = true;
+	c.in.create_guid = create_guid2;
+
+	ZERO_STRUCT(h);
+	while (true) {
+		clock_gettime_mono(&ts2);
+		if (timespec_elapsed2(&ts1, &ts2) > expected + 10) {
+			break;
+		}
+		status = smb2_create(tree, frame, &c);
+		if (NT_STATUS_IS_OK(status)) {
+			h = c.out.file.handle;
+			break;
+		}
+		torture_assert_ntstatus_equal_goto(tctx, status,
+						   NT_STATUS_FILE_NOT_AVAILABLE,
+						   ret, done,
+						   "wrong error\n");
+		torture_comment(tctx, ".");
+		smb_msleep(1000);
+	}
+	torture_comment(tctx, "\n");
+
+	if (timespec_elapsed2(&ts1, &ts2) < expected - 1) {
+		ret = false;
+		torture_fail_goto(tctx, done,
+				  "Open succeeded to early\n");
+	}
+
+	if (smb2_util_handle_empty(h)) {
+		ret = false;
+		torture_fail_goto(tctx, done,
+				  "Failed to open file in time\n");
+	}
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_close failed\n");
+	ZERO_STRUCT(h);
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	if (fname != NULL) {
+		smb2_util_unlink(_tree, fname);
+		TALLOC_FREE(fname);
+	}
+
+	TALLOC_FREE(tree);
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static bool test_persistent_timeout_5(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	bool ok;
+
+	ok = test_persistent_timeout_do(tctx, tree, 5, 5);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "test_persistent_timeout_do failed\n");
+
+done:
+	return ok;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -8040,6 +8193,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-two", test_persistent_reconnect_contended_two);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-oplock", test_persistent_reconnect_contended_oplock);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-replay", test_persistent_reconnect_contended_replay);
+	torture_suite_add_1smb2_test(suite, "timeout_5", test_persistent_timeout_5);
 
 	return suite;
 }
