@@ -7786,6 +7786,244 @@ static bool test_persistent_reconnect_contended_oplock(
 		tctx, _tree, table);
 }
 
+/*
+ * This tests verifies, that a
+ *
+ * - contending open on a disconnected persistent open that triggers a lease
+ *   break is blocked,
+ *
+ * - a replay of the create that caused the lease break fails with
+ *   NT_STATUS_FILE_NOT_AVAILABLE as long the the persistent open is still
+ *   disconnected,
+ *
+ * - after the persistent open is reconnected the second replay of the
+ *   contending open succeeds
+ *
+ * - the client with the persistent open receives a lease break
+ */
+static bool test_persistent_reconnect_contended_replay(
+	struct torture_context *tctx,
+	struct smb2_tree *_tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_request *req = NULL;
+	struct smb2_create io1;
+	struct smb2_create io2;
+	struct smb2_lease ls1;
+	struct smb2_handle h1 = {0};
+	struct smb2_handle h2 = {0};
+	uint32_t caps;
+	uint32_t tcon_caps;
+	struct smbcli_options options1 = _tree->session->transport->options;
+	struct smbcli_options options2 = _tree->session->transport->options;
+	uint64_t lease1 = random();
+	uint64_t lease2 = random();
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	char *fname = NULL;
+	int rc;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(_tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		torture_skip(tctx,
+			     "SO share, test requires RWH lease, skipping\n");
+	}
+
+	fname = talloc_asprintf(tctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	options1.client_guid = GUID_random();
+	options1.request_timeout = 240;
+	options2.client_guid = GUID_random();
+	options2.request_timeout = 240;
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options1, &tree1);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options2, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	/*
+	 * Get persistent open
+	 */
+	smb2_lease_v2_create_share(&io1, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease1, NULL,
+				   smb2_util_lease_state("RWH"), 1);
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = true;
+	io1.in.create_guid = create_guid1;
+	status = smb2_create(tree1, mem_ctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io1.out.file.handle;
+	torture_assert_goto(tctx, io1.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+
+	torture_assert_int_equal_goto(tctx,
+				      io1.out.oplock_level,
+				      SMB2_OPLOCK_LEVEL_LEASE,
+				      ret, done,
+				      "Bad oplock level\n");
+	torture_assert_int_equal_goto(tctx,
+				      io1.out.lease_response_v2.lease_state,
+				      smb2_util_lease_state("RWH"),
+				      ret, done,
+				      "Bad lease state\n");
+
+	TALLOC_FREE(tree1);
+	sleep(1);
+
+	/*
+	 * Contend disconnected durable open with second open from second client
+	 */
+	smb2_lease_v2_create(&io2, NULL, false, fname, lease2, NULL,
+			     smb2_util_lease_state("none"), 1);
+	io2.in.durable_open_v2 = true;
+	io2.in.create_guid = create_guid2;
+	req = smb2_create_send(tree2, &io2);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "smb2_create_send failed\n");
+
+	/*
+	 * Wait til the interim response for the create arrives and then
+	 * disconnect
+	 */
+	while (!req->cancel.can_cancel) {
+		rc = tevent_loop_once(req->transport->ev);
+		torture_assert_goto(tctx, rc == 0, ret, done,
+				    "tevent_loop_once failed\n");
+	}
+
+	TALLOC_FREE(req);
+	TALLOC_FREE(tree2);
+	sleep(1);
+
+	/*
+	 * Reconnect second client and send a create replay. As the first create
+	 * did not finish before we disconnected, there is no open on the server
+	 * and no replay cache entry, so this second create is handled as a
+	 * "normal" create, again getting STATUS_PENDING.
+	 */
+
+	ret = torture_smb2_connection_ext(tctx, 0,
+					  &options2, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2cli_session_start_replay(tree2->session->smbXcli);
+
+	req = smb2_create_send(tree2, &io2);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "smb2_create_send failed\n");
+	smb2cli_session_stop_replay(tree2->session->smbXcli);
+
+	/*
+	 * Wait til the interim response for the create arrives and then
+	 * disconnect
+	 */
+	while (!req->cancel.can_cancel) {
+		rc = tevent_loop_once(req->transport->ev);
+		torture_assert_goto(tctx, rc == 0, ret, done,
+				    "tevent_loop_once failed\n");
+	}
+	TALLOC_FREE(req);
+	TALLOC_FREE(tree2);
+
+	/*
+	 * Now reconnect the first client and reconnect the persistent open
+	 */
+	ret = torture_smb2_connection_ext(tctx, 0, &options1, &tree1);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+
+	ZERO_STRUCT(io1);
+	smb2_lease_v2_create(&io1, &ls1, false, fname, lease1, NULL,
+			     smb2_util_lease_state("RWH"), 1);
+	io1.in.durable_handle_v2 = &h1;
+	io1.in.create_guid = create_guid1;
+	io1.in.persistent_open = true;
+	status = smb2_create(tree1, mem_ctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io1.out.file.handle;
+	torture_assert_int_equal_goto(tctx,
+				      io1.out.oplock_level,
+				      SMB2_OPLOCK_LEVEL_LEASE,
+				      ret, done,
+				      "Bad lease level\n");
+
+	torture_wait_for_lease_break(tctx);
+
+	CHECK_BREAK_INFO_V2(tree1->session->transport,
+			    "RWH", "RH",
+			    lease1,
+			    ls1.lease_epoch+2);
+
+	/*
+	 * Second client replays open, passes now. Note that this will not have
+	 * been a replay on the server, but there's no way to verify this, just
+	 * expect success.
+	 */
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options2, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2cli_session_start_replay(tree2->session->smbXcli);
+	status = smb2_create(tree2, mem_ctx, &io2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	smb2cli_session_stop_replay(tree2->session->smbXcli);
+	h2 = io2.out.file.handle;
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	status = smb2_util_close(tree2, h2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h2);
+
+done:
+	if (!smb2_util_handle_empty(h1) && (tree1 != NULL)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2) && (tree2 != NULL)) {
+		smb2_util_close(tree2, h2);
+	}
+	if (fname != NULL) {
+		smb2_util_unlink(_tree, fname);
+		TALLOC_FREE(fname);
+	}
+
+	TALLOC_FREE(tree1);
+	TALLOC_FREE(tree2);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -7801,6 +8039,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-win-broken", test_persistent_reconnect_contended_win_broken);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-two", test_persistent_reconnect_contended_two);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-oplock", test_persistent_reconnect_contended_oplock);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-replay", test_persistent_reconnect_contended_replay);
 
 	return suite;
 }
