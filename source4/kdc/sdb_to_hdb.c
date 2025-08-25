@@ -26,6 +26,7 @@
 #include <hdb.h>
 #include <krb5.h>
 #include <hx_locl.h>
+#include "libcli/security/dom_sid.h"
 #include "rfc2459_asn1.h"
 #include "sdb.h"
 #include "sdb_hdb.h"
@@ -657,6 +658,44 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 		ext.data.u.cert_mappings = cm;
 		rc = hdb_replace_extension(context, h, &ext);
 		free_HDB_Ext_CertificateMappings(&cm);
+		if (rc != 0) {
+			goto error;
+		}
+	}
+
+	{
+		HDB_extension ext;
+		ObjectSid src_sid;
+		ObjectSid object_sid;
+		struct dom_sid_buf sid_buf;
+		char *sid_str = NULL;
+
+		sid_str = dom_sid_str_buf(&s->sid, &sid_buf);
+		if (sid_str == NULL) {
+			rc = ENOMEM;
+			goto error;
+		}
+
+		src_sid = (ObjectSid)
+		{
+			.data = sid_str,
+			.length = strlen(sid_str),
+		};
+
+		rc = der_copy_octet_string(&src_sid, &object_sid);
+		if (rc != 0) {
+			goto error;
+		}
+
+		ext = (HDB_extension){
+			.mandatory = FALSE,
+			.data = {
+				.element = choice_HDB_extension_data_object_sid,
+				.u.object_sid = object_sid,
+			}};
+
+		rc = hdb_replace_extension(context, h, &ext);
+		free_ObjectSid(&object_sid);
 		if (rc != 0) {
 			goto error;
 		}

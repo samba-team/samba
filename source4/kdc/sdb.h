@@ -24,6 +24,8 @@
 #ifndef _KDC_SDB_H_
 #define _KDC_SDB_H_
 
+#include "librpc/gen_ndr/security.h"
+
 struct sdb_salt {
 	unsigned int type;
 	krb5_data salt;
@@ -133,6 +135,7 @@ struct sdb_entry {
 	struct SDBFlags flags;
 	struct sdb_pub_keys pub_keys;
 	struct sdb_certificate_mappings mappings;
+	struct dom_sid sid;
 };
 
 #define SDB_ERR_NOENTRY 36150275
