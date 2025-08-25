@@ -532,8 +532,8 @@ bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
 		return false;
 	}
 
-	DBG_DEBUG("wcache_store_seqnum: success [%s][%u @ %u]\n",
-		   domain_name, seqnum, (unsigned)last_seq_check);
+	DBG_DEBUG("wcache_store_seqnum: success [%s][%u @ %ju]\n",
+		   domain_name, seqnum, (uintmax_t)last_seq_check);
 
 	return true;
 }
