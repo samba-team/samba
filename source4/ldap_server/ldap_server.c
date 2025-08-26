@@ -1324,7 +1324,6 @@ static void ldap_reload_certs(struct imessaging_context *msg_ctx,
 
 	/* reload certificates */
 	status = tstream_tls_params_server_lpcfg(ldap_service,
-						 ldap_service->dns_host_name,
 						 ldap_service->lp_ctx,
 						 &new_tls_params);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1432,18 +1431,9 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 	ldap_service->current_ev = task->event_ctx;
 	ldap_service->current_msg = task->msg_ctx;
 
-	ldap_service->dns_host_name = talloc_asprintf(ldap_service, "%s.%s",
-					lpcfg_netbios_name(task->lp_ctx),
-					lpcfg_dnsdomain(task->lp_ctx));
-	if (ldap_service->dns_host_name == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
 	ldap_service->parent_pid = getpid();
 
 	status = tstream_tls_params_server_lpcfg(ldap_service,
-						 ldap_service->dns_host_name,
 						 ldap_service->lp_ctx,
 						 &ldap_service->tls_params);
 	if (!NT_STATUS_IS_OK(status)) {

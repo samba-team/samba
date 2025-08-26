@@ -84,7 +84,6 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *tls_priority,
 				   struct tstream_tls_params **_params);
 NTSTATUS tstream_tls_params_server_lpcfg(TALLOC_CTX *mem_ctx,
-					 const char *dns_host_name,
 					 struct loadparm_context *lp_ctx,
 					 struct tstream_tls_params **_params);
 

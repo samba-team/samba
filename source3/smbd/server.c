@@ -255,21 +255,13 @@ static NTSTATUS smb_parent_load_tls_certificates(struct smbd_parent_context *par
 						 struct loadparm_context *lp_ctx)
 {
 	struct tstream_tls_params *quic_tlsp = NULL;
-	const char *dns_hostname = NULL;
 	NTSTATUS status;
 
 	if (parent == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	dns_hostname = lpcfg_dns_hostname(lp_ctx);
-	if (dns_hostname == NULL) {
-		DBG_ERR("ERROR: lpcfg_dns_hostname() failed\n");
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	status = tstream_tls_params_server_lpcfg(parent,
-						 dns_hostname,
 						 lp_ctx,
 						 &quic_tlsp);
 	if (!NT_STATUS_IS_OK(status)) {
