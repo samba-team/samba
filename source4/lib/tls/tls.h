@@ -28,6 +28,7 @@ struct loadparm_context;
 
 void tls_cert_generate(TALLOC_CTX *mem_ctx,
 		       const char *hostname,
+		       const char * const *additional_hostnames,
 		       const char *keyfile, const char *certfile,
 		       const char *cafile);
 
@@ -75,6 +76,7 @@ NTSTATUS tstream_tls_params_quic_prepare(struct tstream_tls_params *tlsp);
 
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *dns_host_name,
+				   const char * const *additional_dns_hostnames,
 				   bool enabled,
 				   const char *key_file,
 				   const char *cert_file,

@@ -39,6 +39,7 @@
 */
 void tls_cert_generate(TALLOC_CTX *mem_ctx, 
 		       const char *hostname, 
+		       const char * const *additional_hostnames,
 		       const char *keyfile, const char *certfile,
 		       const char *cafile)
 {
@@ -50,6 +51,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	size_t bufsize;
 	size_t keyidsize = sizeof(keyid);
 	time_t activation = time(NULL), expiry = activation + LIFETIME;
+	size_t adhn_idx;
 	int ret;
 
 	if (file_exist(keyfile) || file_exist(certfile) || file_exist(cafile)) {
@@ -113,6 +115,17 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	TLSCHECK(gnutls_x509_crt_set_subject_alt_name(crt, GNUTLS_SAN_DNSNAME,
 						      hostname, strlen(hostname),
 						      GNUTLS_FSAN_SET));
+	for (adhn_idx = 0;
+	     additional_hostnames != NULL &&
+	     additional_hostnames[adhn_idx] != NULL;
+	     adhn_idx++)
+	{
+		const char *adhn = additional_hostnames[adhn_idx];
+
+		TLSCHECK(gnutls_x509_crt_set_subject_alt_name(crt, GNUTLS_SAN_DNSNAME,
+							      adhn, strlen(adhn),
+							      GNUTLS_FSAN_APPEND));
+	}
 	TLSCHECK(gnutls_x509_crt_set_key(crt, key));
 	TLSCHECK(gnutls_x509_crt_set_serial(crt, &serial, sizeof(serial)));
 	TLSCHECK(gnutls_x509_crt_set_activation_time(crt, activation));
