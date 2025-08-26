@@ -110,6 +110,9 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	TLSCHECK(gnutls_x509_crt_set_dn_by_oid(crt,
 				      GNUTLS_OID_X520_COMMON_NAME, 0,
 				      hostname, strlen(hostname)));
+	TLSCHECK(gnutls_x509_crt_set_subject_alt_name(crt, GNUTLS_SAN_DNSNAME,
+						      hostname, strlen(hostname),
+						      GNUTLS_FSAN_SET));
 	TLSCHECK(gnutls_x509_crt_set_key(crt, key));
 	TLSCHECK(gnutls_x509_crt_set_serial(crt, &serial, sizeof(serial)));
 	TLSCHECK(gnutls_x509_crt_set_activation_time(crt, activation));
