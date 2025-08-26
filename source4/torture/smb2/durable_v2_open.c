@@ -8312,6 +8312,110 @@ done:
 	return ret;
 }
 
+/*
+ * Get a persistent handle, then
+ * - disconnect
+ * - reconnect
+ * - replay
+ * - use reconnected handle by writing to it
+ */
+static bool test_persistent_replay_reconnect(struct torture_context *tctx,
+					     struct smb2_tree *tree)
+{
+	struct smb2_create io1;
+	struct smb2_lease ls1;
+	struct smb2_handle h1 = {0};
+	uint32_t caps;
+	struct smbcli_options options = tree->session->transport->options;
+	uint64_t lease1 = random();
+	struct GUID create_guid1 = GUID_random();
+	char *fname = NULL;
+	struct smb2_write wrt;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+	caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (!(caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	fname = talloc_asprintf(tctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	/*
+	 * Get a durable open
+	 */
+	smb2_lease_v2_create_share(&io1, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease1, NULL,
+				   smb2_util_lease_state("R"), 1);
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = true;
+	io1.in.create_guid = create_guid1;
+	status = smb2_create(tree, tree, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	torture_assert_goto(tctx, io1.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+
+	torture_assert_int_equal_goto(tctx,
+				      io1.out.oplock_level,
+				      SMB2_OPLOCK_LEVEL_LEASE,
+				      ret, done,
+				      "Bad oplock level\n");
+	torture_assert_int_equal_goto(tctx,
+				      io1.out.lease_response_v2.lease_state,
+				      smb2_util_lease_state("R"),
+				      ret, done,
+				      "Bad lease state\n");
+
+	TALLOC_FREE(tree);
+	sleep(1);
+
+	/*
+	 * Reconnect, then
+	 * - replay, should work
+	 * - use handle by writing to it, should work
+	 */
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tree, &io1);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io1.out.file.handle;
+
+	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
+
+	ZERO_STRUCT(wrt);
+	wrt.in.file.handle = h1;
+	wrt.in.offset = 0;
+	wrt.in.data = data_blob_string_const("data");
+
+	status = smb2_write(tree, &wrt);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_write failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (fname != NULL && tree != NULL) {
+		smb2_util_unlink(tree, fname);
+	}
+	TALLOC_FREE(tree);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -8330,6 +8434,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-replay", test_persistent_reconnect_contended_replay);
 	torture_suite_add_1smb2_test(suite, "timeout_5", test_persistent_timeout_5);
 	torture_suite_add_1smb2_test(suite, "rename-dir-open-files", test_persistent_rename_dir_open_files);
+	torture_suite_add_1smb2_test(suite, "replay-reconnect", test_persistent_replay_reconnect);
 
 	return suite;
 }
