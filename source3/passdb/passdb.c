@@ -2226,8 +2226,8 @@ bool pdb_update_autolock_flag(struct samu *sampass, bool *updated)
 	}
 
 	LastBadPassword = pdb_get_bad_password_time(sampass);
-	DEBUG(7, ("pdb_update_autolock_flag: Account %s, LastBadPassword=%d, duration=%d, current time =%d.\n",
-		  pdb_get_username(sampass), (uint32_t)LastBadPassword, duration*60, (uint32_t)time(NULL)));
+	DEBUG(7, ("pdb_update_autolock_flag: Account %s, LastBadPassword=%ju, duration=%d, current time =%ju.\n",
+		  pdb_get_username(sampass), (uintmax_t)LastBadPassword, duration*60, (uintmax_t)time(NULL)));
 
 	if (LastBadPassword == (time_t)0) {
 		DEBUG(1,("pdb_update_autolock_flag: Account %s "
