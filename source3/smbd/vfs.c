@@ -439,10 +439,7 @@ bool vfs_valid_pwrite_range(const struct files_struct *fsp,
 			    size_t length)
 {
 	if (fsp->fsp_flags.posix_append) {
-		if (offset != VFS_PWRITE_APPEND_OFFSET) {
-			return false;
-		}
-		return true;
+		return (offset == VFS_PWRITE_APPEND_OFFSET);
 	}
 
 	if (offset == VFS_PWRITE_APPEND_OFFSET) {
