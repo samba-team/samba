@@ -65,8 +65,6 @@
  */
 #define MAX_LENGTH 1024
 
-#define min(a, b) (((a)>(b))?(b):(a))
-
 /*
  * Private data for the module, stored in the ldb_module private data
  */
@@ -881,7 +879,7 @@ static char *log_attributes(
 			}
 
 			v = message->elements[i].values[j];
-			length = min(MAX_LENGTH, v.length);
+			length = MIN(MAX_LENGTH, v.length);
 			use_b64_encode = ldb_should_b64_encode(ldb, &v);
 			if (use_b64_encode) {
 				const char *encoded = ldb_base64_encode(
