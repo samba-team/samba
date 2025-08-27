@@ -443,7 +443,9 @@ bool vfs_valid_pwrite_range(const struct files_struct *fsp,
 			return false;
 		}
 		return true;
-	} else if (offset == VFS_PWRITE_APPEND_OFFSET) {
+	}
+
+	if (offset == VFS_PWRITE_APPEND_OFFSET) {
 		return false;
 	}
 
