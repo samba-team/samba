@@ -168,16 +168,11 @@ bool samba_private_attr_name(const char *unix_ea_name)
 	prohibited |= strequal(unix_ea_name, SAMBA_XATTR_REPARSE_ATTRIB);
 	prohibited |= strequal(unix_ea_name, XATTR_NTACL_NAME);
 	prohibited |= strequal(unix_ea_name, AFPINFO_EA_NETATALK);
+	prohibited |= strnequal(unix_ea_name,
+				SAMBA_XATTR_DOSSTREAM_PREFIX,
+				strlen(SAMBA_XATTR_DOSSTREAM_PREFIX));
 
-	if (prohibited) {
-		return true;
-	}
-
-	if (strncasecmp_m(unix_ea_name, SAMBA_XATTR_DOSSTREAM_PREFIX,
-			strlen(SAMBA_XATTR_DOSSTREAM_PREFIX)) == 0) {
-		return true;
-	}
-	return false;
+	return prohibited;
 }
 
 /****************************************************************************
