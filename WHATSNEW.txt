@@ -18,7 +18,16 @@ NEW FEATURES/CHANGES
 
 Enable SMB3 Unix Extensions by default
 --------------------------------------
-todo
+Starting with Samba 4.23, the SMB3 UNIX Extensions are enabled by
+default. These extensions provide first-class support for POSIX semantics
+over SMB3, allowing UNIX and Linux clients to access file services with
+features such as proper POSIX permissions, symlink handling, hardlinks,
+and special file types.
+
+Enabling this feature by default improves interoperability for UNIX/Linux
+clients without requiring additional configuration. Windows clients that
+do not support the extensions will continue to function normally, by
+using standard SMB3 behavior.
 
 Add support for SMB3 over QUIC
 ------------------------------
