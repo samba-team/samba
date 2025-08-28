@@ -44,7 +44,7 @@
 #define PASSWORD_JSON_TYPE "passwordChange"
 #define PASSWORD_HR_TAG "Password Change"
 #define PASSWORD_MAJOR 1
-#define PASSWORD_MINOR 1
+#define PASSWORD_MINOR 2
 #define PASSWORD_LOG_LVL 5
 
 #define TRANSACTION_JSON_TYPE "dsdbTransaction"
