@@ -45,6 +45,31 @@ struct stream_io {
 	vfs_handle_struct *handle;
 };
 
+static ssize_t fgetxattr_multi(struct files_struct *fsp,
+			       const char *name,
+			       void *value,
+			       size_t size)
+{
+	ssize_t ret = SMB_VFS_FGETXATTR(fsp, name, value, size);
+	return ret;
+}
+
+static int fsetxattr_multi(struct files_struct *fsp,
+			   const char *name,
+			   const void *value,
+			   size_t size,
+			   int flags)
+{
+	int ret = SMB_VFS_FSETXATTR(fsp, name, value, size, flags);
+	return ret;
+}
+
+static int fremovexattr_multi(struct files_struct *fsp, const char *name)
+{
+	int ret = SMB_VFS_FREMOVEXATTR(fsp, name);
+	return ret;
+}
+
 static int streams_xattr_get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 					  files_struct *fsp,
 					  const char *ea_name,
@@ -74,7 +99,7 @@ again:
 		return ENOMEM;
 	}
 
-	sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
+	sizeret = fgetxattr_multi(fsp, ea_name, val, attr_size);
 	if (sizeret == -1 && errno == ERANGE && attr_size < max_xattr_size) {
 		attr_size = max_xattr_size;
 		goto again;
@@ -534,10 +559,11 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
 			   xattr_name, smb_fname->base_name));
 
-		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
-				       xattr_name,
-				       &null, sizeof(null),
-				       how->flags & O_EXCL ? XATTR_CREATE : 0);
+		ret = fsetxattr_multi(fsp->base_fsp,
+				      xattr_name,
+				      &null,
+				      sizeof(null),
+				      how->flags & O_EXCL ? XATTR_CREATE : 0);
 		if (ret != 0) {
 			goto fail;
 		}
@@ -658,7 +684,7 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 		fsp = fsp->base_fsp;
 	}
 
-	ret = SMB_VFS_FREMOVEXATTR(fsp, xattr_name);
+	ret = fremovexattr_multi(fsp, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
@@ -794,7 +820,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* (Over)write the new stream on the base file fsp. */
-	nret = SMB_VFS_FSETXATTR(
+	nret = fsetxattr_multi(
 		pathref_dst->fsp, dst_xattr_name, val, talloc_get_size(val), 0);
 	if (nret < 0) {
 		if (errno == ENOATTR) {
@@ -806,8 +832,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	/*
 	 * Remove the old stream from the base file fsp.
 	 */
-	oret = SMB_VFS_FREMOVEXATTR(pathref_src->fsp,
-				    src_xattr_name);
+	oret = fremovexattr_multi(pathref_src->fsp, src_xattr_name);
 	if (oret < 0) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
@@ -1131,9 +1156,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		val[offset + n] = '\0';
 	}
 
-	memcpy(val + offset, data, n);
-
-	ret = SMB_VFS_FSETXATTR(
+	ret = fsetxattr_multi(
 		fsp->base_fsp, sio->xattr_name, val, talloc_get_size(val), 0);
 	TALLOC_FREE(val);
 
@@ -1402,8 +1425,8 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	val = tmp;
 	val[offset] = '\0';
 
-	ret = SMB_VFS_FSETXATTR(
-		fsp->base_fsp, sio->xattr_name, val, offset + 1, 0);
+	ret = fsetxattr_multi(
+		fsp->base_fsp, sio->xattr_name, val, talloc_get_size(val), 0);
 	TALLOC_FREE(val);
 
 	if (ret == -1) {
