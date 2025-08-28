@@ -826,7 +826,7 @@ static void test_password_change_json_empty(void **state)
 	rc = gettimeofday(&tv, NULL);
 	assert_return_code(rc, errno);
 	before = tv.tv_sec;
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 	assert_int_equal(3, json_object_size(json.root));
 
 
@@ -955,7 +955,7 @@ static void test_password_change_json(void **state)
 	rc = gettimeofday(&tv, NULL);
 	assert_return_code(rc, errno);
 	before = tv.tv_sec;
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 	assert_int_equal(3, json_object_size(json.root));
 
 
@@ -1751,7 +1751,7 @@ static void test_password_change_hr_empty(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	line = password_change_human_readable(ctx, module, req, reply);
+	line = password_change_human_readable(ctx, module, req, reply, false);
 	assert_non_null(line);
 
 	/*
@@ -1843,7 +1843,7 @@ static void test_password_change_hr(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	line = password_change_human_readable(ctx, module, req, reply);
+	line = password_change_human_readable(ctx, module, req, reply, false);
 	assert_non_null(line);
 
 	/*

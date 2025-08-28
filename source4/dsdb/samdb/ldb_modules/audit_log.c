@@ -481,7 +481,8 @@ failure:
 static struct json_object password_change_json(
 	struct ldb_module *module,
 	const struct ldb_request *request,
-	const struct ldb_reply *reply)
+	const struct ldb_reply *reply,
+	bool public_key_changed)
 {
 	struct ldb_context *ldb = NULL;
 	const struct dom_sid *sid = NULL;
@@ -502,10 +503,14 @@ static struct json_object password_change_json(
 	remote = dsdb_audit_get_remote_address(ldb);
 	sid = dsdb_audit_get_user_sid(module);
 	dn = dsdb_audit_get_primary_dn(request);
-	action = get_password_action(request, reply);
 	unique_session_token = dsdb_audit_get_unique_session_token(module);
-	event_id = get_password_windows_event_id(request, reply);
-
+	if (public_key_changed) {
+		action = "Public key change";
+		event_id = EVT_ID_DIRECTORY_OBJECT_CHANGE;
+	} else  {
+		action = get_password_action(request, reply);
+		event_id = get_password_windows_event_id(request, reply);
+	}
 	audit = json_new_object();
 	if (json_is_invalid(&audit)) {
 		goto failure;
@@ -771,7 +776,8 @@ static char *password_change_human_readable(
 	TALLOC_CTX *mem_ctx,
 	struct ldb_module *module,
 	const struct ldb_request *request,
-	const struct ldb_reply *reply)
+	const struct ldb_reply *reply,
+	bool is_public_key_change)
 {
 	struct ldb_context *ldb = NULL;
 	const char *remote_host = NULL;
@@ -789,7 +795,12 @@ static char *password_change_human_readable(
 	remote_host = dsdb_audit_get_remote_host(ldb, ctx);
 	sid = dsdb_audit_get_user_sid(module);
 	timestamp = audit_get_timestamp(ctx);
-	action = get_password_action(request, reply);
+
+	if (is_public_key_change) {
+		action = "Public key change";
+	} else {
+		action = get_password_action(request, reply);
+	}
 	dn = dsdb_audit_get_primary_dn(request);
 
 	log_entry = talloc_asprintf(
@@ -1166,7 +1177,8 @@ static void log_standard_operation(
 				ctx,
 				module,
 				request,
-				reply);
+				reply,
+				false);
 			audit_log_human_text(
 				PASSWORD_HR_TAG,
 				entry,
@@ -1199,7 +1211,7 @@ static void log_standard_operation(
 		 && audit_private->send_password_events)) {
 		if (password_changed) {
 			struct json_object json;
-			json = password_change_json(module, request, reply);
+			json = password_change_json(module, request, reply, false);
 			audit_log_json(
 				&json,
 				DBGC_DSDB_PWD_AUDIT_JSON,

@@ -286,7 +286,7 @@ static void test_password_change_json(void **state)
 	 */
 
 	will_return(__wrap_json_new_object, false);
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 
 	assert_true(json_is_invalid(&json));
 
@@ -297,7 +297,7 @@ static void test_password_change_json(void **state)
 	will_return(__wrap_json_new_object, true);
 	will_return(__wrap_json_add_version, JSON_ERROR);
 
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 	assert_true(json_is_invalid(&json));
 
 	/*
@@ -308,7 +308,7 @@ static void test_password_change_json(void **state)
 	will_return(__wrap_json_add_version, 0);
 	will_return(__wrap_json_new_object, false);
 
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 	assert_true(json_is_invalid(&json));
 
 	/*
@@ -320,7 +320,7 @@ static void test_password_change_json(void **state)
 	will_return(__wrap_json_new_object, true);
 	will_return(__wrap_json_add_timestamp, JSON_ERROR);
 
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 	assert_true(json_is_invalid(&json));
 
 	/*
@@ -331,7 +331,7 @@ static void test_password_change_json(void **state)
 	will_return(__wrap_json_new_object, true);
 	will_return(__wrap_json_add_timestamp, 0);
 
-	json = password_change_json(module, req, reply);
+	json = password_change_json(module, req, reply, false);
 	assert_false(json_is_invalid(&json));
 	json_free(&json);
 
