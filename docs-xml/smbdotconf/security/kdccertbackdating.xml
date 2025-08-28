@@ -1,0 +1,28 @@
+<samba:parameter name="certificate backdating compensation"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+        When performing certificate based kerberos authentication
+        (PKINIT) with
+        <smbconfoption name="strong certificate binding enforcement">
+            compatibility
+        </smbconfoption>
+    </para>
+    <para>
+        This parameter specifies number of minutes that a certificate's issue
+        date may precede the creation of a users account.
+    </para>
+
+    <para>More details can be found at
+        <ulink url="https://support.microsoft.com/en-us/topic/kb5014754-certificate-based-authentication-changes-on-windows-domain-controllers-ad2c23b0-15d8-4340-a468-4d4f3b188f16">
+            KB5014754: Certificate-based authentication changes on Windows
+            domain controllers
+        </ulink>
+    </para>
+
+</description>
+
+<value type="default">0</value>
+</samba:parameter>
