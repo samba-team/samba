@@ -46,8 +46,6 @@ struct stream_io {
 };
 
 struct streams_xattr_ea {
-	uint8_t flags;
-	char *name;
 	DATA_BLOB value;
 };
 
@@ -93,16 +91,6 @@ again:
 	DBG_DEBUG("EA %s is of length %zd\n", ea_name, sizeret);
 	dump_data(10, (uint8_t *)val, sizeret);
 
-	pea->flags = 0;
-	if (strnequal(ea_name, "user.", 5)) {
-		pea->name = talloc_strdup(mem_ctx, &ea_name[5]);
-	} else {
-		pea->name = talloc_strdup(mem_ctx, ea_name);
-	}
-	if (pea->name == NULL) {
-		TALLOC_FREE(val);
-		return ENOMEM;
-	}
 	pea->value.data = (unsigned char *)val;
 	pea->value.length = (size_t)sizeret;
 	return 0;
