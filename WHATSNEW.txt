@@ -57,7 +57,10 @@ options and interactions with tls related options.
 
 Modern write time update logic
 ------------------------------
-todo
+Samba 4.23 changes file timestamp handling to match modern Windows servers.
+Earlier releases used delayed write time updates, where last_write_time was
+only refreshed after a short idle period. Now Samba applies immediate
+timestamp updates consistent with modern Windows 10/Server 2016 or newer.
 
 Initial version of smb_prometheus_endpoint
 ------------------------------------------
