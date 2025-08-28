@@ -22,7 +22,29 @@ todo
 
 Add support for SMB3 over QUIC
 ------------------------------
-todo
+The new "client smb transports" and "server smb transport"
+allow a more flexible configuration for the used tcp
+sockets.
+
+It also got the ability specify "quic" as possible transport.
+If quic should be used in addition to the defaults something
+like "server smb transports = +quic" can be used.
+
+For the client quic only works with name based uncs,
+ip address based uncs are not supported.
+
+Note for the server 'quic' requires the quic.ko kernel module
+for Linux from https://github.com/lxin/quic (tested with Linux 6.14).
+Future Linux versions may support it natively, here's the
+branch that will hopefully accepted upstream soon:
+https://github.com/lxin/net-next/commits/quic/
+
+For the client side there's a fallback to the userspace ngtcp2
+library if the quic kernel module is not available.
+
+Check the smb.conf manpage for additional hints
+about the "client smb transports" and "server smb transport"
+options and interactions with tls related options.
 
 Modern write time update logic
 ------------------------------
