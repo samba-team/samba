@@ -25,7 +25,17 @@ interface windows_events
 		EVT_ID_USER_ADDED_TO_UNIVERSAL_SEC_GROUP		= 4756,
 		EVT_ID_USER_REMOVED_FROM_UNIVERSAL_SEC_GROUP		= 4757,
 		EVT_ID_USER_ADDED_TO_UNIVERSAL_GROUP			= 4761,
-		EVT_ID_USER_REMOVED_FROM_UNIVERSAL_GROUP		= 4762
+		EVT_ID_USER_REMOVED_FROM_UNIVERSAL_GROUP		= 4762,
+		/*
+		 * Any change to any object will cause event 5136 in
+		 * Windows AD -- if that object has a SACL asking for
+		 * auditing.
+		 *
+		 * This event is used for msDS-KeyCredentialLink
+		 * changes which do not have a specific event code.
+		 */
+		EVT_ID_DIRECTORY_OBJECT_CHANGE		       		= 5136
+
 	} event_id_type;
 
 	/* See https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/authentication-policies-and-authentication-policy-silos#BKMK_ErrorandEvents */
