@@ -1142,6 +1142,7 @@ nbt = ["nbt.dgram"]
 vfs = [
     "vfs.fruit",
     "vfs.acl_xattr",
+    "vfs.streams_xattr",
     "vfs.fruit_netatalk",
     "vfs.fruit_file_id",
     "vfs.fruit_timemachine",
@@ -1337,6 +1338,8 @@ for t in tests:
             plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "vfs.acl_xattr":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+    elif t == "vfs.streams_xattr":
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_wo_fruit -U$USERNAME%$PASSWORD')
     elif t == "smb2.compound_find":
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER/compound_find -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
