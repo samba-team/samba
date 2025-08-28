@@ -64,7 +64,11 @@ timestamp updates consistent with modern Windows 10/Server 2016 or newer.
 
 Initial version of smb_prometheus_endpoint
 ------------------------------------------
-todo
+Samba 4.23 introduces the smb_prometheus_endpoint utility, which exports
+Samba server metrics in Prometheus-compatible format. This enables seamless
+integration of Samba performance and status monitoring into existing
+Prometheus and Grafana environments. For usage and configuration details,
+refer to the new smb_prometheus_endpoint man page.
 
 samba-tool domain backup --no-secrets avoids confidential attributes
 --------------------------------------------------------------------
