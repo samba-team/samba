@@ -1,0 +1,1 @@
+^samba.tests.audit_log_pass_change.+AuditLogPassChangeTests.test_ldap_key_credential_link
