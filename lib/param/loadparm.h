@@ -183,6 +183,10 @@ struct file_lists {
 #define KERBEROS_ETYPES_STRONG 1
 #define KERBEROS_ETYPES_LEGACY 2
 
+#define KDC_CERT_BINDING_NONE 0
+#define KDC_CERT_BINDING_COMPAT 1
+#define KDC_CERT_BINDING_FULL 2
+
 /* ACL compatibility */
 enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 

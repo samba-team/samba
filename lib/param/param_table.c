@@ -294,6 +294,15 @@ static const struct enum_list enum_kerberos_encryption_types_vals[] = {
 	{-1, NULL}
 };
 
+/* KDC Windows KB5014754 certificate binding enforcement modes */
+
+static const struct enum_list enum_strong_cert_binding_enforcement_vals[] = {
+	{KDC_CERT_BINDING_NONE, "none"},
+	{KDC_CERT_BINDING_COMPAT, "compatibility"},
+	{KDC_CERT_BINDING_FULL, "full"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_printing[] = {
 	{PRINT_SYSV, "sysv"},
 	{PRINT_AIX, "aix"},

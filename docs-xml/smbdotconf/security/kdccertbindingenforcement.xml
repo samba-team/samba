@@ -1,0 +1,109 @@
+<samba:parameter name="strong certificate binding enforcement"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_strong_cert_binding_enforcement_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This parameter controls the enforcement of Windows Certificate
+        bindings as outlined in
+            <ulink url="https://support.microsoft.com/en-us/topic/kb5014754-certificate-based-authentication-changes-on-windows-domain-controllers-ad2c23b0-15d8-4340-a468-4d4f3b188f16">
+                KB5014754: Certificate-based authentication changes on
+                Windows domain controllers
+            </ulink>, when performing certificate based kerberos authentication
+            (PKINIT)
+    </para>
+
+    <para>The possible values are:
+        <itemizedlist>
+            <listitem>
+                <para><constant>none</constant></para>
+                <para>
+                    No validation of the certificate mappings is performed
+                </para>
+            </listitem>
+            <listitem>
+                <para><constant>compatibility</constant></para>
+                <para>
+                        Weak certificate mappings are permitted.
+                </para>
+                <para>
+                    In compatibility mode for WEAK mappings the date the
+                    certificate was issued must be after the date that the user
+                    was created.
+                </para>
+                <para>
+                    <constant>Unless</constant>
+                    <smbconfoption name="certificate backdating compensation"/>
+                    has a value.  In that case the certificate may have been
+                    issued no more that number of minutes before the user
+                    was created.
+                </para>
+            </listitem>
+            <listitem>
+                <para><constant>full</constant></para>
+                <para>
+                    Only <constant>strong</constant> certificate mappings are
+                    permitted. This is the default.
+                </para>
+            </listitem>
+        </itemizedlist>
+    </para>
+
+    <para>
+        Certificate mappings are configured in the users
+        <constant>altSecurityIdentities</constant>
+            attribute and may be any of:
+            <itemizedlist>
+            <listitem>
+                <para>X509 Issuer and subject</para>
+                <para>Example: "X509:&lt;I&gt;IssuerName&lt;S&gt;SubjectName"</para>
+                <para>
+                    The values provided for the issuer name and subject name
+                    must match those in the users certificate exactly.
+                </para>
+                <para><emphasis>WEAK</emphasis></para>
+            </listitem>
+            <listitem>
+                <para>X509 Subject only</para>
+                <para>Example: "X509:&lt;S&gt;SubjectName"</para>
+                <para>
+                    The value provided for the issuer subject name
+                    must match that in the users certificate exactly.
+                </para>
+                <para><emphasis>WEAK</emphasis></para>
+            </listitem>
+            <listitem>
+                <para>X509 RFC822</para>
+                <para>Example: "X509:&lt;RFC822&gt;test@example.com"</para>
+                <para>
+                    Email address
+                </para>
+                <para><emphasis>WEAK</emphasis></para>
+            </listitem>
+            <listitem>
+                <para>X509 Issuer and serial number</para>
+                <para>Example: "X509:&lt;I&gt;IssuerName&lt;SR&gt;123456789"</para>
+                <para>
+                    Certificate issuer and serial number
+                </para>
+                <para><emphasis>STRONG</emphasis></para>
+            </listitem>
+            <listitem>
+                <para>X509 Subject Key Identifier</para>
+                <para>Example: "&lt;SKI&gt;01234xxxxx"</para>
+                <para><emphasis>STRONG</emphasis></para>
+            </listitem>
+            <listitem>
+                <para>X509 public key SHA1 </para>
+                <para>Example: "X509:&lt;SHA1-PUKEY&gt;1234567890abcdef"</para>
+                <para>
+                    The SHA1 hash of the certificates public key
+                </para>
+                <para><emphasis>STRONG</emphasis></para>
+            </listitem>
+            </itemizedlist>
+    </para>
+</description>
+
+<value type="default">full</value>
+</samba:parameter>

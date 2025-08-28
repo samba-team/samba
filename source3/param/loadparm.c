@@ -960,6 +960,8 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.kpasswd_port = 464;
 
 	Globals.kdc_enable_fast = true;
+	Globals.strong_certificate_binding_enforcement
+		= KDC_CERT_BINDING_FULL;
 
 	Globals.winbind_debug_traceid = true;
 
