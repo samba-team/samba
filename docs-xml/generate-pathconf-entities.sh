@@ -19,5 +19,4 @@ echo "
 <!ENTITY pathconfig.SAMBA_DATADIR        '\${prefix}/var/samba'>
 <!ENTITY pathconfig.CTDB_DATADIR         '\${prefix}/share/ctdb'>
 <!ENTITY pathconfig.CONFIGFILE           '\${prefix}/etc/smb.conf'>
-<!ENTITY pathconfig.HIMMELBLAUD_HSM_PIN_PATH '\${prefix}/var/lib/himmelblaud/hsm-pin'>
 "

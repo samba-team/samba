@@ -1,6 +1,0 @@
-[package]
-name = "ntstatus_gen"
-edition.workspace = true
-license.workspace = true
-homepage.workspace = true
-version.workspace = true

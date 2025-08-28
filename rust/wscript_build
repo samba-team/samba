@@ -2,21 +2,4 @@
 
 bld.vendor_sources()
 
-if conf.env.enable_himmelblau:
-    bld.SAMBA_RUST_BINARY('himmelblaud', 'himmelblaud',
-                          ['param',
-                           'chelps',
-                           'dbg',
-                           'ntstatus_gen',
-                           'sock',
-                           'tdb',
-                           'version',
-                           'idmap'])
-    bld.SAMBA_RUST_LIBRARY('nss', 'libnss_himmelblau.so', ['sock',
-                                                           'ntstatus_gen',
-                                                           'param',
-                                                           'version'])
-    bld.SAMBA_RUST_LIBRARY('pam', 'libpam_himmelblau.so', ['sock',
-                                                           'chelps',
-                                                           'param',
-                                                           'version'])
+# There are no Rust integrations at the moment. If there were, they would be built here.

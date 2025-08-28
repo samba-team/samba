@@ -285,13 +285,6 @@ dynconfig = {
          'HELPTEXT':  'Where to put the smbpasswd file',
          'DELAY':     True,
     },
-    'HIMMELBLAUD_HSM_PIN_PATH': {
-         'STD-PATH':  '${LOCALSTATEDIR}/lib/himmelblaud/hsm-pin',
-         'FHS-PATH':  '${LOCALSTATEDIR}/lib/himmelblaud/hsm-pin',
-         'OPTION':    '--with-himmelblaud-hsm-pin-path',
-         'HELPTEXT':  'Where to store the hsm pin',
-         'DELAY':     True,
-    },
 }
 
 def options(opt):

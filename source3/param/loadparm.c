@@ -1014,13 +1014,6 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 
 	Globals.acl_claims_evaluation = ACL_CLAIMS_EVALUATION_AD_DC_ONLY;
 
-	/* Set the default Himmelblaud globals */
-	lpcfg_string_set(Globals.ctx,
-			&Globals.himmelblaud_hsm_pin_path,
-			get_dyn_HIMMELBLAUD_HSM_PIN_PATH());
-	Globals.himmelblaud_hello_enabled = false;
-	Globals.himmelblaud_sfa_fallback = false;
-
 	Globals.server_smb_encryption_over_quic = true;
 	Globals.client_smb_encryption_over_quic = true;
 

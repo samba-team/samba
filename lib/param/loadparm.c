@@ -3284,17 +3284,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "acl claims evaluation",
 				  "AD DC only");
 
-	/* Set the default Himmelblaud globals */
-	lpcfg_do_global_parameter(lp_ctx,
-				  "himmelblaud hsm pin path",
-				  get_dyn_HIMMELBLAUD_HSM_PIN_PATH());
-	lpcfg_do_global_parameter(lp_ctx,
-				  "himmelblaud hello enabled",
-				  "false");
-	lpcfg_do_global_parameter(lp_ctx,
-				  "himmelblaud sfa fallback",
-				  "false");
-
 	lpcfg_do_global_parameter(lp_ctx,
 				  "server smb encryption over quic",
 				  "yes");

@@ -7,18 +7,6 @@ version = "4.21.0"
 [workspace]
 resolver = "2"
 members = [
-  "chelps", "config", "dbg", "himmelblaud", "idmap",
-  "nss", "ntstatus_gen", "pam",
-  "param", "sock", "talloc", "tdb", "version",
 ]
 
 [workspace.dependencies]
-param = { path = "param" }
-dbg = { path = "dbg" }
-chelps = { path = "chelps" }
-sock = { path = "sock" }
-ntstatus_gen = { path = "ntstatus_gen" }
-tdb = { path = "tdb" }
-idmap = { path = "idmap" }
-libc = "0.2.155"
-config = { path = "config" }
