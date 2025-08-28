@@ -45,10 +45,16 @@ struct stream_io {
 	vfs_handle_struct *handle;
 };
 
+struct streams_xattr_ea {
+	uint8_t flags;
+	char *name;
+	DATA_BLOB value;
+};
+
 static int streams_xattr_get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 					  files_struct *fsp,
 					  const char *ea_name,
-					  struct ea_struct *pea)
+					  struct streams_xattr_ea *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -106,7 +112,7 @@ static ssize_t get_xattr_size_fsp(struct files_struct *fsp,
 			          const char *xattr_name)
 {
 	int ret;
-	struct ea_struct ea;
+	struct streams_xattr_ea ea;
 	ssize_t result;
 
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
@@ -455,7 +461,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 {
 	struct streams_xattr_config *config = NULL;
 	struct stream_io *sio = NULL;
-	struct ea_struct ea;
+	struct streams_xattr_ea ea;
 	char *xattr_name = NULL;
 	int fakefd = -1;
 	bool set_empty_xattr = false;
@@ -694,7 +700,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	bool src_is_stream, dst_is_stream;
 	ssize_t oret;
 	ssize_t nret;
-	struct ea_struct ea;
+	struct streams_xattr_ea ea;
 	struct smb_filename *pathref_src = NULL;
 	struct smb_filename *pathref_dst = NULL;
 	struct smb_filename *full_src = NULL;
@@ -863,6 +869,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 	}
 
 	for (i=0; i<num_names; i++) {
+		struct streams_xattr_ea sea = {};
 		struct ea_struct ea;
 		int ret;
 
@@ -892,7 +899,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 		ret = streams_xattr_get_ea_value_fsp(names,
 						     smb_fname->fsp,
 						     names[i],
-						     &ea);
+						     &sea);
 		if (ret != 0) {
 			DBG_DEBUG("Could not get ea %s for file %s: %s\n",
 				  names[i],
@@ -900,6 +907,8 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 				  strerror(ret));
 			continue;
 		}
+
+		ea.value = sea.value;
 
 		ea.name = talloc_asprintf(
 			ea.value.data, ":%s%s",
@@ -915,7 +924,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 			return NT_STATUS_OK;
 		}
 
-		TALLOC_FREE(ea.value.data);
+		TALLOC_FREE(sea.value.data);
 	}
 
 	TALLOC_FREE(names);
@@ -1070,7 +1079,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 {
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	struct ea_struct ea;
+	struct streams_xattr_ea ea;
 	int ret;
 
 	DBG_DEBUG("offset=%jd, size=%zu\n", (intmax_t)offset, n);
@@ -1159,7 +1168,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 {
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	struct ea_struct ea;
+	struct streams_xattr_ea ea;
 	int ret;
 	size_t length, overlap;
 
@@ -1370,7 +1379,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 {
 	int ret;
 	uint8_t *tmp;
-	struct ea_struct ea;
+	struct streams_xattr_ea ea;
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
