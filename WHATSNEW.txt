@@ -72,7 +72,6 @@ refer to the new smb_prometheus_endpoint man page.
 
 samba-tool domain backup --no-secrets avoids confidential attributes
 --------------------------------------------------------------------
-
 The --no-secrets option creates a back-up without secret attributes
 (e.g. passwords), suitable for use in a lab domain. Until now it could
 still contain confidential attributes, including BitLocker recovery
@@ -83,20 +82,19 @@ schema to have confidential attributes and are no use without them.
 
 CTDB changes
 ------------
+CTDB now supports loading tunables from
+/etc/ctdb/tunables.d/*.tunables, in addition to the standard
+/etc/ctdb/tunables.conf.  See the ctdb-tunables(7) manual page for
+more details.  Note that the above locations are examples - the
+actual location of these files will depend on compile time
+configuration.
 
-* CTDB now supports loading tunables from
-  /etc/ctdb/tunables.d/*.tunables, in addition to the standard
-  /etc/ctdb/tunables.conf.  See the ctdb-tunables(7) manual page for
-  more details.  Note that the above locations are examples - the
-  actual location of these files will depend on compile time
-  configuration.
-
-  It isn't expected that many users will require a directory of tunables
-  files, since most users do not need to change tunables from their
-  default values.  However, this allows vendors to ship their required
-  tunables settings (for example, in one or more files marked "do not
-  edit") while still allowing local administrators to add their own
-  tunables settings (in one or more separate files).
+It isn't expected that many users will require a directory of tunables
+files, since most users do not need to change tunables from their
+default values.  However, this allows vendors to ship their required
+tunables settings (for example, in one or more files marked "do not
+edit") while still allowing local administrators to add their own
+tunables settings (in one or more separate files).
 
 Per-share profiling stats
 -------------------------
