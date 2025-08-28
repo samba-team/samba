@@ -119,6 +119,44 @@ static bool has_password_changed(const struct ldb_message *message)
 	}
 	return false;
 }
+/*
+ * @brief Has a public key been set or unset in this message.
+ *
+ * We treat msDS-KeyCredentialLink a bit like a password change,
+ * because it changes the remote certificate that is accepted.
+ *
+ * While this is not a secret, it is significant from a security point
+ * of view because, as openssh likes to say, IT IS POSSIBLE THAT
+ * SOMEONE IS DOING SOMETHING NASTY by changing trusted keys.
+ *
+ * A real password change only matters for this reason too. But a
+ * *read* of the password hash is a security event in a way that a
+ * read of msDS-KeyCredentialLink is not.
+ *
+ * That's why we don't add just public keys to DSDB_PASSWORD_ATTRIBUTES,
+ * which is used elsewhere to check secrecy.
+ *
+ * This does not actually check that the message will change the
+ * database -- a message setting msDS-KeyCredentialLink to its current
+ * value will still be logged as a change.
+ *
+ * @return true if the message contains a public key, which currently
+ * just means msDS-KeyCredentialLink.
+ */
+static bool has_public_key_changed(const struct ldb_message *message)
+{
+	unsigned int i;
+	if (message == NULL) {
+		return false;
+	}
+	for (i = 0; i<message->num_elements; i++) {
+		if (ldb_attr_cmp(message->elements[i].name,
+				 "msDS-KeyCredentialLink") == 0) {
+			return true;
+		}
+	}
+	return false;
+}
 
 /*
  * @brief get the password change windows event id
@@ -1150,6 +1188,7 @@ static void log_standard_operation(
 
 	const struct ldb_message *message = dsdb_audit_get_message(request);
 	bool password_changed = has_password_changed(message);
+	bool public_key_changed = has_public_key_changed(message);
 	struct audit_private *audit_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 				      struct audit_private);
@@ -1186,6 +1225,21 @@ static void log_standard_operation(
 				PASSWORD_LOG_LVL);
 			TALLOC_FREE(entry);
 		}
+		if (public_key_changed) {
+			char *entry = NULL;
+			entry = password_change_human_readable(
+				ctx,
+				module,
+				request,
+				reply,
+				true);
+			audit_log_human_text(
+				PASSWORD_HR_TAG,
+				entry,
+				DBGC_DSDB_PWD_AUDIT,
+				PASSWORD_LOG_LVL);
+			TALLOC_FREE(entry);
+		}
 	}
 	if (CHECK_DEBUGLVLC(DBGC_DSDB_AUDIT_JSON, OPERATION_LOG_LVL) ||
 		(audit_private->msg_ctx
@@ -1212,6 +1266,22 @@ static void log_standard_operation(
 		if (password_changed) {
 			struct json_object json;
 			json = password_change_json(module, request, reply, false);
+			audit_log_json(
+				&json,
+				DBGC_DSDB_PWD_AUDIT_JSON,
+				PASSWORD_LOG_LVL);
+			if (audit_private->send_password_events) {
+				audit_message_send(
+					audit_private->msg_ctx,
+					DSDB_PWD_EVENT_NAME,
+					MSG_DSDB_PWD_LOG,
+					&json);
+			}
+			json_free(&json);
+		}
+		if (public_key_changed) {
+			struct json_object json;
+			json = password_change_json(module, request, reply, true);
 			audit_log_json(
 				&json,
 				DBGC_DSDB_PWD_AUDIT_JSON,
