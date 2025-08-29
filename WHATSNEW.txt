@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate release of Samba 4.23.  This is *not*
+This is the third release candidate release of Samba 4.23.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -124,6 +124,21 @@ smb.conf changes
   client smb transports                   New             tcp, nbt
   server smb transports                   New             tcp, nbt
   winbind varlink service                 New             no
+
+
+CHANGES SINCE 4.23.0rc2
+=======================
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15843: macOS Finder client DFS broken on 4.22.0.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15899: Self-signed certificates don't have X509v3 Subject Alternative
+     Name for DNS.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15893: Improve handling of principals and realms in client tools.
+
 
 CHANGES SINCE 4.23.0rc1
 =======================
