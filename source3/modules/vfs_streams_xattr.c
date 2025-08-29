@@ -45,14 +45,10 @@ struct stream_io {
 	vfs_handle_struct *handle;
 };
 
-struct streams_xattr_ea {
-	DATA_BLOB value;
-};
-
 static int streams_xattr_get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 					  files_struct *fsp,
 					  const char *ea_name,
-					  struct streams_xattr_ea *pea)
+					  char **_val)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -85,14 +81,17 @@ again:
 	}
 
 	if (sizeret == -1) {
-		return errno;
+		int err = errno;
+		TALLOC_FREE(val);
+		return err;
 	}
 
 	DBG_DEBUG("EA %s is of length %zd\n", ea_name, sizeret);
 	dump_data(10, (uint8_t *)val, sizeret);
 
-	pea->value.data = (unsigned char *)val;
-	pea->value.length = (size_t)sizeret;
+	val = talloc_realloc(mem_ctx, val, char, sizeret);
+	*_val = val;
+
 	return 0;
 }
 
@@ -100,19 +99,19 @@ static ssize_t get_xattr_size_fsp(struct files_struct *fsp,
 			          const char *xattr_name)
 {
 	int ret;
-	struct streams_xattr_ea ea;
+	char *val = NULL;
 	ssize_t result;
 
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
 					     fsp,
 					     xattr_name,
-					     &ea);
+					     &val);
 	if (ret != 0) {
 		return -1;
 	}
 
-	result = ea.value.length-1;
-	TALLOC_FREE(ea.value.data);
+	result = talloc_get_size(val);
+	TALLOC_FREE(val);
 	return result;
 }
 
@@ -449,7 +448,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 {
 	struct streams_xattr_config *config = NULL;
 	struct stream_io *sio = NULL;
-	struct streams_xattr_ea ea;
+	char *val = NULL;
 	char *xattr_name = NULL;
 	int fakefd = -1;
 	bool set_empty_xattr = false;
@@ -490,7 +489,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
 					     fsp->base_fsp,
 					     xattr_name,
-					     &ea);
+					     &val);
 	if (ret != 0) {
 		DBG_DEBUG("streams_xattr_get_ea_value_fsp returned %s\n",
 			  strerror(ret));
@@ -516,7 +515,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		set_empty_xattr = true;
 	}
 
-	TALLOC_FREE(ea.value.data);
+	TALLOC_FREE(val);
 
 	if (how->flags & O_TRUNC) {
 		set_empty_xattr = true;
@@ -688,7 +687,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	bool src_is_stream, dst_is_stream;
 	ssize_t oret;
 	ssize_t nret;
-	struct streams_xattr_ea ea;
+	char *val = NULL;
 	struct smb_filename *pathref_src = NULL;
 	struct smb_filename *pathref_dst = NULL;
 	struct smb_filename *full_src = NULL;
@@ -774,7 +773,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
 					     pathref_src->fsp,
 					     src_xattr_name,
-					     &ea);
+					     &val);
 	if (ret != 0) {
 		errno = ret;
 		goto fail;
@@ -796,11 +795,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 
 	/* (Over)write the new stream on the base file fsp. */
 	nret = SMB_VFS_FSETXATTR(
-			pathref_dst->fsp,
-			dst_xattr_name,
-			ea.value.data,
-			ea.value.length,
-			0);
+		pathref_dst->fsp, dst_xattr_name, val, talloc_get_size(val), 0);
 	if (nret < 0) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
@@ -857,7 +852,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 	}
 
 	for (i=0; i<num_names; i++) {
-		struct streams_xattr_ea sea = {};
+		char *val = NULL;
 		struct ea_struct ea;
 		int ret;
 
@@ -887,7 +882,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 		ret = streams_xattr_get_ea_value_fsp(names,
 						     smb_fname->fsp,
 						     names[i],
-						     &sea);
+						     &val);
 		if (ret != 0) {
 			DBG_DEBUG("Could not get ea %s for file %s: %s\n",
 				  names[i],
@@ -896,7 +891,8 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 			continue;
 		}
 
-		ea.value = sea.value;
+		ea.value.data = (uint8_t *)val;
+		ea.value.length = talloc_get_size(val);
 
 		ea.name = talloc_asprintf(
 			ea.value.data, ":%s%s",
@@ -912,7 +908,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 			return NT_STATUS_OK;
 		}
 
-		TALLOC_FREE(sea.value.data);
+		TALLOC_FREE(val);
 	}
 
 	TALLOC_FREE(names);
@@ -1067,7 +1063,8 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 {
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	struct streams_xattr_ea ea;
+	char *val = NULL;
+	size_t len;
 	int ret;
 
 	DBG_DEBUG("offset=%jd, size=%zu\n", (intmax_t)offset, n);
@@ -1109,39 +1106,36 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
 					     fsp->base_fsp,
 					     sio->xattr_name,
-					     &ea);
+					     &val);
 	if (ret != 0) {
 		errno = ret;
 		return -1;
 	}
 
-        if ((offset + n) > ea.value.length-1) {
-		uint8_t *tmp;
-		size_t new_sz = offset + n + 1;
+	len = talloc_get_size(val) - 1;
 
-		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
-					   new_sz);
+	if ((offset + n) > len) {
+		char *tmp = NULL;
 
+		tmp = talloc_realloc_zero(talloc_tos(),
+					  val,
+					  char,
+					  offset + n + 1);
 		if (tmp == NULL) {
-			TALLOC_FREE(ea.value.data);
-                        errno = ENOMEM;
-                        return -1;
+			TALLOC_FREE(val);
+			errno = ENOMEM;
+			return -1;
                 }
+		val = tmp;
 
-		memset(tmp + ea.value.length, 0, new_sz - ea.value.length);
-		ea.value.data = tmp;
-		ea.value.length = offset + n + 1;
-		ea.value.data[offset+n] = 0;
-        }
+		val[offset + n] = '\0';
+	}
 
-        memcpy(ea.value.data + offset, data, n);
+	memcpy(val + offset, data, n);
 
-	ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
-				sio->xattr_name,
-				ea.value.data,
-				ea.value.length,
-				0);
-	TALLOC_FREE(ea.value.data);
+	ret = SMB_VFS_FSETXATTR(
+		fsp->base_fsp, sio->xattr_name, val, talloc_get_size(val), 0);
+	TALLOC_FREE(val);
 
 	if (ret == -1) {
 		return -1;
@@ -1156,7 +1150,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 {
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	struct streams_xattr_ea ea;
+	char *val = NULL;
 	int ret;
 	size_t length, overlap;
 
@@ -1178,13 +1172,20 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
 					     fsp->base_fsp,
 					     sio->xattr_name,
-					     &ea);
+					     &val);
 	if (ret != 0) {
 		errno = ret;
 		return -1;
 	}
 
-	length = ea.value.length-1;
+	length = talloc_get_size(val);
+
+	if (length < 1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	length -= 1;
 
 	DBG_DEBUG("streams_xattr_get_ea_value_fsp returned %zu bytes\n",
 		  length);
@@ -1195,10 +1196,10 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
         }
 
         overlap = (offset + n) > length ? (length - offset) : n;
-        memcpy(data, ea.value.data + offset, overlap);
+	memcpy(data, val + offset, overlap);
 
-	TALLOC_FREE(ea.value.data);
-        return overlap;
+	TALLOC_FREE(val);
+	return overlap;
 }
 
 struct streams_xattr_pread_state {
@@ -1366,10 +1367,10 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 					off_t offset)
 {
 	int ret;
-	uint8_t *tmp;
-	struct streams_xattr_ea ea;
-        struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	char *tmp;
+	char *val = NULL;
+	struct stream_io *sio = (struct stream_io *)
+		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
 	DBG_DEBUG("called for file %s offset %ju\n",
 		  fsp_str_dbg(fsp),
@@ -1386,38 +1387,24 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
 					     fsp->base_fsp,
 					     sio->xattr_name,
-					     &ea);
+					     &val);
 	if (ret != 0) {
 		errno = ret;
 		return -1;
 	}
 
-	tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
-				   offset + 1);
-
+	tmp = talloc_realloc_zero(talloc_tos(), val, char, offset + 1);
 	if (tmp == NULL) {
-		TALLOC_FREE(ea.value.data);
+		TALLOC_FREE(val);
 		errno = ENOMEM;
 		return -1;
 	}
+	val = tmp;
+	val[offset] = '\0';
 
-	/* Did we expand ? */
-	if (ea.value.length < offset + 1) {
-		memset(&tmp[ea.value.length], '\0',
-			offset + 1 - ea.value.length);
-	}
-
-	ea.value.data = tmp;
-	ea.value.length = offset + 1;
-	ea.value.data[offset] = 0;
-
-	ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
-				sio->xattr_name,
-				ea.value.data,
-				ea.value.length,
-				0);
-
-	TALLOC_FREE(ea.value.data);
+	ret = SMB_VFS_FSETXATTR(
+		fsp->base_fsp, sio->xattr_name, val, offset + 1, 0);
+	TALLOC_FREE(val);
 
 	if (ret == -1) {
 		return -1;
