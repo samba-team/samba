@@ -54,7 +54,8 @@ static ssize_t fgetxattr_multi(struct files_struct *fsp,
 	return ret;
 }
 
-static int fsetxattr_multi(struct files_struct *fsp,
+static int fsetxattr_multi(const struct streams_xattr_config *config,
+			   struct files_struct *fsp,
 			   const char *name,
 			   const void *value,
 			   size_t size,
@@ -559,7 +560,8 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
 			   xattr_name, smb_fname->base_name));
 
-		ret = fsetxattr_multi(fsp->base_fsp,
+		ret = fsetxattr_multi(config,
+				      fsp->base_fsp,
 				      xattr_name,
 				      &null,
 				      sizeof(null),
@@ -706,6 +708,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname_dst,
 				const struct vfs_rename_how *how)
 {
+	struct streams_xattr_config *config = NULL;
 	NTSTATUS status;
 	int ret = -1;
 	char *src_xattr_name = NULL;
@@ -718,6 +721,11 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	struct smb_filename *pathref_dst = NULL;
 	struct smb_filename *full_src = NULL;
 	struct smb_filename *full_dst = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				goto fail;);
 
 	src_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
 	dst_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
@@ -820,8 +828,12 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* (Over)write the new stream on the base file fsp. */
-	nret = fsetxattr_multi(
-		pathref_dst->fsp, dst_xattr_name, val, talloc_get_size(val), 0);
+	nret = fsetxattr_multi(config,
+			       pathref_dst->fsp,
+			       dst_xattr_name,
+			       val,
+			       talloc_get_size(val),
+			       0);
 	if (nret < 0) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
@@ -1086,11 +1098,15 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 				    files_struct *fsp, const void *data,
 				    size_t n, off_t offset)
 {
+	struct streams_xattr_config *config = NULL;
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	char *val = NULL;
 	size_t len;
 	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
+				return -1);
 
 	DBG_DEBUG("offset=%jd, size=%zu\n", (intmax_t)offset, n);
 
@@ -1156,8 +1172,14 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		val[offset + n] = '\0';
 	}
 
-	ret = fsetxattr_multi(
-		fsp->base_fsp, sio->xattr_name, val, talloc_get_size(val), 0);
+	memcpy(val + offset, data, n);
+
+	ret = fsetxattr_multi(config,
+			      fsp->base_fsp,
+			      sio->xattr_name,
+			      val,
+			      talloc_get_size(val),
+			      0);
 	TALLOC_FREE(val);
 
 	if (ret == -1) {
@@ -1389,11 +1411,15 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					off_t offset)
 {
+	struct streams_xattr_config *config = NULL;
 	int ret;
 	char *tmp;
 	char *val = NULL;
 	struct stream_io *sio = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
+				return -1);
 
 	DBG_DEBUG("called for file %s offset %ju\n",
 		  fsp_str_dbg(fsp),
@@ -1425,8 +1451,13 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	val = tmp;
 	val[offset] = '\0';
 
-	ret = fsetxattr_multi(
-		fsp->base_fsp, sio->xattr_name, val, talloc_get_size(val), 0);
+	ret = fsetxattr_multi(config,
+			      fsp->base_fsp,
+			      sio->xattr_name,
+			      val,
+			      talloc_get_size(val),
+			      0);
+
 	TALLOC_FREE(val);
 
 	if (ret == -1) {
