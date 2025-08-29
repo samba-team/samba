@@ -181,6 +181,125 @@
 
 		</listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_new:fscrypt = [ disabled | none | keybridge ]</term>
+		<listitem>
+		<para>
+			Configures the CephFS client to enable FSCrypt-style
+			encrypted (sub-)volume support. If enabled, encryption
+			is applied automatically to empty shares and future
+			connections to said share will require FSCrypt with
+			the same key material.
+		</para>
+
+		<itemizedlist>
+			<listitem><para><constant>disabled</constant> (default)
+			- FSCrypt support is disabled.
+			</para></listitem>
+
+			<listitem><para><constant>none</constant> - An alias
+			for <constant>disabled</constant>.
+			</para></listitem>
+
+			<listitem><para><constant>keybridge</constant> - Enable
+			CephFS FSCrypt support using the keybridge RPC API
+			for fetching key material. Setting this option
+			requires that the options
+			<constant>ceph_new:keybridge socket</constant>,
+			<constant>ceph_new:keybridge scope</constant>, and
+			<constant>ceph_new:keybridge name</constant>
+			be specified.
+			</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_new:keybridge socket = type:path</term>
+		<listitem>
+		<para>
+			Configures the CephFS FSCrypt support to communicate
+			with a KeyBridge server listening to the provided
+			socket. The KeyBridge server uses the varlink KeyBridge
+			protocol to fetch key material from one or more
+			key distribution services, such as KMIP for example.
+		</para>
+
+		<para>
+			The only permitted type is <constant>unix</constant>.
+			The path value is a path to a unix domain socket
+			for a keybridge server.
+			For example: unix:/run/keybridge/keybridge.sock
+		</para>
+
+		<para>
+			If specified, this option requires the options
+			<constant>ceph_new:keybridge scope</constant> and
+			<constant>ceph_new:keybridge name</constant>
+			to be specified.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_new:keybridge scope = scope</term>
+		<listitem>
+		<para>
+			Set the scope value for KeyBridge API requests.
+			The scope identifies a context for keys, typically
+			mapping to a particular backend. The available
+			scope values depend on the configuration of the
+			KeyBridge server.
+			For example: "kmip.testing".
+		</para>
+
+		<para>
+			If specified, this option requires the options
+			<constant>ceph_new:keybridge socket</constant> and
+			<constant>ceph_new:keybridge name</constant>
+			to be specified.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_new:keybridge name = name</term>
+		<listitem>
+		<para>
+			Set the name value for KeyBridge API requests.
+			The name or identifier for a key, within a scope,
+			that the KeyBridge server will be use to "unlock"
+			the encryption for this share.
+			For example: "volume1".
+		</para>
+
+		<para>
+			If specified, this option requires the options
+			<constant>ceph_new:keybridge socket</constant> and
+			<constant>ceph_new:keybridge scope</constant>
+			to be specified.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_new:keybridge kind = [ B64 | VALUE ]</term>
+		<listitem>
+		<para>
+			Set the kind of the data field for KeyBridge API requests.
+			A KeyBridge server is capable of data exchange using
+			either Base64 encoded strings (B64) or plain text (VALUE).
+			Depending on the scope, a server may be able to
+			fetch key material in one form or the other.
+			Use this option to manually select the data kind.
+		</para>
+
+		<para>
+			If unspecified, B64 will be used.
+		</para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 
 </refsect1>
