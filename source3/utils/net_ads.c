@@ -1359,7 +1359,7 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 	int ret = -1;
 
-	if (argc >= 0) {
+	if (argc > 0) {
 		TALLOC_FREE(tmp_ctx);
 		return net_run_function(c, argc, argv, "net ads group", func);
 	}
