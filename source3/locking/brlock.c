@@ -1899,63 +1899,59 @@ bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id)
 {
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
-	TDB_DATA key, val;
-	struct db_record *rec;
-	struct lock_struct *lock;
+	struct byte_range_lock *br_lck = NULL;
+	struct lock_struct *locks = NULL;
 	unsigned n, num;
 	struct file_id_buf buf;
-	NTSTATUS status;
 
-	key = make_tdb_data((void*)&fid, sizeof(fid));
-
-	rec = dbwrap_fetch_locked(brlock_db, frame, key);
-	if (rec == NULL) {
-		DBG_INFO("failed to fetch record for file %s\n",
-			 file_id_str_buf(fid, &buf));
-		goto done;
+	br_lck = brl_get_locks_for_cleanup(frame, &fid);
+	if (br_lck == NULL) {
+		return false;
 	}
 
-	val = dbwrap_record_get_value(rec);
-	lock = (struct lock_struct*)val.dptr;
-	num = val.dsize / sizeof(struct lock_struct);
-	if (lock == NULL) {
-		DBG_DEBUG("no byte range locks for file %s\n",
-			  file_id_str_buf(fid, &buf));
-		ret = true;
-		goto done;
-	}
+	locks = br_lck->lock_data;
 
-	for (n=0; n<num; n++) {
-		struct lock_context *ctx = &lock[n].context;
-
-		if (!server_id_is_disconnected(&ctx->pid)) {
-			struct server_id_buf tmp;
-			DBG_INFO("byte range lock "
-				 "%s used by server %s, do not cleanup\n",
-				 file_id_str_buf(fid, &buf),
-				 server_id_str_buf(ctx->pid, &tmp));
-			goto done;
-		}
+	for (n = 0, num = 0; n < br_lck->num_locks; n++) {
+		struct lock_struct *lock = &locks[n];
+		struct lock_context *ctx = &lock->context;
 
 		if (ctx->smblctx != open_persistent_id)	{
-			DBG_INFO("byte range lock %s expected smblctx %"PRIu64" "
-				 "but found %"PRIu64", do not cleanup\n",
-				 file_id_str_buf(fid, &buf),
-				 open_persistent_id,
-				 ctx->smblctx);
-			goto done;
+			DBG_DEBUG("byte range lock %s, "
+				  "cleanup smblctx %"PRIu64", "
+				  "found %"PRIu64", do not cleanup\n",
+				  file_id_str_buf(fid, &buf),
+				  open_persistent_id,
+				  ctx->smblctx);
+			continue;
 		}
-	}
 
-	status = dbwrap_record_delete(rec);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("failed to delete record "
-			 "for file %s from %s, open %"PRIu64": %s\n",
-			 file_id_str_buf(fid, &buf),
-			 dbwrap_name(brlock_db),
-			 open_persistent_id,
-			 nt_errstr(status));
-		goto done;
+		if (lock->persistent) {
+			if (serverid_exists(&ctx->pid)) {
+				struct server_id_buf tmp;
+				DBG_WARNING("byte range lock %s used by "
+					    "server %s, do not cleanup\n",
+					    file_id_str_buf(fid, &buf),
+					    server_id_str_buf(ctx->pid, &tmp));
+				continue;
+			}
+		} else {
+			if (!server_id_is_disconnected(&ctx->pid)) {
+				struct server_id_buf tmp;
+				DBG_WARNING("byte range lock %s used by "
+					    "server %s, do not cleanup\n",
+					    file_id_str_buf(fid, &buf),
+					    server_id_str_buf(ctx->pid, &tmp));
+				continue;
+			}
+		}
+
+		/*
+		 * Set lock pid holder to 0, triggers lock deletion in
+		 * byte_range_lock_flush().
+		 */
+		lock->context.pid.pid = 0;
+		br_lck->modified = true;
+		num++;
 	}
 
 	DBG_DEBUG("file %s cleaned up %u entries from open %"PRIu64"\n",
@@ -1964,7 +1960,7 @@ bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id)
 		  open_persistent_id);
 
 	ret = true;
-done:
+
 	talloc_free(frame);
 	return ret;
 }
