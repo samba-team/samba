@@ -458,6 +458,8 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		set_empty_xattr = true;
 	}
 
+	TALLOC_FREE(ea.value.data);
+
 	if (how->flags & O_TRUNC) {
 		set_empty_xattr = true;
 	}
