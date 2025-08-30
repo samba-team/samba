@@ -874,10 +874,16 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		return ldb_oom(ldb);
 	}
 
-	if (req->operation == LDB_MODIFY) {
+	switch (req->operation) {
+	case LDB_MODIFY:
 		msg = req->op.mod.message;
-	} else if (req->operation == LDB_ADD) {
+		break;
+	case LDB_ADD:
 		msg = req->op.add.message;
+		break;
+	default:
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (implicit_validated_write_control != NULL) {
@@ -958,11 +964,8 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		}
 
 		search_res = acl_res->msgs[0];
-	} else if (req->operation == LDB_ADD) {
-		search_res = msg;
 	} else {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		search_res = msg;
 	}
 
 	/* Check if the account has objectclass 'computer' or 'server'. */
