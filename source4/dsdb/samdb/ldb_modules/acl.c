@@ -1427,7 +1427,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	const char **must_contain = NULL;
 	const struct ldb_message *msg = req->op.add.message;
 	const struct dom_sid *domain_sid = NULL;
-	int i = 0;
+	unsigned int i = 0;
 	bool attribute_authorization;
 	bool is_subclass;
 
