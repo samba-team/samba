@@ -44,6 +44,7 @@
 #include "lib/util/time_basic.h"
 #include "lib/util/smb_strtox.h"
 #include "source3/smbd/dir.h"
+#include "scavenger.h"
 
 #if defined(HAVE_LINUX_MAGIC_H)
 #include <linux/magic.h>
@@ -2426,6 +2427,12 @@ static bool delay_for_oplock_fn(
 	}
 	if (e->protect) {
 		uint32_t file_available_mask = SMB2_LEASE_HANDLE;
+
+		scavenger_schedule_disconnected(
+			fsp->conn->sconn->msg_ctx,
+			e->share_file_id,
+			&fsp->file_id,
+			fsp->name_hash);
 
 		if (file_has_brlocks(fsp)) {
 			/*
