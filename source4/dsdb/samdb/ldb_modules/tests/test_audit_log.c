@@ -1027,6 +1027,160 @@ static void test_password_change_json(void **state)
 
 }
 
+/*
+ * Check that calling password_change_json() with public_key_changed
+ * will construct an appropriate message.
+ *
+ * This is a copy of test_password_change_json() but with
+ * public_key_changed = true passed to password_change_json().
+ */
+static void test_kcl_change_json(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	struct ldb_request *req = NULL;
+	struct ldb_reply *reply = NULL;
+	struct audit_private *audit_private = NULL;
+
+	struct tsocket_address *ts = NULL;
+
+	struct auth_session_info *sess = NULL;
+	struct security_token *token = NULL;
+	struct dom_sid sid;
+	const char *const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	struct GUID session_id;
+
+	struct GUID transaction_id;
+	const char *const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+
+	struct ldb_dn *dn = NULL;
+	const char *const DN = "dn=CN=USER,CN=Users,DC=SAMBA,DC=ORG";
+
+	struct ldb_message *msg = NULL;
+
+	struct json_object json;
+	json_t *audit = NULL;
+	json_t *v = NULL;
+	json_t *o = NULL;
+	time_t before;
+	struct timeval tv;
+	int rc;
+
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	ldb = ldb_init(ctx, NULL);
+
+	audit_private = talloc_zero(ctx, struct audit_private);
+	GUID_from_string(TRANSACTION, &transaction_id);
+	audit_private->transaction_guid = transaction_id;
+
+	module = talloc_zero(ctx, struct ldb_module);
+	module->ldb = ldb;
+	ldb_module_set_private(module, audit_private);
+
+	tsocket_address_inet_from_strings(ctx, "ip", "127.0.0.1", 0, &ts);
+	ldb_set_opaque(ldb, "remoteAddress", ts);
+
+	sess = talloc_zero(ctx, struct auth_session_info);
+	token = talloc_zero(ctx, struct security_token);
+	string_to_sid(&sid, SID);
+	token->num_sids = 1;
+	token->sids = &sid;
+	sess->security_token = token;
+	GUID_from_string(SESSION, &session_id);
+	sess->unique_session_token = session_id;
+	ldb_set_opaque(ldb, DSDB_SESSION_INFO, sess);
+
+	msg = talloc_zero(ctx, struct ldb_message);
+	dn = ldb_dn_new(ctx, ldb, DN);
+	msg->dn = dn;
+	ldb_msg_add_string(msg,
+			   "msDS-KeyCredentialLink",
+			   "B:4:1234:CN=USER,CN=Users,DC=SAMBA,DC=ORG");
+
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	req->op.add.message = msg;
+	reply = talloc_zero(ctx, struct ldb_reply);
+	reply->error = LDB_SUCCESS;
+
+	rc = gettimeofday(&tv, NULL);
+	assert_return_code(rc, errno);
+	before = tv.tv_sec;
+	json = password_change_json(module, req, reply, true);
+	assert_int_equal(3, json_object_size(json.root));
+
+
+	v = json_object_get(json.root, "type");
+	assert_non_null(v);
+	assert_string_equal("passwordChange", json_string_value(v));
+
+	v = json_object_get(json.root, "timestamp");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	check_timestamp(before, json_string_value(v));
+
+	audit = json_object_get(json.root, "passwordChange");
+	assert_non_null(audit);
+	assert_true(json_is_object(audit));
+	assert_int_equal(10, json_object_size(audit));
+
+	o = json_object_get(audit, "version");
+	assert_non_null(o);
+	check_version(o, PASSWORD_MAJOR,PASSWORD_MINOR);
+
+	v = json_object_get(audit, "eventId");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(EVT_ID_DIRECTORY_OBJECT_CHANGE,
+			 json_integer_value(v));
+
+	v = json_object_get(audit, "statusCode");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(LDB_SUCCESS, json_integer_value(v));
+
+	v = json_object_get(audit, "status");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("Success", json_string_value(v));
+
+	v = json_object_get(audit, "remoteAddress");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("ipv4:127.0.0.1:0", json_string_value(v));
+
+	v = json_object_get(audit, "userSid");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal(SID, json_string_value(v));
+
+	v = json_object_get(audit, "dn");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal(DN, json_string_value(v));
+
+	v = json_object_get(audit, "transactionId");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal(TRANSACTION, json_string_value(v));
+
+	v = json_object_get(audit, "sessionId");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal(SESSION, json_string_value(v));
+
+	v = json_object_get(audit, "action");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("Public key change", json_string_value(v));
+
+	json_free(&json);
+	TALLOC_FREE(ctx);
+
+}
+
 
 /*
  * minimal unit test of transaction_json, that ensures that all the expected
@@ -2283,6 +2437,7 @@ int main(void) {
 		cmocka_unit_test(test_as_system_operation_json),
 		cmocka_unit_test(test_password_change_json_empty),
 		cmocka_unit_test(test_password_change_json),
+		cmocka_unit_test(test_kcl_change_json),
 		cmocka_unit_test(test_transaction_json),
 		cmocka_unit_test(test_commit_failure_json),
 		cmocka_unit_test(test_replicated_update_json_empty),
