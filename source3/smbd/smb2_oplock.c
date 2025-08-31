@@ -953,7 +953,20 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		break_from = current_state;
 		break_to &= current_state;
 
-		if (breaking) {
+		if (breaking && (breaking_to_requested == current_state)) {
+			/*
+			 * A "saved" oplock break stored by
+			 * delay_for_oplock_fn() when breaking the lease of a
+			 * disconnected Persistent Handle and dispatched by
+			 * SMB_VFS_RECONNECT().
+			 */
+			SMB_ASSERT(fsp->op->global->persistent);
+			breaking = true;
+			breaking_to_required = break_to;
+			breaking_to_requested = break_to;
+			/* Need to increment the epoch */
+			epoch += 1;
+		} else if (breaking) {
 			break_to &= breaking_to_required;
 			if (breaking_to_required != break_to) {
 				/*
