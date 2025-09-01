@@ -2113,9 +2113,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			}
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
-			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %u, "
+			DEBUG(5,("smbd_do_qfsinfo : time = %jx, namelen = %u, "
 				 "name = %s serial = 0x%04"PRIx32"\n",
-				 (unsigned)convert_timespec_to_time_t(st.st_ex_ctime),
+				 (intmax_t)convert_timespec_to_time_t(st.st_ex_ctime),
 				 (unsigned)len, vname, serial));
 			break;
 
