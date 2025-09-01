@@ -105,6 +105,48 @@ void sdb_pub_keys_free(struct sdb_pub_keys *keys)
 	ZERO_STRUCTP(keys);
 }
 
+/**
+ * @brief free the memory allocated to a sdb certificate mapping structure.
+ *
+ * @param[in,out] m mapping to be freed, will be zeroed on return
+ */
+void sdb_certificate_mapping_free(struct sdb_certificate_mapping *m)
+{
+	if (m == NULL) {
+		return;
+	}
+
+	SAFE_FREE(m->subject_name.data);
+	SAFE_FREE(m->issuer_name.data);
+	SAFE_FREE(m->serial_number.data);
+	SAFE_FREE(m->ski.data);
+	SAFE_FREE(m->public_key.data);
+	SAFE_FREE(m->rfc822.data);
+
+	ZERO_STRUCTP(m);
+}
+/**
+ *
+ * @brief free the memory allocated to a sdb certificate mappings structure.
+ *
+ * @param[in,out] m mappings to be freed, will be zeroed on return
+ */
+void sdb_certificate_mappings_free(struct sdb_certificate_mappings *m)
+{
+	unsigned int i;
+
+	if (m == NULL) {
+		return;
+	}
+
+	for (i = 0; i < m->len; i++) {
+		sdb_certificate_mapping_free(&m->mappings[i]);
+	}
+
+	SAFE_FREE(m->mappings);
+	ZERO_STRUCTP(m);
+}
+
 void sdb_entry_free(struct sdb_entry *s)
 {
 	if (s->skdc_entry != NULL) {
@@ -121,6 +163,7 @@ void sdb_entry_free(struct sdb_entry *s)
 
 	sdb_keys_free(&s->keys);
 	sdb_pub_keys_free(&s->pub_keys);
+	sdb_certificate_mappings_free(&s->mappings);
 
 	if (s->etypes != NULL) {
 		SAFE_FREE(s->etypes->val);

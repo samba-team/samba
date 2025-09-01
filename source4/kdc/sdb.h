@@ -95,6 +95,25 @@ struct sdb_pub_keys {
 	struct sdb_pub_key *keys;
 };
 
+struct sdb_certificate_mappings {
+	int enforcement_mode;
+	time_t valid_certificate_start;
+	unsigned int len;
+	struct sdb_certificate_mapping *mappings;
+};
+
+
+struct sdb_certificate_mapping {
+	krb5_boolean strong_mapping;
+	krb5_data issuer_name;
+	krb5_data subject_name;
+	krb5_data serial_number;
+	krb5_data ski;
+	krb5_data public_key;
+	krb5_data rfc822;
+};
+
+
 struct sdb_entry {
 	struct samba_kdc_entry *skdc_entry;
 	krb5_principal principal;
@@ -113,6 +132,7 @@ struct sdb_entry {
 	int *max_renew;
 	struct SDBFlags flags;
 	struct sdb_pub_keys pub_keys;
+	struct sdb_certificate_mappings mappings;
 };
 
 #define SDB_ERR_NOENTRY 36150275
@@ -159,6 +179,8 @@ struct sdb_entry {
 #define SDB_F_FORCE_CANON		0x4000	/* force canonicalization */
 #define SDB_F_RODC_NUMBER_SPECIFIED	0x8000	/* we want a particular RODC number */
 
+void sdb_certificate_mapping_free(struct sdb_certificate_mapping *m);
+void sdb_certificate_mappings_free(struct sdb_certificate_mappings *m);
 void sdb_pub_key_free(struct sdb_pub_key *key);
 void sdb_pub_keys_free(struct sdb_pub_keys *keys);
 void sdb_key_free(struct sdb_key *key);

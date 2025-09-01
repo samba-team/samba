@@ -43,6 +43,7 @@
 #include "krb5-protos.h"
 #include "ldb.h"
 #include "samdb/samdb.h"
+#include "sdb.h"
 #include "talloc.h"
 #include "util/data_blob.h"
 #include "util/debug.h"
@@ -56,32 +57,80 @@ int dsdb_functional_level(struct ldb_context *ldb)
 	return 1;
 }
 
+int certificate_binding_enforcement = 0;
+int lpcfg_strong_certificate_binding_enforcement(
+	struct loadparm_context *lp_ctx)
+{
+	return certificate_binding_enforcement;
+}
+
+int certificate_backdating_compensation = 0;
+int lpcfg_certificate_backdating_compensation(
+	struct loadparm_context *lp_ctx)
+{
+	return certificate_backdating_compensation;
+}
+
 /******************************************************************************
  * Test helper functions
  *****************************************************************************/
-static void add_msDS_KeyCredentialLink(TALLOC_CTX *mem_ctx,
-				       struct ldb_message *msg,
+static void add_msDS_KeyCredentialLink(struct ldb_message *msg,
 				       size_t size,
 				       uint8_t *data)
 {
 	DATA_BLOB key_cred_val = {.length = size, .data = data};
-	char *hex_value = data_blob_hex_string_upper(mem_ctx, &key_cred_val);
+	char *hex_value = data_blob_hex_string_upper(msg, &key_cred_val);
 	size_t hex_len = strlen(hex_value);
 	char *binary_dn = talloc_asprintf(
-		mem_ctx, "B:%zu:%s:DC=EXAMPLE,DC=COM", hex_len, hex_value);
+		msg, "B:%zu:%s:DC=EXAMPLE,DC=COM", hex_len, hex_value);
 	TALLOC_FREE(hex_value);
 
 	/* Add the data to msDS-KeyCredentialLink */
 	ldb_msg_add_string(msg, "msDS-KeyCredentialLink", binary_dn);
 }
 
+static struct ldb_val *get_ldb_string(TALLOC_CTX *mem_ctx, const char * str) {
+	char *string = talloc_asprintf(
+		mem_ctx, "%s", str);
+
+	size_t len = strlen(string);
+
+	struct ldb_val *value = talloc_zero(mem_ctx, struct ldb_val);
+
+	value->data = (uint8_t *) string;
+	value->length = len;
+	return value;
+}
+
+static void add_altSecurityIdentities(struct ldb_message *msg,
+				      const char *str)
+{
+	/* Add the data to altSecurityIdentities */
+	ldb_msg_add_string(msg, "altSecurityIdentities", str);
+}
+
+static void add_whenCreated(struct ldb_message *msg,
+			    time_t created)
+{
+	char* ts = ldb_timestring(msg, created);
+	ldb_msg_add_string(msg, "whenCreated", ts);
+}
+
 static void add_empty_msDS_KeyCredentialLink_DN(TALLOC_CTX *mem_ctx,
 						struct ldb_message *msg)
 {
-	char *binary_dn = talloc_asprintf(mem_ctx, "B:0::DC=EXAMPLE,DC=COM");
+	char *binary_dn = talloc_asprintf(msg, "B:0::DC=EXAMPLE,DC=COM");
 
 	/* Add the data to msDS-KeyCredentialLink */
 	ldb_msg_add_string(msg, "msDS-KeyCredentialLink", binary_dn);
+}
+
+static void add_empty_altSecurities(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_message *msg)
+{
+	/* Add an empty altSecurityIdentities */
+	ldb_msg_add_string(msg, "altSecurityIdentifiers", "");
 }
 
 static struct ldb_message *create_ldb_message(TALLOC_CTX *mem_ctx)
@@ -473,6 +522,7 @@ static void empty_message2entry(void **state)
 				  "atestuser@test.samba.org");
 
 	msg = ldb_msg_new(mem_ctx);
+
 	err = samba_kdc_message2entry(krb5_ctx,
 				      kdc_db_ctx,
 				      mem_ctx,
@@ -515,6 +565,7 @@ static void minimal_message2entry(void **state)
 
 	struct sdb_entry entry = {};
 	krb5_error_code err = 0;
+	time_t now = time(NULL);
 
 	/* Set up */
 	smb_krb5_init_context_common(&krb5_ctx);
@@ -525,6 +576,7 @@ static void minimal_message2entry(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
+	add_whenCreated(msg, now);
 
 	err = samba_kdc_message2entry(krb5_ctx,
 				      kdc_db_ctx,
@@ -570,6 +622,7 @@ static void empty_binary_dn_message2entry(void **state)
 
 	struct sdb_entry entry = {};
 	krb5_error_code err = 0;
+	time_t now = time(NULL);
 
 	/* Set up */
 	smb_krb5_init_context_common(&krb5_ctx);
@@ -582,6 +635,7 @@ static void empty_binary_dn_message2entry(void **state)
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
 	add_empty_msDS_KeyCredentialLink_DN(mem_ctx, msg);
+	add_whenCreated(msg, now);
 
 	err = samba_kdc_message2entry(krb5_ctx,
 				      kdc_db_ctx,
@@ -627,6 +681,7 @@ static void msDS_KeyCredentialLink_message2entry(void **state)
 
 	struct sdb_entry entry = {};
 	krb5_error_code err = 0;
+	time_t now = time(NULL);
 
 	/* Set up */
 	smb_krb5_init_context_common(&krb5_ctx);
@@ -638,10 +693,10 @@ static void msDS_KeyCredentialLink_message2entry(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(BCRYPT_KEY_CREDENTIAL_LINK),
 				   BCRYPT_KEY_CREDENTIAL_LINK);
+	add_whenCreated(msg, now);
 
 	err = samba_kdc_message2entry(krb5_ctx,
 				      kdc_db_ctx,
@@ -706,8 +761,7 @@ static void invalid_version_keycredlink(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
@@ -755,8 +809,7 @@ static void duplicate_key_material_keycredlink(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
@@ -800,8 +853,7 @@ static void duplicate_key_usage_keycredlink(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
@@ -844,8 +896,7 @@ static void invalid_key_usage_keycredlink(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
@@ -888,8 +939,7 @@ static void invalid_key_material_keycredlink(void **state)
 
 	/* Create the ldb_message */
 	msg = ldb_msg_new(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(KEY_CREDENTIAL_LINK),
 				   KEY_CREDENTIAL_LINK);
 
@@ -921,8 +971,7 @@ static void keycred_bcrypt_key_material(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(BCRYPT_KEY_CREDENTIAL_LINK),
 				   BCRYPT_KEY_CREDENTIAL_LINK);
 
@@ -966,8 +1015,7 @@ static void keycred_tpm_key_material(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(TPM_KEY_CREDENTIAL_LINK),
 				   TPM_KEY_CREDENTIAL_LINK);
 
@@ -1011,8 +1059,7 @@ static void keycred_der_key_material(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(DER_KEY_CREDENTIAL_LINK),
 				   DER_KEY_CREDENTIAL_LINK);
 
@@ -1056,16 +1103,13 @@ static void keycred_multiple(void **state)
 
 	/* Create the ldb_message */
 	msg = create_ldb_message(mem_ctx);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(DER_KEY_CREDENTIAL_LINK),
 				   DER_KEY_CREDENTIAL_LINK);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(TPM_KEY_CREDENTIAL_LINK),
 				   TPM_KEY_CREDENTIAL_LINK);
-	add_msDS_KeyCredentialLink(mem_ctx,
-				   msg,
+	add_msDS_KeyCredentialLink(msg,
 				   sizeof(BCRYPT_KEY_CREDENTIAL_LINK),
 				   BCRYPT_KEY_CREDENTIAL_LINK);
 
@@ -1124,6 +1168,815 @@ static void keycred_multiple(void **state)
 	TALLOC_FREE(mem_ctx);
 }
 
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an empty ldb string value
+ */
+static void empty_string_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(ENOENT, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an ldb string value containing
+ * just the X509: tag
+ */
+static void header_only_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(ENOENT, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an ldb string value containing
+ * a non X509 mapping
+ */
+static void not_x509_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "KERBEROS:");
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(ENOENT, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an ldb string value without
+ * a tag
+ */
+static void no_tag_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:No tag here");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(EINVAL, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an ldb string value without
+ * a tag close character '>'
+ */
+static void no_tag_close_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:<No tag close");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(EINVAL, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an ldb string value with
+ * an empty tag
+ */
+static void empty_tag_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:<>Empty tag");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(EINVAL, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an ldb string value with
+ * no value
+ */
+static void no_value_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:<I>");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(EINVAL, err);
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an issuer name
+ *
+ */
+static void issuer_name_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:<I>Issuer");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(6, mapping.issuer_name.length);
+	assert_memory_equal("Issuer", mapping.issuer_name.data, 6);
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles duplicate issuer names
+ *
+ */
+static void duplicate_issuer_name_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value
+		= get_ldb_string(mem_ctx, "X509:<I>Issuer<I>Duplicate");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+
+	/* Only use the last value in the event of duplicate values */
+	assert_int_equal(9, mapping.issuer_name.length);
+	assert_memory_equal("Duplicate", mapping.issuer_name.data, 9);
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles a subject name
+ *
+ */
+static void subject_name_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:<S>Subject");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(7, mapping.subject_name.length);
+	assert_memory_equal("Subject", mapping.subject_name.data, 7);
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles duplicate subject names
+ *
+ */
+static void duplicate_subject_name_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value =
+		get_ldb_string(mem_ctx, "X509:<S>Subject<S>A repeat");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	/* Only use the last value in the event of duplicate values */
+	assert_int_equal(8, mapping.subject_name.length);
+	assert_memory_equal("A repeat", mapping.subject_name.data, 8);
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an issuer name and subject
+ * name.
+ *
+ */
+static void issuer_and_subject_name_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<S>SubjectsName<I>TheNameOfTheIssuer");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(12, mapping.subject_name.length);
+	assert_memory_equal("SubjectsName", mapping.subject_name.data, 12);
+	assert_int_equal(18, mapping.issuer_name.length);
+	assert_memory_equal("TheNameOfTheIssuer", mapping.issuer_name.data, 18);
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles a serial number
+ *
+ */
+static void serial_number_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t sn[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value
+		= get_ldb_string(mem_ctx, "X509:<SR>0123456789abcdef");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(sn), mapping.serial_number.length);
+	assert_memory_equal(sn, mapping.serial_number.data, sizeof(sn));
+	/* The Serial number on it's own is not a strong mapping */
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles multiple serial numbers
+ *
+ */
+static void duplicate_serial_number_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t sn[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value
+		= get_ldb_string(
+			mem_ctx,
+			"X509:<SR>fedcba98765410<SR>0123456789abcdef");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(sn), mapping.serial_number.length);
+	assert_memory_equal(sn, mapping.serial_number.data, sizeof(sn));
+	/* The Serial number on it's own is not a strong mapping */
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles a serial number and
+ * issuer name
+ *
+ */
+static void serial_number_and_issuer_name_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t sn[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<SR>0123456789abcdef<I>TheIssuer");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(sn), mapping.serial_number.length);
+	assert_memory_equal(sn, mapping.serial_number.data, sizeof(sn));
+	assert_int_equal(9, mapping.issuer_name.length);
+	assert_memory_equal("TheIssuer", mapping.issuer_name.data, 9);
+	assert_true(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an SKI (Subject Key Identifier)
+ */
+static void ski_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t ski[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<SKI>0123456789abcdef");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(ski), mapping.ski.length);
+	assert_memory_equal(ski, mapping.ski.data, sizeof(ski));
+	assert_true(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles multiple
+ * SKI (Subject Key Identifier) values
+ */
+static void duplicate_ski_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t ski[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<SKI>010203040506<SKI>0123456789abcdef");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(ski), mapping.ski.length);
+	assert_memory_equal(ski, mapping.ski.data, sizeof(ski));
+	assert_true(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles a public key
+ */
+static void public_key_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t pubkey[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<SHA1-PUKEY>0123456789abcdef");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(pubkey), mapping.public_key.length);
+	assert_memory_equal(pubkey, mapping.public_key.data, sizeof(pubkey));
+	assert_true(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles multiple public keys
+ */
+static void duplicate_public_key_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	uint8_t pubkey[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx,
+		"X509:<SHA1-PUKEY>adcdefabcdefabcdef"
+		"<SHA1-PUKEY>0123456789abcdef");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(sizeof(pubkey), mapping.public_key.length);
+	assert_memory_equal(pubkey, mapping.public_key.data, sizeof(pubkey));
+	assert_true(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that non hex strings are rejected
+ */
+static void non_hex_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<SHA1-PUKEY>This is not a hex string");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(EINVAL, err);
+	assert_int_equal(0, mapping.public_key.length);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that odd length hex strings are rejected
+ */
+static void odd_length_hex_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<SHA1-PUKEY>abcde");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(EINVAL, err);
+	assert_int_equal(0, mapping.public_key.length);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Ensure that parse_certificate_mapping handles an RFC822 identifier
+ */
+static void RFC822_parse_certificate_mapping(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	krb5_error_code err = 0;
+	struct sdb_certificate_mapping mapping = {};
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<RFC822>test@example.com");
+
+	err = parse_certificate_mapping(value, &mapping);
+
+	assert_int_equal(0, err);
+	assert_int_equal(16, mapping.rfc822.length);
+	assert_memory_equal("test@example.com", mapping.rfc822.data, 16);
+	assert_false(mapping.strong_mapping);
+
+	sdb_certificate_mapping_free(&mapping);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Test get_certificate_mapping handles multiple entries
+ *
+ */
+static void multiple_cert_mappings(void **state)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	struct loadparm_context *lp_ctx = loadparm_init(mem_ctx);
+	struct ldb_message *msg = NULL;
+	krb5_error_code err = 0;
+	struct sdb_entry entry = {};
+	uint8_t ski[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+
+	time_t now = time(NULL);
+	const int backdate = 26280000;  /* Fifty years */
+	const int expected_val_cert_start = now - (backdate * 60);
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_altSecurityIdentities(msg,
+				  "X509:<SKI>0123456789abcdef");
+	add_altSecurityIdentities(msg,
+			          "X509:<RFC822>test@example.com");
+	add_whenCreated(msg, now);
+
+	certificate_binding_enforcement = 1;
+	certificate_backdating_compensation = backdate;
+	err = get_certificate_mappings(mem_ctx, lp_ctx, msg, &entry);
+
+	assert_int_equal(0, err);
+
+	assert_int_equal(2, entry.mappings.len);
+	assert_int_equal(1, entry.mappings.enforcement_mode);
+	assert_int_equal(
+		expected_val_cert_start,
+		entry.mappings.valid_certificate_start);
+
+	assert_int_equal(sizeof(ski), entry.mappings.mappings[0].ski.length);
+	assert_memory_equal(
+		ski, entry.mappings.mappings[0].ski.data, sizeof(ski));
+	assert_true(entry.mappings.mappings[0].strong_mapping);
+
+	assert_int_equal(16, entry.mappings.mappings[1].rfc822.length);
+	assert_memory_equal(
+		"test@example.com", entry.mappings.mappings[1].rfc822.data, 16);
+	assert_false(entry.mappings.mappings[1].strong_mapping);
+
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Test get_certificate_mapping handles a single entry
+ *
+ */
+static void single_cert_mapping(void **state)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	struct loadparm_context *lp_ctx = loadparm_init(mem_ctx);
+	struct ldb_message *msg = NULL;
+	krb5_error_code err = 0;
+	struct sdb_entry entry = {};
+	uint8_t ski[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+
+	time_t now = time(NULL);
+	const int backdate = 525600;  /* One year */
+	const int expected_val_cert_start = now - (backdate * 60);
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_altSecurityIdentities(msg,
+				  "X509:<SKI>0123456789abcdef");
+	add_whenCreated(msg, now);
+
+	certificate_binding_enforcement = 2;
+	certificate_backdating_compensation = backdate;
+	err = get_certificate_mappings(mem_ctx, lp_ctx, msg, &entry);
+
+	assert_int_equal(0, err);
+
+	assert_int_equal(1, entry.mappings.len);
+	assert_int_equal(2, entry.mappings.enforcement_mode);
+	assert_int_equal(
+		expected_val_cert_start,
+		entry.mappings.valid_certificate_start);
+
+	assert_int_equal(sizeof(ski), entry.mappings.mappings[0].ski.length);
+	assert_memory_equal(
+		ski, entry.mappings.mappings[0].ski.data, sizeof(ski));
+	assert_true(entry.mappings.mappings[0].strong_mapping);
+
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Test get_certificate_mapping handles an ldb message with no
+ * altSecurityIdentities attribute
+ *
+ */
+static void cert_mapping_no_altSecurityIdentities(void **state)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	struct loadparm_context *lp_ctx = loadparm_init(mem_ctx);
+	struct ldb_message *msg = NULL;
+	krb5_error_code err = 0;
+	struct sdb_entry entry = {};
+
+	time_t now = time(NULL);
+	const int backdate = 10080;  /* 1 week */
+	const int expected_val_cert_start = now - (backdate * 60);
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_whenCreated(msg, now);
+
+	certificate_binding_enforcement = 0;
+	certificate_backdating_compensation = backdate;
+	err = get_certificate_mappings(mem_ctx, lp_ctx, msg, &entry);
+
+	assert_int_equal(0, err);
+
+	assert_int_equal(0, entry.mappings.len);
+	assert_int_equal(0, entry.mappings.enforcement_mode);
+	assert_int_equal(
+		expected_val_cert_start,
+		entry.mappings.valid_certificate_start);
+
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Test get_certificate_mapping handles an ldb message with an
+ * altSecurityIdentities attribute containing no X509 entries
+ *
+ */
+static void no_X509_altSecurityIdentities(void **state)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	struct loadparm_context *lp_ctx = loadparm_init(mem_ctx);
+	struct ldb_message *msg = NULL;
+	krb5_error_code err = 0;
+	struct sdb_entry entry = {};
+
+	time_t now = time(NULL);
+	const int backdate = 1440;  /* 24 hours */
+	const int expected_val_cert_start = now - (backdate * 60);
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_altSecurityIdentities(msg,
+				  "KERBEROS:0123456789abcdef");
+	add_altSecurityIdentities(msg,
+				  "ANOTHER:0123456789abcdef");
+	add_whenCreated(msg, now);
+
+	certificate_binding_enforcement = 0;
+	certificate_backdating_compensation = backdate;
+	err = get_certificate_mappings(mem_ctx, lp_ctx, msg, &entry);
+
+	assert_int_equal(0, err);
+
+	assert_int_equal(0, entry.mappings.len);
+	assert_int_equal(0, entry.mappings.enforcement_mode);
+	assert_int_equal(
+		expected_val_cert_start,
+		entry.mappings.valid_certificate_start);
+
+
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Test get_certificate_mapping handles an ldb message with an
+ * altSecurityIdentities attribute containing X509,and KERBEROS
+ * entries.
+ *
+ */
+static void mixed_altSecurityIdentities(void **state)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	struct loadparm_context *lp_ctx = loadparm_init(mem_ctx);
+	struct ldb_message *msg = NULL;
+	krb5_error_code err = 0;
+	struct sdb_entry entry = {};
+	uint8_t ski[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+
+	time_t now = time(NULL);
+	const int backdate = 10;
+	const int expected_val_cert_start = now - (backdate * 60);
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_altSecurityIdentities(msg,
+				  "X509:<SKI>0123456789abcdef");
+	add_altSecurityIdentities(msg,
+				  "KERBEROS:0123456789abcdef");
+	add_altSecurityIdentities(msg,
+			          "X509:<RFC822>test@example.com");
+	add_whenCreated(msg, now);
+
+	certificate_binding_enforcement = 0;
+	certificate_backdating_compensation = backdate;
+	err = get_certificate_mappings(mem_ctx, lp_ctx, msg, &entry);
+
+	assert_int_equal(0, err);
+
+	assert_int_equal(2, entry.mappings.len);
+	assert_int_equal(0, entry.mappings.enforcement_mode);
+	assert_int_equal(
+		expected_val_cert_start,
+		entry.mappings.valid_certificate_start);
+
+	assert_int_equal(sizeof(ski), entry.mappings.mappings[0].ski.length);
+	assert_memory_equal(
+		ski, entry.mappings.mappings[0].ski.data, sizeof(ski));
+	assert_true(entry.mappings.mappings[0].strong_mapping);
+
+	assert_int_equal(16, entry.mappings.mappings[1].rfc822.length);
+	assert_memory_equal(
+		"test@example.com", entry.mappings.mappings[1].rfc822.data, 16);
+	assert_false(entry.mappings.mappings[1].strong_mapping);
+
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
+
+
+/*
+ * Test get_certificate_mapping handles an empty
+ * altSecurityIdentities attribute
+ *
+ */
+static void cert_mapping_empty_altSecurityIdentities(void **state)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	struct loadparm_context *lp_ctx = loadparm_init(mem_ctx);
+	struct ldb_message *msg = NULL;
+	krb5_error_code err = 0;
+	struct sdb_entry entry = {};
+
+	time_t now = time(NULL);
+	const int backdate = 43800;  /* One month */
+	const int expected_val_cert_start = now - (backdate * 60);
+
+	/* Create the ldb_message */
+	msg = create_ldb_message(mem_ctx);
+	add_empty_altSecurities(mem_ctx, msg);
+	add_whenCreated(msg, now);
+
+	certificate_binding_enforcement = 0;
+	certificate_backdating_compensation = backdate;
+	err = get_certificate_mappings(mem_ctx, lp_ctx, msg, &entry);
+
+	assert_int_equal(0, err);
+
+	assert_int_equal(0, entry.mappings.len);
+	assert_int_equal(0, entry.mappings.enforcement_mode);
+	assert_int_equal(
+		expected_val_cert_start,
+		entry.mappings.valid_certificate_start);
+
+	sdb_entry_free(&entry);
+	TALLOC_FREE(mem_ctx);
+}
+
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1140,6 +1993,42 @@ int main(int argc, const char **argv)
 		cmocka_unit_test(keycred_tpm_key_material),
 		cmocka_unit_test(keycred_der_key_material),
 		cmocka_unit_test(keycred_multiple),
+		cmocka_unit_test(empty_string_parse_certificate_mapping),
+		cmocka_unit_test(header_only_parse_certificate_mapping),
+		cmocka_unit_test(not_x509_parse_certificate_mapping),
+		cmocka_unit_test(no_tag_parse_certificate_mapping),
+		cmocka_unit_test(no_tag_close_parse_certificate_mapping),
+		cmocka_unit_test(empty_tag_parse_certificate_mapping),
+		cmocka_unit_test(no_value_parse_certificate_mapping),
+		cmocka_unit_test(issuer_name_parse_certificate_mapping),
+		cmocka_unit_test(
+			duplicate_issuer_name_parse_certificate_mapping),
+		cmocka_unit_test(subject_name_parse_certificate_mapping),
+		cmocka_unit_test(
+			duplicate_subject_name_parse_certificate_mapping),
+		cmocka_unit_test(
+			issuer_and_subject_name_parse_certificate_mapping),
+		cmocka_unit_test(serial_number_parse_certificate_mapping),
+		cmocka_unit_test(
+			duplicate_serial_number_parse_certificate_mapping),
+		cmocka_unit_test(
+			serial_number_and_issuer_name_parse_certificate_mapping
+		),
+		cmocka_unit_test(ski_parse_certificate_mapping),
+		cmocka_unit_test(duplicate_ski_parse_certificate_mapping),
+		cmocka_unit_test(public_key_parse_certificate_mapping),
+		cmocka_unit_test(
+			duplicate_public_key_parse_certificate_mapping),
+		cmocka_unit_test(non_hex_parse_certificate_mapping),
+		cmocka_unit_test(odd_length_hex_parse_certificate_mapping),
+		cmocka_unit_test(RFC822_parse_certificate_mapping),
+		cmocka_unit_test(multiple_cert_mappings),
+		cmocka_unit_test(single_cert_mapping),
+		cmocka_unit_test(cert_mapping_no_altSecurityIdentities),
+		cmocka_unit_test(cert_mapping_empty_altSecurityIdentities),
+		cmocka_unit_test(no_X509_altSecurityIdentities),
+		cmocka_unit_test(mixed_altSecurityIdentities),
+
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);

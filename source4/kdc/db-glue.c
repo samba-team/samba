@@ -47,7 +47,9 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_keycredlink.h"
 #include "talloc.h"
+#include "util/data_blob.h"
 #include "util/debug.h"
+#include "util/samba_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
@@ -1187,6 +1189,467 @@ static krb5_error_code samba_kdc_get_entry_principal(
 
 	return code;
 }
+
+
+/**
+ * @brief Copy the contents of a data blob to a krb5_data element
+ *
+ * @param[in]  blob  The source data blob
+ * @param[out] krb5  The target krb5_data element
+ *
+ * @return 0      No error
+ *         ENOMEM memory allocation error
+ *
+ * @note Memory is allocated, with malloc and needs to be freed
+ */
+static krb5_error_code data_blob_to_krb5_data( DATA_BLOB *blob, krb5_data *krb5)
+{
+	krb5->data = malloc(blob->length);
+	if (krb5->data == NULL) {
+		return ENOMEM;
+	}
+	memcpy(krb5->data, blob->data, blob->length);
+	krb5->length = blob->length;
+	return 0;
+}
+
+
+/**
+ * @brief Copy the contents of a hex string data blob to a binary
+ *        krb5_data element
+ *
+ * @param[in]  blob  The source data blob
+ * @param[out] krb5  The target krb5_data element
+ *
+ * @return 0      No error
+ *         ENOMEM memory allocation error
+ *         EINVAL data blob is not a valid hex string encoding
+ *
+ * @note Memory is allocated, with malloc and needs to be freed
+ */
+static krb5_error_code db_hex_str_to_krb5_data(
+	DATA_BLOB *blob,
+	krb5_data *krb5)
+{
+
+	size_t size = 0;
+
+	if( (blob->length%2) != 0) {
+		DBG_ERR(
+			"Hex string [%*.*s] "
+			"does not have an even length",
+			(int) blob->length,
+			(int) blob->length,
+			(char *) blob->data);
+		return EINVAL;
+	}
+	krb5->length = (blob->length/2);
+	krb5->data = malloc(krb5->length);
+	if (krb5->data == NULL) {
+		krb5->length = 0;
+		return ENOMEM;
+	}
+	size = strhex_to_str(krb5->data,
+			     krb5->length,
+		             (const char *) blob->data,
+		             blob->length);
+	if (size != krb5->length) {
+		krb5->length = 0;
+		SAFE_FREE(krb5->data);
+		return EINVAL;
+	}
+	return 0;
+}
+
+/*
+ * Helper macro to populate the data blob constants used by
+ * populate_certificate_mapping and parse_certificate_mapping
+ */
+#define DATA_BLOB_STRING(str) {\
+	.data = discard_const_p(uint8_t, str), \
+	.length = sizeof(str) - 1 \
+}
+static const DATA_BLOB ISSUER_NAME = DATA_BLOB_STRING("I");
+static const DATA_BLOB SUBJECT_NAME = DATA_BLOB_STRING("S");
+static const DATA_BLOB SERIAL_NUMBER = DATA_BLOB_STRING("SR");
+static const DATA_BLOB SUBJECT_KEY_IDENTIFIER = DATA_BLOB_STRING("SKI");
+static const DATA_BLOB PUBLIC_KEY = DATA_BLOB_STRING("SHA1-PUKEY");
+static const DATA_BLOB RFC822 = DATA_BLOB_STRING("RFC822");
+static const DATA_BLOB X509_HEADER = DATA_BLOB_STRING("X509:");
+#undef DATA_BLOB_STRING
+
+/**
+ * @brief Populate the certificate mapping from the tag and value
+ *
+ * @param[in]     tag      the tag i.e. I, S, SKI, .....
+ * @param[in]     value    the value associated with the tag
+ * @param[in,out] mapping  the mapping to be updated
+ *
+ * @return      0 No error
+ *         EINVAL tag or value are invalid
+ *         ENOMEM memory allocation error
+ *
+ * @note Memory is allocated, with malloc and needs to be freed with
+ *       sdb_certificate_mapping_free
+ */
+static krb5_error_code populate_certificate_mapping(
+	DATA_BLOB *tag,
+	DATA_BLOB *value,
+	struct sdb_certificate_mapping *mapping)
+{
+	krb5_error_code ret = 0;
+
+	if (tag->length == 0) {
+		DBG_WARNING("altSecurityIdentities empty tag");
+		return EINVAL;
+	}
+	if (value->length == 0) {
+		DBG_WARNING("altSecurityIdentities no value for %*.*s",
+			    (int) tag->length,
+			    (int) tag->length,
+			    tag->data);
+		return EINVAL;
+	}
+
+	if (data_blob_cmp(&ISSUER_NAME, tag) == 0) {
+		/* discard any previous value */
+		if (mapping->issuer_name.data != NULL) {
+			SAFE_FREE(mapping->issuer_name.data);
+			mapping->issuer_name.length = 0;
+		}
+		ret = data_blob_to_krb5_data(value, &mapping->issuer_name);
+
+	} else if (data_blob_cmp(&SUBJECT_NAME, tag) == 0) {
+		/* discard any previous value */
+		if (mapping->subject_name.data != NULL) {
+			SAFE_FREE(mapping->subject_name.data);
+			mapping->subject_name.length = 0;
+		}
+		ret = data_blob_to_krb5_data(value, &mapping->subject_name);
+
+	} else if (data_blob_cmp(&RFC822, tag) == 0) {
+		/* discard any previous value */
+		if (mapping->rfc822.data != NULL) {
+			SAFE_FREE(mapping->rfc822.data);
+			mapping->rfc822.length = 0;
+		}
+		ret = data_blob_to_krb5_data(value, &mapping->rfc822);
+
+	} else if (data_blob_cmp(&SERIAL_NUMBER, tag ) == 0) {
+		/* discard any previous value */
+		if (mapping->serial_number.data != NULL) {
+			SAFE_FREE(mapping->serial_number.data);
+			mapping->serial_number.length = 0;
+		}
+		ret = db_hex_str_to_krb5_data(value, &mapping->serial_number);
+
+	} else if (data_blob_cmp(&SUBJECT_KEY_IDENTIFIER, tag) == 0) {
+		/* discard any previous value */
+		if (mapping->ski.data != NULL) {
+			SAFE_FREE(mapping->ski.data);
+			mapping->ski.length = 0;
+		}
+		ret = db_hex_str_to_krb5_data(value, &mapping->ski);
+
+	} else if (data_blob_cmp(&PUBLIC_KEY, tag) == 0) {
+		/* discard any previous value */
+		if (mapping->public_key.data != NULL) {
+			SAFE_FREE(mapping->public_key.data);
+			mapping->public_key.length = 0;
+		}
+		ret = db_hex_str_to_krb5_data(value, &mapping->public_key);
+
+	} else {
+		DBG_WARNING("altSecurityIdentities invalid tag %*.*s",
+			    (int) tag->length,
+			    (int) tag->length,
+			    tag->data);
+		ret = EINVAL;
+	}
+	return ret;
+}
+
+
+/**
+ * @brief does the krb5 element have a value?
+ *
+ * @param[in] krb5  The target krb5_data element
+ *
+ * @return TRUE  krb5 has a value
+ *         FALSE krb5 has no value i.e. it's empty
+ */
+static krb5_boolean krb5_data_has_value(krb5_data *krb5)
+{
+	if (krb5->data == NULL || krb5->length == 0) {
+		return FALSE;
+	}
+	return TRUE;
+}
+/**
+ * @brief is the certificate mapping a strong mapping?
+ *
+ * @param[in] mapping the certificate mapping to examine.
+ *
+ * @return TRUE  mapping is strong
+ *         FALSE mapping is weak
+ */
+static krb5_boolean is_strong_certificate_mapping(
+	struct sdb_certificate_mapping *mapping)
+{
+	/* Subject Key Identifier */
+	if (krb5_data_has_value(&mapping->ski)) {
+		return TRUE;
+	}
+	/* Public Key */
+	if (krb5_data_has_value(&mapping->public_key)) {
+		return TRUE;
+	}
+	/* Issuer Serial Number */
+	if (krb5_data_has_value(&mapping->issuer_name) &&
+	    krb5_data_has_value(&mapping->serial_number)
+	) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
+/**
+ * @brief Parse a certificate mapping string
+ *
+ *  The expected format is a header "X509:" and then a series of
+ *  tag value pairs "<tag>value"
+ *  where tag is one of:
+ *     <I>           Issuer Name
+ *     <S>           Subject Name
+ *     <SR>          Serial Number
+ *     <SKI>         SKI Subject Key Identifier
+ *     <SHA1-PUBKEY> SHA1 checksum of the public key
+ *     <RFC822>      Email address
+ *
+ *
+ * @param[in]  value   ldb value containing an altSecurityIdentities entry
+ * @param[out] mapping data parsed from value
+ *
+ * @note it is the callers responsibility to free any memory allocated
+ *       in the mapping with a call to sdb_certificate_mapping_free.
+ *       EVEN if an error is returned, as mapping may have been partially
+ *       updated.
+ *
+ * @return 0      No error
+ *         EINVAL altSecurityIdentities entry was invalid
+ *         ENOMEM memory allocation error
+ */
+static krb5_error_code parse_certificate_mapping(
+	struct ldb_val *ldb_value,
+	struct sdb_certificate_mapping *mapping)
+{
+	krb5_error_code ret = 0;
+	size_t length = ldb_value->length;
+	uint8_t *data = ldb_value->data;
+	DATA_BLOB tag = data_blob_null;
+	DATA_BLOB value = data_blob_null;
+	enum {
+		start_state,
+		tag_state,
+		value_state
+	} state;
+	size_t i = 0;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	/*
+	 * Ensure that there is data, and it starts with X509:
+	 * other wise ignore the entry and return ENOENT
+	 */
+	if (data == NULL || length == 0) {
+		DBG_DEBUG("altSecurityIdentities, is empty");
+		ret = ENOENT;
+		goto out;
+	}
+	if (length <= X509_HEADER.length ||
+	    memcmp(X509_HEADER.data, data, X509_HEADER.length) != 0) {
+		DBG_DEBUG("altSecurityIdentities, entry is not X509 ignoring");
+		ret = ENOENT;
+		goto out;
+	}
+
+	tag = data_blob_talloc(tmp_ctx, NULL, ldb_value->length + 1);
+	if (tag.data == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+	tag.length = 0;
+	value = data_blob_talloc(tmp_ctx, NULL, ldb_value->length + 1);
+	if (value.data == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+	value.length = 0;
+
+	state = start_state;
+	/* point to the first byte after the header "X509:" */
+	for( i = 5; i < length; i++) {
+		uint8_t c = data[i];
+		switch (state) {
+		case start_state:
+			/* Ignore characters between the : and the first < */
+			if (c == '<') {
+				state = tag_state;
+				tag.length = 0;
+			}
+			break;
+		case tag_state:
+			if (c == '>') {
+				state = value_state;
+				tag.data[tag.length] = '\0';
+				value.length = 0;
+			} else {
+				tag.data[tag.length] = c;
+				tag.length++;
+			}
+			break;
+		case value_state:
+			if (c == '<') {
+				value.data[value.length] = '\0';
+				ret = populate_certificate_mapping(
+					&tag, &value, mapping);
+				if (ret != 0) {
+					goto out;
+				}
+				state = tag_state;
+				value.length = 0;
+				tag.length = 0;
+			} else {
+				value.data[value.length] = c;
+				value.length++;
+			}
+			break;
+		}
+	}
+	if (state != value_state) {
+		DBG_WARNING("altSecurityIdentities, expected a value");
+		ret = EINVAL;
+		goto out;
+	}
+	value.data[value.length] = '\0';
+	ret = populate_certificate_mapping(
+		&tag, &value, mapping);
+	if (ret != 0) {
+		goto out;
+	}
+	mapping->strong_mapping = is_strong_certificate_mapping(mapping);
+
+out:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
+
+/**
+ * @brief extract the certificate mappings for PKINIT from the
+ *        ldb message.
+ *
+ * Processes the "X509:" certificate mappings in altSecurityIdentities.
+ *
+ * @param mem_ctx[in]	talloc memory context
+ * @param lp_ctx[in]	parameter context containing the config options
+ * @param msg[in]	ldb message containing the certificate mappings
+ * @param entry[out]	entry will be updated with the certificate mappings
+ *
+ * @note Invalid entries will be ignored
+ *
+ * @return 0  No error, and there are zero or more certificate mappings
+ *         >0 Errors detected
+ */
+static krb5_error_code get_certificate_mappings(
+	TALLOC_CTX *mem_ctx,
+	struct loadparm_context *lp_ctx,
+	struct ldb_message *msg,
+	struct sdb_entry *entry)
+{
+	krb5_error_code ret = 0;
+	struct ldb_message_element *el = NULL;
+	size_t i = 0;
+	struct sdb_certificate_mappings mappings = {};
+	unsigned int backdating = 0;
+	time_t created = 0;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	mappings.enforcement_mode =
+		lpcfg_strong_certificate_binding_enforcement(lp_ctx);
+
+	backdating = lpcfg_certificate_backdating_compensation(lp_ctx);
+	created = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
+	if (created == 0) {
+		DBG_ERR("No whenCreated entry, unable to continue");
+		ret = EINVAL;
+		goto out;
+	}
+	mappings.valid_certificate_start = created - (backdating * 60);
+
+	el = ldb_msg_find_element(msg, "altSecurityIdentities");
+	if (el == NULL || el->num_values == 0) {
+		DBG_DEBUG("No altSecurityIdentities nothing to do");
+		ret = 0;
+		entry->mappings = mappings;
+		goto out;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		struct sdb_certificate_mapping mapping = {};
+		ret = parse_certificate_mapping(&el->values[i], &mapping);
+		if (ret != 0) {
+			DBG_DEBUG("Ignoring invalid altSecurityIdentities"
+				  " entry [%*.*s]",
+	                          (int)el->values[i].length,
+	                          (int)el->values[i].length,
+	                          (char *)el->values[i].data);
+			sdb_certificate_mapping_free(&mapping);
+			continue;
+		}
+		if (mappings.mappings == NULL) {
+			mappings.len = 0;
+			mappings.mappings = calloc(1, sizeof(mapping));
+			if (mappings.mappings == NULL) {
+				sdb_certificate_mapping_free(&mapping);
+				ret = ENOMEM;
+				goto out;
+			}
+		} else {
+			struct sdb_certificate_mapping *old_mappings =
+				mappings.mappings;
+			mappings.mappings= realloc_p(
+				mappings.mappings,
+				struct sdb_certificate_mapping,
+				mappings.len + 1);
+			if (mappings.mappings == NULL) {
+				mappings.mappings = old_mappings;
+				sdb_certificate_mappings_free(&mappings);
+				sdb_certificate_mapping_free(&mapping);
+				ret = ENOMEM;
+				goto out;
+			}
+		}
+		mappings.mappings[mappings.len] = mapping;
+		mappings.len++;
+	}
+	entry->mappings = mappings;
+	ret = 0;
+
+out:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
+
 /**
  * @brief Extract the KeyMaterial from a KEYCREDENTIALLINK_BLOB
  *        as a KeyMaterialInternal structure.
@@ -1232,7 +1695,6 @@ static krb5_error_code unpack_key_credential_link_blob(
 	}
 	*pub_key = NULL;
 
-	/* Unpack the binary DN */
 	dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, value, DSDB_SYNTAX_BINARY_DN);
 	if (dsdb_dn == NULL) {
 		DBG_WARNING("Unable to parse KEYCREDENTIALLINK_BLOB, BinaryDn");
@@ -2186,6 +2648,11 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	p->server_policy = talloc_steal(p, authn_server_policy);
 
 	ret = get_key_trust_public_keys(tmp_ctx, kdc_db_ctx->samdb, msg, entry);
+	if (ret != 0) {
+		goto out;
+	}
+	ret = get_certificate_mappings(
+		tmp_ctx, kdc_db_ctx->lp_ctx, msg, entry);
 	if (ret != 0) {
 		goto out;
 	}
