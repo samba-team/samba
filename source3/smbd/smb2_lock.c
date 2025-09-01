@@ -448,7 +448,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (in_locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE) {
-			if (posix_handle && fsp->fsp_flags.can_write == false) {
+			if (posix_handle && !fsp->fsp_flags.can_write) {
 				/*
 				 * Can't get a write lock on a posix
 				 * read-only handle.
