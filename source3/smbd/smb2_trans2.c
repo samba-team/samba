@@ -180,10 +180,10 @@ bool samba_private_attr_name(const char *unix_ea_name)
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-int get_ea_value_fsp(TALLOC_CTX *mem_ctx,
-		     files_struct *fsp,
-		     const char *ea_name,
-		     struct ea_struct *pea)
+static int get_ea_value_fsp(TALLOC_CTX *mem_ctx,
+			    files_struct *fsp,
+			    const char *ea_name,
+			    struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
