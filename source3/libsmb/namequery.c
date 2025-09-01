@@ -184,8 +184,8 @@ bool saf_join_store( const char *domain, const char *servername )
 	}
 	expire = time( NULL ) + lp_parm_int(-1, "saf","join ttl", SAFJOIN_TTL);
 
-	DEBUG(10,("saf_join_store: domain = [%s], server = [%s], expire = [%u]\n",
-		domain, servername, (unsigned int)expire ));
+	DEBUG(10,("saf_join_store: domain = [%s], server = [%s], expire = [%jd]\n",
+		domain, servername, (intmax_t)expire ));
 
 	ret = gencache_set( key, servername, expire );
 
