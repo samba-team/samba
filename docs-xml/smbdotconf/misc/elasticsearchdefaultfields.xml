@@ -1,0 +1,19 @@
+<samba:parameter name="elasticsearch:default_fields"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Default attributes in Elasticsearch to query when receiving a Spotlight
+      query that searches in the special attribute "*". This is the default used
+      by macOS clients when searching from the Finder.
+    </para>
+    <para>
+      This option expects a list of Elasticsearch attributes separated by
+      comma where each attributes must be enclosed in double quotes.
+    </para>
+  </description>
+
+  <value type="default">"file.filename", "content"</value>
+  <value type="example">"foo", "bar"</value>
+</samba:parameter>

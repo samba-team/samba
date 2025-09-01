@@ -30,6 +30,7 @@ struct mdssvc_es_ctx {
 	struct mdssvc_ctx *mdssvc_ctx;
 	struct cli_credentials *creds;
 	json_t *mappings;
+	const char *default_fields;
 };
 
 /*
