@@ -113,7 +113,8 @@ class MdfindBlackboxTests(BlackboxTestCase):
               "must": [
                 {
                   "query_string": {
-                    "query": "samba*"
+                    "query": "samba*",
+                    "fields": ["file.filename", "content"]
                   }
                 }
               ]
