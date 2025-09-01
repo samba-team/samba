@@ -50,7 +50,8 @@
 	"            } ],\n"				\
 	"            \"must\": [ {\n"			\
         "                \"query_string\": {\n"		\
-	"                    \"query\": \"%s\"\n"	\
+	"                    \"query\": \"%s\",\n"	\
+	"                    \"fields\": [%s]\n"	\
 	"                }\n"				\
 	"            } ]\n"				\
 	"        }\n"					\
@@ -66,6 +67,7 @@ static bool mdssvc_es_init(struct mdssvc_ctx *mdssvc_ctx)
 	json_error_t json_error;
 	char *default_path = NULL;
 	const char *path = NULL;
+	const char *default_fields = "\"file.filename\", \"content\"";
 
 	mdssvc_es_ctx = talloc_zero(mdssvc_ctx, struct mdssvc_es_ctx);
 	if (mdssvc_es_ctx == NULL) {
@@ -105,6 +107,15 @@ static bool mdssvc_es_init(struct mdssvc_ctx *mdssvc_ctx)
 		return false;
 	}
 	TALLOC_FREE(default_path);
+
+	mdssvc_es_ctx->default_fields = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+							     "elasticsearch",
+							     "default_fields",
+							     default_fields);
+	if (mdssvc_es_ctx->default_fields == NULL) {
+		TALLOC_FREE(mdssvc_es_ctx);
+		return false;
+	}
 
 	mdssvc_ctx->backend_private = mdssvc_es_ctx;
 	return true;
@@ -624,13 +635,15 @@ static struct tevent_req *mds_es_search_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	elastic_query = talloc_asprintf(state,
-					MDSSVC_ELASTIC_QUERY_TEMPLATE,
-					s->from,
-					s->size,
-					MDSSVC_ELASTIC_SOURCES,
-					s->slq->path_scope,
-					s->es_query);
+	elastic_query = talloc_asprintf(
+		state,
+		MDSSVC_ELASTIC_QUERY_TEMPLATE,
+		s->from,
+		s->size,
+		MDSSVC_ELASTIC_SOURCES,
+		s->slq->path_scope,
+		s->es_query,
+		s->mds_es_ctx->mdssvc_es_ctx->default_fields);
 	if (tevent_req_nomem(elastic_query, req)) {
 		return tevent_req_post(req, ev);
 	}

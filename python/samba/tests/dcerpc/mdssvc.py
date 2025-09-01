@@ -144,7 +144,8 @@ class MdssvcTests(RpcInterfaceTestCase):
               "must": [
                 {
                   "query_string": {
-                    "query": "samba*"
+                    "query": "samba*",
+                    "fields": ["file.filename", "content"]
                   }
                 }
               ]
@@ -189,7 +190,8 @@ class MdssvcTests(RpcInterfaceTestCase):
               "must": [
                 {
                   "query_string": {
-                    "query": "file.filename:x\\+x OR file.filename:x\\*x OR file.filename:x=x OR file.filename:x'x OR file.filename:x\\?x OR file.filename:x\\ x OR file.filename:x\\(x OR file.filename:x\\\"x OR file.filename:x\\\\x"
+                    "query": "file.filename:x\\+x OR file.filename:x\\*x OR file.filename:x=x OR file.filename:x'x OR file.filename:x\\?x OR file.filename:x\\ x OR file.filename:x\\(x OR file.filename:x\\\"x OR file.filename:x\\\\x",
+                    "fields": ["file.filename", "content"]
                   }
                 }
               ]
@@ -244,7 +246,8 @@ class MdssvcTests(RpcInterfaceTestCase):
               "must": [
                 {
                   "query_string": {
-                    "query": "*samba*"
+                    "query": "*samba*",
+                    "fields": ["file.filename", "content"]
                   }
                 }
               ]
