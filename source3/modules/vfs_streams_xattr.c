@@ -45,7 +45,8 @@ struct stream_io {
 	vfs_handle_struct *handle;
 };
 
-static ssize_t fgetxattr_multi(struct files_struct *fsp,
+static ssize_t fgetxattr_multi(const struct streams_xattr_config *config,
+			       struct files_struct *fsp,
 			       const char *name,
 			       void *value,
 			       size_t size)
@@ -102,7 +103,7 @@ again:
 		return ENOMEM;
 	}
 
-	sizeret = fgetxattr_multi(fsp, ea_name, val, attr_size);
+	sizeret = fgetxattr_multi(config, fsp, ea_name, val, attr_size);
 	if (sizeret == -1 && errno == ERANGE && attr_size < max_xattr_size) {
 		attr_size = max_xattr_size;
 		goto again;
