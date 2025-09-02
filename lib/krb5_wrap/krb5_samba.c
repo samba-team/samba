@@ -3025,6 +3025,8 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 	krb5_creds cred;
 	krb5_timestamp endtime = 0;
 	krb5_timestamp now;
+	char *realm = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	*t = 0;
 
@@ -3038,10 +3040,35 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 		return kerr;
 	}
 
+	mem_ctx = talloc_stackframe();
+	if (mem_ctx == NULL) {
+	        krb5_cc_end_seq_get(context, id, &cursor);
+		return ENOMEM;
+	}
+
 	while ((kerr = krb5_cc_next_cred(context, id, &cursor, &cred)) == 0) {
 		if (krb5_is_config_principal(context, cred.server)) {
 			krb5_free_cred_contents(context, &cred);
 			continue;
+		}
+
+		realm = smb_krb5_principal_get_realm(mem_ctx, context, cred.server);
+		if (realm == NULL) {
+			krb5_free_cred_contents(context, &cred);
+			kerr = ENOMEM;
+			break;
+		}
+
+		/*
+		 * 'X-GSSPROXY:' is the realm for an encrypted credential stored
+		 * by the GSSProxy. There are no other creds in such ccache and
+		 * we cannot see the actual lifetime (it is set to 0),
+		 * indicate to the caller they need to handle this themselves.
+		 */
+		if (strcmp(realm, "X-GSSPROXY:") == 0) {
+			krb5_free_cred_contents(context, &cred);
+			kerr = KRB5_PLUGIN_NO_HANDLE;
+			break;
 		}
 
 #ifndef HAVE_FLAGS_IN_KRB5_CREDS
@@ -3073,12 +3100,16 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 		krb5_free_cred_contents(context, &cred);
 	}
 
+	krb5_cc_end_seq_get(context, id, &cursor);
+	talloc_free(mem_ctx);
+	if (kerr == ENOMEM || kerr == KRB5_PLUGIN_NO_HANDLE) {
+		return kerr;
+	}
+
 	if (now < endtime) {
 		*t = (time_t) (endtime - now);
 		kerr = 0;
 	}
-
-	krb5_cc_end_seq_get(context, id, &cursor);
 
 	return kerr;
 }

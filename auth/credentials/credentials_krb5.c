@@ -687,7 +687,14 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 		bool kinit_required = false;
 		ret = smb_krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context,
 					       cred->ccache->ccache, &lifetime);
-		if (ret == KRB5_CC_END || ret == ENOENT) {
+		if (ret == KRB5_PLUGIN_NO_HANDLE) {
+			/*
+			 * KRB5_PLUGIN_NO_HANDLE is a special case of the encrypted
+			 * GSSProxy credential. We don't know its lifetime but assume it
+			 * is a valid one. Acquiring it will show the lifetime.
+			 */
+			kinit_required = false;
+		} else if (ret == KRB5_CC_END || ret == ENOENT) {
 			kinit_required = true;
 		} else if (ret == 0) {
 			if (lifetime == 0) {
@@ -800,18 +807,27 @@ _PUBLIC_ bool cli_credentials_get_ccache_name_obtained(
 		if (ret == KRB5_CC_END || ret == ENOENT) {
 			return false;
 		}
-		if (ret != 0) {
+
+		/*
+		 * KRB5_PLUGIN_NO_HANDLE is a special case of the encrypted
+		 * GSSProxy credential. We don't know its lifetime but assume it
+		 * is a valid one. Acquiring it will show the lifetime.
+		 * */
+		if (ret != 0 && ret != KRB5_PLUGIN_NO_HANDLE) {
 			return false;
 		}
-		if (lifetime == 0) {
-			return false;
-		} else if (lifetime < 300) {
-			if (cred->password_obtained >= cred->ccache_obtained) {
-				/*
-				 * we have a password to re-kinit
-				 * so let the caller try that.
-				 */
+
+		if (ret == 0) {
+			if (lifetime == 0) {
 				return false;
+			} else if (lifetime < 300) {
+				if (cred->password_obtained >= cred->ccache_obtained) {
+					/*
+					* we have a password to re-kinit
+					* so let the caller try that.
+					*/
+					return false;
+				}
 			}
 		}
 
