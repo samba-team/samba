@@ -66,7 +66,9 @@ static int fsetxattr_multi(const struct streams_xattr_config *config,
 	return ret;
 }
 
-static int fremovexattr_multi(struct files_struct *fsp, const char *name)
+static int fremovexattr_multi(const struct streams_xattr_config *config,
+			      struct files_struct *fsp,
+			      const char *name)
 {
 	int ret = SMB_VFS_FREMOVEXATTR(fsp, name);
 	return ret;
@@ -660,11 +662,18 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct streams_xattr_config *config;
 	NTSTATUS status;
 	int ret = -1;
 	char *xattr_name = NULL;
+	char *raw_stream_name = NULL;
 	struct smb_filename *pathref = NULL;
 	struct files_struct *fsp = smb_fname->fsp;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				return -1);
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINKAT(handle,
@@ -704,7 +713,7 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 		fsp = fsp->base_fsp;
 	}
 
-	ret = fremovexattr_multi(fsp, xattr_name);
+	ret = fremovexattr_multi(config, fsp, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
@@ -714,6 +723,7 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 	ret = 0;
 
  fail:
+	TALLOC_FREE(raw_stream_name);
 	TALLOC_FREE(xattr_name);
 	TALLOC_FREE(pathref);
 	return ret;
@@ -860,7 +870,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	/*
 	 * Remove the old stream from the base file fsp.
 	 */
-	oret = fremovexattr_multi(pathref_src->fsp, src_xattr_name);
+	oret = fremovexattr_multi(config, pathref_src->fsp, src_xattr_name);
 	if (oret < 0) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
