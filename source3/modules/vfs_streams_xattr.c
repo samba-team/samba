@@ -71,10 +71,12 @@ static int fremovexattr_multi(struct files_struct *fsp, const char *name)
 	return ret;
 }
 
-static int streams_xattr_get_ea_value_fsp(TALLOC_CTX *mem_ctx,
-					  files_struct *fsp,
-					  const char *ea_name,
-					  char **_val)
+static int streams_xattr_get_ea_value_fsp(
+	TALLOC_CTX *mem_ctx,
+	const struct streams_xattr_config *config,
+	files_struct *fsp,
+	const char *ea_name,
+	char **_val)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -129,10 +131,8 @@ static ssize_t get_xattr_size_fsp(const struct streams_xattr_config *config,
 	char *val = NULL;
 	ssize_t result;
 
-	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
-					     fsp,
-					     xattr_name,
-					     &val);
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, fsp, xattr_name, &val);
 	if (ret != 0) {
 		return -1;
 	}
@@ -531,10 +531,8 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
-					     fsp->base_fsp,
-					     xattr_name,
-					     &val);
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, fsp->base_fsp, xattr_name, &val);
 	if (ret != 0) {
 		DBG_DEBUG("streams_xattr_get_ea_value_fsp returned %s\n",
 			  strerror(ret));
@@ -823,10 +821,8 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* Read the old stream from the base file fsp. */
-	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
-					     pathref_src->fsp,
-					     src_xattr_name,
-					     &val);
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, pathref_src->fsp, src_xattr_name, &val);
 	if (ret != 0) {
 		errno = ret;
 		goto fail;
@@ -935,10 +931,8 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 			continue;
 		}
 
-		ret = streams_xattr_get_ea_value_fsp(names,
-						     smb_fname->fsp,
-						     names[i],
-						     &val);
+		ret = streams_xattr_get_ea_value_fsp(
+			names, config, smb_fname->fsp, names[i], &val);
 		if (ret != 0) {
 			DBG_DEBUG("Could not get ea %s for file %s: %s\n",
 				  names[i],
@@ -1163,10 +1157,8 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
-					     fsp->base_fsp,
-					     sio->xattr_name,
-					     &val);
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, fsp->base_fsp, sio->xattr_name, &val);
 	if (ret != 0) {
 		errno = ret;
 		return -1;
@@ -1212,11 +1204,17 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 				   files_struct *fsp, void *data,
 				   size_t n, off_t offset)
 {
+	struct streams_xattr_config *config = NULL;
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	char *val = NULL;
 	int ret;
 	size_t length, overlap;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				return -1);
 
 	DBG_DEBUG("offset=%jd, size=%zu\n", (intmax_t)offset, n);
 
@@ -1233,10 +1231,8 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
-					     fsp->base_fsp,
-					     sio->xattr_name,
-					     &val);
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, fsp->base_fsp, sio->xattr_name, &val);
 	if (ret != 0) {
 		errno = ret;
 		return -1;
@@ -1452,10 +1448,8 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = streams_xattr_get_ea_value_fsp(talloc_tos(),
-					     fsp->base_fsp,
-					     sio->xattr_name,
-					     &val);
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, fsp->base_fsp, sio->xattr_name, &val);
 	if (ret != 0) {
 		errno = ret;
 		return -1;
