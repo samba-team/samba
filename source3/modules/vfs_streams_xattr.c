@@ -121,7 +121,8 @@ again:
 	return 0;
 }
 
-static ssize_t get_xattr_size_fsp(struct files_struct *fsp,
+static ssize_t get_xattr_size_fsp(const struct streams_xattr_config *config,
+				  struct files_struct *fsp,
 			          const char *xattr_name)
 {
 	int ret;
@@ -252,9 +253,15 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_STRUCT_STAT *sbuf)
 {
+	struct streams_xattr_config *config = NULL;
 	int ret = -1;
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				return -1);
 
 	if (io == NULL || !fsp_is_alternate_stream(fsp)) {
 		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
@@ -271,7 +278,8 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	sbuf->st_ex_size = get_xattr_size_fsp(fsp->base_fsp,
+	sbuf->st_ex_size = get_xattr_size_fsp(config,
+					      fsp->base_fsp,
 					      io->xattr_name);
 	if (sbuf->st_ex_size == -1) {
 		SET_STAT_INVALID(*sbuf);
@@ -292,6 +300,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 static int streams_xattr_stat(vfs_handle_struct *handle,
 			      struct smb_filename *smb_fname)
 {
+	struct streams_xattr_config *config = NULL;
 	NTSTATUS status;
 	int ret;
 	int result = -1;
@@ -299,6 +308,11 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	char *tmp_stream_name = NULL;
 	struct smb_filename *pathref = NULL;
 	struct files_struct *fsp = smb_fname->fsp;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				return -1);
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -350,8 +364,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 		fsp = fsp->base_fsp;
 	}
 
-	smb_fname->st.st_ex_size = get_xattr_size_fsp(fsp,
-						      xattr_name);
+	smb_fname->st.st_ex_size = get_xattr_size_fsp(config, fsp, xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
 		TALLOC_FREE(xattr_name);
 		TALLOC_FREE(pathref);
@@ -394,12 +407,18 @@ static int streams_xattr_fstatat(struct vfs_handle_struct *handle,
 				 SMB_STRUCT_STAT *sbuf,
 				 int flags)
 {
+	struct streams_xattr_config *config = NULL;
 	char *xattr_name = NULL;
 	struct smb_filename *pathref = NULL;
 	struct files_struct *fsp = smb_fname->fsp;
 	ssize_t size;
 	NTSTATUS status;
 	int ret = -1;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				return -1);
 
 	DBG_DEBUG("called for [%s/%s]\n",
 		  dirfsp->fsp_name->base_name,
@@ -444,7 +463,7 @@ static int streams_xattr_fstatat(struct vfs_handle_struct *handle,
 
 	*sbuf = fsp->fsp_name->st;
 
-	size = get_xattr_size_fsp(fsp, xattr_name);
+	size = get_xattr_size_fsp(config, fsp, xattr_name);
 	if (size == -1) {
 		errno = ENOENT;
 		ret = -1;
