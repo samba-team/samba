@@ -39,8 +39,17 @@
 
 #define pmID_cluster(id)	id->cluster
 #define pmID_item(id)		id->item
+#endif
+
+#ifndef HAVE_PMGETPROGNAME
 #define pmGetProgname()		pmProgname
+#endif
+#ifndef HAVE_PMSETPROGNAME
 #define pmSetProgname(a)	__pmSetProgname(a)
+#endif
+
+#ifdef HAVE_STRUCT_PMRESULT
+#define pmdaResult pmResult
 #endif
 
 #include "domain.h"
@@ -450,7 +459,7 @@ err_out:
  * instance domain evaluation.
  */
 static int
-pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
+pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmdaResult **resp, pmdaExt *pmda)
 {
 	int ret;
 

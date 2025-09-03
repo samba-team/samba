@@ -226,16 +226,17 @@ def configure(conf):
 
     have_pmda = False
     if Options.options.ctdb_pmda:
-        pmda_support = True
+        checks = [conf.CHECK_HEADERS('pcp/pmapi.h pcp/impl.h pcp/pmda.h',
+                                     together=True),
+                  conf.CHECK_FUNCS_IN('pmdaDaemon', 'pcp_pmda')]
 
-        if not conf.CHECK_HEADERS('pcp/pmapi.h pcp/impl.h pcp/pmda.h',
-                                  together=True):
-            pmda_support = False
-        if not conf.CHECK_FUNCS_IN('pmProgname', 'pcp'):
-            pmda_support = False
-        if not conf.CHECK_FUNCS_IN('pmdaDaemon', 'pcp_pmda'):
-            pmda_support = False
-        if pmda_support:
+        have_progname = [conf.CHECK_FUNCS_IN('pmProgname', 'pcp'),
+                         conf.CHECK_FUNCS_IN('pmGetProgname', 'pcp'),
+                         conf.CHECK_FUNCS_IN('pmSetProgname', 'pcp')]
+
+        conf.CHECK_TYPE_IN('struct pmResult', 'pcp/pmapi.h')
+
+        if all(checks) and any(have_progname):
             conf.CHECK_TYPE_IN('__pmID_int', 'pcp/pmapi.h pcp/impl.h')
             have_pmda = True
         else:
