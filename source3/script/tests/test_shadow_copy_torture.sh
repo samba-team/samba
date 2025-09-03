@@ -60,7 +60,7 @@ build_stream_on_snapshot()
 {
 	file=$WORKDIR/.snapshots/$SNAPSHOT/foo
 
-	setfattr -n 'user.DosStream.bar:$DATA' -v baz $file || return 1
+	setfattr -n 'user.DosStream.bar:$DATA' -v "baz\00" $file || return 1
 }
 
 test_shadow_copy_write()
