@@ -1441,12 +1441,12 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		uint32_t pol;
 		pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &pol);
 
-		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%u\n",
-			(unsigned int)pol, (unsigned int)badcount, (unsigned int)badtime));
+		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%jd\n",
+			(unsigned int)pol, (unsigned int)badcount, (intmax_t)badtime));
 
 		if ((badcount >= pol) || (badcount == 0)) {
-			DEBUG(7, ("making mods to update ldap, count=%u, time=%u\n",
-				(unsigned int)badcount, (unsigned int)badtime));
+			DEBUG(7, ("making mods to update ldap, count=%u, time=%jd\n",
+				(unsigned int)badcount, (intmax_t)badtime));
 			if (asprintf(&temp, "%li", (long)badcount) < 0) {
 				return false;
 			}
