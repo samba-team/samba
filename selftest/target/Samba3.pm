@@ -3756,6 +3756,17 @@ sub provision($$)
 	comment = smb username is [%U]
 	guest ok = yes
 
+[aio_ratelimit]
+	comment = Testing aio_ratelimit
+	path = $shrdir
+	vfs objects = aio_ratelimit
+	aio_ratelimit: read_iops_limit = 10
+	aio_ratelimit: read_bw_limit = 100000
+	aio_ratelimit: read_delay_max = 10
+	aio_ratelimit: write_iops_limit = 100
+	aio_ratelimit: write_bw_limit = 100000
+	aio_ratelimit: write_delay_max = 10
+
 include = $aliceconfdir/%U.conf
 	";
 
