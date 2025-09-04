@@ -41,7 +41,6 @@ int main(int argc, char **argv)
 	char *default_path = NULL;
 	const char *path = NULL;
 	const char *query_string = NULL;
-	const char *path_scope = NULL;
 	char *es_query = NULL;
 	bool ok;
 
@@ -50,7 +49,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	query_string = argv[1];
-	path_scope = "/foo/bar";
 
 	lp_load_global(get_dyn_CONFIGFILE());
 
@@ -86,7 +84,6 @@ int main(int argc, char **argv)
 
 	ok = map_spotlight_to_es_query(mem_ctx,
 					   mappings,
-					   path_scope,
 					   query_string,
 					   &es_query);
 	printf("%s\n", ok ? es_query : "*mapping failed*");
