@@ -71,6 +71,27 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>streams_xattr:max xattrs per stream = NUM</term>
+	    <listitem>
+	      <para>On file systems where the size of a single xattr
+	      is more limited than the overall size of xattrs per
+	      inode, setting this parameter to a number between 2 and
+	      16 will allow smbd to store larger streams than what
+	      fits into a single xattr. For example Linux has a limit
+	      of 64kB per xattr, but XFS can store more than that per
+	      inode.</para>
+	      <para>The size of a single xattr is limited by the
+	      smb.conf parameter <command>smbd max xattr
+	      size</command></para>
+	      <para>This is limited to 16 xattrs per alternate data
+	      stream.</para>
+	      <para>The default value is <command>1</command>,
+	      compatible to the default behaviour before this feature
+	      was introduced.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 
 </refsect1>

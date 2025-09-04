@@ -34,6 +34,7 @@
 struct streams_xattr_config {
 	const char *prefix;
 	size_t prefix_len;
+	size_t max_extents;
 	bool store_stream_type;
 };
 
@@ -1080,7 +1081,7 @@ static int streams_xattr_connect(vfs_handle_struct *handle,
 	struct streams_xattr_config *config;
 	const char *default_prefix = SAMBA_XATTR_DOSSTREAM_PREFIX;
 	const char *prefix;
-	int rc;
+	int rc, max_xattrs;
 
 	rc = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	if (rc != 0) {
@@ -1110,6 +1111,19 @@ static int streams_xattr_connect(vfs_handle_struct *handle,
 						 "streams_xattr",
 						 "store_stream_type",
 						 true);
+
+	max_xattrs = lp_parm_int(SNUM(handle->conn),
+				 "streams_xattr",
+				 "max xattrs per stream",
+				 1);
+	if ((max_xattrs < 1) || (max_xattrs > 16)) {
+		DBG_WARNING("\"max xattrs per stream\"=%d invalid: "
+			    "Between 1 and 16 possible\n",
+			    max_xattrs);
+		errno = EINVAL;
+		return -1;
+	}
+	config->max_extents = max_xattrs - 1;
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct stream_xattr_config,
