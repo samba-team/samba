@@ -1315,7 +1315,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		  length);
 
 	/* Attempt to read past EOF. */
-        if (length <= offset) {
+        if (length <= (size_t)offset) { /* offset>=0, see above */
                 return 0;
         }
 
@@ -1363,8 +1363,13 @@ static struct tevent_req *streams_xattr_pread_send(
 		return req;
 	}
 
+	if (n >= SSIZE_MAX) {
+		tevent_req_error(req, EOVERFLOW);
+		return tevent_req_post(req, ev);
+	}
+
 	state->nread = SMB_VFS_PREAD(fsp, data, n, offset);
-	if (state->nread != n) {
+	if (state->nread != (ssize_t)n) {
 		if (state->nread != -1) {
 			errno = EIO;
 		}
@@ -1443,8 +1448,13 @@ static struct tevent_req *streams_xattr_pwrite_send(
 		return req;
 	}
 
+	if (n >= SSIZE_MAX) {
+		tevent_req_error(req, EOVERFLOW);
+		return tevent_req_post(req, ev);
+	}
+
 	state->nwritten = SMB_VFS_PWRITE(fsp, data, n, offset);
-	if (state->nwritten != n) {
+	if (state->nwritten != (ssize_t)n) {
 		if (state->nwritten != -1) {
 			errno = EIO;
 		}
