@@ -36,17 +36,26 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define MDSSVC_ELASTIC_QUERY_TEMPLATE	\
-	"{"				\
-	"    \"from\": %zu,"		\
-	"    \"size\": %zu,"		\
-	"    \"_source\": [%s],"	\
-	"    \"query\": {"		\
-        "        \"query_string\": {"	\
-	"            \"query\": \"%s\"" \
-	"        }"			\
-	"    }"				\
-	"}"
+#define MDSSVC_ELASTIC_QUERY_TEMPLATE			\
+	"{\n"						\
+	"    \"from\": %zu,\n"				\
+	"    \"size\": %zu,\n"				\
+	"    \"_source\": [%s],\n"			\
+	"    \"query\": {\n"				\
+	"        \"bool\": {\n"				\
+	"            \"filter\": [ {\n"			\
+	"                \"prefix\": {\n"		\
+	"                    \"path.real\": \"%s/\"\n"	\
+	"                }\n"				\
+	"            } ],\n"				\
+	"            \"must\": [ {\n"			\
+        "                \"query_string\": {\n"		\
+	"                    \"query\": \"%s\"\n"	\
+	"                }\n"				\
+	"            } ]\n"				\
+	"        }\n"					\
+	"    }\n"					\
+	"}\n"
 
 #define MDSSVC_ELASTIC_SOURCES \
 	"\"path.real\""
@@ -413,7 +422,6 @@ static bool mds_es_search(struct sl_query *slq)
 	ok = map_spotlight_to_es_query(
 		s,
 		mds_es_ctx->mdssvc_es_ctx->mappings,
-		slq->path_scope,
 		slq->query_string,
 		&s->es_query);
 	if (!ok) {
@@ -621,6 +629,7 @@ static struct tevent_req *mds_es_search_send(TALLOC_CTX *mem_ctx,
 					s->from,
 					s->size,
 					MDSSVC_ELASTIC_SOURCES,
+					s->slq->path_scope,
 					s->es_query);
 	if (tevent_req_nomem(elastic_query, req)) {
 		return tevent_req_post(req, ev);

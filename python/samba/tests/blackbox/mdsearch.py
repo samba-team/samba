@@ -102,8 +102,21 @@ class MdfindBlackboxTests(BlackboxTestCase):
         json_in = r'''{
           "from": 0, "size": 50, "_source": ["path.real"],
           "query": {
-            "query_string": {
-              "query": "(samba*) AND path.real.fulltext:\"%BASEPATH%\""
+            "bool": {
+              "filter": [
+                {
+                  "prefix": {
+                    "path.real": "%BASEPATH%/"
+                  }
+                }
+              ],
+              "must": [
+                {
+                  "query_string": {
+                    "query": "samba*"
+                  }
+                }
+              ]
             }
           }
         }'''
