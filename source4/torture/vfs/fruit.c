@@ -8121,7 +8121,7 @@ static bool test_stream_names_local(struct torture_context *tctx,
 
 	ret = torture_setup_local_xattr(tctx, "localdir", BASEDIR "/stream_names.txt",
 					"user.DosStream.bar:baz:$DATA",
-					"data", strlen("data"));
+					"data", strlen("data")+1);
 	CHECK_VALUE(ret, true);
 
 	ret = check_stream_list(tree, tctx, fname, 3, streams, false);
