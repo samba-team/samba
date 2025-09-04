@@ -92,6 +92,20 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>streams_xattr:ext_prefix = STRING</term>
+	    <listitem>
+	      <para>Name prefix used when storing overflow xattrs of a
+	      stream. It defaults to
+	      <command>streams_xattr:prefix</command> with the string
+	      "Ext" appended. If
+	      <command>streams_xattr:prefix</command> ends in a ".",
+	      "Ext" is inserted before the ".".</para>
+	      <para>The overflow xattrs will be named according to a
+	      pattern following "user.DosStreamExt.0.ADS-NAME".</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 
 </refsect1>

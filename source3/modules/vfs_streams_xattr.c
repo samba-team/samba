@@ -34,6 +34,7 @@
 struct streams_xattr_config {
 	const char *prefix;
 	size_t prefix_len;
+	const char *ext_prefix;
 	size_t max_extents;
 	bool store_stream_type;
 };
@@ -1081,6 +1082,8 @@ static int streams_xattr_connect(vfs_handle_struct *handle,
 	struct streams_xattr_config *config;
 	const char *default_prefix = SAMBA_XATTR_DOSSTREAM_PREFIX;
 	const char *prefix;
+	char *default_ext_prefix = NULL;
+	const char *ext_prefix = NULL;
 	int rc, max_xattrs;
 
 	rc = SMB_VFS_NEXT_CONNECT(handle, service, user);
@@ -1112,6 +1115,36 @@ static int streams_xattr_connect(vfs_handle_struct *handle,
 		errno = EINVAL;
 		return -1;
 	}
+
+	if (config->prefix[config->prefix_len - 1] == '.') {
+		default_ext_prefix = talloc_asprintf(talloc_tos(),
+						     "%.*sExt.",
+						     (int)(config->prefix_len -
+							   1),
+						     config->prefix);
+	} else {
+		default_ext_prefix = talloc_asprintf(talloc_tos(),
+						     "%sExt",
+						     config->prefix);
+	}
+
+	if (default_ext_prefix == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ext_prefix = lp_parm_const_string(SNUM(handle->conn),
+					  "streams_xattr",
+					  "ext_prefix",
+					  default_ext_prefix);
+	TALLOC_FREE(default_ext_prefix);
+	config->ext_prefix = talloc_strdup(config, ext_prefix);
+	if (config->ext_prefix == NULL) {
+		DEBUG(1, ("talloc_strdup() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+	DBG_DEBUG("using stream ext prefix: %s\n", config->ext_prefix);
 
 	config->store_stream_type = lp_parm_bool(SNUM(handle->conn),
 						 "streams_xattr",
