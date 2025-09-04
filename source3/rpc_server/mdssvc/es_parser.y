@@ -85,7 +85,6 @@
 	int mdsyylwrap(void);
 	bool map_spotlight_to_es_query(TALLOC_CTX *mem_ctx,
 				       json_t *mappings,
-				       const char *path_scope,
 				       const char *query_string,
 				       char **_es_query);
 }
@@ -640,7 +639,6 @@ int mdsyylwrap(void)
  **/
 bool map_spotlight_to_es_query(TALLOC_CTX *mem_ctx,
 			       json_t *mappings,
-			       const char *path_scope,
 			       const char *query_string,
 			       char **_es_query)
 {
@@ -691,13 +689,11 @@ bool map_spotlight_to_es_query(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	es_query = talloc_asprintf(mem_ctx,
-				   "(%s) AND path.real.fulltext:\\\"%s\\\"",
-				   s.result, path_scope);
-	TALLOC_FREE(s.frame);
+	es_query = talloc_strdup(mem_ctx, s.result);
 	if (es_query == NULL) {
 		return false;
 	}
+	TALLOC_FREE(s.frame);
 
 	*_es_query = es_query;
 	return true;
