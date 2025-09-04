@@ -1107,6 +1107,12 @@ static int streams_xattr_connect(vfs_handle_struct *handle,
 	config->prefix_len = strlen(config->prefix);
 	DEBUG(10, ("streams_xattr using stream prefix: %s\n", config->prefix));
 
+	if (config->prefix_len == 0) {
+		DBG_WARNING("Empty prefix not valid\n");
+		errno = EINVAL;
+		return -1;
+	}
+
 	config->store_stream_type = lp_parm_bool(SNUM(handle->conn),
 						 "streams_xattr",
 						 "store_stream_type",
