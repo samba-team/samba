@@ -220,7 +220,7 @@ static int account_show(struct net_context *c,
 		d_printf(_("Account lockout duration: "));
 		if (nt_time_is_set(&i12->lockout_duration)) {
 			time_t t = nt_time_to_unix_abs(&i12->lockout_duration);
-			d_printf(_("%d seconds\n"), (int)t);
+			d_printf(_("%jd seconds\n"), (intmax_t)t);
 		} else {
 			d_printf(_("not set\n"));
 		}
@@ -228,7 +228,7 @@ static int account_show(struct net_context *c,
 		d_printf(_("Bad password count reset after: "));
 		if (nt_time_is_set(&i12->lockout_window)) {
 			time_t t = nt_time_to_unix_abs(&i12->lockout_window);
-			d_printf(_("%d seconds\n"), (int)t);
+			d_printf(_("%jd seconds\n"), (intmax_t)t);
 		} else {
 			d_printf(_("not set\n"));
 		}
