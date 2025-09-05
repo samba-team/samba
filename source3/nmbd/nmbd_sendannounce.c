@@ -384,8 +384,8 @@ void announce_myself_to_domain_master_browser(time_t t)
 		announce_timer_last = t;
 
 	if ((t-announce_timer_last) < (CHECK_TIME_MST_ANNOUNCE * 60)) {
-		DBG_DEBUG("announce_myself_to_domain_master_browser: t (%d) - last(%d) < %d\n",
-			(int)t, (int)announce_timer_last, 
+		DBG_DEBUG("announce_myself_to_domain_master_browser: t (%jd) - last(%d) < %d\n",
+			(intmax_t)t, (int)announce_timer_last,
 			CHECK_TIME_MST_ANNOUNCE * 60 );
 		return;
 	}

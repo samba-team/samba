@@ -63,8 +63,8 @@ bool sitename_store(const char *realm, const char *sitename)
 
 	expire = get_time_t_max(); /* Store indefinitely. */
 
-	DEBUG(10,("sitename_store: realm = [%s], sitename = [%s], expire = [%u]\n",
-		realm, sitename, (unsigned int)expire ));
+	DEBUG(10,("sitename_store: realm = [%s], sitename = [%s], expire = [%jd]\n",
+		realm, sitename, (intmax_t)expire ));
 
 	ret = gencache_set( key, sitename, expire );
 	TALLOC_FREE(key);
