@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate release of Samba 4.23.  This is *not*
+This is the fourth release candidate release of Samba 4.23.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -124,6 +124,16 @@ smb.conf changes
   client smb transports                   New             tcp, nbt
   server smb transports                   New             tcp, nbt
   winbind varlink service                 New             no
+
+
+CHANGES SINCE 4.23.0rc3
+=======================
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 15902: Regression in gssproxy support in 4.23.rc1+.
+
+o  MikeLiu <mikeliu@qnap.com>
+   * BUG 15900: 'net ads group' failed to list domain groups.
 
 
 CHANGES SINCE 4.23.0rc2
