@@ -325,8 +325,8 @@ static int account_set_resetduration(struct net_context *c,
 	}
 
 	unix_to_nt_time_abs(&i12->lockout_window, atoi(argv[0]));
-	d_printf(_("Setting bad password reset duration to %d seconds\n"),
-		 (int)nt_time_to_unix_abs(&i12->lockout_window));
+	d_printf(_("Setting bad password reset duration to %jd seconds\n"),
+		 (intmax_t)nt_time_to_unix_abs(&i12->lockout_window));
 
 	return 12;
 }
