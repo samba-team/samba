@@ -386,8 +386,8 @@ static int account_set_maxpwage(struct net_context *c,
 	}
 
 	unix_to_nt_time_abs((NTTIME *)&i1->max_password_age, atoi(argv[0]));
-	d_printf(_("Setting maximum password age to %d seconds\n"),
-		 (int)nt_time_to_unix_abs((NTTIME *)&i1->max_password_age));
+	d_printf(_("Setting maximum password age to %jd seconds\n"),
+		 (intmax_t)nt_time_to_unix_abs((NTTIME *)&i1->max_password_age));
 
 	return 1;
 }
