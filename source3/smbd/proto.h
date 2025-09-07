@@ -402,6 +402,10 @@ NTSTATUS openat_pathref_fsp_nosymlink(
 NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 				  struct smb_filename *smb_fname_rel,
 				  uint32_t ucf_flags);
+NTSTATUS openat_pathref_fsp_dot(TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				uint32_t flags,
+				struct smb_filename **_dot);
 NTSTATUS readlink_talloc(
 	TALLOC_CTX *mem_ctx,
 	struct files_struct *dirfsp,
