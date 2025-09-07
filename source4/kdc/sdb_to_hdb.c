@@ -303,12 +303,183 @@ static int sdb_pub_keys_to_hdb_ext(const struct sdb_pub_keys *s,
 	return 0;
 }
 
+/**
+ * @brief Does data contain a value?
+ *
+ * @param[in] data pointer to a krb5_data structure
+ *
+ * @return TRUE  data contains data
+ *         FALSE data is NULL, or contains no data1:w
+ */
+static krb5_boolean krb5_data_not_empty(const krb5_data *data) {
+
+	if (data == NULL) {
+		return FALSE;
+	}
+
+	if (data->length == 0 || data->data == NULL) {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/**
+ * @brief Allocate a new krb5_data struct and copy the contents of src
+ *
+ * @param[in] The source krb5_data structure
+ *
+ * @return A pointer the new krb5_data structure
+ *         OR NULL if unable to allocate memory
+ *
+ * @note this allocates a new krb5_data structure and space for the
+ *       contents of src, it should be freed by calling free_krb5_data
+ */
+static krb5_data *copy_krb5_data(const krb5_data *src) {
+
+	krb5_data *dest = malloc(sizeof(*dest));
+
+	if (dest == NULL) {
+		return NULL;
+	}
+
+	dest->data = malloc(src->length);
+	if (dest->data == NULL) {
+		SAFE_FREE(dest);
+		return NULL;
+	}
+
+	memcpy(dest->data, src->data, src->length);
+	dest->length = src->length;
+	return dest;
+}
+
+/**
+* @brief Convert a single sdb_certificate_mapping to
+*        the corresponding HDB_Ext_CertificateMapping
+*
+* @param s[in]  certificate mappings in sdb form
+* @param h[out] the HDB_Ext_Certificate mapping to populate
+*
+* @return 0      no error
+*         ENOMEM unable to allocate memory
+*
+* @note memory is allocated on the HDB_Ext_CertificateMapping
+*       and it needs to be freed by calling free_HDB_Ext_CertificateMapping
+*       This also needs to be done in the event of an error.
+*
+*/
+static int sdb_cert_mapping_to_hdb_key_trust_val(
+	const struct sdb_certificate_mapping *m,
+	struct HDB_Ext_CertificateMapping *h)
+{
+	h->strong_mapping = m->strong_mapping;
+	if (krb5_data_not_empty(&m->subject_name)) {
+		h->subject_name = copy_krb5_data(&m->subject_name);
+		if (h->subject_name == NULL) {
+			return ENOMEM;
+		}
+	}
+	if (krb5_data_not_empty(&m->issuer_name)) {
+		h->issuer_name = copy_krb5_data(&m->issuer_name);
+		if (h->issuer_name == NULL) {
+			return ENOMEM;
+		}
+	}
+	if (krb5_data_not_empty(&m->serial_number)) {
+		h->serial_number = copy_krb5_data(&m->serial_number);
+		if (h->serial_number == NULL) {
+			return ENOMEM;
+		}
+	}
+	if (krb5_data_not_empty(&m->public_key)) {
+		h->public_key = copy_krb5_data(&m->public_key);
+		if (h->public_key == NULL) {
+			return ENOMEM;
+		}
+	}
+	if (krb5_data_not_empty(&m->rfc822)) {
+		h->rfc822 = copy_krb5_data(&m->rfc822);
+		if (h->rfc822 == NULL) {
+			return ENOMEM;
+		}
+	}
+	if (krb5_data_not_empty(&m->ski)) {
+		h->ski = copy_krb5_data(&m->ski);
+		if (h->ski == NULL) {
+			return ENOMEM;
+		}
+	}
+	return 0;
+}
+
+/**
+* @brief Convert the sdb certificate mappings to a HDB_Ext_CertificateMapping
+*
+* @param s[in]  The certificate mappings to be used
+* @param h[out] The converted mappings
+*
+* @return      0 if  there are no errors
+*         ENOMEM unable to allocate memory
+*
+* @note The HDB_Ext_CertificateMappings may not contain any mappings, this
+*       can happen when:
+*         - Enforcement mode is none
+*         - Or the user is not permitted to use PKINIT when the enforcement
+*           mode is compatibility or strong.
+*
+* @note Memory is allocated and will need to be freed with a call
+*       to free_HDB_Ext_CertificateMappings
+*
+* @note h must be initialised to zero and have no associated allocated
+*       memory
+*
+*/
+static int sdb_certificate_mappings_to_hdb_ext(
+	const struct sdb_certificate_mappings *m,
+	HDB_Ext_CertificateMappings *h)
+{
+	int ret = 0;
+	size_t i = 0;
+
+	h->enforcement_mode = m->enforcement_mode;
+	h->valid_certificate_start= m->valid_certificate_start;
+
+	if (m->mappings != NULL) {
+		h->mappings = malloc
+			(sizeof(struct HDB_Ext_CertificateMappings_mappings));
+		if (h->mappings == NULL) {
+			return ENOMEM;
+		}
+		h->mappings->len = 0;
+		h->mappings->val =calloc(
+			m->len,sizeof(struct HDB_Ext_CertificateMapping));
+		if (h->mappings->val == NULL) {
+			SAFE_FREE(h->mappings);
+			return ENOMEM;
+		}
+		for (i = 0; i < m->len; i++) {
+			ret = sdb_cert_mapping_to_hdb_key_trust_val(
+				&m->mappings[i], &h->mappings->val[i]);
+			if (ret != 0) {
+				free_HDB_Ext_CertificateMapping(
+					&h->mappings->val[i]);
+				free_HDB_Ext_CertificateMappings(h);
+				return ret;
+			}
+			h->mappings->len++;
+		}
+	}
+	return ret;
+}
+
+
 int sdb_entry_to_hdb_entry(krb5_context context,
 			   const struct sdb_entry *s,
 			   hdb_entry *h)
 {
 	struct samba_kdc_entry *ske = s->skdc_entry;
 	struct HDB_Ext_KeyTrust kt = {};
+	struct HDB_Ext_CertificateMappings cm = {};
 	unsigned int i;
 	int rc;
 
@@ -473,6 +644,22 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 	free_HDB_Ext_KeyTrust(&kt);
 	if (rc != 0) {
 		goto error;
+	}
+
+	rc = sdb_certificate_mappings_to_hdb_ext(&s->mappings, &cm);
+	if (rc != 0) {
+		goto error;
+	}
+	{
+		HDB_extension ext = {};
+		ext.mandatory = FALSE;
+		ext.data.element = choice_HDB_extension_data_cert_mappings;
+		ext.data.u.cert_mappings = cm;
+		rc = hdb_replace_extension(context, h, &ext);
+		free_HDB_Ext_CertificateMappings(&cm);
+		if (rc != 0) {
+			goto error;
+		}
 	}
 
 	h->context = ske;
