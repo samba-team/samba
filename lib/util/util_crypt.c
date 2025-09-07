@@ -2,7 +2,9 @@
 #include "data_blob.h"
 #include "discard.h"
 #include <talloc.h>
+#ifdef HAVE_CRYPT_H
 #include <crypt.h>
+#endif
 #include "util_crypt.h"
 
 
