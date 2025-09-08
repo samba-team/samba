@@ -161,7 +161,7 @@ static int generic_queue_get(const char *printer_name,
                              print_status_struct *status)
 {
 	char **qlines;
-	int fd;
+	int fd = -1;
 	int numlines, i, qcount;
 	print_queue_struct *queue = NULL;
 
