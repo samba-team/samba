@@ -1,0 +1,15 @@
+#!/usr/bin/python3
+
+import os
+import sys
+
+filename = f"{os.environ['SELFTEST_TMPDIR']}/wins_hook_writes_here"
+
+f = open(filename, 'wb')
+
+# Some names may truncate argv (e.g. '&'), for which we leave the file
+# empty.
+if len(sys.argv) > 2:
+    f.write(os.fsencode(sys.argv[2]))
+
+f.close()
