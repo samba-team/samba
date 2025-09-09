@@ -1628,6 +1628,7 @@ sub provision_ad_dc_ntvfs($$$)
 	ldap server require strong auth = allow_sasl_without_tls_channel_bindings
 	raw NTLMv2 auth = yes
 	lsa over netlogon = yes
+	wins hook = $ENV{SRCDIR_ABS}/testprogs/blackbox/wins_hook_test
         rpc server port = 1027
         auth event notification = true
 	dsdb event notification = true

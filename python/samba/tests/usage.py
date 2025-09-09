@@ -73,6 +73,7 @@ EXCLUDE_USAGE = {
     'lib/ldb/tests/python/api.py',
     'source4/selftest/tests.py',
     'buildtools/bin/waf',
+    'testprogs/blackbox/wins_hook_test',
     'selftest/tap2subunit',
     'script/show_test_time',
     'source4/scripting/bin/subunitrun',
@@ -89,6 +90,7 @@ EXCLUDE_HELP = {
     'selftest/tap2subunit',
     'wintest/test-s3.py',
     'wintest/test-s4-howto.py',
+    'testprogs/blackbox/wins_hook_test',
 }
 
 
