@@ -1,4 +1,74 @@
                    ==============================
+                   Release Notes for Samba 4.21.8
+                         September 09, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.21 release series.
+
+
+Changes since 4.21.7
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14981: netr_LogonSamLogonEx returns NR_STATUS_ACCESS_DENIED with
+     SysvolReady=0.
+   * BUG 15844: getpwuid does not shift to new DC when current DC is down.
+   * BUG 15876: Windows security hardening locks out schannel'ed netlogon dc
+     calls like netr_DsRGetDCName.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15840: kinit command is failing with Missing cache Error.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15891: Figuring out the DC name from IP address fails and breaks
+     fork_domain_child().
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15892: Delayed leader broadcast can block ctdb forever.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14981: netr_LogonSamLogonEx returns NR_STATUS_ACCESS_DENIED with
+     SysvolReady=0.
+
+o  MikeLiu <mikeliu@qnap.com>
+   * BUG 15900: 'net ads group' failed to list domain groups.
+
+o  Rabinarayan Panigrahi <rapanigr@redhat.com>
+   * BUG 15663: Apparently there is a conflict between shadow_copy2 module and
+     virusfilter (action quarantine).
+
+o  Aleksandr Sharov <asharov@redhat.com>
+   * BUG 15877: Fix handling of empty GPO link.
+
+o  Srinivas Rao V <Srinivas.Rao.V@ibm.com>
+   * BUG 15880: SMB ACL inheritance doesn't work for files created.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.21.7
                            July 07, 2025
                    ==============================
@@ -78,8 +148,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.21.6
                            June 03, 2025
