@@ -504,13 +504,49 @@ for t in smbtorture4_testsuites("rap."):
 
 # Tests against the NTVFS CIFS backend
 for t in base + raw:
-    plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$NETBIOSNAME/cifs', '-U$USERNAME%$PASSWORD', '--kerberos=yes'] + ntvfsargs, modname="samba4.ntvfs.cifs.krb5.%s" % t)
+    plansmbtorture4testsuite(
+        t,
+        "ad_dc_ntvfs",
+        [
+            '//$NETBIOSNAME/cifs',
+            '-U$USERNAME%$PASSWORD',
+            '--use-kerberos=required'
+        ] + ntvfsargs,
+        modname="samba4.ntvfs.cifs.krb5.%s" % t
+    )
 
 # Test NTVFS CIFS backend with S4U2Self and S4U2Proxy
 t = "base.unlink"
-plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$NETBIOSNAME/cifs', '-U$USERNAME%$PASSWORD', '--kerberos=no'] + ntvfsargs, "samba4.ntvfs.cifs.ntlm.%s" % t)
-plansmbtorture4testsuite(t, "rpc_proxy", ['//$NETBIOSNAME/cifs_to_dc', '-U$DC_USERNAME%$DC_PASSWORD', '--kerberos=yes'] + ntvfsargs, "samba4.ntvfs.cifs.krb5.%s" % t)
-plansmbtorture4testsuite(t, "rpc_proxy", ['//$NETBIOSNAME/cifs_to_dc', '-U$DC_USERNAME%$DC_PASSWORD', '--kerberos=no'] + ntvfsargs, "samba4.ntvfs.cifs.ntlm.%s" % t)
+plansmbtorture4testsuite(
+    t,
+    "ad_dc_ntvfs",
+    [
+        '//$NETBIOSNAME/cifs',
+        '-U$USERNAME%$PASSWORD',
+        '--use-kerberos=disabled'
+    ] + ntvfsargs,
+    "samba4.ntvfs.cifs.ntlm.%s" % t
+)
+plansmbtorture4testsuite(
+    t,
+    "rpc_proxy",
+    [
+        '//$NETBIOSNAME/cifs_to_dc',
+        '-U$DC_USERNAME%$DC_PASSWORD',
+        '--use-kerberos=required'
+    ] + ntvfsargs,
+    "samba4.ntvfs.cifs.krb5.%s" % t
+)
+plansmbtorture4testsuite(
+    t,
+    "rpc_proxy",
+    [
+        '//$NETBIOSNAME/cifs_to_dc',
+        '-U$DC_USERNAME%$DC_PASSWORD',
+        '--use-kerberos=disabled'
+    ] + ntvfsargs,
+    "samba4.ntvfs.cifs.ntlm.%s" % t
+)
 
 plansmbtorture4testsuite('echo.udp', 'ad_dc_ntvfs:local', '//$SERVER/whatever')
 
