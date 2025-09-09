@@ -1516,7 +1516,7 @@ static bool test_dirlease_oplocks(struct torture_context *tctx,
 
 	smb2_deltree(tree, dname);
 
-	for (i = 0; i < sizeof(levels); i++) {
+	for (i = 0; i < ARRAY_SIZE(levels); i++) {
 		c = (struct smb2_create) {
 			.in.oplock_level = levels[i],
 			.in.desired_access = SEC_RIGHTS_DIR_READ,
