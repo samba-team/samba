@@ -100,7 +100,7 @@ static int fake_acls_fstatat(struct vfs_handle_struct *handle,
 	connection_struct *conn = handle->conn;
 	int ret = -1;
 	struct in_pathref_data *prd = NULL;
-	struct files_struct *root_fsp = NULL;
+	struct smb_filename *rootdir = NULL;
 	struct files_struct *new_dirfsp = NULL;
 	struct smb_filename *smb_fname = NULL;
 	struct smb_filename *new_relname = NULL;
@@ -150,13 +150,15 @@ static int fake_acls_fstatat(struct vfs_handle_struct *handle,
 		 * paths, make this relative to "/"
 		 */
 		base_name += 1;
-		status = open_rootdir_pathref_fsp(conn, &root_fsp);
+		status = openat_pathref_fsp_rootdir(talloc_tos(),
+						    conn,
+						    &rootdir);
 		if (!NT_STATUS_IS_OK(status)) {
 			prd->calling_pathref_fsp = false;
 			errno = ENOENT;
 			return -1;
 		}
-		dirfsp = root_fsp;
+		dirfsp = rootdir->fsp;
 	}
 
 	if (ISDOT(base_name)) {
@@ -212,11 +214,7 @@ static int fake_acls_fstatat(struct vfs_handle_struct *handle,
 				&sbuf->st_ex_uid,
 				&sbuf->st_ex_gid);
 
-	if (root_fsp != NULL) {
-		fd_close(root_fsp);
-		file_free(NULL, root_fsp);
-		root_fsp = NULL;
-	}
+	TALLOC_FREE(rootdir);
 	fd_close(new_dirfsp);
 	file_free(NULL, new_dirfsp);
 	new_dirfsp = NULL;

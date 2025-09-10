@@ -370,8 +370,9 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 			      int open_flags,
 			      struct files_struct **_fsp);
 
-NTSTATUS open_rootdir_pathref_fsp(connection_struct *conn,
-				  struct files_struct **_fsp);
+NTSTATUS openat_pathref_fsp_rootdir(TALLOC_CTX *mem_ctx,
+				    struct connection_struct *conn,
+				    struct smb_filename **_root);
 NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			    struct smb_filename *smb_fname);
 NTSTATUS open_stream_pathref_fsp(

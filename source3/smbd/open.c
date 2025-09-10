@@ -475,7 +475,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	struct files_struct *dirfsp_conv = NULL;
 	struct smb_filename *smb_fname_conv = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
-	struct files_struct *root_fsp = NULL;
+	struct smb_filename *rootdir = NULL;
 	const char *name_in = smb_fname->base_name;
 	int fd;
 
@@ -532,11 +532,13 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		 * paths, make this relative to "/"
 		 */
 		name_in += 1;
-		status = open_rootdir_pathref_fsp(conn, &root_fsp);
+		status = openat_pathref_fsp_rootdir(talloc_tos(),
+						    conn,
+						    &rootdir);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		dirfsp = root_fsp;
+		dirfsp = rootdir->fsp;
 	}
 
 	if (ISDOT(name_in)) {
@@ -558,11 +560,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		&smb_fname_rel);
 
 	dirfsp = NULL;
-	if (root_fsp != NULL) {
-		fd_close(root_fsp);
-		file_free(NULL, root_fsp);
-		root_fsp = NULL;
-	}
+	TALLOC_FREE(rootdir);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("filename_convert_dirfsp_rel returned %s\n",
