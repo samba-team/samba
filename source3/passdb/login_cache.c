@@ -116,8 +116,8 @@ bool login_cache_read(struct samu *sampass, struct login_cache *entry)
 
 	SAFE_FREE(databuf.dptr);
 
-	DEBUG(5, ("Found login cache entry: timestamp %12u, flags 0x%x, count %d, time %12jd\n",
-		  (unsigned int)entry->entry_timestamp, entry->acct_ctrl, 
+	DEBUG(5, ("Found login cache entry: timestamp %12jd, flags 0x%x, count %d, time %12jd\n",
+		  (intmax_t)entry->entry_timestamp, entry->acct_ctrl,
 		  entry->bad_password_count, (intmax_t)entry->bad_password_time));
 	return true;
 }
