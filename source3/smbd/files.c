@@ -584,6 +584,116 @@ fail:
 	return status;
 }
 
+static NTSTATUS openat_pathref_fsp_simple_openat(TALLOC_CTX *mem_ctx,
+						 struct files_struct *dirfsp,
+						 const char *name,
+						 uint32_t flags,
+						 struct smb_filename **_fname)
+{
+	struct connection_struct *conn = dirfsp->conn;
+	struct smb_filename *fname = NULL;
+	struct files_struct *fsp = NULL;
+	struct smb_filename *full_fname = NULL;
+	struct vfs_open_how how = {.flags = O_NOFOLLOW};
+	NTSTATUS status;
+	int fd;
+	bool ok;
+
+#ifdef O_DIRECTORY
+	how.flags |= O_DIRECTORY;
+#endif
+
+#ifdef O_PATH
+	how.flags |= O_PATH;
+#else
+	how.flags |= (O_RDONLY | O_NONBLOCK);
+#endif
+
+	fname = synthetic_smb_fname(mem_ctx, name, NULL, NULL, 0, flags);
+	if (fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		DBG_DEBUG("fsp_new() failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	GetTimeOfDay(&fsp->open_time);
+	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
+
+	fsp->fsp_flags.is_pathref = true;
+
+	full_fname = full_path_from_dirfsp_atname(conn, dirfsp, fname);
+	if (full_fname == NULL) {
+		DBG_DEBUG("full_path_from_dirfsp_atname(%s/%s) failed\n",
+			  fsp_str_dbg(dirfsp),
+			  fname->base_name);
+		file_free(NULL, fsp);
+		TALLOC_FREE(fname);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = fsp_attach_smb_fname(fsp, &full_fname);
+	if (!ok) {
+		DBG_DEBUG("fsp_attach_smb_fname(fsp, %s) failed\n",
+			  smb_fname_str_dbg(full_fname));
+		file_free(NULL, fsp);
+		TALLOC_FREE(fname);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fd = SMB_VFS_OPENAT(conn, dirfsp, fname, fsp, &how);
+	if (fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("smb_vfs_openat(%s/%s) failed: %s\n",
+			  fsp_str_dbg(dirfsp),
+			  fname->base_name,
+			  strerror(errno));
+		file_free(NULL, fsp);
+		TALLOC_FREE(fname);
+		return status;
+	}
+
+	fsp_set_fd(fsp, fd);
+
+	status = vfs_stat_fsp(fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("vfs_stat_fsp(\"/\") failed: %s\n",
+			  nt_errstr(status));
+		fd_close(fsp);
+		file_free(NULL, fsp);
+		TALLOC_FREE(fname);
+		return status;
+	}
+
+	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
+	fsp->fsp_flags.posix_open = ((fname->flags & SMB_FILENAME_POSIX_PATH) !=
+				     0);
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
+
+	fname->st = fsp->fsp_name->st;
+
+	ok = fsp_smb_fname_link(fsp, &fname->fsp_link, &fname->fsp);
+	if (!ok) {
+		DBG_DEBUG("fsp_smb_fname_link() failed\n");
+		fd_close(fsp);
+		file_free(NULL, fsp);
+		TALLOC_FREE(fname);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("fsp [%s]: OK, fd=%d\n", fsp_str_dbg(fsp), fd);
+
+	talloc_set_destructor(fname, smb_fname_fsp_destructor);
+
+	*_fname = fname;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS open_rootdir_pathref_fsp(connection_struct *conn,
 				  struct files_struct **_fsp)
 {
@@ -1664,102 +1774,16 @@ NTSTATUS openat_pathref_fsp_dot(TALLOC_CTX *mem_ctx,
 				uint32_t flags,
 				struct smb_filename **_dot)
 {
-	struct connection_struct *conn = dirfsp->conn;
-	struct files_struct *fsp = NULL;
-	struct smb_filename *full_fname = NULL;
-	struct vfs_open_how how = { .flags = O_NOFOLLOW, };
-        struct smb_filename *dot = NULL;
-        NTSTATUS status;
-        int fd;
-	bool ok;
+	struct smb_filename *dot = NULL;
+	NTSTATUS status;
 
-#ifdef O_DIRECTORY
-        how.flags |= O_DIRECTORY;
-#endif
-
-#ifdef O_PATH
-	how.flags |= O_PATH;
-#else
-	how.flags |= (O_RDONLY | O_NONBLOCK);
-#endif
-
-	dot = synthetic_smb_fname(mem_ctx, ".", NULL, NULL, 0, flags);
-	if (dot == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	fsp = fsp_new(conn, conn);
-	if (fsp == NULL) {
-		DBG_DEBUG("fsp_new() failed\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	GetTimeOfDay(&fsp->open_time);
-	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
-
-	fsp->fsp_flags.is_pathref = true;
-
-	full_fname = full_path_from_dirfsp_atname(conn, dirfsp, dot);
-	if (full_fname == NULL) {
-		DBG_DEBUG("full_path_from_dirfsp_atname(%s/%s) failed\n",
-			  dirfsp->fsp_name->base_name,
-			  dot->base_name);
-		file_free(NULL, fsp);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ok = fsp_attach_smb_fname(fsp, &full_fname);
-	if (!ok) {
-		DBG_DEBUG("fsp_attach_smb_fname(fsp, %s) failed\n",
-			  smb_fname_str_dbg(full_fname));
-		file_free(NULL, fsp);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	fd = SMB_VFS_OPENAT(conn, dirfsp, dot, fsp, &how);
-	if (fd == -1) {
-		status = map_nt_error_from_unix(errno);
-		DBG_DEBUG("smb_vfs_openat(%s/%s) failed: %s\n",
-			  dirfsp->fsp_name->base_name,
-			  dot->base_name,
-			  strerror(errno));
-		file_free(NULL, fsp);
-		return status;
-	}
-
-	fsp_set_fd(fsp, fd);
-
-	status = vfs_stat_fsp(fsp);
-
+	status = openat_pathref_fsp_simple_openat(
+		mem_ctx, dirfsp, ".", flags, &dot);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("vfs_stat_fsp(\"/\") failed: %s\n",
-			  nt_errstr(status));
-		fd_close(fsp);
-		file_free(NULL, fsp);
 		return status;
 	}
-
-	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
-	fsp->fsp_flags.posix_open =
-		((dot->flags & SMB_FILENAME_POSIX_PATH) != 0);
-	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
-
-	dot->st = fsp->fsp_name->st;
-
-	ok = fsp_smb_fname_link(fsp, &dot->fsp_link, &dot->fsp);
-	if (!ok) {
-		DBG_DEBUG("fsp_smb_fname_link() failed\n");
-		fd_close(fsp);
-		file_free(NULL, fsp);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DBG_DEBUG("fsp [%s]: OK, fd=%d\n", fsp_str_dbg(fsp), fd);
-
-	talloc_set_destructor(dot, smb_fname_fsp_destructor);
 
 	*_dot = dot;
-
 	return NT_STATUS_OK;
 }
 
