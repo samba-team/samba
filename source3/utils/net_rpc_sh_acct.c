@@ -200,7 +200,7 @@ static int account_show(struct net_context *c,
 	d_printf(_("Minimum password age: "));
 	if (!nt_time_is_zero((NTTIME *)&i1->min_password_age)) {
 		time_t t = nt_time_to_unix_abs((NTTIME *)&i1->min_password_age);
-		d_printf(_("%d seconds\n"), (int)t);
+		d_printf(_("%jd seconds\n"), (intmax_t)t);
 	} else {
 		d_printf(_("not set\n"));
 	}
@@ -208,7 +208,7 @@ static int account_show(struct net_context *c,
 	d_printf(_("Maximum password age: "));
 	if (nt_time_is_set((NTTIME *)&i1->max_password_age)) {
 		time_t t = nt_time_to_unix_abs((NTTIME *)&i1->max_password_age);
-		d_printf(_("%d seconds\n"), (int)t);
+		d_printf(_("%jd seconds\n"), (intmax_t)t);
 	} else {
 		d_printf(_("not set\n"));
 	}
