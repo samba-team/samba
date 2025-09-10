@@ -313,8 +313,10 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
 	uint8_t version_byte = SAMR_AES_VERSION_BYTE;
 	uint8_t version_byte_len = SAMR_AES_VERSION_BYTE_LEN;
 	uint8_t auth_data[hmac_size];
+#ifndef HAVE_GNUTLS_CIPHER_ENCRYPT3
 	uint8_t padding;
 	size_t i;
+#endif
 	NTSTATUS status;
 	bool equal;
 	int rc;
@@ -391,6 +393,20 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
 						NT_STATUS_DECRYPTION_FAILED);
 	}
 
+#ifdef HAVE_GNUTLS_CIPHER_ENCRYPT3
+	rc = gnutls_cipher_decrypt3(cipher_hnd,
+				    ciphertext->data,
+				    ciphertext->length,
+				    pplaintext->data,
+				    &pplaintext->length,
+				    GNUTLS_CIPHER_PADDING_PKCS7);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		data_blob_clear_free(pplaintext);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+#else /* HAVE_GNUTLS_CIPHER_ENCRYPT3 */
 	rc = gnutls_cipher_decrypt2(cipher_hnd,
 				    ciphertext->data,
 				    ciphertext->length,
@@ -430,6 +446,7 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
 	}
 
 	pplaintext->length -= padding;
+#endif /* HAVE_GNUTLS_CIPHER_ENCRYPT3 */
 
 	return NT_STATUS_OK;
 }
