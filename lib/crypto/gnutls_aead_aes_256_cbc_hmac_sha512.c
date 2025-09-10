@@ -108,8 +108,10 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 	uint8_t version_byte = SAMR_AES_VERSION_BYTE;
 	uint8_t version_byte_len = SAMR_AES_VERSION_BYTE_LEN;
 	uint8_t auth_data[hmac_size];
+#ifndef HAVE_GNUTLS_CIPHER_ENCRYPT3
 	DATA_BLOB padded_plaintext;
 	size_t padding;
+#endif
 	NTSTATUS status;
 	int rc;
 
@@ -124,16 +126,61 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/*
-	 * PKCS#7 padding
-	 *
-	 * TODO: Use gnutls_cipher_encrypt3()
-	 */
-
 	if (plaintext->length + aes_block_size < plaintext->length) {
 		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
 
+	status = calculate_enc_key(cek, key_salt, enc_key_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	rc = gnutls_cipher_init(&cipher_hnd, cipher_algo, &enc_key, &iv_datum);
+	if (rc < 0) {
+		BURN_DATA(enc_key_data);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_ENCRYPTION_FAILED);
+	}
+
+#ifdef HAVE_GNUTLS_CIPHER_ENCRYPT3
+	/* Figure out the size for the cipher text */
+	rc = gnutls_cipher_encrypt3(cipher_hnd,
+				    plaintext->data,
+				    plaintext->length,
+				    NULL,
+				    &cipher_text_len,
+				    GNUTLS_CIPHER_PADDING_PKCS7);
+	if (rc < 0) {
+		BURN_DATA(enc_key_data);
+		gnutls_cipher_deinit(cipher_hnd);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_ENCRYPTION_FAILED);
+	}
+
+	cipher_text = talloc_size(mem_ctx, cipher_text_len);
+	if (cipher_text == NULL) {
+		BURN_DATA(enc_key_data);
+		gnutls_cipher_deinit(cipher_hnd);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = gnutls_cipher_encrypt3(cipher_hnd,
+				    plaintext->data,
+				    plaintext->length,
+				    cipher_text,
+				    &cipher_text_len,
+				    GNUTLS_CIPHER_PADDING_PKCS7);
+	gnutls_cipher_deinit(cipher_hnd);
+	BURN_DATA(enc_key_data);
+	if (rc < 0) {
+		TALLOC_FREE(cipher_text);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_ENCRYPTION_FAILED);
+	}
+#else /* HAVE_GNUTLS_CIPHER_ENCRYPT3 */
+	/*
+	 * PKCS#7 padding
+	 */
 	padded_plaintext.length =
 		aes_block_size * (plaintext->length / aes_block_size) +
 		aes_block_size;
@@ -143,6 +190,8 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 	padded_plaintext =
 		data_blob_talloc(mem_ctx, NULL, padded_plaintext.length);
 	if (padded_plaintext.data == NULL) {
+		BURN_DATA(enc_key_data);
+		gnutls_cipher_deinit(cipher_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -150,28 +199,14 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 	cipher_text_len = padded_plaintext.length;
 	cipher_text = talloc_size(mem_ctx, cipher_text_len);
 	if (cipher_text == NULL) {
+		BURN_DATA(enc_key_data);
+		gnutls_cipher_deinit(cipher_hnd);
 		data_blob_free(&padded_plaintext);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	memcpy(padded_plaintext.data, plaintext->data, plaintext->length);
 	memset(padded_plaintext.data + plaintext->length, padding, padding);
-
-	status = calculate_enc_key(cek, key_salt, enc_key_data);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_clear_free(&padded_plaintext);
-		return status;
-	}
-
-	/* Encrypt plaintext */
-	rc = gnutls_cipher_init(&cipher_hnd, cipher_algo, &enc_key, &iv_datum);
-	if (rc < 0) {
-		data_blob_clear_free(&padded_plaintext);
-		BURN_DATA(enc_key_data);
-		TALLOC_FREE(cipher_text);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_ENCRYPTION_FAILED);
-	}
 
 	rc = gnutls_cipher_encrypt2(cipher_hnd,
 				    padded_plaintext.data,
@@ -186,6 +221,7 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_ENCRYPTION_FAILED);
 	}
+#endif /* HAVE_GNUTLS_CIPHER_ENCRYPT3 */
 
 	/* Calculate mac key */
 	status = calculate_mac_key(cek, mac_salt, mac_key_data);
