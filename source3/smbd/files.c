@@ -1672,9 +1672,7 @@ NTSTATUS openat_pathref_fsp_dot(TALLOC_CTX *mem_ctx,
 	struct connection_struct *conn = dirfsp->conn;
 	struct files_struct *fsp = NULL;
 	struct smb_filename *full_fname = NULL;
-        struct vfs_open_how how = {
-                .flags = O_RDONLY | O_NONBLOCK | O_NOFOLLOW,
-        };
+	struct vfs_open_how how = { .flags = O_NOFOLLOW, };
         struct smb_filename *dot = NULL;
         NTSTATUS status;
         int fd;
@@ -1684,7 +1682,9 @@ NTSTATUS openat_pathref_fsp_dot(TALLOC_CTX *mem_ctx,
 #endif
 
 #ifdef O_PATH
-        how.flags = O_PATH;
+	how.flags |= O_PATH;
+#else
+	how.flags |= (O_RDONLY | O_NONBLOCK);
 #endif
 
 	dot = synthetic_smb_fname(mem_ctx, ".", NULL, NULL, 0, flags);
