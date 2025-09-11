@@ -934,20 +934,20 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 
 	if (state->lck != NULL) {
 		bool delete_open;
-		bool detete_pending;
+		bool delete_pending;
 		bool ok;
 
 		ok = has_delete_opens(dst_parent_dirfsp,
 				      state->lck,
 				      &delete_open,
-				      &detete_pending);
+				      &delete_pending);
 		TALLOC_FREE(state->lck);
 		if (!ok) {
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 			return;
 		}
 
-		if (detete_pending) {
+		if (delete_pending) {
 			tevent_req_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
 		}
@@ -989,19 +989,19 @@ static void smbd_smb2_setinfo_rename_dst_parent_delay_done(
 
 	if (state->lck != NULL) {
 		bool delete_open;
-		bool detete_pending;
+		bool delete_pending;
 
 		ok = has_delete_opens(state->dst_parent_dirfsp,
 				      state->lck,
 				      &delete_open,
-				      &detete_pending);
+				      &delete_pending);
 		TALLOC_FREE(state->lck);
 		if (!ok) {
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 			return;
 		}
 
-		if (detete_pending) {
+		if (delete_pending) {
 			tevent_req_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
 		}
