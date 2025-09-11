@@ -956,8 +956,6 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 			return;
 		}
 	}
-
-	return;
 }
 
 static void smbd_smb2_setinfo_rename_dst_parent_delay_done(
