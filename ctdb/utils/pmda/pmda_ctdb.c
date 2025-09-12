@@ -48,7 +48,7 @@
 #define pmSetProgname(a)	__pmSetProgname(a)
 #endif
 
-#ifdef HAVE_STRUCT_PMRESULT
+#if !defined(pmdaResult) && defined(HAVE_STRUCT_PMRESULT)
 #define pmdaResult pmResult
 #endif
 
