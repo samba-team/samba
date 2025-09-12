@@ -658,9 +658,10 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	if (!strequal(fsp->fsp_name->base_name, smb_fname->base_name)) {
-		DEBUG(10, ("Lease requested for file %s, reopened file "
-			   "is named %s\n", smb_fname->base_name,
-			   fsp->fsp_name->base_name));
+		DBG_DEBUG("Lease requested for file %s, reopened file "
+			  "is named %s\n",
+			  smb_fname->base_name,
+			  fsp_str_dbg(fsp));
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_INVALID_PARAMETER;
 	}

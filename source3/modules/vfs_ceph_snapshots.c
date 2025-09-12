@@ -414,8 +414,7 @@ static int ceph_snap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 						   "ceph", "snapdir",
 						   CEPH_SNAP_SUBDIR_DEFAULT);
 
-	DBG_DEBUG("getting shadow copy data for %s\n",
-		  fsp->fsp_name->base_name);
+	DBG_DEBUG("getting shadow copy data for %s\n", fsp_str_dbg(fsp));
 
 	tmp_ctx = talloc_new(fsp);
 	if (tmp_ctx == NULL) {

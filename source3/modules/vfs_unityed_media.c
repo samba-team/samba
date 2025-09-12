@@ -566,8 +566,7 @@ static DIR *um_fdopendir(vfs_handle_struct *handle,
 	struct um_dirinfo_struct *dirInfo = NULL;
 	DIR *dirstream;
 
-	DEBUG(10, ("Entering with fsp->fsp_name->base_name '%s'\n",
-		   fsp->fsp_name->base_name));
+	DBG_DEBUG("Entering with fsp->fsp_name '%s'\n", fsp_str_dbg(fsp));
 
 	dirstream = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
 	if (!dirstream) {
@@ -600,8 +599,7 @@ out:
 	return (DIR *) dirInfo;
 
 err:
-	DEBUG(1, ("Failing with fsp->fsp_name->base_name '%s'\n",
-		  fsp->fsp_name->base_name));
+	DBG_WARNING("Failing with fsp->fsp_name '%s'\n", fsp_str_dbg(fsp));
 	TALLOC_FREE(dirInfo);
 	return NULL;
 }
@@ -1091,8 +1089,7 @@ static int um_fstat(vfs_handle_struct *handle,
 {
 	int status = 0;
 
-	DEBUG(10, ("Entering with fsp->fsp_name->base_name "
-		   "'%s'\n", fsp_str_dbg(fsp)));
+	DBG_DEBUG("Entering with fsp->fsp_name '%s'\n", fsp_str_dbg(fsp));
 
 	status = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	if (status != 0) {

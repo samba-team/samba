@@ -141,14 +141,14 @@ static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 	if (errno == EACCES) {
 		DBG_NOTICE("GPFS share mode denied for %s/%s.\n",
 			   fsp->conn->connectpath,
-			   fsp->fsp_name->base_name);
+			   fsp_str_dbg(fsp));
 	} else if (errno == EPERM) {
 		DBG_ERR("Samba requested GPFS sharemode for %s/%s, but the "
 			"GPFS file system is not configured accordingly. "
 			"Configure file system with mmchfs -D nfs4 or "
 			"set gpfs:sharemodes=no in Samba.\n",
 			fsp->conn->connectpath,
-			fsp->fsp_name->base_name);
+			fsp_str_dbg(fsp));
 	} else {
 		DBG_ERR("gpfs_set_share failed: %s\n", strerror(errno));
 	}
@@ -212,7 +212,7 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 			DBG_ERR("Clearing GPFS sharemode on close failed for "
 				" %s/%s: %s\n",
 				fsp->conn->connectpath,
-				fsp->fsp_name->base_name,
+				fsp_str_dbg(fsp),
 				strerror(errno));
 		}
 	}
@@ -1799,7 +1799,8 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 
 	if (ret == -1) {
 		DBG_WARNING("Getting winattrs failed for %s: %s\n",
-			    fsp->fsp_name->base_name, strerror(errno));
+			    fsp_str_dbg(fsp),
+			    strerror(errno));
 		return map_nt_error_from_unix(errno);
 	}
 

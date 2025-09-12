@@ -1558,7 +1558,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("Error %s rename %s -> %s\n",
 			   nt_errstr(status),
-			   smb_fname_str_dbg(fsp->fsp_name),
+			   fsp_str_dbg(fsp),
 			   smb_fname_str_dbg(smb_fname_dst));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
 			status = NT_STATUS_ACCESS_DENIED;

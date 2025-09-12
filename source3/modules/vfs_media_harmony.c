@@ -764,7 +764,7 @@ static DIR *mh_fdopendir(vfs_handle_struct *handle,
 	DIR *dirstream;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with fsp->fsp_name->base_name '%s'\n",
-			      fsp->fsp_name->base_name));
+			      fsp_str_dbg(fsp)));
 
 	dirstream = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
 	if (!dirstream)
@@ -801,7 +801,7 @@ out:
 err:
 	/* Failure is freed here. */
 	DEBUG(MH_ERR_DEBUG, ("Failing with fsp->fsp_name->base_name '%s'\n",
-			fsp->fsp_name->base_name));
+			     fsp_str_dbg(fsp)));
 	TALLOC_FREE(dirInfo);
 	return NULL;
 }

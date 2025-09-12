@@ -654,7 +654,8 @@ static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 	*/
 
 	if (!called) {
-		DBG_DEBUG("No handle specified using path %s\n", fsp->fsp_name->base_name);
+		DBG_DEBUG("No handle specified using path %s\n",
+			  fsp_str_dbg(fsp));
 		ret = vxfs_getxattr_path(fsp->fsp_name->base_name, name, value, size);
 		if ((ret != -1) || ((errno != ENOTSUP) &&
 			    (errno != ENOSYS) && (errno != ENODATA))) {
@@ -883,7 +884,8 @@ static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 		*/
 
 		if (!called) {
-			DBG_DEBUG("No handle specified using path %s\n", fsp->fsp_name->base_name);
+			DBG_DEBUG("No handle specified using path %s\n",
+				  fsp_str_dbg(fsp));
 			ret = vxfs_checkwxattr_path(fsp->fsp_name->base_name);
 		}
 

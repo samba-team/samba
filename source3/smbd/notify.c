@@ -302,7 +302,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp,
 
 	if (fsp->notify != NULL) {
 		DEBUG(1, ("change_notify_create: fsp->notify != NULL, "
-			  "fname = %s\n", fsp->fsp_name->base_name));
+			  "fname = %s\n", fsp_str_dbg(fsp)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -514,7 +514,7 @@ done:
 static struct files_struct *smbd_notifyd_reregister(struct files_struct *fsp,
 						    void *private_data)
 {
-	DBG_DEBUG("reregister %s\n", fsp->fsp_name->base_name);
+	DBG_DEBUG("reregister %s\n", fsp_str_dbg(fsp));
 
 	if ((fsp->conn->sconn->notify_ctx != NULL) &&
 	    (fsp->notify != NULL) &&
@@ -772,7 +772,8 @@ static void notify_fsp(files_struct *fsp, struct timespec when,
 			  "expose=%s for %s notify %s\n",
 			  has_sec_change_notify_privilege ? "true" : "false",
 			  expose ? "true" : "false",
-			  fsp->fsp_name->base_name, name);
+			  fsp_str_dbg(fsp),
+			  name);
 		if (!expose) {
 			return;
 		}

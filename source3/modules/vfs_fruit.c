@@ -2071,7 +2071,7 @@ static int fruit_unlink_rsrc_stream(vfs_handle_struct *handle,
 			handle, dirfsp, smb_fname, &st, AT_SYMLINK_NOFOLLOW);
 		if (ret != 0) {
 			DBG_ERR("fstatat [%s%s] failed [%s]\n",
-				dirfsp->fsp_name->base_name,
+				fsp_str_dbg(dirfsp),
 				smb_fname->base_name,
 				strerror(errno));
 			return -1;

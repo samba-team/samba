@@ -1089,7 +1089,7 @@ NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
 				   &how);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("fd_openat(%s) returned %s\n",
-				  dirfsp->fsp_name->base_name,
+				  fsp_str_dbg(dirfsp),
 				  nt_errstr(status));
 			file_free(NULL, new_fsp);
 			return status;

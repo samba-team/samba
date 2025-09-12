@@ -452,7 +452,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(8,("smbd_smb2_query_directory_send: dirpath=<%s> dontdescend=<%s>, "
 		"in_output_buffer_length = %u\n",
-		 fsp->fsp_name->base_name, lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
+		 fsp_str_dbg(fsp), lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
 		(unsigned int)in_output_buffer_length ));
 
 	state->dont_descend = in_list(

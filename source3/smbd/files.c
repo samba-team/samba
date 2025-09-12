@@ -1558,7 +1558,7 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 	full_fname = full_path_from_dirfsp_atname(conn, dirfsp, smb_fname_rel);
 	if (full_fname == NULL) {
 		DBG_DEBUG("full_path_from_dirfsp_atname(%s/%s) failed\n",
-			  dirfsp->fsp_name->base_name,
+			  fsp_str_dbg(dirfsp),
 			  smb_fname_rel->base_name);
 		file_free(NULL, fsp);
 		return NT_STATUS_NO_MEMORY;
@@ -1585,7 +1585,7 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 	if ((fd == -1) && (errno == ENOENT)) {
 		status = map_nt_error_from_unix(errno);
 		DBG_DEBUG("smb_vfs_openat(%s/%s) failed: %s\n",
-			  dirfsp->fsp_name->base_name,
+			  fsp_str_dbg(dirfsp),
 			  smb_fname_rel->base_name,
 			  strerror(errno));
 		file_free(NULL, fsp);
@@ -1630,7 +1630,7 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 		status = map_nt_error_from_unix(errno);
 		DBG_DEBUG("SMB_VFS_%sSTAT(%s/%s) failed: %s\n",
 			  (fd >= 0) ? "F" : "",
-			  dirfsp->fsp_name->base_name,
+			  fsp_str_dbg(dirfsp),
 			  smb_fname_rel->base_name,
 			  strerror(errno));
 		fd_close(fsp);
