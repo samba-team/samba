@@ -4,7 +4,7 @@
                    ==============================
 
 
-This is the first stable release of the Samba 4.22 release series.
+This is the first stable release of the Samba 4.23 release series.
 Please read the release notes carefully before upgrading.
 
 
