@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the fourth release candidate release of Samba 4.23.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.23 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.23.0
+                         September 12, 2025
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.22 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -124,6 +119,27 @@ smb.conf changes
   client smb transports                   New             tcp, nbt
   server smb transports                   New             tcp, nbt
   winbind varlink service                 New             no
+
+
+CHANGES SINCE 4.23.0rc4
+=======================
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15911: samba.tests.safe_tarfile fails on Python 3.13 with additional
+     security fixes for tarfile support.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 15904: CTDB does not support PCP 7.0.0.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15905: samba-4.21 fails to join AD when multiple DCs are returned.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15908: Uninitialized read leads to hanging rpcd_spoolss.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15905: samba-4.21 fails to join AD when multiple DCs are returned.
+   * BUG 15907: Stack buffer overflow in samba3.smb2.dirlease.fileserver.
 
 
 CHANGES SINCE 4.23.0rc3
