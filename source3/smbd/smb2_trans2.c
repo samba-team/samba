@@ -4341,17 +4341,17 @@ NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		goto done;
-	} else {
-		status = filename_convert_dirfsp(ctx,
-						 conn,
-						 newname,
-						 ucf_flags,
-						 0, /* Never a TWRP. */
-						 &dst_dirfsp,
-						 &smb_fname_dst);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	}
+
+	status = filename_convert_dirfsp(ctx,
+					 conn,
+					 newname,
+					 ucf_flags,
+					 0, /* Never a TWRP. */
+					 &dst_dirfsp,
+					 &smb_fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
