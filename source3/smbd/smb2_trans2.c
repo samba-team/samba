@@ -2975,7 +2975,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	unsigned int data_size;
 	struct timespec create_time_ts, mtime_ts, atime_ts, ctime_ts;
 	SMB_STRUCT_STAT *psbuf = NULL;
-	SMB_STRUCT_STAT *base_sp = NULL;
+	struct files_struct *base_fsp = NULL;
 	char *p;
 	char *base_name;
 	char *dos_fname;
@@ -3017,9 +3017,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	smb_fname = fsp->fsp_name;
 	mode = fdos_mode(fsp);
 	psbuf = &smb_fname->st;
-
-	base_sp = (fsp->base_fsp != NULL) ? &fsp->base_fsp->fsp_name->st
-					  : &fsp->fsp_name->st;
 
 	nlink = psbuf->st_ex_nlink;
 
@@ -3120,7 +3117,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
-	file_id = SMB_VFS_FS_FILE_ID(conn, base_sp);
+	base_fsp = metadata_fsp(fsp);
+	file_id = SMB_VFS_FS_FILE_ID(conn, &base_fsp->fsp_name->st);
 
 	*fixed_portion = 0;
 
