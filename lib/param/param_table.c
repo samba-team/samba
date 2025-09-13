@@ -368,7 +368,8 @@ static const struct enum_list enum_ldap_deref[] = {
 	{SAMBA_LDAP_DEREF_SEARCHING, "searching"},
 	{SAMBA_LDAP_DEREF_FINDING, "finding"},
 	{SAMBA_LDAP_DEREF_ALWAYS, "always"},
-	{-1, "auto"}
+	{-1, "auto"},
+	{-1, NULL},
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
@@ -434,6 +435,7 @@ static const struct enum_list enum_nt_hash_store[] = {
 	{NT_HASH_STORE_AUTO, "auto"},
 	{NT_HASH_STORE_NEVER, "never"},
 	{NT_HASH_STORE_ALWAYS, "always"},
+	{-1, NULL},
 };
 
 

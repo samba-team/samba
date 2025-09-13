@@ -45,6 +45,7 @@ static const struct enum_list nfs4acl_encoding[] = {
 	{NFS4ACL_ENCODING_NDR, "ndr"},
 	{NFS4ACL_ENCODING_XDR, "xdr"},
 	{NFS4ACL_ENCODING_NFS, "nfs"},
+	{-1, NULL},
 };
 
 /*

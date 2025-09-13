@@ -4825,6 +4825,7 @@ static const struct enum_list default_acl_style_list[] = {
 	{DEFAULT_ACL_POSIX,	"posix"},
 	{DEFAULT_ACL_WINDOWS,	"windows"},
 	{DEFAULT_ACL_EVERYONE,	"everyone"},
+	{-1, NULL},
 };
 
 const struct enum_list *get_default_acl_style_list(void)
