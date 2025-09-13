@@ -4474,8 +4474,8 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp->base_fsp) {
-		/* No stream names. */
+	if (fsp_is_alternate_stream(fsp)) {
+		/* No hardlink on streams. */
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -4577,8 +4577,8 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp->base_fsp) {
-		/* No stream names. */
+	if (fsp_is_alternate_stream(fsp)) {
+		/* No hardlink on streams. */
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -4665,7 +4665,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (fsp->base_fsp) {
+	if (fsp_is_alternate_stream(fsp)) {
 		/* newname must be a stream name. */
 		if (newname[0] != ':') {
 			return NT_STATUS_NOT_SUPPORTED;
