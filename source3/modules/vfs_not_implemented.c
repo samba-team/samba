@@ -318,9 +318,9 @@ ssize_t vfs_not_implemented_recvfile(vfs_handle_struct *handle, int fromfd,
 
 _PUBLIC_
 int vfs_not_implemented_renameat(vfs_handle_struct *handle,
-				 files_struct *srcfsp,
+				 files_struct *src_dirfsp,
 				 const struct smb_filename *smb_fname_src,
-				 files_struct *dstfsp,
+				 files_struct *dst_dirfsp,
 				 const struct smb_filename *smb_fname_dst,
 				 const struct vfs_rename_how *how)
 {
@@ -533,11 +533,11 @@ int vfs_not_implemented_vfs_readlinkat(vfs_handle_struct *handle,
 
 _PUBLIC_
 int vfs_not_implemented_linkat(vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *old_smb_fname,
-			files_struct *dstfsp,
-			const struct smb_filename *new_smb_fname,
-			int flags)
+			       files_struct *src_dirfsp,
+			       const struct smb_filename *old_smb_fname,
+			       files_struct *dst_dirfsp,
+			       const struct smb_filename *new_smb_fname,
+			       int flags)
 {
 	errno = ENOSYS;
 	return -1;

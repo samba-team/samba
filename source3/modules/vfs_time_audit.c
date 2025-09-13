@@ -915,11 +915,11 @@ static ssize_t smb_time_audit_recvfile(vfs_handle_struct *handle, int fromfd,
 }
 
 static int smb_time_audit_renameat(vfs_handle_struct *handle,
-				files_struct *srcfsp,
-				const struct smb_filename *oldname,
-				files_struct *dstfsp,
-				const struct smb_filename *newname,
-				const struct vfs_rename_how *how)
+				   files_struct *src_dirfsp,
+				   const struct smb_filename *oldname,
+				   files_struct *dst_dirfsp,
+				   const struct smb_filename *newname,
+				   const struct vfs_rename_how *how)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -927,19 +927,15 @@ static int smb_time_audit_renameat(vfs_handle_struct *handle,
 	struct smb_filename *new_full_fname = NULL;
 
 	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dstfsp,
-						  newname);
+						      dst_dirfsp,
+						      newname);
 	if (new_full_fname == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_RENAMEAT(handle,
-			srcfsp,
-			oldname,
-			dstfsp,
-			newname,
-			how);
+	result = SMB_VFS_NEXT_RENAMEAT(
+		handle, src_dirfsp, oldname, dst_dirfsp, newname, how);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
@@ -1501,11 +1497,11 @@ static int smb_time_audit_readlinkat(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_linkat(vfs_handle_struct *handle,
-				files_struct *srcfsp,
-				const struct smb_filename *old_smb_fname,
-				files_struct *dstfsp,
-				const struct smb_filename *new_smb_fname,
-				int flags)
+				 files_struct *src_dirfsp,
+				 const struct smb_filename *old_smb_fname,
+				 files_struct *dst_dirfsp,
+				 const struct smb_filename *new_smb_fname,
+				 int flags)
 {
 	struct smb_filename *new_full_fname = NULL;
 	int result;
@@ -1513,8 +1509,8 @@ static int smb_time_audit_linkat(vfs_handle_struct *handle,
 	double timediff;
 
 	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dstfsp,
-						  new_smb_fname);
+						      dst_dirfsp,
+						      new_smb_fname);
 	if (new_full_fname == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -1522,11 +1518,11 @@ static int smb_time_audit_linkat(vfs_handle_struct *handle,
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LINKAT(handle,
-			srcfsp,
-			old_smb_fname,
-			dstfsp,
-			new_smb_fname,
-			flags);
+				     src_dirfsp,
+				     old_smb_fname,
+				     dst_dirfsp,
+				     new_smb_fname,
+				     flags);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

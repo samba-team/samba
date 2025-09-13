@@ -212,9 +212,9 @@ static int vfs_worm_fchown(vfs_handle_struct *handle,
 }
 
 static int vfs_worm_renameat(vfs_handle_struct *handle,
-			     files_struct *srcfsp,
+			     files_struct *src_dirfsp,
 			     const struct smb_filename *smb_fname_src,
-			     files_struct *dstfsp,
+			     files_struct *dst_dirfsp,
 			     const struct smb_filename *smb_fname_dst,
 			     const struct vfs_rename_how *how)
 {
@@ -223,8 +223,12 @@ static int vfs_worm_renameat(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return SMB_VFS_NEXT_RENAMEAT(
-		handle, srcfsp, smb_fname_src, dstfsp, smb_fname_dst, how);
+	return SMB_VFS_NEXT_RENAMEAT(handle,
+				     src_dirfsp,
+				     smb_fname_src,
+				     dst_dirfsp,
+				     smb_fname_dst,
+				     how);
 }
 
 static int vfs_worm_fsetxattr(struct vfs_handle_struct *handle,

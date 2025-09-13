@@ -1902,11 +1902,11 @@ err_out:
 }
 
 static int snapper_gmt_renameat(vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *smb_fname_src,
-			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst,
-			const struct vfs_rename_how *how)
+				files_struct *src_dirfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dst_dirfsp,
+				const struct smb_filename *smb_fname_dst,
+				const struct vfs_rename_how *how)
 {
 	time_t timestamp_src, timestamp_dst;
 
@@ -1929,11 +1929,11 @@ static int snapper_gmt_renameat(vfs_handle_struct *handle,
 		return -1;
 	}
 	return SMB_VFS_NEXT_RENAMEAT(handle,
-			srcfsp,
-			smb_fname_src,
-			dstfsp,
-			smb_fname_dst,
-			how);
+				     src_dirfsp,
+				     smb_fname_src,
+				     dst_dirfsp,
+				     smb_fname_dst,
+				     how);
 }
 
 static int snapper_gmt_symlinkat(vfs_handle_struct *handle,
@@ -1969,11 +1969,11 @@ static int snapper_gmt_symlinkat(vfs_handle_struct *handle,
 }
 
 static int snapper_gmt_linkat(vfs_handle_struct *handle,
-				files_struct *srcfsp,
-				const struct smb_filename *old_smb_fname,
-				files_struct *dstfsp,
-				const struct smb_filename *new_smb_fname,
-				int flags)
+			      files_struct *src_dirfsp,
+			      const struct smb_filename *old_smb_fname,
+			      files_struct *dst_dirfsp,
+			      const struct smb_filename *new_smb_fname,
+			      int flags)
 {
 	time_t timestamp_old = 0;
 	time_t timestamp_new = 0;
@@ -1997,11 +1997,11 @@ static int snapper_gmt_linkat(vfs_handle_struct *handle,
 		return -1;
 	}
 	return SMB_VFS_NEXT_LINKAT(handle,
-				srcfsp,
-				old_smb_fname,
-				dstfsp,
-				new_smb_fname,
-				flags);
+				   src_dirfsp,
+				   old_smb_fname,
+				   dst_dirfsp,
+				   new_smb_fname,
+				   flags);
 }
 
 static int snapper_gmt_fstatat(struct vfs_handle_struct *handle,

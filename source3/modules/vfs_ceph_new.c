@@ -2951,11 +2951,11 @@ static ssize_t vfs_ceph_recvfile(struct vfs_handle_struct *handle,
 }
 
 static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *smb_fname_src,
-			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst,
-			const struct vfs_rename_how *how)
+			     files_struct *src_dirfsp,
+			     const struct smb_filename *smb_fname_src,
+			     files_struct *dst_dirfsp,
+			     const struct smb_filename *smb_fname_dst,
+			     const struct vfs_rename_how *how)
 {
 	struct vfs_ceph_fh *src_dircfh = NULL;
 	struct vfs_ceph_fh *dst_dircfh = NULL;
@@ -2964,9 +2964,9 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 	START_PROFILE_X(SNUM(handle->conn), syscall_renameat);
 	DBG_DEBUG("[CEPH] renameat: srcfsp = %p src_name = %s "
 		  "dstfsp = %p dst_name = %s\n",
-		  srcfsp,
+		  src_dirfsp,
 		  smb_fname_src->base_name,
-		  dstfsp,
+		  dst_dirfsp,
 		  smb_fname_dst->base_name);
 
 	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
@@ -2979,19 +2979,21 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	result = vfs_ceph_fetch_fh(handle, srcfsp, &src_dircfh);
+	result = vfs_ceph_fetch_fh(handle, src_dirfsp, &src_dircfh);
 	if (result != 0) {
 		DBG_DEBUG("[CEPH] failed to fetch file handle: srcfsp = %p "
 			  "src_name = %s\n",
-			  srcfsp, smb_fname_src->base_name);
+			  src_dirfsp,
+			  smb_fname_src->base_name);
 		goto out;
 	}
 
-	result = vfs_ceph_fetch_fh(handle, dstfsp, &dst_dircfh);
+	result = vfs_ceph_fetch_fh(handle, dst_dirfsp, &dst_dircfh);
 	if (result != 0) {
 		DBG_DEBUG("[CEPH] failed to fetch file handle: dstfsp = %p "
 			  "dst_name = %s\n",
-			  dstfsp, smb_fname_dst->base_name);
+			  dst_dirfsp,
+			  smb_fname_dst->base_name);
 		goto out;
 	}
 
@@ -3702,9 +3704,9 @@ out:
 }
 
 static int vfs_ceph_linkat(struct vfs_handle_struct *handle,
-			   files_struct *srcfsp,
+			   files_struct *src_dirfsp,
 			   const struct smb_filename *old_smb_fname,
-			   files_struct *dstfsp,
+			   files_struct *dst_dirfsp,
 			   const struct smb_filename *new_smb_fname,
 			   int flags)
 {
@@ -3724,12 +3726,12 @@ static int vfs_ceph_linkat(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[CEPH] link(%p, %s, %s)\n", handle, name, newname);
 
-	result = vfs_ceph_fetch_fh(handle, srcfsp, &src_dircfh);
+	result = vfs_ceph_fetch_fh(handle, src_dirfsp, &src_dircfh);
 	if (result != 0) {
 		goto out;
 	}
 
-	result = vfs_ceph_fetch_fh(handle, dstfsp, &dst_dircfh);
+	result = vfs_ceph_fetch_fh(handle, dst_dirfsp, &dst_dircfh);
 	if (result != 0) {
 		goto out;
 	}

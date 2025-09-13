@@ -752,11 +752,11 @@ static int ceph_snap_gmt_convert(struct vfs_handle_struct *handle,
 }
 
 static int ceph_snap_gmt_renameat(vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *smb_fname_src,
-			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst,
-			const struct vfs_rename_how *how)
+				  files_struct *src_dirfsp,
+				  const struct smb_filename *smb_fname_src,
+				  files_struct *dst_dirfsp,
+				  const struct smb_filename *smb_fname_dst,
+				  const struct vfs_rename_how *how)
 {
 	int ret;
 	time_t timestamp_src, timestamp_dst;
@@ -784,11 +784,11 @@ static int ceph_snap_gmt_renameat(vfs_handle_struct *handle,
 		return -1;
 	}
 	return SMB_VFS_NEXT_RENAMEAT(handle,
-				srcfsp,
-				smb_fname_src,
-				dstfsp,
-				smb_fname_dst,
-				how);
+				     src_dirfsp,
+				     smb_fname_src,
+				     dst_dirfsp,
+				     smb_fname_dst,
+				     how);
 }
 
 /* block links from writeable shares to snapshots for now, like other modules */
@@ -828,9 +828,9 @@ static int ceph_snap_gmt_symlinkat(vfs_handle_struct *handle,
 }
 
 static int ceph_snap_gmt_linkat(vfs_handle_struct *handle,
-				files_struct *srcfsp,
+				files_struct *src_dirfsp,
 				const struct smb_filename *old_smb_fname,
-				files_struct *dstfsp,
+				files_struct *dst_dirfsp,
 				const struct smb_filename *new_smb_fname,
 				int flags)
 {
@@ -859,11 +859,11 @@ static int ceph_snap_gmt_linkat(vfs_handle_struct *handle,
 		return -1;
 	}
 	return SMB_VFS_NEXT_LINKAT(handle,
-			srcfsp,
-			old_smb_fname,
-			dstfsp,
-			new_smb_fname,
-			flags);
+				   src_dirfsp,
+				   old_smb_fname,
+				   dst_dirfsp,
+				   new_smb_fname,
+				   flags);
 }
 
 static int ceph_snap_gmt_stat(vfs_handle_struct *handle,

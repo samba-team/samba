@@ -184,11 +184,11 @@ out:
 }
 
 static int crossrename_renameat(vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *smb_fname_src,
-			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst,
-			const struct vfs_rename_how *how)
+				files_struct *src_dirfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dst_dirfsp,
+				const struct smb_filename *smb_fname_dst,
+				const struct vfs_rename_how *how)
 {
 	int result = -1;
 
@@ -200,18 +200,18 @@ static int crossrename_renameat(vfs_handle_struct *handle,
 	}
 
 	result = SMB_VFS_NEXT_RENAMEAT(handle,
-				       srcfsp,
+				       src_dirfsp,
 				       smb_fname_src,
-				       dstfsp,
+				       dst_dirfsp,
 				       smb_fname_dst,
 				       how);
 
 	if ((result == -1) && (errno == EXDEV)) {
 		/* Rename across filesystems needed. */
 		NTSTATUS status = copy_reg(handle,
-					   srcfsp,
+					   src_dirfsp,
 					   smb_fname_src,
-					   dstfsp,
+					   dst_dirfsp,
 					   smb_fname_dst);
 		result = 0;
 		if (!NT_STATUS_IS_OK(status)) {

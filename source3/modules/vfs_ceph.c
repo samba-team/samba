@@ -710,11 +710,11 @@ static ssize_t cephwrap_recvfile(struct vfs_handle_struct *handle,
 }
 
 static int cephwrap_renameat(struct vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *smb_fname_src,
-			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst,
-			const struct vfs_rename_how *how)
+			     files_struct *src_dirfsp,
+			     const struct smb_filename *smb_fname_src,
+			     files_struct *dst_dirfsp,
+			     const struct smb_filename *smb_fname_dst,
+			     const struct vfs_rename_how *how)
 {
 	struct smb_filename *full_fname_src = NULL;
 	struct smb_filename *full_fname_dst = NULL;
@@ -732,15 +732,15 @@ static int cephwrap_renameat(struct vfs_handle_struct *handle,
 	}
 
 	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
-						  srcfsp,
-						  smb_fname_src);
+						      src_dirfsp,
+						      smb_fname_src);
 	if (full_fname_src == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
 	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
-						  dstfsp,
-						  smb_fname_dst);
+						      dst_dirfsp,
+						      smb_fname_dst);
 	if (full_fname_dst == NULL) {
 		TALLOC_FREE(full_fname_src);
 		errno = ENOMEM;
@@ -1315,25 +1315,25 @@ static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
 }
 
 static int cephwrap_linkat(struct vfs_handle_struct *handle,
-		files_struct *srcfsp,
-		const struct smb_filename *old_smb_fname,
-		files_struct *dstfsp,
-		const struct smb_filename *new_smb_fname,
-		int flags)
+			   files_struct *src_dirfsp,
+			   const struct smb_filename *old_smb_fname,
+			   files_struct *dst_dirfsp,
+			   const struct smb_filename *new_smb_fname,
+			   int flags)
 {
 	struct smb_filename *full_fname_old = NULL;
 	struct smb_filename *full_fname_new = NULL;
 	int result = -1;
 
 	full_fname_old = full_path_from_dirfsp_atname(talloc_tos(),
-					srcfsp,
-					old_smb_fname);
+						      src_dirfsp,
+						      old_smb_fname);
 	if (full_fname_old == NULL) {
 		return -1;
 	}
 	full_fname_new = full_path_from_dirfsp_atname(talloc_tos(),
-					dstfsp,
-					new_smb_fname);
+						      dst_dirfsp,
+						      new_smb_fname);
 	if (full_fname_new == NULL) {
 		TALLOC_FREE(full_fname_old);
 		return -1;

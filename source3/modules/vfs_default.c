@@ -1270,11 +1270,11 @@ static ssize_t vfswrap_recvfile(vfs_handle_struct *handle,
 }
 
 static int vfswrap_renameat(vfs_handle_struct *handle,
-			  files_struct *srcfsp,
-			  const struct smb_filename *smb_fname_src,
-			  files_struct *dstfsp,
-			  const struct smb_filename *smb_fname_dst,
-			  const struct vfs_rename_how *how)
+			    files_struct *src_dirfsp,
+			    const struct smb_filename *smb_fname_src,
+			    files_struct *dst_dirfsp,
+			    const struct smb_filename *smb_fname_dst,
+			    const struct vfs_rename_how *how)
 {
 	int result = -1;
 	int flags = 0;
@@ -1294,9 +1294,9 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 		flags |= RENAME_NOREPLACE;
 	}
 
-	result = renameat2(fsp_get_pathref_fd(srcfsp),
+	result = renameat2(fsp_get_pathref_fd(src_dirfsp),
 			   smb_fname_src->base_name,
-			   fsp_get_pathref_fd(dstfsp),
+			   fsp_get_pathref_fd(dst_dirfsp),
 			   smb_fname_dst->base_name,
 			   flags);
 
@@ -3242,11 +3242,11 @@ static int vfswrap_readlinkat(vfs_handle_struct *handle,
 }
 
 static int vfswrap_linkat(vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *old_smb_fname,
-			files_struct *dstfsp,
-			const struct smb_filename *new_smb_fname,
-			int flags)
+			  files_struct *src_dirfsp,
+			  const struct smb_filename *old_smb_fname,
+			  files_struct *dst_dirfsp,
+			  const struct smb_filename *new_smb_fname,
+			  int flags)
 {
 	int result;
 
@@ -3255,9 +3255,9 @@ static int vfswrap_linkat(vfs_handle_struct *handle,
 	SMB_ASSERT(!is_named_stream(old_smb_fname));
 	SMB_ASSERT(!is_named_stream(new_smb_fname));
 
-	result = linkat(fsp_get_pathref_fd(srcfsp),
+	result = linkat(fsp_get_pathref_fd(src_dirfsp),
 			old_smb_fname->base_name,
-			fsp_get_pathref_fd(dstfsp),
+			fsp_get_pathref_fd(dst_dirfsp),
 			new_smb_fname->base_name,
 			flags);
 

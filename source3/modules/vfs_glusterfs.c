@@ -1222,11 +1222,11 @@ static ssize_t vfs_gluster_recvfile(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
-			files_struct *srcfsp,
-			const struct smb_filename *smb_fname_src,
-			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst,
-			const struct vfs_rename_how *how)
+				files_struct *src_dirfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dst_dirfsp,
+				const struct smb_filename *smb_fname_dst,
+				const struct vfs_rename_how *how)
 {
 	int ret;
 
@@ -1242,14 +1242,14 @@ static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	src_pglfd = vfs_gluster_fetch_glfd(handle, srcfsp);
+	src_pglfd = vfs_gluster_fetch_glfd(handle, src_dirfsp);
 	if (src_pglfd == NULL) {
 		END_PROFILE(syscall_renameat);
 		DBG_ERR("Failed to fetch gluster fd\n");
 		return -1;
 	}
 
-	dst_pglfd = vfs_gluster_fetch_glfd(handle, dstfsp);
+	dst_pglfd = vfs_gluster_fetch_glfd(handle, dst_dirfsp);
 	if (dst_pglfd == NULL) {
 		END_PROFILE(syscall_renameat);
 		DBG_ERR("Failed to fetch gluster fd\n");
@@ -1271,7 +1271,7 @@ static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
 	}
 
 	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
-						      srcfsp,
+						      src_dirfsp,
 						      smb_fname_src);
 	if (full_fname_src == NULL) {
 		END_PROFILE(syscall_renameat);
@@ -1280,7 +1280,7 @@ static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
 	}
 
 	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
-						      dstfsp,
+						      dst_dirfsp,
 						      smb_fname_dst);
 	if (full_fname_dst == NULL) {
 		END_PROFILE(syscall_renameat);
@@ -2094,11 +2094,11 @@ static int vfs_gluster_readlinkat(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
-				files_struct *srcfsp,
-				const struct smb_filename *old_smb_fname,
-				files_struct *dstfsp,
-				const struct smb_filename *new_smb_fname,
-				int flags)
+			      files_struct *src_dirfsp,
+			      const struct smb_filename *old_smb_fname,
+			      files_struct *dst_dirfsp,
+			      const struct smb_filename *new_smb_fname,
+			      int flags)
 {
 	int ret;
 
@@ -2108,14 +2108,14 @@ static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_linkat);
 
-	src_pglfd = vfs_gluster_fetch_glfd(handle, srcfsp);
+	src_pglfd = vfs_gluster_fetch_glfd(handle, src_dirfsp);
 	if (src_pglfd == NULL) {
 		END_PROFILE(syscall_linkat);
 		DBG_ERR("Failed to fetch gluster fd\n");
 		return -1;
 	}
 
-	dst_pglfd = vfs_gluster_fetch_glfd(handle, dstfsp);
+	dst_pglfd = vfs_gluster_fetch_glfd(handle, dst_dirfsp);
 	if (dst_pglfd == NULL) {
 		END_PROFILE(syscall_linkat);
 		DBG_ERR("Failed to fetch gluster fd\n");
@@ -2134,7 +2134,7 @@ static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
 	START_PROFILE(syscall_linkat);
 
 	full_fname_old = full_path_from_dirfsp_atname(talloc_tos(),
-						      srcfsp,
+						      src_dirfsp,
 						      old_smb_fname);
 	if (full_fname_old == NULL) {
 		END_PROFILE(syscall_linkat);
@@ -2142,7 +2142,7 @@ static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
 	}
 
 	full_fname_new = full_path_from_dirfsp_atname(talloc_tos(),
-						      dstfsp,
+						      dst_dirfsp,
 						      new_smb_fname);
 	if (full_fname_new == NULL) {
 		END_PROFILE(syscall_linkat);
