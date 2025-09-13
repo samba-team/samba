@@ -4084,19 +4084,6 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp == NULL) {
-		/*
-		 * The only way fsp can be NULL here is if
-		 * smb_fname points at a symlink and
-		 * and we're in POSIX context.
-		 * Ensure this is the case.
-		 *
-		 * In this case we cannot set the EA.
-		 */
-		SMB_ASSERT(smb_fname->flags & SMB_FILENAME_POSIX_PATH);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	status = set_ea(conn, fsp, ea_list);
 
 	return status;
@@ -4113,10 +4100,6 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
 {
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
-
-	if (fsp == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
 
 	if (!lp_ea_support(SNUM(conn))) {
 		DEBUG(10, ("smb_set_file_full_ea_info - ea_len = %u but "
@@ -4684,7 +4667,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (fsp && fsp->base_fsp) {
+	if (fsp->base_fsp) {
 		/* newname must be a stream name. */
 		if (newname[0] != ':') {
 			return NT_STATUS_NOT_SUPPORTED;
@@ -4783,7 +4766,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 	}
 
-	if (fsp != NULL && fsp->fsp_flags.is_fsa) {
+	if (fsp->fsp_flags.is_fsa) {
 		DBG_DEBUG("SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
 			  fsp_fnum_dbg(fsp),
 			  fsp_str_dbg(fsp),
@@ -4844,10 +4827,6 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	if (total_data < 36) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (fsp == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	status = check_any_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
