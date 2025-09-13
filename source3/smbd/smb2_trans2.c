@@ -4056,7 +4056,6 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 				struct smb_filename *smb_fname)
 {
 	struct ea_list *ea_list = NULL;
-	TALLOC_CTX *ctx = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (total_data < 10) {
@@ -4078,8 +4077,7 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ctx = talloc_tos();
-	ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
+	ea_list = read_ea_list(talloc_tos() , pdata + 4, total_data - 4);
 	if (!ea_list) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
