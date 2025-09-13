@@ -4387,12 +4387,13 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		  smb_fname_str_dbg(smb_fname_dst));
 
 	status = rename_internals_fsp(conn,
-				fsp,
-				lck,
-				smb_fname_dst,
-				dst_original_lcomp,
-				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
-				overwrite);
+				      fsp,
+				      lck,
+				      smb_fname_dst,
+				      dst_original_lcomp,
+				      (FILE_ATTRIBUTE_HIDDEN |
+				       FILE_ATTRIBUTE_SYSTEM),
+				      overwrite);
 
 	TALLOC_FREE(smb_fname_dst);
 	return status;
@@ -4717,26 +4718,26 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		status = rename_internals_fsp(conn,
-					fsp,
-					NULL,
-					smb_fname_dst,
-					dst_original_lcomp,
-					0,
-					overwrite);
+					      fsp,
+					      NULL,
+					      smb_fname_dst,
+					      dst_original_lcomp,
+					      0,
+					      overwrite);
 	} else {
 		DBG_DEBUG("SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			  smb_fname_str_dbg(smb_fname_src),
 			  smb_fname_str_dbg(smb_fname_dst));
 		status = rename_internals(ctx,
-					conn,
-					req,
-					NULL, /* src_dirfsp */
-					smb_fname_src,
-					smb_fname_dst,
-					dst_original_lcomp,
-					0,
-					overwrite,
-					FILE_WRITE_ATTRIBUTES);
+					  conn,
+					  req,
+					  NULL, /* src_dirfsp */
+					  smb_fname_src,
+					  smb_fname_dst,
+					  dst_original_lcomp,
+					  0,
+					  overwrite,
+					  FILE_WRITE_ATTRIBUTES);
 	}
  out:
 	TALLOC_FREE(smb_fname_dst);

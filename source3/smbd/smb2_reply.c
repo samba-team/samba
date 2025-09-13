@@ -1348,12 +1348,12 @@ static void notify_rename(struct connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS rename_internals_fsp(connection_struct *conn,
-			files_struct *fsp,
-			struct share_mode_lock **_lck,
-			struct smb_filename *smb_fname_dst_in,
-			const char *dst_original_lcomp,
-			uint32_t attrs,
-			bool replace_if_exists)
+			      files_struct *fsp,
+			      struct share_mode_lock **_lck,
+			      struct smb_filename *smb_fname_dst_in,
+			      const char *dst_original_lcomp,
+			      uint32_t attrs,
+			      bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *parent_dir_fname_dst = NULL;
@@ -1791,15 +1791,15 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS rename_internals(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			struct smb_request *req,
-			struct files_struct *src_dirfsp,
-			struct smb_filename *smb_fname_src,
-			struct smb_filename *smb_fname_dst,
-			const char *dst_original_lcomp,
-			uint32_t attrs,
-			bool replace_if_exists,
-			uint32_t access_mask)
+			  connection_struct *conn,
+			  struct smb_request *req,
+			  struct files_struct *src_dirfsp,
+			  struct smb_filename *smb_fname_src,
+			  struct smb_filename *smb_fname_dst,
+			  const char *dst_original_lcomp,
+			  uint32_t attrs,
+			  bool replace_if_exists,
+			  uint32_t access_mask)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int create_options = FILE_OPEN_REPARSE_POINT;
@@ -1892,12 +1892,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
 	status = rename_internals_fsp(conn,
-					fsp,
-					NULL,
-					smb_fname_dst,
-					dst_original_lcomp,
-					attrs,
-					replace_if_exists);
+				      fsp,
+				      NULL,
+				      smb_fname_dst,
+				      dst_original_lcomp,
+				      attrs,
+				      replace_if_exists);
 
 	close_file_free(req, &fsp, NORMAL_CLOSE);
 

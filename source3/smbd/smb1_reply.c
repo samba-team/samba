@@ -6466,15 +6466,15 @@ void reply_mv(struct smb_request *req)
 		   smb_fname_str_dbg(smb_fname_dst));
 
 	status = rename_internals(ctx,
-				conn,
-				req,
-				src_dirfsp, /* src_dirfsp */
-				smb_fname_src,
-				smb_fname_dst,
-				dst_original_lcomp,
-				attrs,
-				false,
-				DELETE_ACCESS);
+				  conn,
+				  req,
+				  src_dirfsp, /* src_dirfsp */
+				  smb_fname_src,
+				  smb_fname_dst,
+				  dst_original_lcomp,
+				  attrs,
+				  false,
+				  DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
