@@ -1424,7 +1424,6 @@ void reply_ntrename(struct smb_request *req)
 	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
-	const char *dst_original_lcomp = NULL;
 	const char *p;
 	NTSTATUS status;
 	uint32_t attrs;
@@ -1552,23 +1551,26 @@ void reply_ntrename(struct smb_request *req)
 		}
 	}
 
-	/* Get the last component of the destination for rename_internals(). */
-	dst_original_lcomp = get_original_lcomp(ctx,
-					conn,
-					newname,
-					ucf_flags_dst);
-	if (dst_original_lcomp == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
-
 	DEBUG(3,("reply_ntrename: %s -> %s\n",
 		 smb_fname_str_dbg(smb_fname_old),
 		 smb_fname_str_dbg(smb_fname_new)));
 
 	switch(rename_type) {
-	case RENAME_FLAG_RENAME:
+	case RENAME_FLAG_RENAME: {
+		/*
+		 * Get the last component of the destination for
+		 * rename_internals().
+		 */
+
+		char *dst_original_lcomp = get_original_lcomp(ctx,
+							      conn,
+							      newname,
+							      ucf_flags_dst);
+		if (dst_original_lcomp == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+
 		status = rename_internals(ctx,
 					  conn,
 					  req,
@@ -1579,7 +1581,10 @@ void reply_ntrename(struct smb_request *req)
 					  attrs,
 					  false,
 					  DELETE_ACCESS);
+
+		TALLOC_FREE(dst_original_lcomp);
 		break;
+	}
 	case RENAME_FLAG_HARD_LINK:
 		status = hardlink_internals(ctx,
 					    conn,
