@@ -1568,42 +1568,42 @@ void reply_ntrename(struct smb_request *req)
 		 smb_fname_str_dbg(smb_fname_new)));
 
 	switch(rename_type) {
-		case RENAME_FLAG_RENAME:
-			status = rename_internals(ctx,
-						conn,
-						req,
-						src_dirfsp,
-						smb_fname_old,
-						smb_fname_new,
-						dst_original_lcomp,
-						attrs,
-						false,
-						DELETE_ACCESS);
-			break;
-		case RENAME_FLAG_HARD_LINK:
-			status = hardlink_internals(ctx,
-						    conn,
-						    req,
-						    false,
-						    smb_fname_old,
-						    smb_fname_new);
-			break;
-		case RENAME_FLAG_COPY:
-			status = copy_internals(ctx,
-						conn,
-						req,
-						src_dirfsp,
-						smb_fname_old,
-						dst_dirfsp,
-						smb_fname_new,
-						attrs);
-			break;
-		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
-			status = NT_STATUS_INVALID_PARAMETER;
-			break;
-		default:
-			status = NT_STATUS_ACCESS_DENIED; /* Default error. */
-			break;
+	case RENAME_FLAG_RENAME:
+		status = rename_internals(ctx,
+					  conn,
+					  req,
+					  src_dirfsp,
+					  smb_fname_old,
+					  smb_fname_new,
+					  dst_original_lcomp,
+					  attrs,
+					  false,
+					  DELETE_ACCESS);
+		break;
+	case RENAME_FLAG_HARD_LINK:
+		status = hardlink_internals(ctx,
+					    conn,
+					    req,
+					    false,
+					    smb_fname_old,
+					    smb_fname_new);
+		break;
+	case RENAME_FLAG_COPY:
+		status = copy_internals(ctx,
+					conn,
+					req,
+					src_dirfsp,
+					smb_fname_old,
+					dst_dirfsp,
+					smb_fname_new,
+					attrs);
+		break;
+	case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
+	default:
+		status = NT_STATUS_ACCESS_DENIED; /* Default error. */
+		break;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
