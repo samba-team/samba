@@ -1434,7 +1434,6 @@ void reply_ntrename(struct smb_request *req)
 	NTTIME dst_twrp = 0;
 	uint16_t rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
-	bool stream_rename = false;
 
 	START_PROFILE(SMBntrename);
 
@@ -1472,18 +1471,6 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	if (!req->posix_pathnames) {
-		/* The newname must begin with a ':' if the
-		   oldname contains a ':'. */
-		if (strchr_m(oldname, ':')) {
-			if (newname[0] != ':') {
-				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				goto out;
-			}
-			stream_rename = true;
-		}
-	}
-
 	if (ucf_flags_src & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(oldname, &src_twrp);
 	}
@@ -1512,7 +1499,12 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	if (stream_rename) {
+	if (!req->posix_pathnames && is_named_stream(smb_fname_old)) {
+		if (newname[0] != ':') {
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			goto out;
+		}
+
 		/*
 		 * No point in calling filename_convert()
 		 * on a raw stream name. It can never find
