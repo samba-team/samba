@@ -313,7 +313,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	/* No links from a directory. */
+	/* No copy from a directory. */
 	if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
 		goto out;
