@@ -3700,8 +3700,11 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 
 static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 					struct smb_request *req,
-					const char *pdata, int total_data,
-					struct smb_filename *smb_fname_new)
+					const char *pdata,
+					int total_data,
+					struct files_struct *dirfsp_new,
+					struct smb_filename *smb_fname_new,
+					struct smb_filename *smb_fname_new_rel)
 {
 	char *oldname = NULL;
 	struct files_struct *src_dirfsp = NULL;
@@ -4335,6 +4338,7 @@ static void call_trans2setpathinfo(
 {
 	uint16_t info_level;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_rel = NULL;
 	struct files_struct *dirfsp = NULL;
 	struct files_struct *fsp = NULL;
 	char *params = *pparams;
@@ -4406,13 +4410,15 @@ static void call_trans2setpathinfo(
 		reply_nterror(req, status);
 		return;
 	}
-	status = filename_convert_dirfsp(req,
-					 conn,
-					 fname,
-					 ucf_flags,
-					 twrp,
-					 &dirfsp,
-					 &smb_fname);
+	status = filename_convert_dirfsp_rel(req,
+					     conn,
+					     conn->cwd_fsp,
+					     fname,
+					     ucf_flags,
+					     twrp,
+					     &dirfsp,
+					     &smb_fname,
+					     &smb_fname_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -4457,8 +4463,13 @@ static void call_trans2setpathinfo(
 		break;
 
 	case SMB_SET_FILE_UNIX_HLINK:
-		status = smb_set_file_unix_hlink(
-			conn, req, *ppdata, total_data, smb_fname);
+		status = smb_set_file_unix_hlink(conn,
+						 req,
+						 *ppdata,
+						 total_data,
+						 dirfsp,
+						 smb_fname,
+						 smb_fname_rel);
 		break;
 
 	case SMB_SET_FILE_UNIX_BASIC:
