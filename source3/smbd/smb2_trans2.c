@@ -4404,105 +4404,12 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	return status;
 }
 
-static NTSTATUS smb2_file_link_information(connection_struct *conn,
-					    struct smb_request *req,
-					    const char *pdata,
-					    int total_data,
-					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src)
-{
-	bool overwrite;
-	uint32_t len;
-	char *newname = NULL;
-	struct files_struct *dst_dirfsp = NULL;
-	struct smb_filename *smb_fname_dst = NULL;
-	struct smb_filename *smb_fname_dst_rel = NULL;
-	NTSTATUS status = NT_STATUS_OK;
-	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-	size_t ret;
-	TALLOC_CTX *ctx = talloc_tos();
-
-	if (!fsp) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (total_data < 20) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	overwrite = (CVAL(pdata,0) ? true : false);
-	len = IVAL(pdata,16);
-
-	if (len > (total_data - 20) || (len == 0)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	ret = srvstr_pull_talloc(ctx,
-				 pdata,
-				 req->flags2,
-				 &newname,
-				 &pdata[20],
-                                 len,
-				 STR_TERMINATE);
-
-        if (ret == (size_t)-1 || newname == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = check_path_syntax(newname,
-			fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* hardlink paths are never DFS. */
-	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
-	ucf_flags &= ~UCF_DFS_PATHNAME;
-
-	DBG_DEBUG("got name |%s|\n", newname);
-
-	status = filename_convert_dirfsp_rel(ctx,
-					     conn,
-					     conn->cwd_fsp,
-					     newname,
-					     ucf_flags,
-					     0, /* No TWRP. */
-					     &dst_dirfsp,
-					     &smb_fname_dst,
-					     &smb_fname_dst_rel);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (fsp_is_alternate_stream(fsp)) {
-		/* No hardlink on streams. */
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	DBG_DEBUG("SMB_FILE_LINK_INFORMATION (%s) %s -> %s\n",
-		  fsp_fnum_dbg(fsp),
-		  fsp_str_dbg(fsp),
-		  smb_fname_str_dbg(smb_fname_dst));
-
-	status = hardlink_internals(ctx,
-				    conn,
-				    req,
-				    overwrite,
-				    fsp->fsp_name,
-				    dst_dirfsp,
-				    smb_fname_dst,
-				    smb_fname_dst_rel);
-
-	TALLOC_FREE(smb_fname_dst);
-	return status;
-}
-
 static NTSTATUS smb_file_link_information(connection_struct *conn,
-					    struct smb_request *req,
-					    const char *pdata,
-					    int total_data,
-					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src)
+					  struct smb_request *req,
+					  const char *pdata,
+					  int total_data,
+					  files_struct *fsp,
+					  struct smb_filename *smb_fname_src)
 {
 	bool overwrite;
 	uint32_t len;
@@ -4530,32 +4437,55 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH) {
-		srvstr_get_path_posix(ctx,
-				pdata,
-				req->flags2,
-				&newname,
-				&pdata[20],
-				len,
-				STR_TERMINATE,
-				&status);
-		ucf_flags |= UCF_POSIX_PATHNAMES;
-	} else {
-		srvstr_get_path(ctx,
-				pdata,
-				req->flags2,
-				&newname,
-				&pdata[20],
-				len,
-				STR_TERMINATE,
-				&status);
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	if (conn_using_smb2(conn->sconn)) {
+		int ret;
 
-	if (ucf_flags & UCF_GMT_PATHNAME) {
-		extract_snapshot_token(newname, &dst_twrp);
+		ret = srvstr_pull_talloc(ctx,
+					 pdata,
+					 req->flags2,
+					 &newname,
+					 &pdata[20],
+					 len,
+					 STR_TERMINATE);
+
+		if (ret == (size_t)-1 || newname == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		status = check_path_syntax(newname,
+					   fsp->fsp_name->flags &
+						   SMB_FILENAME_POSIX_PATH);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		if (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH) {
+			srvstr_get_path_posix(ctx,
+					      pdata,
+					      req->flags2,
+					      &newname,
+					      &pdata[20],
+					      len,
+					      STR_TERMINATE,
+					      &status);
+			ucf_flags |= UCF_POSIX_PATHNAMES;
+		} else {
+			srvstr_get_path(ctx,
+					pdata,
+					req->flags2,
+					&newname,
+					&pdata[20],
+					len,
+					STR_TERMINATE,
+					&status);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (ucf_flags & UCF_GMT_PATHNAME) {
+			extract_snapshot_token(newname, &dst_twrp);
+		}
 	}
 
 	/* hardlink paths are never DFS. */
@@ -5201,21 +5131,9 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 		case SMB_FILE_LINK_INFORMATION:
 		{
-			if (conn_using_smb2(conn->sconn)) {
-				status = smb2_file_link_information(conn,
-							req,
-							pdata,
-							total_data,
-							fsp,
-							smb_fname);
-			} else {
-				status = smb_file_link_information(conn,
-							req,
-							pdata,
-							total_data,
-							fsp,
-							smb_fname);
-			}
+			status = smb_file_link_information(
+				conn, req, pdata, total_data, fsp, smb_fname);
+
 			break;
 		}
 
