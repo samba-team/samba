@@ -299,14 +299,15 @@ static int unpack_pjob(TALLOC_CTX *mem_ctx, uint8_t *buf, int buflen,
 {
 	int	len = 0;
 	int	used;
-	uint32_t pjpid, pjjobid, pjsysjob, pjfd, pjstarttime, pjstatus;
+	uint32_t pjpid, pjjobid, pjsysjob, pjfd, pjstatus;
 	uint32_t pjsize, pjpage_count, pjspooled, pjsmbjob;
+	time_t pjstarttime;
 
 	if (!buf || !pjob) {
 		return -1;
 	}
 
-	len += tdb_unpack(buf+len, buflen-len, "ddddddddddfffff",
+	len += tdb_unpack(buf+len, buflen-len, "ddddDdddddfffff",
 				&pjpid,
 				&pjjobid,
 				&pjsysjob,
@@ -723,12 +724,12 @@ static bool pjob_store(struct tevent_context *ev,
 	do {
 		len = 0;
 		buflen = newlen;
-		len += tdb_pack(buf+len, buflen-len, "ddddddddddfffff",
+		len += tdb_pack(buf+len, buflen-len, "ddddDdddddfffff",
 				(uint32_t)pjob->pid,
 				(uint32_t)pjob->jobid,
 				(uint32_t)pjob->sysjob,
 				(uint32_t)pjob->fd,
-				(uint32_t)pjob->starttime,
+				(int64_t)pjob->starttime,
 				(uint32_t)pjob->status,
 				(uint32_t)pjob->size,
 				(uint32_t)pjob->page_count,
@@ -1179,13 +1180,13 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 			continue;
 
 		qcount++;
-		data.dsize += tdb_pack(NULL, 0, "ddddddff",
+		data.dsize += tdb_pack(NULL, 0, "dddddDff",
 				(uint32_t)queue[i].sysjob,
 				(uint32_t)queue[i].size,
 				(uint32_t)queue[i].page_count,
 				(uint32_t)queue[i].status,
 				(uint32_t)queue[i].priority,
-				(uint32_t)queue[i].time,
+				(int64_t)queue[i].time,
 				queue[i].fs_user,
 				queue[i].fs_file);
 	}
@@ -1199,13 +1200,13 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 		if ( queue[i].status == LPQ_DELETED )
 			continue;
 
-		len += tdb_pack(data.dptr + len, data.dsize - len, "ddddddff",
+		len += tdb_pack(data.dptr + len, data.dsize - len, "dddddDff",
 				(uint32_t)queue[i].sysjob,
 				(uint32_t)queue[i].size,
 				(uint32_t)queue[i].page_count,
 				(uint32_t)queue[i].status,
 				(uint32_t)queue[i].priority,
-				(uint32_t)queue[i].time,
+				(int64_t)queue[i].time,
 				queue[i].fs_user,
 				queue[i].fs_file);
 	}
@@ -3011,8 +3012,9 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	/* Retrieve the linearised queue data. */
 
 	for(i = 0; i < qcount; i++) {
-		uint32_t qjob, qsize, qpage_count, qstatus, qpriority, qtime;
-		len += tdb_unpack(data.dptr + len, data.dsize - len, "ddddddff",
+		uint32_t qjob, qsize, qpage_count, qstatus, qpriority;
+		time_t qtime;
+		len += tdb_unpack(data.dptr + len, data.dsize - len, "dddddDff",
 				&qjob,
 				&qsize,
 				&qpage_count,
