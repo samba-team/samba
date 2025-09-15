@@ -1551,9 +1551,10 @@ void reply_ntrename(struct smb_request *req)
 		}
 	}
 
-	DEBUG(3,("reply_ntrename: %s -> %s\n",
-		 smb_fname_str_dbg(smb_fname_old),
-		 smb_fname_str_dbg(smb_fname_new)));
+	DBG_NOTICE("%s -> %s, type=%" PRIx16 "\n",
+		   smb_fname_str_dbg(smb_fname_old),
+		   smb_fname_str_dbg(smb_fname_new),
+		   rename_type);
 
 	switch(rename_type) {
 	case RENAME_FLAG_RENAME: {

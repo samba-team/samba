@@ -3743,8 +3743,9 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
-		smb_fname_str_dbg(smb_fname_new), oldname));
+	DBG_DEBUG("SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
+		  smb_fname_str_dbg(smb_fname_new),
+		  oldname);
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(oldname, &old_twrp);

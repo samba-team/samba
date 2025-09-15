@@ -3769,8 +3769,9 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		}
 	}
 
-	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n",
-		  smb_fname_old->base_name, smb_fname_new->base_name));
+	DBG_DEBUG("doing hard link %s -> %s\n",
+		  smb_fname_old->base_name,
+		  smb_fname_new->base_name);
 
 	ret = SMB_VFS_LINKAT(conn,
 			parent_fname_old->fsp,
@@ -3781,9 +3782,10 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
-		DEBUG(3,("hardlink_internals: Error %s hard link %s -> %s\n",
-			 nt_errstr(status), smb_fname_old->base_name,
-			 smb_fname_new->base_name));
+		DBG_NOTICE("Error %s hard link %s -> %s\n",
+			   nt_errstr(status),
+			   smb_fname_old->base_name,
+			   smb_fname_new->base_name);
 		goto out;
 	}
 
@@ -4504,8 +4506,10 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 	}
 
 	DBG_DEBUG("SMB_FILE_LINK_INFORMATION (%s) %s -> %s\n",
-		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
+		  fsp_fnum_dbg(fsp),
+		  fsp_str_dbg(fsp),
 		  smb_fname_str_dbg(smb_fname_dst));
+
 	status = hardlink_internals(ctx,
 				conn,
 				req,
@@ -4573,8 +4577,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_file_link_information: got name |%s|\n",
-				newname));
+	DBG_DEBUG("got name |%s|\n", newname);
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(newname, &dst_twrp);
@@ -4598,10 +4601,11 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	DEBUG(10,("smb_file_link_information: "
-		  "SMB_FILE_LINK_INFORMATION (%s) %s -> %s\n",
-		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
-		  smb_fname_str_dbg(smb_fname_dst)));
+	DBG_DEBUG("SMB_FILE_LINK_INFORMATION (%s) %s -> %s\n",
+		  fsp_fnum_dbg(fsp),
+		  fsp_str_dbg(fsp),
+		  smb_fname_str_dbg(smb_fname_dst));
+
 	status = hardlink_internals(ctx,
 				conn,
 				req,
@@ -5073,10 +5077,11 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 	*ret_data_size = 0;
 
-	DEBUG(3,("smbd_do_setfilepathinfo: %s (%s) info_level=%d "
-		 "totdata=%d\n", smb_fname_str_dbg(smb_fname),
-		 fsp_fnum_dbg(fsp),
-		 info_level, total_data));
+	DBG_NOTICE("%s (%s) info_level=%d totdata=%d\n",
+		   smb_fname_str_dbg(smb_fname),
+		   fsp_fnum_dbg(fsp),
+		   info_level,
+		   total_data);
 
 	SMB_ASSERT(fsp != NULL);
 

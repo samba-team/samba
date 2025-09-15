@@ -326,7 +326,7 @@ struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 	theacl = talloc_zero(mem_ctx, struct SMB4ACL_T);
 	if (theacl==NULL)
 	{
-		DEBUG(0, ("TALLOC_SIZE failed\n"));
+		DBG_ERR("talloc_zero failed\n");
 		errno = ENOMEM;
 		return NULL;
 	}
