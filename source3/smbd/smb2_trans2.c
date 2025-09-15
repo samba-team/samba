@@ -4468,15 +4468,15 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* SMB2 hardlink paths are never DFS. */
-	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
-	ucf_flags &= ~UCF_DFS_PATHNAME;
-
 	status = check_path_syntax(newname,
 			fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	/* hardlink paths are never DFS. */
+	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
+	ucf_flags &= ~UCF_DFS_PATHNAME;
 
 	DBG_DEBUG("got name |%s|\n", newname);
 
@@ -4573,13 +4573,15 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return status;
 	}
 
-	DBG_DEBUG("got name |%s|\n", newname);
-
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(newname, &dst_twrp);
 	}
+
 	/* hardlink paths are never DFS. */
+	req->flags2 &= ~FLAGS2_DFS_PATHNAMES;
 	ucf_flags &= ~UCF_DFS_PATHNAME;
+
+	DBG_DEBUG("got name |%s|\n", newname);
 
 	status = filename_convert_dirfsp_rel(ctx,
 					     conn,
