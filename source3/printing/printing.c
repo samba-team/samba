@@ -1334,7 +1334,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	struct traverse_struct tstruct;
 	TDB_DATA data, key;
 	TDB_DATA jcdata;
-	fstring keystr, cachestr;
+	fstring keystr;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
@@ -1351,8 +1351,12 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	 * if the lpq takes a long time.
 	 */
 
-	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", sharename);
-	tdb_store_int32(pdb->tdb, cachestr, (int)time(NULL));
+	if (update_share_cache_time(CACHE_LAST_SCAN_TIME, sharename, pdb->tdb,
+				    time(NULL)) != 0) {
+		DBG_ERR("Unable to update timing cache for %s\n", sharename);
+		talloc_free(tmp_ctx);
+		return;
+	}
 
         /* get the current queue using the appropriate interface */
 	ZERO_STRUCT(status);
@@ -1467,19 +1471,18 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	 * Update the cache time again. We want to do this call
 	 * as little as possible...
 	 */
-
-	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", sharename);
-	tdb_store_int32(pdb->tdb, keystr, (int32_t)time(NULL));
+	if (update_share_cache_time(CACHE_LAST_SCAN_TIME, sharename, pdb->tdb,
+				    time(NULL)) != 0) {
+		DBG_ERR("Unable to update timing cache for %s\n", sharename);
+		return;
+	}
 
 	/* clear the msg pending record for this queue */
-
-	snprintf(keystr, sizeof(keystr), "MSG_PENDING/%s", sharename);
-
-	if ( !tdb_store_uint32( pdb->tdb, keystr, 0 ) ) {
+	if (update_share_cache_time(MSG_PENDING_TIME, sharename, pdb->tdb, 0) != 0) {
 		/* log a message but continue on */
 
-		DEBUG(0,("print_queue_update: failed to store MSG_PENDING flag for [%s]!\n",
-			sharename));
+		DBG_ERR("Failed to store MSG_PENDING flag for [%s]!\n",
+			sharename);
 	}
 
 	release_print_db( pdb );
