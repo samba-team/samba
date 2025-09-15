@@ -1097,11 +1097,13 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		struct ea_list *ea_list);
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16]);
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
-		connection_struct *conn,
-		struct smb_request *req,
-		bool overwrite_if_exists,
-		const struct smb_filename *smb_fname_old,
-		struct smb_filename *smb_fname_new);
+			    connection_struct *conn,
+			    struct smb_request *req,
+			    bool overwrite_if_exists,
+			    const struct smb_filename *smb_fname_old,
+			    struct files_struct *dirfsp_new,
+			    struct smb_filename *smb_fname_new,
+			    struct smb_filename *smb_fname_new_rel);
 NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
 			   struct smb_filename *smb_fname,

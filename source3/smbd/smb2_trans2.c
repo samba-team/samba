@@ -3685,19 +3685,19 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
-		connection_struct *conn,
-		struct smb_request *req,
-		bool overwrite_if_exists,
-		const struct smb_filename *smb_fname_old,
-		struct smb_filename *smb_fname_new)
+			    connection_struct *conn,
+			    struct smb_request *req,
+			    bool overwrite_if_exists,
+			    const struct smb_filename *smb_fname_old,
+			    struct files_struct *dirfsp_new,
+			    struct smb_filename *smb_fname_new,
+			    struct smb_filename *smb_fname_new_rel)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 	bool ok;
 	struct smb_filename *parent_fname_old = NULL;
 	struct smb_filename *base_name_old = NULL;
-	struct smb_filename *parent_fname_new = NULL;
-	struct smb_filename *base_name_new = NULL;
 
 	/* source must already exist. */
 	if (!VALID_STAT(smb_fname_old->st)) {
@@ -3739,15 +3739,6 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				smb_fname_new,
-				&parent_fname_new,
-				&base_name_new);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	if (VALID_STAT(smb_fname_new->st)) {
 		if (overwrite_if_exists) {
 			if (S_ISDIR(smb_fname_new->st.st_ex_mode)) {
@@ -3774,11 +3765,11 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		  smb_fname_new->base_name);
 
 	ret = SMB_VFS_LINKAT(conn,
-			parent_fname_old->fsp,
-			base_name_old,
-			parent_fname_new->fsp,
-			base_name_new,
-			0);
+			     parent_fname_old->fsp,
+			     base_name_old,
+			     dirfsp_new,
+			     smb_fname_new_rel,
+			     0);
 
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
@@ -3799,7 +3790,6 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
   out:
 
 	TALLOC_FREE(parent_fname_old);
-	TALLOC_FREE(parent_fname_new);
 	return status;
 }
 
@@ -4445,6 +4435,7 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 	char *newname = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	struct smb_filename *smb_fname_dst_rel = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	size_t ret;
@@ -4489,13 +4480,15 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 
 	DBG_DEBUG("got name |%s|\n", newname);
 
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 newname,
-					 ucf_flags,
-					 0, /* No TWRP. */
-					 &dst_dirfsp,
-					 &smb_fname_dst);
+	status = filename_convert_dirfsp_rel(ctx,
+					     conn,
+					     conn->cwd_fsp,
+					     newname,
+					     ucf_flags,
+					     0, /* No TWRP. */
+					     &dst_dirfsp,
+					     &smb_fname_dst,
+					     &smb_fname_dst_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4511,11 +4504,13 @@ static NTSTATUS smb2_file_link_information(connection_struct *conn,
 		  smb_fname_str_dbg(smb_fname_dst));
 
 	status = hardlink_internals(ctx,
-				conn,
-				req,
-				overwrite,
-				fsp->fsp_name,
-				smb_fname_dst);
+				    conn,
+				    req,
+				    overwrite,
+				    fsp->fsp_name,
+				    dst_dirfsp,
+				    smb_fname_dst,
+				    smb_fname_dst_rel);
 
 	TALLOC_FREE(smb_fname_dst);
 	return status;
@@ -4533,6 +4528,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	char *newname = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	struct smb_filename *smb_fname_dst_rel = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME dst_twrp = 0;
@@ -4585,13 +4581,15 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	/* hardlink paths are never DFS. */
 	ucf_flags &= ~UCF_DFS_PATHNAME;
 
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 newname,
-					 ucf_flags,
-					 dst_twrp,
-					 &dst_dirfsp,
-					 &smb_fname_dst);
+	status = filename_convert_dirfsp_rel(ctx,
+					     conn,
+					     conn->cwd_fsp,
+					     newname,
+					     ucf_flags,
+					     dst_twrp,
+					     &dst_dirfsp,
+					     &smb_fname_dst,
+					     &smb_fname_dst_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4607,11 +4605,13 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		  smb_fname_str_dbg(smb_fname_dst));
 
 	status = hardlink_internals(ctx,
-				conn,
-				req,
-				overwrite,
-				fsp->fsp_name,
-				smb_fname_dst);
+				    conn,
+				    req,
+				    overwrite,
+				    fsp->fsp_name,
+				    dst_dirfsp,
+				    smb_fname_dst,
+				    smb_fname_dst_rel);
 
 	TALLOC_FREE(smb_fname_dst);
 	return status;
