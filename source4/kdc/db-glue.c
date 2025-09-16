@@ -601,7 +601,7 @@ static krb5_error_code samba_kdc_merge_keys(struct sdb_keys *keys,
 	num_old_keys = old_keys->len;
 	total_keys = num_keys + num_old_keys;
 
-	skeys = realloc(keys->val, total_keys * sizeof keys->val[0]);
+	skeys = realloc_p(keys->val, struct sdb_key, total_keys);
 	if (skeys == NULL) {
 		return ENOMEM;
 	}
@@ -1418,9 +1418,9 @@ static krb5_error_code get_key_trust_public_keys(TALLOC_CTX *mem_ctx,
 					goto pub_keys_oom;
 				}
 			} else {
-				pub_keys.keys = reallocarray(pub_keys.keys,
-							pub_keys.len + 1,
-							sizeof(pub_key));
+				pub_keys.keys = realloc_p(pub_keys.keys,
+							struct sdb_pub_key,
+							pub_keys.len + 1);
 				if (pub_keys.keys == NULL) {
 					SAFE_FREE(pub_key.exponent.data);
 					SAFE_FREE(pub_key.modulus.data);
