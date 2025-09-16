@@ -1252,7 +1252,6 @@ static void check_job_added(const char *sharename, TDB_DATA data, uint32_t jobid
 
 static bool print_cache_expired(const char *sharename, bool check_pending)
 {
-	fstring key;
 	time_t last_qscan_time, time_now = time(NULL);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	bool result = False;
@@ -1280,7 +1279,7 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 		|| (time_now - last_qscan_time) >= lp_lpq_cache_time()
 		|| last_qscan_time > (time_now + MAX_CACHE_VALID_TIME))
 	{
-		uint32_t u;
+		time_t u;
 		time_t msg_pending_time;
 
 		DBG_INFO("cache expired for queue %s "
@@ -1296,16 +1295,20 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 		   then send another message anyways.  Make sure to check for
 		   clocks that have been run forward and then back again. */
 
-		snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
+		if (fetch_share_cache_time(MSG_PENDING_TIME, sharename, pdb->tdb, &u) != 0) {
+			DBG_ERR("Unable to get updated scan time for %s\n", sharename);
+			goto done;
+		}
 
+		msg_pending_time = u;
 		if ( check_pending
-			&& tdb_fetch_uint32( pdb->tdb, key, &u )
-			&& (msg_pending_time=u) > 0
+			&& u
+			&& msg_pending_time > 0
 			&& msg_pending_time <= time_now
 			&& (time_now - msg_pending_time) < 60 )
 		{
-			DEBUG(4,("print_cache_expired: message already pending for %s.  Accepting cache\n",
-				sharename));
+			DBG_INFO("Message already pending for %s.  Accepting cache\n",
+				sharename);
 			goto done;
 		}
 
@@ -1620,7 +1623,6 @@ update the internal database from the system print queue for a queue
 static void print_queue_update(struct messaging_context *msg_ctx,
 			       int snum, bool force)
 {
-	char key[268];
 	fstring sharename;
 	char *lpqcommand = NULL;
 	char *lprmcommand = NULL;
@@ -1728,13 +1730,11 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
-
-	if ( !tdb_store_uint32( pdb->tdb, key, time(NULL) ) ) {
+	if (update_share_cache_time(MSG_PENDING_TIME, sharename, pdb->tdb, time(NULL)) != 0) {
 		/* log a message but continue on */
 
-		DEBUG(0,("print_queue_update: failed to store MSG_PENDING flag for [%s]!\n",
-			sharename));
+		DBG_ERR("Failed to store MSG_PENDING flag for [%s]!\n",
+			sharename);
 	}
 
 	release_print_db( pdb );
