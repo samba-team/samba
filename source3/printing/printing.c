@@ -43,12 +43,61 @@
 #include "source3/printing/rap_jobid.h"
 #include "source3/lib/substitute.h"
 
+#define CACHE_LAST_SCAN_TIME "CACHE"
+#define MSG_PENDING_TIME "MSG_PENDING"
+
 extern userdom_struct current_user_info;
 
 /* Current printer interface */
 static bool remove_from_jobs_added(const char* sharename, uint32_t jobid);
 
 static int get_queue_status(const char* sharename, print_status_struct *);
+
+static int fetch_share_cache_time(const char *key_name,
+				  const char *sharename,
+				  struct tdb_context *tdb,
+				  time_t *curr_time)
+{
+	char *key = NULL;
+
+	key = talloc_asprintf(NULL, "%s/%s", key_name, sharename);
+	if (key == NULL) {
+		DBG_ERR("Failed to format key\n");
+		return -1;
+	}
+
+	if (tdb_fetch_int64(tdb, key, curr_time) != 0) {
+		DBG_ERR("No timing record found for[%s]!\n", sharename);
+		TALLOC_FREE(key);
+		return -1;
+	}
+
+	TALLOC_FREE(key);
+	return 0;
+}
+
+static int update_share_cache_time(const char *key_name,
+				   const char *sharename,
+				   struct tdb_context *tdb,
+				   time_t curr_time)
+{
+	char *key = NULL;
+
+	key = talloc_asprintf(NULL, "%s/%s", key_name, sharename);
+	if (key == NULL) {
+		DBG_ERR("Failed to format key.\n");
+		return -1;
+	}
+
+	if (tdb_store_int64(tdb, key, (int64_t)curr_time) != 0) {
+		DBG_ERR("Unable to update print cache for %s\n", sharename);
+		TALLOC_FREE(key);
+		return -1;
+	}
+
+	TALLOC_FREE(key);
+	return 0;
+}
 
 /****************************************************************************
  Initialise the printing backend. Called once at startup before the fork().
@@ -1001,13 +1050,12 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 
 static void print_cache_flush(const char *sharename)
 {
-	fstring key;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 
 	if (!pdb)
 		return;
-	slprintf(key, sizeof(key)-1, "CACHE/%s", sharename);
-	tdb_store_int32(pdb->tdb, key, -1);
+
+	update_share_cache_time(CACHE_LAST_SCAN_TIME, sharename, pdb->tdb, -1);
 	release_print_db(pdb);
 }
 
@@ -1211,8 +1259,11 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 	if (!pdb)
 		return False;
 
-	snprintf(key, sizeof(key), "CACHE/%s", sharename);
-	last_qscan_time = (time_t)tdb_fetch_int32(pdb->tdb, key);
+	if (fetch_share_cache_time(CACHE_LAST_SCAN_TIME, sharename,
+				   pdb->tdb, &last_qscan_time) != 0) {
+		DBG_ERR("Unable to get last scan timing for %s\n", sharename);
+		goto done;
+	}
 
 	/*
 	 * Invalidate the queue for 3 reasons.
