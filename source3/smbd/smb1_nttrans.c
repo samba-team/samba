@@ -1420,6 +1420,7 @@ void reply_ntrename(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_old = NULL;
+	struct smb_filename *smb_fname_old_rel = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_new = NULL;
 	struct smb_filename *smb_fname_new_rel = NULL;
@@ -1480,13 +1481,15 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 oldname,
-					 ucf_flags_src,
-					 src_twrp,
-					 &src_dirfsp,
-					 &smb_fname_old);
+	status = filename_convert_dirfsp_rel(ctx,
+					     conn,
+					     conn->cwd_fsp,
+					     oldname,
+					     ucf_flags_src,
+					     src_twrp,
+					     &src_dirfsp,
+					     &smb_fname_old,
+					     &smb_fname_old_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_PATH_NOT_COVERED)) {
@@ -1594,7 +1597,9 @@ void reply_ntrename(struct smb_request *req)
 					    conn,
 					    req,
 					    false,
+					    src_dirfsp,
 					    smb_fname_old,
+					    smb_fname_old_rel,
 					    dst_dirfsp,
 					    smb_fname_new,
 					    smb_fname_new_rel);

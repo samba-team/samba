@@ -3688,7 +3688,9 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 			    connection_struct *conn,
 			    struct smb_request *req,
 			    bool overwrite_if_exists,
+			    struct files_struct *dirfsp_old,
 			    const struct smb_filename *smb_fname_old,
+			    struct smb_filename *smb_fname_old_rel,
 			    struct files_struct *dirfsp_new,
 			    struct smb_filename *smb_fname_new,
 			    struct smb_filename *smb_fname_new_rel)
@@ -3696,8 +3698,6 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 	bool ok;
-	struct smb_filename *parent_fname_old = NULL;
-	struct smb_filename *base_name_old = NULL;
 
 	/* source must already exist. */
 	if (!VALID_STAT(smb_fname_old->st)) {
@@ -3730,15 +3730,6 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				smb_fname_old,
-				&parent_fname_old,
-				&base_name_old);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	if (VALID_STAT(smb_fname_new->st)) {
 		if (overwrite_if_exists) {
 			if (S_ISDIR(smb_fname_new->st.st_ex_mode)) {
@@ -3765,8 +3756,8 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		  smb_fname_new->base_name);
 
 	ret = SMB_VFS_LINKAT(conn,
-			     parent_fname_old->fsp,
-			     base_name_old,
+			     dirfsp_old,
+			     smb_fname_old_rel,
 			     dirfsp_new,
 			     smb_fname_new_rel,
 			     0);
@@ -3788,8 +3779,6 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		     fsp_get_smb2_lease(smb_fname_old->fsp));
 
   out:
-
-	TALLOC_FREE(parent_fname_old);
 	return status;
 }
 
@@ -4414,6 +4403,8 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	bool overwrite;
 	uint32_t len;
 	char *newname = NULL;
+	struct smb_filename *src_parent = NULL;
+	struct smb_filename *smb_fname_src_rel = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	struct smb_filename *smb_fname_dst_rel = NULL;
@@ -4512,6 +4503,15 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
+	status = parent_pathref(ctx,
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&src_parent,
+				&smb_fname_src_rel);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	DBG_DEBUG("SMB_FILE_LINK_INFORMATION (%s) %s -> %s\n",
 		  fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp),
@@ -4521,7 +4521,9 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				    conn,
 				    req,
 				    overwrite,
+				    src_parent->fsp,
 				    fsp->fsp_name,
+				    smb_fname_src_rel,
 				    dst_dirfsp,
 				    smb_fname_dst,
 				    smb_fname_dst_rel);

@@ -3709,6 +3709,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 	char *oldname = NULL;
 	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_old = NULL;
+	struct smb_filename *smb_fname_old_rel = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME old_twrp = 0;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -3757,13 +3758,15 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 oldname,
-					 ucf_flags,
-					 old_twrp,
-					 &src_dirfsp,
-					 &smb_fname_old);
+	status = filename_convert_dirfsp_rel(ctx,
+					     conn,
+					     conn->cwd_fsp,
+					     oldname,
+					     ucf_flags,
+					     old_twrp,
+					     &src_dirfsp,
+					     &smb_fname_old,
+					     &smb_fname_old_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3772,7 +3775,9 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				  conn,
 				  req,
 				  false,
+				  src_dirfsp,
 				  smb_fname_old,
+				  smb_fname_old_rel,
 				  dirfsp_new,
 				  smb_fname_new,
 				  smb_fname_new_rel);
