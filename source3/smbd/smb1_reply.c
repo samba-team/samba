@@ -6342,6 +6342,7 @@ void reply_mv(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_src_rel = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
@@ -6395,13 +6396,15 @@ void reply_mv(struct smb_request *req)
 		reply_nterror(req, status);
 		goto out;
 	}
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 name,
-					 src_ucf_flags,
-					 src_twrp,
-					 &src_dirfsp,
-					 &smb_fname_src);
+	status = filename_convert_dirfsp_rel(ctx,
+					     conn,
+					     conn->cwd_fsp,
+					     name,
+					     src_ucf_flags,
+					     src_twrp,
+					     &src_dirfsp,
+					     &smb_fname_src,
+					     &smb_fname_src_rel);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6470,9 +6473,11 @@ void reply_mv(struct smb_request *req)
 				  req,
 				  src_dirfsp, /* src_dirfsp */
 				  smb_fname_src,
+				  smb_fname_src_rel,
 				  smb_fname_dst,
 				  dst_original_lcomp,
 				  attrs,
+				  newname,
 				  false,
 				  DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {

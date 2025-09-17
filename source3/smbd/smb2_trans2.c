@@ -4359,6 +4359,8 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 {
 	char *newname = NULL;
 	bool overwrite;
+	struct smb_filename *smb_fname_src_parent = NULL;
+	struct smb_filename *smb_fname_src_rel = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	char *dst_original_lcomp = NULL;
@@ -4386,15 +4388,29 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		  fsp_str_dbg(fsp),
 		  smb_fname_str_dbg(smb_fname_dst));
 
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&smb_fname_src_parent,
+				&smb_fname_src_rel);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = rename_internals_fsp(conn,
+				      smb_fname_src_parent->fsp,
 				      fsp,
+				      smb_fname_src_rel,
 				      lck,
 				      smb_fname_dst,
 				      dst_original_lcomp,
 				      (FILE_ATTRIBUTE_HIDDEN |
 				       FILE_ATTRIBUTE_SYSTEM),
+				      newname,
 				      overwrite);
 
+	TALLOC_FREE(smb_fname_src_rel);
+	TALLOC_FREE(smb_fname_src_parent);
 	TALLOC_FREE(smb_fname_dst);
 	return status;
 }
@@ -4554,6 +4570,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32_t root_fid;
 	uint32_t len;
 	char *newname = NULL;
+	struct smb_filename *smb_fname_src_parent = NULL;
+	struct smb_filename *smb_fname_src_rel = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
@@ -4702,6 +4720,28 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 	}
 
+	status = parent_pathref(ctx,
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&smb_fname_src_parent,
+				&smb_fname_src_rel);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (!fsp_is_alternate_stream(fsp)) {
+		/*
+		 * The smb1-level rename information is always
+		 * relative to the directory of the src name.
+		 */
+		newname = full_path_from_dirfsp_at_basename(
+			ctx, smb_fname_src_parent->fsp, newname);
+		if (newname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
 	if (fsp->fsp_flags.is_fsa) {
 		DBG_DEBUG("SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
 			  fsp_fnum_dbg(fsp),
@@ -4718,11 +4758,14 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		status = rename_internals_fsp(conn,
+					      smb_fname_src_parent->fsp,
 					      fsp,
+					      smb_fname_src_rel,
 					      NULL,
 					      smb_fname_dst,
 					      dst_original_lcomp,
 					      0,
+					      newname,
 					      overwrite);
 	} else {
 		DBG_DEBUG("SMB_FILE_RENAME_INFORMATION %s -> %s\n",
@@ -4731,11 +4774,13 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		status = rename_internals(ctx,
 					  conn,
 					  req,
-					  NULL, /* src_dirfsp */
+					  smb_fname_src_parent->fsp,
 					  smb_fname_src,
+					  smb_fname_src_rel,
 					  smb_fname_dst,
 					  dst_original_lcomp,
 					  0,
+					  newname,
 					  overwrite,
 					  FILE_WRITE_ATTRIBUTES);
 	}

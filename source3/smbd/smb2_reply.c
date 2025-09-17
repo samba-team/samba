@@ -1348,11 +1348,14 @@ static void notify_rename(struct connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS rename_internals_fsp(connection_struct *conn,
+			      struct files_struct *src_dirfsp,
 			      files_struct *fsp,
+			      struct smb_filename *smb_fname_src_rel,
 			      struct share_mode_lock **_lck,
 			      struct smb_filename *smb_fname_dst_in,
 			      const char *dst_original_lcomp,
 			      uint32_t attrs,
+			      const char *newname,
 			      bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1795,9 +1798,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  struct smb_request *req,
 			  struct files_struct *src_dirfsp,
 			  struct smb_filename *smb_fname_src,
+			  struct smb_filename *smb_fname_src_rel,
 			  struct smb_filename *smb_fname_dst,
 			  const char *dst_original_lcomp,
 			  uint32_t attrs,
+			  const char *newname,
 			  bool replace_if_exists,
 			  uint32_t access_mask)
 {
@@ -1892,11 +1897,14 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
 	status = rename_internals_fsp(conn,
+				      src_dirfsp,
 				      fsp,
+				      smb_fname_src_rel,
 				      NULL,
 				      smb_fname_dst,
 				      dst_original_lcomp,
 				      attrs,
+				      newname,
 				      replace_if_exists);
 
 	close_file_free(req, &fsp, NORMAL_CLOSE);
