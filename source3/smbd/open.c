@@ -3538,7 +3538,7 @@ static void possibly_set_archive(struct connection_struct *conn,
 	ret = file_set_dosmode(conn,
 			       smb_fname,
 			       dosattrs | FILE_ATTRIBUTE_ARCHIVE,
-			       parent_dir_fname,
+			       parent_dir_fname->fsp,
 			       true);
 	if (ret != 0) {
 		return;
@@ -4664,7 +4664,7 @@ mkdir_first:
 		file_set_dosmode(conn,
 				 smb_dname,
 				 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
-				 parent_dir_fname,
+				 parent_dir_fname->fsp,
 				 true);
 	}
 

@@ -924,7 +924,7 @@ NTSTATUS dos_mode_at_recv(struct tevent_req *req, uint32_t *dosmode)
 int file_set_dosmode(connection_struct *conn,
 		     struct smb_filename *smb_fname,
 		     uint32_t dosmode,
-		     struct smb_filename *parent_dir,
+		     struct files_struct *dirfsp,
 		     bool newfile)
 {
 	int mask=0;
@@ -995,11 +995,7 @@ int file_set_dosmode(connection_struct *conn,
 	}
 
 	/* Fall back to UNIX modes. */
-	unixmode = unix_mode(
-		conn,
-		dosmode,
-		smb_fname,
-		parent_dir != NULL ? parent_dir->fsp : NULL);
+	unixmode = unix_mode(conn, dosmode, smb_fname, dirfsp);
 
 	/* preserve the file type bits */
 	mask |= S_IFMT;

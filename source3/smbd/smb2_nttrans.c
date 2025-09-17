@@ -286,7 +286,6 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	int info;
 	off_t ret=-1;
 	NTSTATUS status = NT_STATUS_OK;
-	struct smb_filename *parent = NULL;
 
 	if (!CAN_WRITE(conn)) {
 		status = NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -404,18 +403,10 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
 
-	status = SMB_VFS_PARENT_PATHNAME(conn,
-					 talloc_tos(),
-					 smb_fname_dst,
-					 &parent,
-					 NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
 	if (smb_fname_dst->fsp == NULL) {
 		struct smb_filename *pathref = NULL;
 
-		status = synthetic_pathref(parent,
+		status = synthetic_pathref(ctx,
 					conn->cwd_fsp,
 					smb_fname_dst->base_name,
 					smb_fname_dst->stream_name,
@@ -426,16 +417,15 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 
 		/* should we handle NT_STATUS_OBJECT_NAME_NOT_FOUND specially here ???? */
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(parent);
 			goto out;
 		}
-		file_set_dosmode(conn, pathref, fattr, parent, false);
+		file_set_dosmode(conn, pathref, fattr, dst_dirfsp, false);
 		smb_fname_dst->st.st_ex_mode = pathref->st.st_ex_mode;
 		TALLOC_FREE(pathref);
 	} else {
-		file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
+		file_set_dosmode(
+			conn, smb_fname_dst, fattr, dst_dirfsp, false);
 	}
-	TALLOC_FREE(parent);
 
 	if (ret < (off_t)smb_fname_src->st.st_ex_size) {
 		status = NT_STATUS_DISK_FULL;
