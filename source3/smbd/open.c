@@ -4826,7 +4826,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			       uint32_t create_disposition,
 			       uint32_t create_options,
 			       uint32_t file_attributes,
-			       struct smb_filename *parent_dir_fname,
+			       struct files_struct *dirfsp,
 			       struct smb_filename *smb_fname_atname,
 			       uint32_t oplock_request,
 			       const struct smb2_lease *lease,
@@ -4883,11 +4883,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 	}
 
-	status = smbd_calculate_access_mask_fsp(parent_dir_fname->fsp,
-					smb_dname->fsp,
-					false,
-					access_mask,
-					&access_mask);
+	status = smbd_calculate_access_mask_fsp(
+		dirfsp, smb_dname->fsp, false, access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("smbd_calculate_access_mask_fsp "
 			"on file %s returned %s\n",
@@ -4934,7 +4931,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			}
 
 			status = mkdir_internal(conn,
-						parent_dir_fname->fsp,
+						dirfsp,
 						smb_fname_atname,
 						smb_dname,
 						sd,
@@ -4966,7 +4963,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 					return NT_STATUS_MEDIA_WRITE_PROTECTED;
 				}
 				status = mkdir_internal(conn,
-							parent_dir_fname->fsp,
+							dirfsp,
 							smb_fname_atname,
 							smb_dname,
 							sd,
@@ -4994,7 +4991,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 					 */
 					ret = SMB_VFS_FSTATAT(
 						conn,
-						parent_dir_fname->fsp,
+						dirfsp,
 						smb_fname_atname,
 						&smb_dname->st,
 						AT_SYMLINK_NOFOLLOW);
@@ -5074,11 +5071,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		};
 		bool file_created;
 
-		status = reopen_from_fsp(parent_dir_fname->fsp,
-					 smb_fname_atname,
-					 fsp,
-					 &how,
-					 &file_created);
+		status = reopen_from_fsp(
+			dirfsp, smb_fname_atname, fsp, &how, &file_created);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_INFO("Could not open fd for [%s]: %s\n",
 				 smb_fname_str_dbg(smb_dname),
@@ -5112,10 +5106,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_access_rights_fsp(parent_dir_fname->fsp,
-						fsp,
-						false,
-						access_mask);
+		status = smbd_check_access_rights_fsp(dirfsp,
+						      fsp,
+						      false,
+						      access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("smbd_check_access_rights_fsp on "
 				  "file %s failed with %s\n",
@@ -6473,7 +6467,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					create_disposition,
 					create_options,
 					file_attributes,
-					dirfsp->fsp_name,
+					dirfsp,
 					smb_fname_atname,
 					oplock_request,
 					lease,
@@ -6531,7 +6525,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 						create_disposition,
 						create_options,
 						file_attributes,
-						dirfsp->fsp_name,
+						dirfsp,
 						smb_fname_atname,
 						oplock_request,
 						lease,
