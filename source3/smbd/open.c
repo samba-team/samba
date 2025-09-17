@@ -3561,7 +3561,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    const struct smb2_lease *lease,
 				 			/* Information (FILE_EXISTS etc.) */
 			    uint32_t private_flags,     /* Samba specific flags. */
-			    struct smb_filename *parent_dir_fname, /* parent. */
+			    struct files_struct *dirfsp,
 			    struct smb_filename *smb_fname_atname, /* atname relative to parent. */
 			    int *pinfo,
 			    files_struct *fsp)
@@ -3627,7 +3627,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			conn,
 			new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
 			smb_fname,
-			parent_dir_fname->fsp);
+			dirfsp);
 	}
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
@@ -3796,11 +3796,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = smbd_calculate_access_mask_fsp(parent_dir_fname->fsp,
-						smb_fname->fsp,
-						false,
-						access_mask,
-						&access_mask);
+	status = smbd_calculate_access_mask_fsp(
+		dirfsp, smb_fname->fsp, false, access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("smbd_calculate_access_mask_fsp "
 			"on file %s returned %s\n",
@@ -3933,7 +3930,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if ((flags & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-	    (def_acl = directory_has_default_acl_fsp(parent_dir_fname->fsp))) {
+	    (def_acl = directory_has_default_acl_fsp(dirfsp))) {
 		unx_mode = (0777 & lp_create_mask(SNUM(conn)));
 	}
 
@@ -3956,7 +3953,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		fsp_open = open_file(req,
-				     parent_dir_fname->fsp,
+				     dirfsp,
 				     smb_fname_atname,
 				     fsp,
 				     &how,
@@ -4169,9 +4166,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!new_file_created &&
 	    clear_ads(create_disposition) &&
 	    !fsp_is_alternate_stream(fsp)) {
-		status = delete_all_streams(fsp,
-					    parent_dir_fname->fsp,
-					    smb_fname_atname);
+		status = delete_all_streams(fsp, dirfsp, smb_fname_atname);
 		if (!NT_STATUS_IS_OK(status)) {
 			lck_state.cleanup_fn =
 				open_ntcreate_lock_cleanup_entry;
@@ -4254,7 +4249,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	possibly_set_archive(conn,
 			     fsp,
 			     smb_fname,
-			     parent_dir_fname->fsp,
+			     dirfsp,
 			     info,
 			     new_dos_attributes,
 			     &unx_mode);
@@ -6506,7 +6501,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					    oplock_request,
 					    lease,
 					    private_flags,
-					    dirfsp->fsp_name,
+					    dirfsp,
 					    smb_fname_atname,
 					    &info,
 					    fsp);
