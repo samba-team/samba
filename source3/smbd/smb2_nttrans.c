@@ -287,7 +287,6 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	off_t ret=-1;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *parent = NULL;
-	struct smb_filename *pathref = NULL;
 
 	if (!CAN_WRITE(conn)) {
 		status = NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -414,6 +413,8 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 	if (smb_fname_dst->fsp == NULL) {
+		struct smb_filename *pathref = NULL;
+
 		status = synthetic_pathref(parent,
 					conn->cwd_fsp,
 					smb_fname_dst->base_name,
@@ -430,6 +431,7 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		}
 		file_set_dosmode(conn, pathref, fattr, parent, false);
 		smb_fname_dst->st.st_ex_mode = pathref->st.st_ex_mode;
+		TALLOC_FREE(pathref);
 	} else {
 		file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
 	}
