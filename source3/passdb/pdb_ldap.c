@@ -1087,17 +1087,17 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	/* see if we have newer updates */
 	if (!login_cache_read(sampass, &cache_entry)) {
-		DEBUG (9, ("No cache entry, bad count = %u, bad time = %u\n",
+		DEBUG (9, ("No cache entry, bad count = %u, bad time = %jd\n",
 			   (unsigned int)pdb_get_bad_password_count(sampass),
-			   (unsigned int)pdb_get_bad_password_time(sampass)));
+			   (intmax_t)pdb_get_bad_password_time(sampass)));
 		ret = true;
 		goto fn_exit;
 	}
 
-	DEBUG(7, ("ldap time is %u, cache time is %u, bad time = %u\n",
-		  (unsigned int)ldap_entry_time,
-		  (unsigned int)cache_entry.entry_timestamp,
-		  (unsigned int)cache_entry.bad_password_time));
+	DEBUG(7, ("ldap time is %jd, cache time is %jd, bad time = %jd\n",
+		  (intmax_t)ldap_entry_time,
+		  (intmax_t)cache_entry.entry_timestamp,
+		  (intmax_t)cache_entry.bad_password_time));
 
 	if (ldap_entry_time > cache_entry.entry_timestamp) {
 		/* cache is older than directory , so
