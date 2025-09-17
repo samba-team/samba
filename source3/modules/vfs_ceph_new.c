@@ -2966,16 +2966,6 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 				     0);
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
-#if HAVE_CEPH_ASYNCIO
-	state->req = req;
-	state->data = NULL;
-	state->len = 0;
-	state->off = 0;
-	state->fsync = true;
-	vfs_ceph_aio_submit(handle, req, ev);
-	return req;
-#endif
-
 	vfs_ceph_aio_start(state);
 	ret = vfs_ceph_ll_fsync(handle, state->cfh, false);
 	vfs_ceph_aio_finish(state, ret);
