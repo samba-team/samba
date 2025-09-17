@@ -4587,21 +4587,17 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	SMB_ASSERT(smbd_is_tmpname(tmp_atname->base_name, NULL));
-	if (!ISDOT(parent_dir_fname->base_name)) {
+	if (ISDOT(parent_dir_fname->base_name)) {
+		tmp_dname = talloc_strdup(frame, tmp_atname->base_name);
+	} else {
 		tmp_dname = talloc_asprintf(frame,
 					    "%s/%s",
 					    parent_dir_fname->base_name,
 					    tmp_atname->base_name);
-		if (tmp_dname == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		tmp_dname = talloc_strdup(frame, tmp_atname->base_name);
-		if (tmp_dname == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
+	}
+	if (tmp_dname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	smb_dname->base_name = tmp_dname;
