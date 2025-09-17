@@ -3513,7 +3513,7 @@ static void open_ntcreate_lock_cleanup_entry(struct share_mode_lock *lck,
 static void possibly_set_archive(struct connection_struct *conn,
 				 struct files_struct *fsp,
 				 struct smb_filename *smb_fname,
-				 struct smb_filename *parent_dir_fname,
+				 struct files_struct *dirfsp,
 				 int info,
 				 uint32_t dosattrs,
 				 mode_t *unx_mode)
@@ -3538,7 +3538,7 @@ static void possibly_set_archive(struct connection_struct *conn,
 	ret = file_set_dosmode(conn,
 			       smb_fname,
 			       dosattrs | FILE_ATTRIBUTE_ARCHIVE,
-			       parent_dir_fname->fsp,
+			       dirfsp,
 			       true);
 	if (ret != 0) {
 		return;
@@ -4254,7 +4254,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	possibly_set_archive(conn,
 			     fsp,
 			     smb_fname,
-			     parent_dir_fname,
+			     parent_dir_fname->fsp,
 			     info,
 			     new_dos_attributes,
 			     &unx_mode);
