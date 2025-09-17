@@ -4468,7 +4468,7 @@ bool smbd_is_tmpname(const char *n, int *_unlink_flags)
 }
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
-			       struct smb_filename *parent_dir_fname, /* parent. */
+			       struct files_struct *dirfsp,
 			       struct smb_filename *smb_fname_atname, /* atname relative to parent. */
 			       struct smb_filename *smb_dname, /* full pathname from root of share. */
 			       struct security_descriptor *sd,
@@ -4510,22 +4510,22 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		mode = unix_mode(conn,
 				 FILE_ATTRIBUTE_DIRECTORY,
 				 smb_dname,
-				 parent_dir_fname->fsp);
+				 dirfsp);
 	}
 
-	status = check_parent_access_fsp(parent_dir_fname->fsp, access_mask);
+	status = check_parent_access_fsp(dirfsp, access_mask);
 	if(!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("check_parent_access_fsp "
-			"on directory %s for path %s returned %s\n",
-			smb_fname_str_dbg(parent_dir_fname),
-			smb_dname->base_name,
-			nt_errstr(status));
+			 "on directory %s for path %s returned %s\n",
+			 fsp_str_dbg(dirfsp),
+			 smb_dname->base_name,
+			 nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
 	}
 
 	if (lp_inherit_acls(SNUM(conn))) {
-		if (directory_has_default_acl_fsp(parent_dir_fname->fsp)) {
+		if (directory_has_default_acl_fsp(dirfsp)) {
 			mode = (0777 & lp_directory_mask(SNUM(conn)));
 		}
 		need_tmpname = true;
@@ -4587,12 +4587,12 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	SMB_ASSERT(smbd_is_tmpname(tmp_atname->base_name, NULL));
-	if (ISDOT(parent_dir_fname->base_name)) {
+	if (ISDOT(dirfsp->fsp_name->base_name)) {
 		tmp_dname = talloc_strdup(frame, tmp_atname->base_name);
 	} else {
 		tmp_dname = talloc_asprintf(frame,
 					    "%s/%s",
-					    parent_dir_fname->base_name,
+					    dirfsp->fsp_name->base_name,
 					    tmp_atname->base_name);
 	}
 	if (tmp_dname == NULL) {
@@ -4608,10 +4608,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	first_atname = tmp_atname;
 
 mkdir_first:
-	ret = SMB_VFS_MKDIRAT(conn,
-			      parent_dir_fname->fsp,
-			      first_atname,
-			      mode);
+	ret = SMB_VFS_MKDIRAT(conn, dirfsp, first_atname, mode);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)
@@ -4632,7 +4629,7 @@ mkdir_first:
 	 */
 	fsp->fsp_flags.is_pathref = true;
 
-	status = fd_openat(parent_dir_fname->fsp, first_atname, fsp, &how);
+	status = fd_openat(dirfsp, first_atname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("fd_openat() failed for '%s': %s\n",
 			smb_fname_str_dbg(smb_dname), nt_errstr(status));
@@ -4660,13 +4657,12 @@ mkdir_first:
 		file_set_dosmode(conn,
 				 smb_dname,
 				 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
-				 parent_dir_fname->fsp,
+				 dirfsp,
 				 true);
 	}
 
 	if (lp_inherit_permissions(SNUM(conn))) {
-		inherit_access_posix_acl(conn, parent_dir_fname->fsp,
-					 smb_dname, mode);
+		inherit_access_posix_acl(conn, dirfsp, smb_dname, mode);
 		need_re_stat = true;
 	}
 
@@ -4688,8 +4684,7 @@ mkdir_first:
 
 	/* Change the owner if required. */
 	if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
-		change_dir_owner_to_parent_fsp(parent_dir_fname->fsp,
-					       fsp);
+		change_dir_owner_to_parent_fsp(dirfsp, fsp);
 		need_re_stat = true;
 	}
 
@@ -4703,9 +4698,7 @@ mkdir_first:
 	}
 
 	if (lp_nt_acl_support(SNUM(conn))) {
-		status = apply_new_nt_acl(parent_dir_fname->fsp,
-					  fsp,
-					  sd);
+		status = apply_new_nt_acl(dirfsp, fsp, sd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("apply_new_nt_acl() failed for %s with %s\n",
 				    fsp_str_dbg(fsp),
@@ -4738,12 +4731,8 @@ mkdir_first:
 	 * is mapped in the libreplace replacement
 	 * (as well as the glibc replacement).
 	 */
-	ret = SMB_VFS_RENAMEAT(conn,
-			       parent_dir_fname->fsp,
-			       tmp_atname,
-			       parent_dir_fname->fsp,
-			       smb_fname_atname,
-			       &rhow);
+	ret = SMB_VFS_RENAMEAT(
+		conn, dirfsp, tmp_atname, dirfsp, smb_fname_atname, &rhow);
 	if (ret == -1 && errno == EINVAL) {
 		/*
 		 * This is the strategy we use without having
@@ -4769,10 +4758,7 @@ mkdir_first:
 		DBG_DEBUG("MKDIRAT/RENAMEAT '%s' -> '%s'\n",
 			  tmp_dname, orig_dname);
 
-		ret = SMB_VFS_MKDIRAT(conn,
-				      parent_dir_fname->fsp,
-				      smb_fname_atname,
-				      0);
+		ret = SMB_VFS_MKDIRAT(conn, dirfsp, smb_fname_atname, 0);
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			DBG_NOTICE("MKDIRAT failed for '%s': %s\n",
@@ -4781,9 +4767,9 @@ mkdir_first:
 		}
 
 		ret = SMB_VFS_RENAMEAT(conn,
-				       parent_dir_fname->fsp,
+				       dirfsp,
 				       tmp_atname,
-				       parent_dir_fname->fsp,
+				       dirfsp,
 				       smb_fname_atname,
 				       &rhow);
 	}
@@ -4808,10 +4794,7 @@ do_unlink:
 	DBG_NOTICE("%s: rollback and unlink '%s'\n",
 		   nt_errstr(status),
 		   tmp_dname);
-	ret = SMB_VFS_UNLINKAT(conn,
-			       parent_dir_fname->fsp,
-			       tmp_atname,
-			       AT_REMOVEDIR);
+	ret = SMB_VFS_UNLINKAT(conn, dirfsp, tmp_atname, AT_REMOVEDIR);
 	if (ret == 0) {
 		DBG_NOTICE("SMB_VFS_UNLINKAT(%s): OK\n",
 			   tmp_dname);
@@ -4956,7 +4939,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			}
 
 			status = mkdir_internal(conn,
-						parent_dir_fname,
+						parent_dir_fname->fsp,
 						smb_fname_atname,
 						smb_dname,
 						sd,
@@ -4988,7 +4971,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 					return NT_STATUS_MEDIA_WRITE_PROTECTED;
 				}
 				status = mkdir_internal(conn,
-							parent_dir_fname,
+							parent_dir_fname->fsp,
 							smb_fname_atname,
 							smb_dname,
 							sd,
