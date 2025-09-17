@@ -4237,17 +4237,19 @@ static NTSTATUS smb_file_mode_information(connection_struct *conn,
  Deal with SMB2_FILE_RENAME_INFORMATION_INTERNAL
 ****************************************************************************/
 
-NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
-					    struct connection_struct *conn,
-					    struct smb_request *req,
-					    const char *pdata,
-					    int total_data,
-					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src,
-					    bool *_overwrite,
-					    struct files_struct **_dst_dirfsp,
-					    struct smb_filename **_smb_fname_dst,
-					    char **_dst_original_lcomp)
+NTSTATUS smb2_parse_file_rename_information(
+	TALLOC_CTX *ctx,
+	struct connection_struct *conn,
+	struct smb_request *req,
+	const char *pdata,
+	int total_data,
+	files_struct *fsp,
+	struct smb_filename *smb_fname_src,
+	char **_newname,
+	bool *_overwrite,
+	struct files_struct **_dst_dirfsp,
+	struct smb_filename **_smb_fname_dst,
+	char **_dst_original_lcomp)
 {
 	char *newname = NULL;
 	struct files_struct *dst_dirfsp = NULL;
@@ -4339,6 +4341,7 @@ NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
 	}
 
 done:
+	*_newname = newname;
 	*_overwrite = overwrite;
 	*_dst_dirfsp = dst_dirfsp;
 	*_smb_fname_dst = smb_fname_dst;
@@ -4354,6 +4357,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 					    struct share_mode_lock **lck,
 					    struct smb_filename *smb_fname_src)
 {
+	char *newname = NULL;
 	bool overwrite;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
@@ -4368,6 +4372,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 						    total_data,
 						    fsp,
 						    smb_fname_src,
+						    &newname,
 						    &overwrite,
 						    &dst_dirfsp,
 						    &smb_fname_dst,

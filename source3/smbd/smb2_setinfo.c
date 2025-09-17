@@ -577,6 +577,7 @@ static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
 		req, struct smbd_smb2_setinfo_state);
 	struct tevent_req *subreq = NULL;
 	struct timeval timeout;
+	char *newname = NULL;
 	bool overwrite = false;
 	struct files_struct *fsp = state->fsp;
 	struct files_struct *dst_dirfsp = NULL;
@@ -601,6 +602,7 @@ static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
 						    state->data.length,
 						    fsp,
 						    fsp->fsp_name,
+						    &newname,
 						    &overwrite,
 						    &dst_dirfsp,
 						    &smb_fname_dst,
@@ -788,6 +790,7 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 		req, struct smbd_smb2_setinfo_state);
 	struct tevent_req *subreq = NULL;
 	struct timeval timeout;
+	char *newname = NULL;
 	bool overwrite = false;
 	struct files_struct *fsp = state->fsp;
 	struct files_struct *dst_parent_dirfsp = NULL;
@@ -813,6 +816,7 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 						    state->data.length,
 						    fsp,
 						    fsp->fsp_name,
+						    &newname,
 						    &overwrite,
 						    &dst_parent_dirfsp,
 						    &smb_fname_dst,

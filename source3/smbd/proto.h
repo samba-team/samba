@@ -1136,17 +1136,19 @@ NTSTATUS smb_set_fsquota(connection_struct *conn,
 			 files_struct *fsp,
 			 const DATA_BLOB *qdata);
 
-NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
-					    struct connection_struct *conn,
-					    struct smb_request *req,
-					    const char *pdata,
-					    int total_data,
-					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src,
-					    bool *overwrite,
-					    struct files_struct **_dst_dirfsp,
-					    struct smb_filename **_smb_fname_dst,
-					    char **_dst_original_lcomp);
+NTSTATUS smb2_parse_file_rename_information(
+	TALLOC_CTX *ctx,
+	struct connection_struct *conn,
+	struct smb_request *req,
+	const char *pdata,
+	int total_data,
+	files_struct *fsp,
+	struct smb_filename *smb_fname_src,
+	char **_newname,
+	bool *overwrite,
+	struct files_struct **_dst_dirfsp,
+	struct smb_filename **_smb_fname_dst,
+	char **_dst_original_lcomp);
 
 /* The following definitions come from smbd/uid.c  */
 
