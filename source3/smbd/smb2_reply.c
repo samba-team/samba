@@ -1358,7 +1358,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			      const char *newname,
 			      bool replace_if_exists)
 {
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	struct smb_filename *parent_dir_fname_dst = NULL;
 	struct smb_filename *parent_dir_fname_dst_atname = NULL;
 	struct smb_filename *parent_dir_fname_src = NULL;
@@ -1375,7 +1375,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	struct vfs_rename_how rhow = { .flags = 0, };
 
 	if (file_has_open_streams(fsp)) {
-		return NT_STATUS_ACCESS_DENIED;
+		status = NT_STATUS_ACCESS_DENIED;
+		goto out;
 	}
 
 	/* Make a copy of the dst smb_fname structs */
@@ -1773,18 +1774,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		   smb_fname_str_dbg(smb_fname_dst));
 
  out:
-
-	/*
-	 * parent_dir_fname_src may be a copy of parent_dir_fname_dst.
-	 * See the optimization for same source and destination directory
-	 * above. Only free one in that case.
-	 */
-	if (parent_dir_fname_src != parent_dir_fname_dst) {
-		TALLOC_FREE(parent_dir_fname_src);
-	}
-	TALLOC_FREE(parent_dir_fname_dst);
-	TALLOC_FREE(smb_fname_dst);
-
+	TALLOC_FREE(ctx);
 	return status;
 }
 
