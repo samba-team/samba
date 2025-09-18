@@ -381,8 +381,22 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<in_lock_count; i++) {
 		bool invalid = false;
-		bool posix_handle = fsp->fsp_flags.posix_open;
+		bool posix_handle = fsp->fsp_name->flags &
+			SMB_FILENAME_POSIX_PATH;
 
+		/*
+		 * For POSIX clients struct files_struct.fsp_flags.posix_open
+		 * and struct smb_filename.flags SMB_FILENAME_POSIX_PATH will
+		 * always be set to the same value.
+		 *
+		 * For macOS clients vfs_fruit with fruit:posix_open=yes, we
+		 * deliberately set both flags to fsp_flags.posix_open=true
+		 * while SMB_FILENAME_POSIX_PATH will not be set.
+		 *
+		 * By deliberately checking the fsp_name flag here instead of
+		 * the fsp flag, Byterange Lock processing uses Windows
+		 * behaviour for macOS clients which is what we want.
+		 */
 		switch (in_locks[i].flags) {
 		case SMB2_LOCK_FLAG_SHARED:
 		case SMB2_LOCK_FLAG_EXCLUSIVE:
