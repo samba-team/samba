@@ -1157,7 +1157,7 @@ static NTSTATUS OpenDir_fsp(
 		goto fail;
 	}
 	dir_hnd->fsp = fsp;
-	if (fsp->fsp_flags.posix_open) {
+	if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
 		dir_hnd->case_sensitive = true;
 	} else {
 		dir_hnd->case_sensitive = conn->case_sensitive;
