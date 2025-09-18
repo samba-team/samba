@@ -7840,6 +7840,97 @@ done:
 }
 
 /*
+  test exclusive byte range lock on read-only file
+*/
+static bool test_readonly_exclusive_lock(struct torture_context *tctx,
+					 struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_handle h;
+	struct smb2_create create;
+	struct smb2_lock lock;
+	struct smb2_lock_element lock_element;
+	const char *fname = "readonly_lock_test.txt";
+
+	torture_comment(tctx, "Testing exclusive lock on read-only opened file\n");
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	/* Clean up any existing file */
+	smb2_util_unlink(tree, fname);
+
+	/* Create the file first with write access to ensure it exists */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				 NTCREATEX_SHARE_ACCESS_WRITE |
+				 NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.security_flags = 0;
+	create.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &create);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Write some data to the file */
+	status = smb2_util_write(tree, create.out.file.handle, "test data", 0, 9);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Close the file */
+	status = smb2_util_close(tree, create.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Now open the file read-only */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				 NTCREATEX_SHARE_ACCESS_WRITE |
+				 NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.security_flags = 0;
+	create.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &create);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = create.out.file.handle;
+
+	torture_comment(tctx, "File opened read-only successfully\n");
+
+	/* Attempt to set an exclusive byte-range lock */
+	ZERO_STRUCT(lock);
+	ZERO_STRUCT(lock_element);
+
+	lock.in.lock_count = 1;
+	lock.in.lock_sequence = 0;
+	lock.in.file.handle = h;
+	lock.in.locks = &lock_element;
+
+	lock_element.offset = 0;
+	lock_element.length = 100;
+	lock_element.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+
+	torture_comment(tctx, "Attempting to set exclusive lock on read-only file\n");
+
+	status = smb2_lock(tree, &lock);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	/* Close the file */
+	smb2_util_close(tree, h);
+
+	/* Clean up */
+	smb2_util_unlink(tree, fname);
+
+	return ret;
+}
+
+/*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
  * argument with the local path to the share:
@@ -7885,6 +7976,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "empty_stream", test_empty_stream);
 	torture_suite_add_1smb2_test(suite, "writing_afpinfo", test_writing_afpinfo);
 	torture_suite_add_1smb2_test(suite, "delete_trigger_convert_sharing_violation", test_delete_trigger_convert_sharing_violation);
+	torture_suite_add_1smb2_test(suite, "readonly-exclusive-lock", test_readonly_exclusive_lock);
 
 	return suite;
 }
