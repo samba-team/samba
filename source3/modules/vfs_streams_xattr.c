@@ -1308,8 +1308,93 @@ static int streams_xattr_rename_stream(struct vfs_handle_struct *handle,
 				       const char *dst_name,
 				       bool replace_if_exists)
 {
-	errno = ENOSYS;
-	return -1;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct files_struct *base_fsp = src_fsp->base_fsp;
+	struct streams_xattr_config *config = NULL;
+	char *src_raw_stream_name = NULL;
+	char *src_xattr_name = NULL;
+	char *dst_raw_stream_name = NULL;
+	char *dst_xattr_name = NULL;
+	char *val = NULL;
+	bool is_default = false;
+	int ret = -1;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct streams_xattr_config,
+				goto fail;);
+
+	ret = streams_xattr_get_name(handle,
+				     talloc_tos(),
+				     src_fsp->fsp_name->stream_name,
+				     &src_raw_stream_name,
+				     &is_default,
+				     &src_xattr_name);
+	if (ret != 0) {
+		errno = ret;
+		goto fail;
+	}
+	if (is_default) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	ret = streams_xattr_get_name(handle,
+				     talloc_tos(),
+				     dst_name,
+				     &dst_raw_stream_name,
+				     &is_default,
+				     &dst_xattr_name);
+	if (ret != 0) {
+		errno = ret;
+		goto fail;
+	}
+	if (is_default) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	ret = streams_xattr_get_ea_value_fsp(
+		talloc_tos(), config, base_fsp, src_raw_stream_name, &val);
+	if (ret != 0) {
+		errno = ret;
+		goto fail;
+	}
+
+	ret = fsetxattr_multi(config,
+			      base_fsp,
+			      dst_raw_stream_name,
+			      val,
+			      talloc_get_size(val),
+			      replace_if_exists ? 0 : XATTR_CREATE);
+	if (ret < 0) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		goto fail;
+	}
+
+	/*
+	 * Remove the old stream from the base file fsp.
+	 */
+	ret = fremovexattr_multi(config, base_fsp, src_raw_stream_name);
+	if (ret < 0) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		goto fail;
+	}
+
+done:
+	errno = 0;
+	ret = 0;
+fail:
+	{
+		int err = errno;
+		TALLOC_FREE(frame);
+		errno = err;
+	}
+	return ret;
 }
 
 static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
