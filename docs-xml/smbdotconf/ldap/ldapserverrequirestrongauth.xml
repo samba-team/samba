@@ -29,7 +29,7 @@
 
 	<para>Before support for tls channel bindings existed in Samba,
 	a value of <emphasis>allow_sasl_over_tls</emphasis> was possible in order
-	to allow sasl binds without tls channel bindings. This now misleading
+	to allow sasl binds without tls channel bindings. This is now misleading
 	as a value of <emphasis>yes</emphasis> will now allow sasl binds
 	with tls channel bindings. Configurations should be changed to
 	<emphasis>yes</emphasis> instead or
