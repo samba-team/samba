@@ -648,6 +648,7 @@ static bool test_wbc_resolve_winsbyname(struct torture_context *tctx)
 		torture_assert_wbc_ok(tctx, ret, "wbcResolveWinsByName for %s failed", name);
 	}
 
+	wbcFreeMemory(ip);
 	return true;
 }
 
