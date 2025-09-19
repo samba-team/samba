@@ -408,10 +408,6 @@ struct interface {
    otherwise NT will not honour the announce packets */
 #define MAX_SERVER_STRING_LENGTH 48
 
-#ifdef NOSTRDUP
-char *strdup(char *s);
-#endif
-
 #ifndef SELECT_CAST
 #define SELECT_CAST
 #endif
