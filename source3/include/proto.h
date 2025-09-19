@@ -204,9 +204,6 @@ int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset);
 uint32_t unix_dev_major(SMB_DEV_T dev);
 uint32_t unix_dev_minor(SMB_DEV_T dev);
 char *sys_realpath(const char *path);
-#if 0
-int sys_get_number_of_cores(void);
-#endif
 
 struct sys_proc_fd_path_buf {
 	char buf[35]; /* "/proc/self/fd/" + strlen(2^64) + 0-terminator */
