@@ -6500,7 +6500,6 @@ void reply_mv(struct smb_request *req)
 	TALLOC_FREE(smb_fname_src);
 	TALLOC_FREE(smb_fname_dst);
 	END_PROFILE(SMBmv);
-	return;
 }
 
 /****************************************************************************
