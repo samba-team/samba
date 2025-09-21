@@ -552,8 +552,7 @@ void dump_data_cb(const uint8_t *buf, int len,
 		size_t this_len = MIN(remaining_len, 16);
 		const uint8_t *this_buf = &buf[i];
 
-		if ((omit_zero_bytes == true) &&
-		    (i > 0) && (remaining_len > 16) &&
+		if (omit_zero_bytes && (i > 0) && (remaining_len > 16) &&
 		    (this_len == 16) && all_zero(this_buf, 16))
 		{
 			if (!skipped) {
@@ -658,8 +657,7 @@ void dump_data_diff_cb(const uint8_t *buf1, size_t len1,
 			this_buf2 = &buf2[i];
 		}
 
-		if ((omit_zero_bytes == true) &&
-		    (i > 0) && (remaining_len > 16) &&
+		if (omit_zero_bytes && (i > 0) && (remaining_len > 16) &&
 		    (this_len1 == 16) && all_zero(this_buf1, 16) &&
 		    (this_len2 == 16) && all_zero(this_buf2, 16))
 		{
