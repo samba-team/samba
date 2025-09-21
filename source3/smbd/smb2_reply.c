@@ -1368,10 +1368,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	bool dst_exists, old_is_stream, new_is_stream;
 	int ret;
-	bool case_sensitive = fsp->fsp_flags.posix_open ?
-				true : conn->case_sensitive;
-	bool case_preserve = fsp->fsp_flags.posix_open ?
-				true : conn->case_preserve;
+	bool case_sensitive = fsp->fsp_flags.posix_open ||
+			      conn->case_sensitive;
+	bool case_preserve = fsp->fsp_flags.posix_open || conn->case_preserve;
 	struct vfs_rename_how rhow = { .flags = 0, };
 
 	if (file_has_open_streams(fsp)) {
@@ -1801,10 +1800,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	struct smb2_create_blobs *posx = NULL;
 	struct files_struct *fsp = NULL;
 	bool posix_pathname = (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH);
-	bool case_sensitive = posix_pathname ? true : conn->case_sensitive;
-	bool case_preserve = posix_pathname ? true : conn->case_preserve;
-	bool short_case_preserve = posix_pathname ? true :
-					conn->short_case_preserve;
+	bool case_sensitive = posix_pathname || conn->case_sensitive;
+	bool case_preserve = posix_pathname || conn->case_preserve;
+	bool short_case_preserve = posix_pathname || conn->short_case_preserve;
 
 	if (posix_pathname) {
 		status = make_smb2_posix_create_ctx(talloc_tos(), &posx, 0777);
