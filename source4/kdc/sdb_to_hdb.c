@@ -463,16 +463,16 @@ int sdb_entry_to_hdb_entry(krb5_context context,
 	if (rc != 0) {
 		goto error;
 	}
-	if (kt.len > 0) {
+	if (kt.val != NULL && kt.len != 0) {
 		HDB_extension ext = {};
 		ext.mandatory = FALSE;
 		ext.data.element = choice_HDB_extension_data_key_trust;
 		ext.data.u.key_trust = kt;
 		rc = hdb_replace_extension(context, h, &ext);
-		free_HDB_Ext_KeyTrust(&kt);
-		if (rc != 0) {
-			goto error;
-		}
+	}
+	free_HDB_Ext_KeyTrust(&kt);
+	if (rc != 0) {
+		goto error;
 	}
 
 	h->context = ske;
