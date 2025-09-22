@@ -166,7 +166,7 @@ class KeyTrustTests(KDCBaseTest):
         self._pkinit_req(
             client_creds,
             target_creds,
-            certificate,
+            certificate = certificate,
             expect_error=KDC_ERR_CLIENT_NOT_TRUSTED,
         )
 

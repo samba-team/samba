@@ -2148,6 +2148,24 @@ planoldpythontestsuite(
     'ad_dc',
     'samba.tests.krb5.pkinit_tests',
     environ=krb5_environ)
+
+# strong certificate binding enforcement = none
+planoldpythontestsuite(
+    'ad_dc',
+    'samba.tests.krb5.pkinit_certificate_mapping_tests',
+    environ=krb5_environ)
+# strong certificate binding enforcement = compatibility
+planoldpythontestsuite(
+    'ad_dc_ntvfs',
+    'samba.tests.krb5.pkinit_certificate_mapping_tests',
+    environ=krb5_environ)
+# strong certificate binding enforcement = full
+# the default.
+planoldpythontestsuite(
+    'ad_dc_smb1',
+    'samba.tests.krb5.pkinit_certificate_mapping_tests',
+    environ=krb5_environ)
+
 planoldpythontestsuite(
     'ad_dc',
     'samba.tests.krb5.key_trust_tests',

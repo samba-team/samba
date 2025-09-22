@@ -18,3 +18,6 @@
 # MIT does not currently support key trust logons.
 #
 ^samba.tests.krb5.key_trust_tests.*
+#
+# MIT does not currently support Windows certificate mappings for PKINIT
+^samba.tests.krb5.pkinit_certificate_mapping_tests.*

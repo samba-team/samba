@@ -338,3 +338,21 @@
 
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
+
+# Certificate mapping
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_computer_account_no_mapping\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_issuer_subject_before\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_no_mapping\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_rfc822_before\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_subject_name_before\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_subject_name_reversed\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_computer_account_no_mapping\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_issuer_subject\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_issuer_subject_before\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_no_mapping\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_rfc822\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_rfc822_before\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_subject_name\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_subject_name_before\(ad_dc_smb1\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests..*.test_subject_name_reversed\(ad_dc_smb1\)
+
