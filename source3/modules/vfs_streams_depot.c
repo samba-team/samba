@@ -1070,8 +1070,73 @@ static int streams_depot_rename_stream(struct vfs_handle_struct *handle,
 				       const char *dst_name,
 				       bool replace_if_exists)
 {
-	errno = ENOSYS;
-	return -1;
+	struct smb_filename *basename = src_fsp->base_fsp->fsp_name;
+	struct smb_filename *stream_dir = NULL;
+	struct smb_filename smb_fname_src_stream = {};
+	struct smb_filename smb_fname_dst_stream = {};
+	struct vfs_rename_how how = {.flags = 0};
+	int ret;
+
+	ret = stream_dir_pathref(talloc_tos(),
+				 handle,
+				 basename,
+				 &basename->st,
+				 false,
+				 &stream_dir);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+		goto done;
+	}
+
+	ret = stream_name(talloc_tos(),
+			  src_fsp->fsp_name->stream_name,
+			  &smb_fname_src_stream.base_name);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+		goto done;
+	}
+
+	ret = stream_name(talloc_tos(),
+			  dst_name,
+			  &smb_fname_dst_stream.base_name);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+		goto done;
+	}
+
+	if (!replace_if_exists) {
+		struct stat_ex st;
+
+		ret = SMB_VFS_FSTATAT(handle->conn,
+				      stream_dir->fsp,
+				      &smb_fname_dst_stream,
+				      &st,
+				      AT_SYMLINK_NOFOLLOW);
+		if (ret == 0) {
+			errno = EEXIST;
+			ret = -1;
+			goto done;
+		}
+	}
+
+	ret = SMB_VFS_NEXT_RENAMEAT(handle,
+				    stream_dir->fsp,
+				    &smb_fname_src_stream,
+				    stream_dir->fsp,
+				    &smb_fname_dst_stream,
+				    &how);
+done:
+	{
+		int err = errno;
+		TALLOC_FREE(stream_dir);
+		TALLOC_FREE(smb_fname_src_stream.base_name);
+		TALLOC_FREE(smb_fname_dst_stream.base_name);
+		errno = err;
+	}
+	return ret;
 }
 
 static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
