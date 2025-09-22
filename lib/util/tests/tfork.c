@@ -403,7 +403,7 @@ static bool test_tfork_twice(struct torture_context *tctx)
 	close(up[1]);
 
 	ret = read(up[0], &pid, sizeof(pid_t));
-	torture_assert(tctx, ret == sizeof(pid_t), "read failed\n");
+	torture_assert_goto(tctx, ret == sizeof(pid_t), ok, done, "read failed\n");
 
 	status = tfork_status(&t, true);
 	torture_assert_goto(tctx, status != -1, ok, done, "tfork_status failed\n");
@@ -413,6 +413,10 @@ static bool test_tfork_twice(struct torture_context *tctx)
 	torture_assert_goto(tctx, WEXITSTATUS(status) == 0, ok, done,
 			    "tfork failed\n");
 done:
+	if (t != NULL) {
+		kill(child, SIGKILL);
+		free(t);
+	}
 	return ok;
 }
 
