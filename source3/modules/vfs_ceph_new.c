@@ -2973,7 +2973,7 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
 
 	vfs_ceph_aio_start(state);
-	ret = vfs_ceph_ll_fsync(handle, state->cfh, false);
+	ret = vfs_ceph_ll_fsync(handle, state->cfh, 0);
 	vfs_ceph_aio_finish(state, ret);
 	if (ret != 0) {
 		/* ceph_fsync returns -errno on error. */
