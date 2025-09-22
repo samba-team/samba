@@ -44,6 +44,7 @@ class User(OrganizationalPerson):
     display_name = StringField("displayName")
     key_credential_link = KeyCredentialLinkDnField("msDS-KeyCredentialLink",
                                                    many=True)
+    alt_security_identities = StringField("altSecurityIdentities", many=True)
     last_logoff = NtTimeField("lastLogoff", readonly=True)
     last_logon = NtTimeField("lastLogon", readonly=True)
     logon_count = IntegerField("logonCount", readonly=True)
