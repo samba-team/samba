@@ -1700,6 +1700,9 @@ sub provision_ad_dc_ntvfs($$$)
 	# needed for 'samba.tests.auth_log' tests
 	server require schannel:LOCALDC\$ = no
 	server schannel require seal:LOCALDC\$ = no
+
+	strong certificate binding enforcement = compatibility
+	certificate backdating compensation = 1500
 	";
 	push (@{$extra_provision_options},
 	      "--base-schema=2008_R2",
@@ -2882,7 +2885,11 @@ sub _setup_ad_dc
 sub setup_ad_dc
 {
 	my ($self, $path) = @_;
-	return _setup_ad_dc($self, $path, undef, undef, undef);
+	# Disable certificate binding enforcement, to avoid
+	# breaking kerberos tests
+	my $conf_opts = "strong certificate binding enforcement = none\n";
+
+	return _setup_ad_dc($self, $path, $conf_opts, undef, undef);
 }
 
 sub setup_ad_dc_smb1
