@@ -949,6 +949,38 @@ static int smb_time_audit_renameat(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_rename_stream(struct vfs_handle_struct *handle,
+					struct files_struct *src_fsp,
+					const char *dst_name,
+					bool replace_if_exists)
+{
+	int result;
+	struct timespec ts1, ts2;
+	double timediff;
+	char *msg = NULL;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_RENAME_STREAM(handle,
+					    src_fsp,
+					    dst_name,
+					    replace_if_exists);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		msg = talloc_asprintf(talloc_tos(),
+				      "%s -> %s",
+				      fsp_str_dbg(src_fsp),
+				      dst_name);
+		if (msg != NULL) {
+			smb_time_audit_log_msg("rename_stream", timediff, msg);
+			TALLOC_FREE(msg);
+		}
+	}
+
+	return result;
+}
+
 struct smb_time_audit_fsync_state {
 	struct files_struct *fsp;
 	int ret;
@@ -2726,6 +2758,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.sendfile_fn = smb_time_audit_sendfile,
 	.recvfile_fn = smb_time_audit_recvfile,
 	.renameat_fn = smb_time_audit_renameat,
+	.rename_stream_fn = smb_time_audit_rename_stream,
 	.fsync_send_fn = smb_time_audit_fsync_send,
 	.fsync_recv_fn = smb_time_audit_fsync_recv,
 	.stat_fn = smb_time_audit_stat,
@@ -2796,7 +2829,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.durable_reconnect_fn = smb_time_audit_durable_reconnect,
 	.freaddir_attr_fn = smb_time_audit_freaddir_attr,
 };
-
 
 static_decl_vfs;
 NTSTATUS vfs_time_audit_init(TALLOC_CTX *ctx)

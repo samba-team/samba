@@ -305,6 +305,15 @@ static int skel_renameat(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int skel_rename_stream(struct vfs_handle_struct *handle,
+			      struct files_struct *src_fsp,
+			      const char *dst_name,
+			      bool replace_if_exists)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static struct tevent_req *skel_fsync_send(struct vfs_handle_struct *handle,
 					  TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
@@ -1002,6 +1011,7 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.sendfile_fn = skel_sendfile,
 	.recvfile_fn = skel_recvfile,
 	.renameat_fn = skel_renameat,
+	.rename_stream_fn = skel_rename_stream,
 	.fsync_send_fn = skel_fsync_send,
 	.fsync_recv_fn = skel_fsync_recv,
 	.stat_fn = skel_stat,

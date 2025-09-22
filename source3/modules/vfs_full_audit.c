@@ -132,6 +132,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SENDFILE,
 	SMB_VFS_OP_RECVFILE,
 	SMB_VFS_OP_RENAMEAT,
+	SMB_VFS_OP_RENAME_STREAM,
 	SMB_VFS_OP_FSYNC_SEND,
 	SMB_VFS_OP_FSYNC_RECV,
 	SMB_VFS_OP_STAT,
@@ -211,7 +212,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FSETXATTR,
 
 	/* aio operations */
-        SMB_VFS_OP_AIO_FORCE,
+	SMB_VFS_OP_AIO_FORCE,
 
 	/* offline operations */
 	SMB_VFS_OP_IS_OFFLINE,
@@ -267,6 +268,7 @@ static struct {
 	{ SMB_VFS_OP_SENDFILE,	"sendfile" },
 	{ SMB_VFS_OP_RECVFILE,  "recvfile" },
 	{ SMB_VFS_OP_RENAMEAT,	"renameat" },
+	{ SMB_VFS_OP_RENAME_STREAM,	"rename_stream" },
 	{ SMB_VFS_OP_FSYNC_SEND,	"fsync_send" },
 	{ SMB_VFS_OP_FSYNC_RECV,	"fsync_recv" },
 	{ SMB_VFS_OP_STAT,	"stat" },
@@ -1442,6 +1444,33 @@ static int smb_full_audit_renameat(vfs_handle_struct *handle,
 
 	TALLOC_FREE(full_fname_src);
 	TALLOC_FREE(full_fname_dst);
+
+	if (result == -1) {
+		errno = saved_errno;
+	}
+	return result;
+}
+
+static int smb_full_audit_rename_stream(struct vfs_handle_struct *handle,
+					struct files_struct *src_fsp,
+					const char *dst_name,
+					bool replace_if_exists)
+{
+	int result;
+	int saved_errno;
+
+	result = SMB_VFS_NEXT_RENAME_STREAM(handle,
+					    src_fsp,
+					    dst_name,
+					    replace_if_exists);
+	saved_errno = errno;
+
+	do_log(SMB_VFS_OP_RENAME_STREAM,
+	       (result >= 0),
+	       handle,
+	       "%s|%s",
+	       fsp_str_do_log(src_fsp),
+	       dst_name);
 
 	if (result == -1) {
 		errno = saved_errno;
@@ -2939,6 +2968,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sendfile_fn = smb_full_audit_sendfile,
 	.recvfile_fn = smb_full_audit_recvfile,
 	.renameat_fn = smb_full_audit_renameat,
+	.rename_stream_fn = smb_full_audit_rename_stream,
 	.fsync_send_fn = smb_full_audit_fsync_send,
 	.fsync_recv_fn = smb_full_audit_fsync_recv,
 	.stat_fn = smb_full_audit_stat,

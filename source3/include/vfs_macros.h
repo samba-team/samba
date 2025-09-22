@@ -209,6 +209,20 @@
 #define SMB_VFS_NEXT_RENAMEAT(handle, oldfsp, old, newfsp, newname, how) \
 	smb_vfs_call_renameat((handle)->next, (oldfsp), (old), (newfsp), (newname), (how))
 
+#define SMB_VFS_RENAME_STREAM(conn, src_fsp, dst_name, replace_if_exists) \
+	smb_vfs_call_rename_stream((conn)->vfs_handles,                   \
+				   (src_fsp),                             \
+				   (dst_name),                            \
+				   (replace_if_exists))
+#define SMB_VFS_NEXT_RENAME_STREAM(handle,            \
+				   src_fsp,           \
+				   dst_name,          \
+				   replace_if_exists) \
+	smb_vfs_call_rename_stream((handle)->next,    \
+				   (src_fsp),         \
+				   (dst_name),        \
+				   (replace_if_exists))
+
 #define SMB_VFS_FSYNC_SEND(mem_ctx, ev, fsp) \
 	smb_vfs_call_fsync_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
 				(fsp))

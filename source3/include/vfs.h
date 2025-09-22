@@ -392,6 +392,8 @@
  * Version 50 - Add struct files_struct.fsp_flags.posix_append
  * Change to Version 51 - will ship with 4.23
  * Version 51 - Add ntcreatex_deny_[dos|fcb] and ntcreatex_stream_baseopen
+ * Change to Version 52 - will ship with 4.24
+ * Version 52 - Add rename_stream
  */
 
 #define SMB_VFS_INTERFACE_VERSION 51
@@ -1076,6 +1078,10 @@ struct vfs_fn_pointers {
 			 struct files_struct *dstdir_fsp,
 			 const struct smb_filename *smb_fname_dst,
 			 const struct vfs_rename_how *how);
+	int (*rename_stream_fn)(struct vfs_handle_struct *handle,
+				struct files_struct *src_fsp,
+				const char *dst_name,
+				bool replace_if_exists);
 	struct tevent_req *(*fsync_send_fn)(struct vfs_handle_struct *handle,
 					    TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -1585,6 +1591,10 @@ int smb_vfs_call_renameat(struct vfs_handle_struct *handle,
 			struct files_struct *dstfsp,
 			const struct smb_filename *smb_fname_dst,
 			const struct vfs_rename_how *how);
+int smb_vfs_call_rename_stream(struct vfs_handle_struct *handle,
+			       struct files_struct *src_fsp,
+			       const char *dst_name,
+			       bool replace_if_exists);
 
 struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,
@@ -2024,6 +2034,10 @@ int vfs_not_implemented_renameat(vfs_handle_struct *handle,
 			       files_struct *dstfsp,
 			       const struct smb_filename *smb_fname_dst,
 			       const struct vfs_rename_how *how);
+int vfs_not_implemented_rename_stream(struct vfs_handle_struct *handle,
+				      struct files_struct *src_fsp,
+				      const char *dst_name,
+				      bool replace_if_exists);
 struct tevent_req *vfs_not_implemented_fsync_send(struct vfs_handle_struct *handle,
 						  TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,

@@ -1065,6 +1065,15 @@ done:
 	return ret;
 }
 
+static int streams_depot_rename_stream(struct vfs_handle_struct *handle,
+				       struct files_struct *src_fsp,
+				       const char *dst_name,
+				       bool replace_if_exists)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 			   struct stream_struct **streams,
 			   const char *name, off_t size,
@@ -1237,6 +1246,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.fstatat_fn = streams_depot_fstatat,
 	.unlinkat_fn = streams_depot_unlinkat,
 	.renameat_fn = streams_depot_renameat,
+	.rename_stream_fn = streams_depot_rename_stream,
 	.fstreaminfo_fn = streams_depot_fstreaminfo,
 };
 

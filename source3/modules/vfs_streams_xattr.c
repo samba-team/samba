@@ -1303,6 +1303,15 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_xattr_rename_stream(struct vfs_handle_struct *handle,
+				       struct files_struct *src_fsp,
+				       const char *dst_name,
+				       bool replace_if_exists)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 				files_struct *fsp,
 				const struct smb_filename *smb_fname,
@@ -2310,6 +2319,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.pwrite_recv_fn = streams_xattr_pwrite_recv,
 	.unlinkat_fn = streams_xattr_unlinkat,
 	.renameat_fn = streams_xattr_renameat,
+	.rename_stream_fn = streams_xattr_rename_stream,
 	.ftruncate_fn = streams_xattr_ftruncate,
 	.fallocate_fn = streams_xattr_fallocate,
 	.fstreaminfo_fn = streams_xattr_fstreaminfo,
