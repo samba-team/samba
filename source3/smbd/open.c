@@ -2045,7 +2045,10 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 	fsp->lease->lease.parent_lease_key = lease->parent_lease_key;
 	fsp->lease->lease.lease_flags = lease->lease_flags;
 	fsp->lease->lease.lease_state = granted;
-	fsp->lease->lease.lease_epoch = lease->lease_epoch + 1;
+	fsp->lease->lease.lease_epoch = lease->lease_epoch;
+	if (granted != 0) {
+		fsp->lease->lease.lease_epoch++;
+	}
 
 	status = leases_db_add(client_guid,
 			       &lease->lease_key,
