@@ -209,6 +209,7 @@ static NTSTATUS vfs_error_inject_durable_reconnect(struct vfs_handle_struct *han
 						   struct smb_request *smb1req,
 						   struct smbXsrv_open *op,
 						   const DATA_BLOB old_cookie,
+						   const struct smb2_lease *lease,
 						   TALLOC_CTX *mem_ctx,
 						   struct files_struct **fsp,
 						   DATA_BLOB *new_cookie)
@@ -229,6 +230,7 @@ static NTSTATUS vfs_error_inject_durable_reconnect(struct vfs_handle_struct *han
 						      smb1req,
 						      op,
 						      old_cookie,
+						      lease,
 						      mem_ctx,
 						      fsp,
 						      new_cookie);
@@ -258,6 +260,7 @@ static NTSTATUS vfs_error_inject_durable_reconnect(struct vfs_handle_struct *han
 						      smb1req,
 						      op,
 						      old_cookie,
+						      lease,
 						      mem_ctx,
 						      fsp,
 						      new_cookie);
@@ -274,6 +277,7 @@ static NTSTATUS vfs_error_inject_durable_reconnect(struct vfs_handle_struct *han
 					      smb1req,
 					      op,
 					      modified_cookie,
+					      lease,
 					      mem_ctx,
 					      fsp,
 					      new_cookie);

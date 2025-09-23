@@ -1138,6 +1138,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						   smb1req,
 						   state->op, /* smbXsrv_open input */
 						   state->op->global->backend_cookie,
+						   state->lease_ptr,
 						   state->op, /* TALLOC_CTX */
 						   &state->result,
 						   &new_cookie);

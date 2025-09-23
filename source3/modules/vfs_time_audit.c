@@ -2639,6 +2639,7 @@ static NTSTATUS smb_time_audit_durable_reconnect(struct vfs_handle_struct *handl
 						 struct smb_request *smb1req,
 						 struct smbXsrv_open *op,
 						 const DATA_BLOB old_cookie,
+						 const struct smb2_lease *lease,
 						 TALLOC_CTX *mem_ctx,
 						 struct files_struct **fsp,
 						 DATA_BLOB *new_cookie)
@@ -2649,7 +2650,7 @@ static NTSTATUS smb_time_audit_durable_reconnect(struct vfs_handle_struct *handl
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_DURABLE_RECONNECT(handle, smb1req, op, old_cookie,
-						mem_ctx, fsp, new_cookie);
+						lease, mem_ctx, fsp, new_cookie);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

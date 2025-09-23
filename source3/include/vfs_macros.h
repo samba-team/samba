@@ -593,13 +593,13 @@
 	smb_vfs_call_durable_disconnect((handle)->next, \
 					(fsp), (old_cookie), (mem_ctx), (new_cookie))
 
-#define SMB_VFS_DURABLE_RECONNECT(conn, smb1req, op, old_cookie, mem_ctx, fsp, new_cookie) \
+#define SMB_VFS_DURABLE_RECONNECT(conn, smb1req, op, old_cookie, lease, mem_ctx, fsp, new_cookie) \
 	smb_vfs_call_durable_reconnect((conn)->vfs_handles, \
-				       (smb1req), (op), (old_cookie), \
+				       (smb1req), (op), (old_cookie), (lease), \
 				       (mem_ctx), (fsp), (new_cookie))
-#define SMB_VFS_NEXT_DURABLE_RECONNECT(handle, smb1req, op, old_cookie, mem_ctx, fsp, new_cookie) \
+#define SMB_VFS_NEXT_DURABLE_RECONNECT(handle, smb1req, op, old_cookie, lease, mem_ctx, fsp, new_cookie) \
 	smb_vfs_call_durable_reconnect((handle)->next, \
-					(smb1req), (op), (old_cookie), \
+					(smb1req), (op), (old_cookie), (lease), \
 					(mem_ctx), (fsp), (new_cookie))
 
 #define SMB_VFS_FREADDIR_ATTR(fsp, mem_ctx, attr_data) \
