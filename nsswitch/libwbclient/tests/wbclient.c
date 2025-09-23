@@ -700,8 +700,9 @@ static bool test_wbc_lookup_rids(struct torture_context *tctx)
 	torture_assert_wbc_ok_goto_fail(
 		tctx, ret, "%s", "wbcLookupRids for 544 and 545 failed");
 
-	torture_assert_str_equal(
+	torture_assert_str_equal_goto(
 		tctx, names[0], "Administrators",
+		ret, fail,
 		"S-1-5-32-544 not mapped to 'Administrators'");
 	torture_assert_str_equal_goto_fail(
 		tctx, names[1], "Users", "S-1-5-32-545 not mapped to 'Users'");
