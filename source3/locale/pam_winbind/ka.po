@@ -1,0 +1,548 @@
+# pam_winbind message translations (Georgian)
+# Copyright (C) 2025, Ekaterine Papava <papava.e@gtu.ge>
+# This file is distributed under the same license as the pam_winbind package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: @PACKAGE@\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-09-15 02:10+0300\n"
+"PO-Revision-Date: 2025-09-23 11:14+0200\n"
+"Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
+"Language-Team: Georgian <(nothing)>\n"
+"Language: ka_GE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.7\n"
+
+#: ../../../nsswitch/pam_winbind.c:630
+msgid "Success"
+msgstr "წარმატებულია"
+
+#: ../../../nsswitch/pam_winbind.c:632
+msgid "No primary Domain Controller available"
+msgstr "ძირითადი დომენის კონტროლერი ხელმისაწვდომი არაა"
+
+#: ../../../nsswitch/pam_winbind.c:634
+msgid "No domain controllers found"
+msgstr "დომენის კონტროლერები ვერ მოიძებნა"
+
+#: ../../../nsswitch/pam_winbind.c:636
+msgid "No logon servers"
+msgstr "შესვლის სერვერების გარეშე"
+
+#: ../../../nsswitch/pam_winbind.c:638
+msgid "Password too short"
+msgstr "პაროლი მეტისმეტად მოკლეა"
+
+#: ../../../nsswitch/pam_winbind.c:640
+msgid "The password of this user is too recent to change"
+msgstr "ამ მომხმარებლის პაროლი შესაცვლელად მეტისმეტად მოკლეა"
+
+#: ../../../nsswitch/pam_winbind.c:642
+msgid "Password is already in password history"
+msgstr "პაროლი უკვე არსებობს პაროლების ისტორიაში"
+
+#: ../../../nsswitch/pam_winbind.c:644
+msgid "Your password has expired"
+msgstr "თქვენი პაროლის ვადა ამოიწურა"
+
+#: ../../../nsswitch/pam_winbind.c:646
+msgid "You need to change your password now"
+msgstr "საჭიროა, შეცვალოთ თქვენი პაროლი ახლავე"
+
+#: ../../../nsswitch/pam_winbind.c:648
+msgid "You are not allowed to logon from this workstation"
+msgstr "ამ სამუშაო მანქანიდან შესვლის უფლება არ გაქვთ"
+
+#: ../../../nsswitch/pam_winbind.c:650
+msgid "You are not allowed to logon at this time"
+msgstr "ამ დროს შესვლის უფლება არ გაქვთ"
+
+#: ../../../nsswitch/pam_winbind.c:652
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "თქვენი ანგარიშის ვადა ამოიწურა. დაუკავშირდით თქვენს სისტემურ ადმინისტრატორს"
+
+#: ../../../nsswitch/pam_winbind.c:655
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "თქვენი ანგარიში გათიშულია. დაუკავშირდით თქვენს სისტემურ ადმინისტრატორს"
+
+#: ../../../nsswitch/pam_winbind.c:658
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "თქვენი ანგარიში დაბლოკილია. დაუკავშირდით თქვენს სისტემურ ადმინისტრატორს"
+
+#: ../../../nsswitch/pam_winbind.c:661 ../../../nsswitch/pam_winbind.c:663
+#: ../../../nsswitch/pam_winbind.c:665
+msgid "Invalid Trust Account"
+msgstr "არასწორი ნდობის ანგარიში"
+
+#: ../../../nsswitch/pam_winbind.c:667
+msgid "Access is denied"
+msgstr "წვდომა აკრძალულია"
+
+#: ../../../nsswitch/pam_winbind.c:882
+msgid "Do you want to change your password now?"
+msgstr "გსურთ პაროლის შეცვლა ახლავე?"
+
+#: ../../../nsswitch/pam_winbind.c:963
+msgid "Your password expires today.\n"
+msgstr "თქვენი პაროლის ვადა დღეს იწურება.\n"
+
+#: ../../../nsswitch/pam_winbind.c:993
+#, c-format
+msgid "Your password will expire in %d %s.\n"
+msgstr "გაფრთხილება: თქვენს პაროლს ვადა %d %sში გაუვა\n"
+
+#: ../../../nsswitch/pam_winbind.c:994
+msgid "days"
+msgstr "დღე"
+
+#: ../../../nsswitch/pam_winbind.c:994
+msgid "day"
+msgstr "დღე"
+
+#: ../../../nsswitch/pam_winbind.c:1201 ../../../nsswitch/pam_winbind.c:1225
+#, c-format
+msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
+msgstr "ჯგუფის %s SID-ში გადაყვანა შეუძლებელია. დაუკავშირდით თქვენს ადმინისტრატორს, რომ დაინახოთ, სწორია თუ არა ჯგუფი %s."
+
+#: ../../../nsswitch/pam_winbind.c:1428
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "გიშვებთ ზრდილობის გამო. შეცვალეთ თქვენი პაროლი მაშინვე, როგორც კი ქსელი ჩაგერთვებათ"
+
+#: ../../../nsswitch/pam_winbind.c:1438
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "დომენის კონტროლერი ხელმისაწვდომი არაა. გამოიყენება დაკეშილი ავტორიზაციის დეტალები. ქსელური რესურსები, შეიძლება, ხელმისაწვდომი არ იყოს"
+
+#: ../../../nsswitch/pam_winbind.c:1463
+msgid ""
+"Failed to establish your Kerberos Ticket cache due time differences\n"
+"with the domain controller.  Please verify the system time.\n"
+msgstr ""
+"შეუძლებელია თქვენი Kerberos-ის ბილეთის დადგენა დომენის კონტროლერთან\n"
+"დროის სხვაობის გამო.  გადაამოწმეთ სისტემის დრო.\n"
+
+#: ../../../nsswitch/pam_winbind.c:1531
+msgid "Your password "
+msgstr "თქვენი_პაროლი "
+
+#: ../../../nsswitch/pam_winbind.c:1538
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "უნდა შეიცავდეს მინიმუმ %d სიმბოლოს; "
+
+#: ../../../nsswitch/pam_winbind.c:1547
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "ვერ გაიმეორებთ თქვენს წინა %d პაროლს: "
+
+#: ../../../nsswitch/pam_winbind.c:1557
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "უნდა შეიცავდეს დიდ ასოებს, ციფრებს ან პუნქტუაციას და არ შეიძლება, შეიცავდეს თქვენი ანგარიშის სახელს, ან სრულს სახელს. "
+
+#: ../../../nsswitch/pam_winbind.c:1567
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "შეიყვანეთ სხვა პაროლი. ორივე ტექსტურ ველში შეიყვანეთ პაროლი, რომელიც ამ მოთხოვნებს აკმაყოფილებს."
+
+#: ../../../nsswitch/pam_winbind.c:1603
+#, c-format
+msgid "Creating directory: %s failed: %s"
+msgstr "საქაღალდის შექმნა: %s ჩავარდა: %s"
+
+#: ../../../nsswitch/pam_winbind.c:2066
+msgid "Password does not meet complexity requirements"
+msgstr "პაროლი სირთულის მოთხოვნებს არ აკმაყოფილებს"
+
+#.
+#. * First get the name of a user
+#.
+#: ../../../nsswitch/pam_winbind.c:2552 ../../../nsswitch/pam_winbind.c:3177
+msgid "Username: "
+msgstr "მომხმარებელი: "
+
+#: ../../../nsswitch/pam_winbind.c:2803
+msgid "Password: "
+msgstr "პაროლი: "
+
+#. instruct user what is happening
+#: ../../../nsswitch/pam_winbind.c:3215
+msgid "Changing password for"
+msgstr "პაროლის შეცვლა მომხმარებლისთვის"
+
+#: ../../../nsswitch/pam_winbind.c:3228
+msgid "(current) NT password: "
+msgstr "(მიმდინარე) NT პაროლი: "
+
+#: ../../../nsswitch/pam_winbind.c:3301
+msgid "Enter new NT password: "
+msgstr "შეიყვანეთ ახალი NT პაროლი: "
+
+#: ../../../nsswitch/pam_winbind.c:3302
+msgid "Retype new NT password: "
+msgstr "ხელახლა აკრიფეთ ახალი NT პაროლი: "
+
+#.
+#. * here is the string to inform the user that the new passwords they
+#. * typed were not the same.
+#.
+#: ../../../nsswitch/pam_winbind.h:128
+msgid "Sorry, passwords do not match"
+msgstr "პაროლები არ ემთხვევა"
+
+#: ../../libsmb/nterr.c:559
+msgid "Undetermined error"
+msgstr "დაუდგენელი შეცდომა"
+
+#: ../../libsmb/nterr.c:560
+msgid "Access denied"
+msgstr "წვდომა აკრძალულია"
+
+#: ../../libsmb/nterr.c:561
+msgid "Account locked out"
+msgstr "ანგარიში დაბლოკილია"
+
+#: ../../libsmb/nterr.c:562
+msgid "Must change password"
+msgstr "უნდა შეიცვალოს პაროლი"
+
+#: ../../libsmb/nterr.c:563
+msgid "Password is too short"
+msgstr "პაროლი ძალიან მოკლეა"
+
+#: ../../libsmb/nterr.c:564
+msgid "Password is too recent"
+msgstr "პაროლი ძალიან ახალია"
+
+#: ../../libsmb/nterr.c:565
+msgid "Password history conflict"
+msgstr "პაროლის ისტორიის კონფლიქტი"
+
+#: ../../libsmb/nterr.c:567
+msgid "Improperly formed account name"
+msgstr "არასწორად ჩამოყალიბებული ანგარიშის სახელი"
+
+#: ../../libsmb/nterr.c:568
+msgid "User exists"
+msgstr "მომხმარებელი არსებობს"
+
+#: ../../libsmb/nterr.c:569
+msgid "No such user"
+msgstr "მომხმარებელი არ არსებობს"
+
+#: ../../libsmb/nterr.c:570
+msgid "Group exists"
+msgstr "ჯგუფი არსებობს"
+
+#: ../../libsmb/nterr.c:571
+msgid "No such group"
+msgstr "ჯგუფი არ არსებობს"
+
+#: ../../libsmb/nterr.c:572
+msgid "Member not in group"
+msgstr "წევრი ჯგუფში არაა"
+
+#: ../../libsmb/nterr.c:573
+msgid "Wrong Password"
+msgstr "არასწორი პაროლი"
+
+#: ../../libsmb/nterr.c:574
+msgid "Ill formed password"
+msgstr "ცუდი პაროლი"
+
+#: ../../libsmb/nterr.c:575
+msgid "Password restriction"
+msgstr "პაროლის შეზღუდვა"
+
+#: ../../libsmb/nterr.c:576
+msgid "Logon failure"
+msgstr "შესვლის შეცდომა"
+
+#: ../../libsmb/nterr.c:577
+msgid "Account restriction"
+msgstr "ანგარიშის შეზღუდვა"
+
+#: ../../libsmb/nterr.c:578
+msgid "Invalid logon hours"
+msgstr "არასწორი შესვლის დრო"
+
+#: ../../libsmb/nterr.c:579
+msgid "Invalid workstation"
+msgstr "არასწორი სამუშაო მანქანა"
+
+#: ../../libsmb/nterr.c:580
+msgid "Password expired"
+msgstr "პაროლი ვადაგასულია"
+
+#: ../../libsmb/nterr.c:581
+msgid "Account disabled"
+msgstr "ანგარიში გათიშულია"
+
+#: ../../libsmb/nterr.c:582
+msgid "Memory allocation error"
+msgstr "მეხსიერების გამოყოფის შეცდომა"
+
+#: ../../libsmb/nterr.c:583
+msgid "No domain controllers located"
+msgstr "დომენის კონტროლერები აღმოჩენილი არაა"
+
+#: ../../libsmb/nterr.c:584
+msgid "Named pipe not available"
+msgstr "სახელიანი ფაიფი ხელმისაწვდომი არაა"
+
+#: ../../libsmb/nterr.c:585
+msgid "Not implemented"
+msgstr "განხორციელებული არაა"
+
+#: ../../libsmb/nterr.c:586
+msgid "Invalid information class"
+msgstr "არასწორი ინფორმაციის კლასი"
+
+#: ../../libsmb/nterr.c:587
+msgid "Information length mismatch"
+msgstr "ინფორმაციის სიგრძე არ ემთხვევა"
+
+#: ../../libsmb/nterr.c:588
+msgid "Access violation"
+msgstr "წვდომის დარღვევა"
+
+#: ../../libsmb/nterr.c:589
+msgid "Invalid handle"
+msgstr "არასწორი დამმუშავებელი"
+
+#: ../../libsmb/nterr.c:590
+msgid "Invalid parameter"
+msgstr "არასწორი პარამეტრი"
+
+#: ../../libsmb/nterr.c:591
+msgid "No memory"
+msgstr "არასაკმარისი მეხსიერება"
+
+#: ../../libsmb/nterr.c:592
+msgid "Buffer too small"
+msgstr "ბუფერი მეტისმეტად მცირეა"
+
+#: ../../libsmb/nterr.c:593
+msgid "Revision mismatch"
+msgstr "რევიზია არ ემთხვევა"
+
+#: ../../libsmb/nterr.c:594
+msgid "No such logon session"
+msgstr "შევლის ასეთი სესია ვერ ვიპოვე"
+
+#: ../../libsmb/nterr.c:595
+msgid "No such privilege"
+msgstr "ასეთი პრივილეგია ვერ ვიპოვე"
+
+#: ../../libsmb/nterr.c:596
+msgid "Procedure not found"
+msgstr "პროცედურა ვერ ვიპოვე"
+
+#: ../../libsmb/nterr.c:597
+msgid "Server disabled"
+msgstr "სერვერი გათიშულია"
+
+#: ../../libsmb/nterr.c:598
+msgid "Invalid pipe state"
+msgstr "არასწორი ფაიფის მდგომარეობა"
+
+#: ../../libsmb/nterr.c:599
+msgid "Named pipe busy"
+msgstr "სახელიანი ფაიფი დაკავებულია"
+
+#: ../../libsmb/nterr.c:600
+msgid "Illegal function"
+msgstr "დაუშვებელი ფუნქცია"
+
+#: ../../libsmb/nterr.c:601
+msgid "Named pipe disconnected"
+msgstr "სახელიანი ფაიფი გათიშულია"
+
+#: ../../libsmb/nterr.c:602
+msgid "Named pipe closing"
+msgstr "სახელიანი ფაიფი იხურება"
+
+#: ../../libsmb/nterr.c:603
+msgid "Remote host not listening"
+msgstr "დაშორებული მანქანა არ უსმენს"
+
+#: ../../libsmb/nterr.c:604
+msgid "Duplicate name on network"
+msgstr "ქსელში არსებობს გამეორებული სახელი"
+
+#: ../../libsmb/nterr.c:605
+msgid "Print queue is full"
+msgstr "ბეჭდვის რიგი სავსეა"
+
+#: ../../libsmb/nterr.c:606
+msgid "No print spool space available"
+msgstr "ბეჭდვის რიგში ჩასასმელი ფაილებისთვის დისკზე ადგილი აღარაა"
+
+#: ../../libsmb/nterr.c:607
+msgid "The network name cannot be found"
+msgstr "ქსელის სახელი ვერ მოიძებნა"
+
+#: ../../libsmb/nterr.c:608
+msgid "The connection was refused"
+msgstr "დაკავშირება უარყოფილია"
+
+#: ../../libsmb/nterr.c:609
+msgid "Too many names"
+msgstr "მეტისმეტად ბევრი სახელი"
+
+#: ../../libsmb/nterr.c:610
+msgid "Too many sessions"
+msgstr "მეტისმეტად ბევრი სესია"
+
+#: ../../libsmb/nterr.c:611
+msgid "Invalid server state"
+msgstr "არასწორი სერვერის მდგომარეობა"
+
+#: ../../libsmb/nterr.c:612
+msgid "Invalid domain state"
+msgstr "არასწორი დომენის მდგომარეობა"
+
+#: ../../libsmb/nterr.c:613
+msgid "Invalid domain role"
+msgstr "არასწორი დომენის როლი"
+
+#: ../../libsmb/nterr.c:614
+msgid "No such domain"
+msgstr "ასეთი დომენი არ არსებობს"
+
+#: ../../libsmb/nterr.c:615
+msgid "Domain exists"
+msgstr "დომენი არსებობს"
+
+#: ../../libsmb/nterr.c:616
+msgid "Domain limit exceeded"
+msgstr "დომენების ზღვარი გადაჭარბებულია"
+
+#: ../../libsmb/nterr.c:617
+msgid "Bad logon session state"
+msgstr "არასწორი შესვლის სესიის მდგომარეობა"
+
+#: ../../libsmb/nterr.c:618
+msgid "Logon session collision"
+msgstr "შესვლის სესიის გადაფარვა"
+
+#: ../../libsmb/nterr.c:619
+msgid "Invalid logon type"
+msgstr "არასწორი შესვლის ტიპი"
+
+#: ../../libsmb/nterr.c:620
+msgid "Cancelled"
+msgstr "გაუქმებულია"
+
+#: ../../libsmb/nterr.c:621
+msgid "Invalid computer name"
+msgstr "არასწორი კომპიუტერის სახელი"
+
+#: ../../libsmb/nterr.c:622
+msgid "Logon server conflict"
+msgstr "შესვლის სერვერის კონფლიქტი"
+
+#: ../../libsmb/nterr.c:623
+msgid "Time difference at domain controller"
+msgstr "დროის სხვაობა დომენის კონტროლერთან"
+
+#: ../../libsmb/nterr.c:624
+msgid "Pipe broken"
+msgstr "გაფუჭებული ფაიფი"
+
+#: ../../libsmb/nterr.c:625
+msgid "Registry corrupt"
+msgstr "რეესტრი დაზიანებულია"
+
+#: ../../libsmb/nterr.c:626
+msgid "Too many secrets"
+msgstr "მეტისმეტად ბევრი საიდუმლო"
+
+#: ../../libsmb/nterr.c:627
+msgid "Too many SIDs"
+msgstr "მეტისმეტად ბევრი SID"
+
+#: ../../libsmb/nterr.c:628
+msgid "Lanmanager cross encryption required"
+msgstr "Lanmanager-ის ჯვარედინი დაშიფვრა აუცილებელია"
+
+#: ../../libsmb/nterr.c:629
+msgid "Log file full"
+msgstr "ჟურნალის ფაილი სავსეა"
+
+#: ../../libsmb/nterr.c:630
+msgid "No trusted LSA secret"
+msgstr "სანდო LSA საიდუმლოს გარეშე"
+
+#: ../../libsmb/nterr.c:631
+msgid "No trusted SAM account"
+msgstr "სანდო SAM ანგარიშის გარეშე"
+
+#: ../../libsmb/nterr.c:632
+msgid "Trusted domain failure"
+msgstr "სანდო დომენის შეცდომა"
+
+#: ../../libsmb/nterr.c:633
+msgid "Trust relationship failure"
+msgstr "ნდობის ურთიერთობის შეცდომა"
+
+#: ../../libsmb/nterr.c:634
+msgid "Trust failure"
+msgstr "ნდობის შეცდომა"
+
+#: ../../libsmb/nterr.c:635
+msgid "Netlogon service not started"
+msgstr "სერვისი NETLOGON გაშვებული არაა"
+
+#: ../../libsmb/nterr.c:636
+msgid "Account expired"
+msgstr "ანგარიშის ვადა გასულია"
+
+#: ../../libsmb/nterr.c:637
+msgid "Network credential conflict"
+msgstr "ქსელის ავტორიზაციის დეტალების კონფლიქტი"
+
+#: ../../libsmb/nterr.c:638
+msgid "Remote session limit"
+msgstr "დაშორებული სესიის ზღვარი"
+
+#: ../../libsmb/nterr.c:639
+msgid "No logon interdomain trust account"
+msgstr "შესვლის ინტერდომენის ნდობის ანგარიშის გარეშე"
+
+#: ../../libsmb/nterr.c:640
+msgid "No logon workstation trust account"
+msgstr "შესვლის სამუშაო მანქანის ნდობის ანგარიშის გარეშე"
+
+#: ../../libsmb/nterr.c:641
+msgid "No logon server trust account"
+msgstr "შესვლის სერვერის ნდობის ანგარიშის გარეშე"
+
+#: ../../libsmb/nterr.c:642
+msgid "Domain trust inconsistent"
+msgstr "დომენის ნდობის არამდგრადია"
+
+#: ../../libsmb/nterr.c:643
+msgid "No user session key available"
+msgstr "მომხმარებლის სესიის გასაღები ხელმისაწვდომი არაა"
+
+#: ../../libsmb/nterr.c:644
+msgid "User session deleted"
+msgstr "მომხმარებლის სესია წაიშალა"
+
+#: ../../libsmb/nterr.c:645
+msgid "Insufficient server resources"
+msgstr "არასაკმარისი სერვერის რესურსები"
+
+#: ../../libsmb/nterr.c:646
+msgid "Insufficient logon information"
+msgstr "არასაკმარისი შესვლის ინფორმაცია"
+
+#: ../../libsmb/nterr.c:648
+msgid "License quota exceeded"
+msgstr "ლიცენზიის კვოტა გადაცილებულია"
+
+#: ../../libsmb/nterr.c:649
+msgid "No more files"
+msgstr "მეტი ფაილი არ დარჩა"
