@@ -944,8 +944,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			      files_struct *fsp,
 			      struct smb_filename *smb_fname_src_rel,
 			      struct share_mode_lock **lck,
-			      struct smb_filename *smb_fname_dst_in,
-			      const char *dst_original_lcomp,
 			      uint32_t attrs,
 			      const char *newname,
 			      bool replace_if_exists);
