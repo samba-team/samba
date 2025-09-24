@@ -39,6 +39,7 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 	uint8_t bt;
 	uint16_t w;
 	uint32_t d;
+	int64_t D;
 	int i;
 	void *p;
 	int len = 0;
@@ -66,6 +67,12 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 			d = va_arg(ap, uint32_t);
 			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
+			break;
+		case 'D': /* signed 64-bit integer*/
+			len = 8;
+			D = va_arg(ap, int64_t);
+			if (bufsize && bufsize >= len)
+				PUSH_LE_I64(buf, 0, D);
 			break;
 		case 'p': /* pointer */
 			len = 4;
@@ -140,6 +147,7 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 	uint8_t *bt;
 	uint16_t *w;
 	uint32_t *d;
+	int64_t *D;
 	size_t bufsize = in_bufsize;
 	size_t len;
 	uint32_t *i;
@@ -173,6 +181,13 @@ int tdb_unpack(const uint8_t *buf, int in_bufsize, const char *fmt, ...)
 			if (bufsize < len)
 				goto no_space;
 			*d = IVAL(buf, 0);
+			break;
+		case 'D': /* Signed 64-bit integer */
+			len = 8;
+			D = va_arg(ap, int64_t *);
+			if (bufsize < len)
+				goto no_space;
+			*D = PULL_LE_I64(buf, 0);
 			break;
 		case 'p': /* pointer */
 			len = 4;
