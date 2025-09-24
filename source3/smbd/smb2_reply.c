@@ -1675,8 +1675,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  struct files_struct *src_dirfsp,
 			  struct smb_filename *smb_fname_src,
 			  struct smb_filename *smb_fname_src_rel,
-			  struct smb_filename *smb_fname_dst,
-			  const char *dst_original_lcomp,
 			  uint32_t attrs,
 			  const char *newname,
 			  bool replace_if_exists,
@@ -1701,14 +1699,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
 	DBG_NOTICE("case_sensitive = %d, "
-		  "case_preserve = %d, short case preserve = %d, "
-		  "directory = %s, newname = %s, "
-		  "last_component_dest = %s\n",
-		  case_sensitive, case_preserve,
-		  short_case_preserve,
-		  smb_fname_str_dbg(smb_fname_src),
-		  smb_fname_str_dbg(smb_fname_dst),
-		  dst_original_lcomp);
+		   "case_preserve = %d, short case preserve = %d, "
+		   "directory = %s, newname = %s\n",
+		   case_sensitive,
+		   case_preserve,
+		   short_case_preserve,
+		   smb_fname_str_dbg(smb_fname_src),
+		   newname);
 
 	ZERO_STRUCT(smb_fname_src->st);
 
@@ -1783,8 +1780,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	close_file_free(req, &fsp, NORMAL_CLOSE);
 
 	DBG_NOTICE("Error %s rename %s -> %s\n",
-		  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
-		  smb_fname_str_dbg(smb_fname_dst));
+		   nt_errstr(status),
+		   smb_fname_str_dbg(smb_fname_src),
+		   newname);
 
  out:
 	TALLOC_FREE(posx);

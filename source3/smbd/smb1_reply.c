@@ -6343,14 +6343,10 @@ void reply_mv(struct smb_request *req)
 	struct files_struct *src_dirfsp = NULL;
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_src_rel = NULL;
-	struct files_struct *dst_dirfsp = NULL;
-	struct smb_filename *smb_fname_dst = NULL;
-	const char *dst_original_lcomp = NULL;
 	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME src_twrp = 0;
 	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME dst_twrp = 0;
-	bool stream_rename = false;
 
 	START_PROFILE(SMBmv);
 
@@ -6384,7 +6380,6 @@ void reply_mv(struct smb_request *req)
 				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 				goto out;
 			}
-			stream_rename = true;
 		}
         }
 
@@ -6424,49 +6419,8 @@ void reply_mv(struct smb_request *req)
 		reply_nterror(req, status);
 		goto out;
 	}
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 newname,
-					 dst_ucf_flags,
-					 dst_twrp,
-					 &dst_dirfsp,
-					 &smb_fname_dst);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			goto out;
-		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	/* Get the last component of the destination for rename_internals(). */
-	dst_original_lcomp = get_original_lcomp(ctx,
-					conn,
-					newname,
-					dst_ucf_flags);
-	if (dst_original_lcomp == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
-	if (stream_rename) {
-		/* smb_fname_dst->base_name must be the same as
-		   smb_fname_src->base_name. */
-		TALLOC_FREE(smb_fname_dst->base_name);
-		smb_fname_dst->base_name = talloc_strdup(smb_fname_dst,
-						smb_fname_src->base_name);
-		if (!smb_fname_dst->base_name) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-	}
-
-	DBG_NOTICE("%s -> %s\n",
-		   smb_fname_str_dbg(smb_fname_src),
-		   smb_fname_str_dbg(smb_fname_dst));
+	DBG_NOTICE("%s -> %s\n", smb_fname_str_dbg(smb_fname_src), newname);
 
 	status = rename_internals(ctx,
 				  conn,
@@ -6474,8 +6428,6 @@ void reply_mv(struct smb_request *req)
 				  src_dirfsp, /* src_dirfsp */
 				  smb_fname_src,
 				  smb_fname_src_rel,
-				  smb_fname_dst,
-				  dst_original_lcomp,
 				  attrs,
 				  newname,
 				  false,
@@ -6497,9 +6449,8 @@ void reply_mv(struct smb_request *req)
 
 	reply_smb1_outbuf(req, 0, 0);
  out:
-	TALLOC_FREE(smb_fname_src);
-	TALLOC_FREE(smb_fname_dst);
-	END_PROFILE(SMBmv);
+	 TALLOC_FREE(smb_fname_src);
+	 END_PROFILE(SMBmv);
 }
 
 /****************************************************************************

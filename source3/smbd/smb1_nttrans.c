@@ -1564,34 +1564,16 @@ void reply_ntrename(struct smb_request *req)
 
 	switch(rename_type) {
 	case RENAME_FLAG_RENAME: {
-		/*
-		 * Get the last component of the destination for
-		 * rename_internals().
-		 */
-
-		char *dst_original_lcomp = get_original_lcomp(ctx,
-							      conn,
-							      newname,
-							      ucf_flags_dst);
-		if (dst_original_lcomp == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			goto out;
-		}
-
 		status = rename_internals(ctx,
 					  conn,
 					  req,
 					  src_dirfsp,
 					  smb_fname_old,
 					  smb_fname_old_rel,
-					  smb_fname_new,
-					  dst_original_lcomp,
 					  attrs,
 					  newname,
 					  false,
 					  DELETE_ACCESS);
-
-		TALLOC_FREE(dst_original_lcomp);
 		break;
 	}
 	case RENAME_FLAG_HARD_LINK:
