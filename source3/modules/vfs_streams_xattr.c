@@ -496,6 +496,7 @@ static int streams_xattr_get_name(vfs_handle_struct *handle,
 				  TALLOC_CTX *ctx,
 				  const char *stream_name,
 				  char **_raw_stream_name,
+				  bool *is_default,
 				  char **xattr_name)
 {
 	size_t stream_name_len = strlen(stream_name);
@@ -510,6 +511,7 @@ static int streams_xattr_get_name(vfs_handle_struct *handle,
 
 	SMB_ASSERT(stream_name[0] == ':');
 	stream_name += 1;
+	stream_name_len -= 1;
 
 	/*
 	 * With vfs_fruit option "fruit:encoding = native" we're
@@ -538,6 +540,8 @@ static int streams_xattr_get_name(vfs_handle_struct *handle,
 		/* Split name and type */
 		stream_name_len = (stype - stream_name);
 	}
+
+	*is_default = (stream_name_len == 0); /* ::$DATA */
 
 	raw_stream_name = talloc_asprintf(ctx,
 					  "%.*s%s",
@@ -570,6 +574,7 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 	int ret;
 	char *xattr_name = NULL;
 	char *raw_stream_name = NULL;
+	bool is_default = false;
 
 	if (sio->fsp->fsp_name == sio->fsp_name_ptr) {
 		return true;
@@ -585,6 +590,7 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 				     talloc_tos(),
 				     sio->fsp->fsp_name->stream_name,
 				     &raw_stream_name,
+				     &is_default,
 				     &xattr_name);
 	if (ret != 0) {
 		return false;
@@ -681,6 +687,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	char *tmp_stream_name = NULL;
 	struct smb_filename *pathref = NULL;
 	struct files_struct *fsp = smb_fname->fsp;
+	bool is_default = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
@@ -711,6 +718,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 				     talloc_tos(),
 				     smb_fname->stream_name,
 				     &raw_stream_name,
+				     &is_default,
 				     &xattr_name);
 	if (ret != 0) {
 		errno = ret;
@@ -791,6 +799,7 @@ static int streams_xattr_fstatat(struct vfs_handle_struct *handle,
 	ssize_t size;
 	NTSTATUS status;
 	int ret = -1;
+	bool is_default = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
@@ -813,6 +822,7 @@ static int streams_xattr_fstatat(struct vfs_handle_struct *handle,
 				     talloc_tos(),
 				     smb_fname->stream_name,
 				     &raw_stream_name,
+				     &is_default,
 				     &xattr_name);
 	if (ret != 0) {
 		errno = ret;
@@ -877,6 +887,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	int fakefd = -1;
 	bool set_empty_xattr = false;
 	int ret;
+	bool is_default = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return -1);
@@ -905,6 +916,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 				     talloc_tos(),
 				     smb_fname->stream_name,
 				     &raw_stream_name,
+				     &is_default,
 				     &xattr_name);
 	if (ret != 0) {
 		errno = ret;
@@ -1054,6 +1066,7 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 	char *raw_stream_name = NULL;
 	struct smb_filename *pathref = NULL;
 	struct files_struct *fsp = smb_fname->fsp;
+	bool is_default = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
@@ -1074,6 +1087,7 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 				     talloc_tos(),
 				     smb_fname->stream_name,
 				     &raw_stream_name,
+				     &is_default,
 				     &xattr_name);
 	if (ret != 0) {
 		errno = ret;
@@ -1137,6 +1151,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	struct smb_filename *pathref_dst = NULL;
 	struct smb_filename *full_src = NULL;
 	struct smb_filename *full_dst = NULL;
+	bool is_default;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
@@ -1177,6 +1192,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 				     talloc_tos(),
 				     smb_fname_src->stream_name,
 				     &src_raw_stream_name,
+				     &is_default,
 				     &src_xattr_name);
 	if (ret != 0) {
 		errno = ret;
@@ -1186,6 +1202,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 				     talloc_tos(),
 				     smb_fname_dst->stream_name,
 				     &dst_raw_stream_name,
+				     &is_default,
 				     &dst_xattr_name);
 	if (ret != 0) {
 		errno = ret;
