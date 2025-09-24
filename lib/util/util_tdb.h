@@ -81,6 +81,30 @@ bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *val
 bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value);
 
 /****************************************************************************
+ Fetch a int64_t value by string key, return -1 if not found.
+ Output is int64_t in native byte order.
+****************************************************************************/
+int tdb_fetch_int64(struct tdb_context *tdb, const char *keystr, int64_t *);
+
+/****************************************************************************
+ Store a int64_t value by string key, return 0 on success, -1 on failure.
+ Input is int64_t in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+int tdb_store_int64(struct tdb_context *tdb, const char *keystr, int64_t v);
+
+/****************************************************************************
+ Fetch a uint64_t value by string key, return -1 if not found.
+ Output is uint64_t in native byte order.
+****************************************************************************/
+int tdb_fetch_uint64(struct tdb_context *tdb, const char *keystr, uint64_t *value);
+
+/****************************************************************************
+ Store a uint64_t value by string key, return 0 on success, -1 on failure.
+ Input is uint64_t in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+int tdb_store_uint64(struct tdb_context *tdb, const char *keystr, uint64_t value);
+
+/****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -ve
  on failure.
 ****************************************************************************/

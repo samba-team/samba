@@ -255,6 +255,103 @@ bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t valu
 {
 	return tdb_store_uint32_byblob(tdb, string_term_tdb_data(keystr), value);
 }
+
+/****************************************************************************
+ Fetch a int64_t value by a arbitrary blob key, return -1 if not found.
+****************************************************************************/
+
+static int fetch_int64_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	if (data.dsize == sizeof(int64_t)) {
+		*((int64_t *)private_data) = PULL_LE_I64(data.dptr, 0);
+		return 0;
+	}
+	return -1;
+}
+
+/****************************************************************************
+ Fetch a int64_t value by string key, return -1 if not found.
+****************************************************************************/
+
+int tdb_fetch_int64(struct tdb_context *tdb, const char *keystr, int64_t *value)
+{
+	return tdb_parse_record(tdb, string_term_tdb_data(keystr), fetch_int64_parser, value);
+}
+
+/****************************************************************************
+ Store a int64_t value by an arbitrary blob key, return 0 on success, -ve on failure.
+ Input is int64_t in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+static int tdb_store_int64_byblob(struct tdb_context *tdb, TDB_DATA key,
+				  int64_t v)
+{
+	int64_t v_store;
+	TDB_DATA data = { .dptr = (unsigned char *)&v_store, .dsize = sizeof(v_store), };
+
+	PUSH_LE_I64(&v_store, 0, v);
+	return tdb_store(tdb, key, data, TDB_REPLACE);
+}
+
+/****************************************************************************
+ Store a int64_t value by string key, return 0 on success, -ve on failure.
+ Input is int64_t in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+int tdb_store_int64(struct tdb_context *tdb, const char *keystr, int64_t v)
+{
+	return tdb_store_int64_byblob(tdb, string_term_tdb_data(keystr), v);
+}
+
+/****************************************************************************
+ Fetch a uint64_t value by a arbitrary blob key, return -1 in case of error.
+ Output is uint64_t in native byte order.
+****************************************************************************/
+
+static int fetch_uint64_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	if (data.dsize != sizeof(uint64_t)) {
+		return -1;
+	}
+	*((uint64_t *)private_data) = PULL_LE_U64(data.dptr, 0);
+	return 0;
+}
+
+/****************************************************************************
+ Fetch a uint64_t value by string key, return -1 if not found.
+ Output is uint64_t in native byte order.
+****************************************************************************/
+
+int tdb_fetch_uint64(struct tdb_context *tdb, const char *keystr, uint64_t *value)
+{
+	return tdb_parse_record(tdb, string_term_tdb_data(keystr), fetch_uint64_parser, value);
+}
+
+/****************************************************************************
+ Store a uint64_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Input is uint64_t in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+static int tdb_store_uint64_byblob(struct tdb_context *tdb, TDB_DATA key,
+				    uint64_t value)
+{
+	uint64_t v_store;
+	TDB_DATA data = { .dptr = (unsigned char *)&v_store, .dsize = sizeof(v_store), };
+
+	PUSH_LE_U64(&v_store, 0, value);
+	return tdb_store(tdb, key, data, TDB_REPLACE);
+}
+
+/****************************************************************************
+ Store a uint64_t value by string key, return 0 on success, -1 on failure.
+ Input is uint64_t in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+int tdb_store_uint64(struct tdb_context *tdb, const char *keystr, uint64_t value)
+{
+	return tdb_store_uint64_byblob(tdb, string_term_tdb_data(keystr), value);
+}
+
 /****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -ve
  on failure.
