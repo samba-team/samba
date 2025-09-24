@@ -808,6 +808,36 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_EXTENDED_WHOAMI_OID		"1.3.6.1.4.1.4203.1.11.3"
 
+/**
+   OID used to enforce password history length constraints in password reset
+
+   If this is control as the value 0x1 on a password set operation,
+   the password history constraints in MS-SAMR 3.1.1.7.1 "General
+   Password Policy" apply as if this was a password change. This may
+   be used by Entra ID or Keycloak.
+
+   LDB_CONTROL_POLICY_HINTS_DEPRECATED_OID (below) does exactly the
+   same thing and seems to be more widely used in practice.
+*/
+#define LDB_CONTROL_POLICY_HINTS_OID	        "1.2.840.113556.1.4.2239"
+#define LDB_CONTROL_POLICY_HINTS_NAME           "policy_hints"
+
+/**
+   Another OID used to enforce password history length constraints in password reset
+
+   This works just like LDB_CONTROL_POLICY_HINTS_OID (above): if the
+   control value is 0x1 on a password set operation, the password
+   history constraints in MS-SAMR 3.1.1.7.1 "General Password Policy"
+   apply as if this was a password change.
+
+   This is used by Entra ID in a password change.
+
+   It is also the OID for the ms-DS-Required-Domain-Behavior-Version
+   attribute), which is unlikely to cause confusion given the contexts.
+*/
+#define LDB_CONTROL_POLICY_HINTS_DEPRECATED_OID      "1.2.840.113556.1.4.2066"
+#define LDB_CONTROL_POLICY_HINTS_DEPRECATED_NAME     "policy_hints_deprecated"
+
 struct ldb_sd_flags_control {
 	/*
 	 * request the owner	0x00000001

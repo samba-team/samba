@@ -684,6 +684,42 @@ static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
+static bool decode_policy_hints_request(void *mem_ctx, DATA_BLOB in, void *_out)
+{
+	void **out = (void **)_out;
+	int *valp = NULL;
+	int val;
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
+	if (!data) {
+		return false;
+	}
+
+	if (!asn1_load(data, in)) {
+		return false;
+	}
+
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	if (!asn1_read_Integer(data, &val)) {
+		return false;
+	}
+
+	if (!asn1_end_tag(data)) {
+		return false;
+	}
+
+	valp = talloc(mem_ctx, int);
+	if (valp == NULL) {
+		return false;
+	}
+	*valp = val;
+	*out = valp;
+
+	return true;
+}
+
 static bool encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sort_resp_control *lsrc = talloc_get_type(in, struct ldb_sort_resp_control);
@@ -1208,6 +1244,40 @@ static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
+
+
+static bool encode_policy_hints_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	int *val = talloc_get_type(in, int);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
+	if (!data) {
+		return false;
+	}
+
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	if (!asn1_write_Integer(data, *val)) {
+		return false;
+	}
+
+	if (!asn1_pop_tag(data)) {
+		return false;
+	}
+
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
+		return false;
+	}
+
+	talloc_free(data);
+
+	return true;
+}
+
+
+
+
 static bool encode_flag_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	if (in) {
@@ -1251,6 +1321,8 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ LDB_CONTROL_RELAX_OID, decode_flag_request, encode_flag_request },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference },
 	{ LDB_CONTROL_VERIFY_NAME_OID, decode_verify_name_request, encode_verify_name_request },
+	{ LDB_CONTROL_POLICY_HINTS_OID, decode_policy_hints_request, encode_policy_hints_request },
+	{ LDB_CONTROL_POLICY_HINTS_DEPRECATED_OID, decode_policy_hints_request, encode_policy_hints_request },
 
 	/* the following are internal only, with a network
 	   representation */

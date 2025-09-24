@@ -1296,6 +1296,52 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->data = control;
 		return ctrl;
 	}
+
+	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_POLICY_HINTS_NAME) == 0) {
+		const char *p = NULL;
+		int crit, val, ret;
+
+		p = &(control_strings[sizeof(LDB_CONTROL_POLICY_HINTS_NAME)]);
+		ret = sscanf(p, "%d:%d", &crit, &val);
+		if ((ret != 2) || (crit < 0) || (crit > 1)) {
+			ldb_set_errstring(ldb,
+					  "invalid pwd_policy_hints control syntax\n"
+					  " syntax: crit(b):flags(n)\n"
+					  "   note: b = boolean, n = number");
+			talloc_free(ctrl);
+			return NULL;
+		}
+
+		ctrl->oid = LDB_CONTROL_POLICY_HINTS_OID;
+		ctrl->critical = crit;
+		ctrl->data = talloc(ctrl, int);
+		*((int*)ctrl->data) = val;
+		return ctrl;
+	}
+
+	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_POLICY_HINTS_DEPRECATED_NAME) == 0) {
+		const char *p = NULL;
+		int crit, val, ret;
+
+		p = &(control_strings[sizeof(LDB_CONTROL_POLICY_HINTS_DEPRECATED_NAME)]);
+		ret = sscanf(p, "%d:%d", &crit, &val);
+		if ((ret != 2) || (crit < 0) || (crit > 1)) {
+			ldb_set_errstring(ldb,
+					  "invalid pwd_policy_hints control syntax\n"
+					  " syntax: crit(b):flags(n)\n"
+					  "   note: b = boolean, n = number");
+			talloc_free(ctrl);
+			return NULL;
+		}
+
+		ctrl->oid = LDB_CONTROL_POLICY_HINTS_DEPRECATED_OID;
+		ctrl->critical = crit;
+		ctrl->data = talloc(ctrl, int);
+		*((int*)ctrl->data) = val;
+		return ctrl;
+	}
+
+
 	/*
 	 * When no matching control has been found.
 	 */
