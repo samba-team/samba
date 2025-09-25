@@ -7355,6 +7355,437 @@ static bool test_persistent_reconnect_contended_two(
 		tctx, _tree, table);
 }
 
+struct oplock_persistent_reconnect_contend_results {
+	/* Parameters for the first client's persistent open */
+	const char *oplock;
+	const char *share_mode;
+	const char *reconnect_oplock;
+	const char *broken_to_oplock;
+
+	/* Parameters for the second client's contending open */
+	uint32_t desired_access;
+	bool overwrite;
+	NTSTATUS status;
+	bool async;
+	const char *new_oplock;
+	const char *new_granted_oplock;
+};
+
+#define RO (SEC_RIGHTS_FILE_READ)
+#define RW (SEC_RIGHTS_FILE_READ|SEC_RIGHTS_FILE_WRITE)
+#define RWD (SEC_RIGHTS_FILE_READ|SEC_RIGHTS_FILE_WRITE|SEC_STD_DELETE)
+
+static struct oplock_persistent_reconnect_contend_results oplock_contend_results_fo[] = {
+	{"",	"",	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"",	"x",	"x",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"",	"b",	"s",	RO,	false,	NT_STATUS_SHARING_VIOLATION,	true,	"b",	""},
+	{"",	"R",	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"R",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"R",	"x",	"x",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"R",	"b",	"s",	RO,	false,	NT_STATUS_OK,			true,	"b",	"s"},
+	{"",	"RW",	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"RW",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"RW",	"x",	"x",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"RW",	"b",	"s",	RO,	false,	NT_STATUS_OK,			true,	"b",	"s"},
+	{"",	"RWD",	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"RWD",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"RWD",	"x",	"x",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"RWD",	"b",	"s",	RO,	false,	NT_STATUS_OK,			true,	"b",	"s"},
+	{"",	"",	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"",	"s",	"s",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"",	"x",	"x",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"",	"b",	"s",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"b",	""},
+	{"",	"R",	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"R",	"s",	"s",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"R",	"x",	"x",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"R",	"b",	"s",	RW,	true,	NT_STATUS_SHARING_VIOLATION,	true,	"b",	""},
+	{"",	"RW",	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"RW",	"s",	"s",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"RW",	"x",	"x",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"RW",	"b",	"",	RW,	true,	NT_STATUS_OK,			true,	"b",	"s"},
+	{"",	"RWD",	"",	"",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"RWD",	"s",	"s",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"RWD",	"x",	"x",	RW,	true,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"RWD",	"b",	"",	RW,	true,	NT_STATUS_OK,			true,	"b",	"s"},
+
+	{NULL,	NULL,	NULL,	NULL,	0,	false,	NT_STATUS_INTERNAL_ERROR,	false,	 NULL,	NULL}
+};
+
+/*
+ * On a share with SMB2_SHARE_CAP_SCALEOUT the server doesn't grant exclusive or
+ * batch oplocks.
+ */
+static struct oplock_persistent_reconnect_contend_results oplock_contend_results_so[] = {
+	{"",	"",	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"",	"R",	"",	"",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"R",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"R",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"R",	"s",	"s",	RO,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"",	"",	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"",	"s",	"s",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"",	"s",	"s",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"",	"s",	"s",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"",	"RW",	"",	"",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"s",	"RW",	"s",	"s",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"x",	"RW",	"s",	"s",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+	{"b",	"RW",	"s",	"s",	RW,	false,	NT_STATUS_FILE_NOT_AVAILABLE,	false,	"b",	""},
+
+	{NULL,	NULL,	NULL,	NULL,	0,	false,	NT_STATUS_INTERNAL_ERROR,	false,	 NULL,	NULL}
+};
+
+#undef RO
+#undef RW
+#undef RWD
+
+static void ph_oplock_break_callback(struct smb2_request *req)
+{
+	NTSTATUS status;
+	struct smb2_break br;
+
+	ZERO_STRUCT(br);
+	status = smb2_break_recv(req, &br);
+	if (!NT_STATUS_IS_OK(status))
+		lease_break_info.oplock_failures++;
+
+	return;
+}
+
+/* a oplock break request handler */
+static bool ph_oplock_handler(struct smb2_transport *transport,
+			      const struct smb2_handle *handle,
+			      uint8_t level, void *private_data)
+{
+	struct smb2_tree *tree = private_data;
+	struct smb2_request *req;
+	struct smb2_break br;
+
+	lease_break_info.oplock_handle = *handle;
+	lease_break_info.oplock_level	= level;
+	lease_break_info.oplock_count++;
+
+	ZERO_STRUCT(br);
+	br.in.file.handle = *handle;
+	br.in.oplock_level = level;
+
+	if (lease_break_info.held_oplock_level > SMB2_OPLOCK_LEVEL_NONE) {
+		req = smb2_break_send(tree, &br);
+		req->async.fn = ph_oplock_break_callback;
+		req->async.private_data = NULL;
+	}
+	lease_break_info.held_oplock_level = level;
+
+	return true;
+}
+
+static bool test_persistent_reconnect_contended_oplock_do_one(
+		struct torture_context *tctx,
+		struct smb2_tree *_tree,
+		struct oplock_persistent_reconnect_contend_results *table,
+		int testnum)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	uint32_t tcon_caps;
+	struct smbcli_options options1 = _tree->session->transport->options;
+	struct smbcli_options options2 = _tree->session->transport->options;
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_request *req = NULL;
+	struct smb2_create io;
+	struct smb2_create io2;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
+	uint64_t previous_session_id;
+	struct GUID create_guid = GUID_random();
+	char *fname = NULL;
+	int rc;
+	NTSTATUS status;
+	bool ret = true;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	fname = talloc_asprintf(mem_ctx, "%s-%ld.dat", __FUNCTION__, random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	torture_comment(tctx,
+			"%2d: Hold [%s] "
+			"Sharemode [%-3s] "
+			"Reconnect [%s] "
+			"Break [%s]. "
+			"Contend [%0"PRIX32"] "
+			"Overwrite [%s] "
+			"Result [%18s]\n",
+			testnum,
+			table->oplock,
+			table->share_mode,
+			table->reconnect_oplock,
+			table->broken_to_oplock,
+			table->desired_access,
+			table->overwrite ? "yes" : "no ",
+			nt_errstr(table->status) + 10);
+
+	options1.client_guid = GUID_random();
+	options2.client_guid = GUID_random();
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options1, &tree1);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+	previous_session_id = smb2cli_session_current_id(
+		tree1->session->smbXcli);
+
+	/*
+	 * Get persistent open
+	 */
+
+	status = torture_setup_simple_file(tctx, tree1, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	smb2_oplock_create_share(&io,
+				 fname,
+				 smb2_util_share_access(table->share_mode),
+				 smb2_util_oplock_level(table->oplock));
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = true;
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree1, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	torture_assert_goto(
+		tctx, io.out.persistent_open == true,
+		ret, done, "Persistent open not granted\n");
+
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		if (smb2_util_oplock_level(table->oplock) >
+		    SMB2_OPLOCK_LEVEL_II)
+		{
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.oplock_level,
+				SMB2_OPLOCK_LEVEL_II,
+				ret, done, "Bad oplock level\n");
+		} else {
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.oplock_level,
+				smb2_util_oplock_level(table->oplock),
+				ret, done, "Bad oplock level\n");
+		}
+	} else {
+		torture_assert_int_equal_goto(
+			tctx,
+			io.out.oplock_level,
+			smb2_util_oplock_level(table->oplock),
+			ret, done, "Bad oplock level\n");
+	}
+
+	/*
+	 * Now disconnect
+	 */
+	TALLOC_FREE(tree1);
+	sleep(1);
+
+	/*
+	 * Contend durable open with second open from second client
+	 */
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options2, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2_oplock_create(&io2,
+			   fname,
+			   smb2_util_oplock_level(table->new_oplock));
+	io2.in.desired_access = table->desired_access;
+	if (table->overwrite) {
+		io2.in.create_disposition = NTCREATEX_DISP_OVERWRITE;
+	}
+
+	req = smb2_create_send(tree2, &io2);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "smb2_create_send failed\n");
+
+	while (!req->cancel.can_cancel &&
+	       (req->state < SMB2_REQUEST_DONE))
+	{
+		rc = tevent_loop_once(req->transport->ev);
+		torture_assert_goto(tctx, rc == 0, ret, done,
+				    "tevent_loop_once failed\n");
+	}
+
+	if (table->async) {
+		torture_assert_goto(tctx, req->state < SMB2_REQUEST_DONE,
+				    ret, done,
+				    "Expected async interim response\n");
+	} else {
+		torture_assert_goto(tctx, req->state == SMB2_REQUEST_DONE,
+				    ret, done,
+				    "Expected response\n");
+	}
+
+	/*
+	 * Now reconnect first client and the persistent handle
+	 */
+	ret = torture_smb2_connection_ext(tctx, previous_session_id,
+					  &options1, &tree1);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	tree1->session->transport->oplock.handler = ph_oplock_handler;
+	tree1->session->transport->oplock.private_data = tree1;
+
+	smb2_oplock_create_share(&io,
+				 fname,
+				 smb2_util_share_access(table->share_mode),
+				 smb2_util_oplock_level(table->oplock));
+	io.in.durable_handle_v2 = &h1;
+	io.in.create_guid = create_guid;
+	io.in.persistent_open = true;
+	status = smb2_create(tree1, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io.out.file.handle;
+	lease_break_info.held_oplock_level = io.out.oplock_level;
+
+	if (io.in.oplock_level != SMB2_OPLOCK_LEVEL_NONE) {
+		torture_assert_goto(
+			tctx,
+			io.out.oplock_level == smb2_util_oplock_level(
+				table->reconnect_oplock),
+			ret, done,
+			"Bad oplock level\n");
+
+		if (smb2_util_oplock_level(table->reconnect_oplock) !=
+		    smb2_util_oplock_level(table->broken_to_oplock))
+		{
+			CHECK_OPLOCK_BREAK(table->broken_to_oplock);
+		} else {
+			CHECK_NO_BREAK(tctx);
+		}
+	}
+
+	status = smb2_create_recv(req, tctx, &io2);
+	if (!NT_STATUS_IS_OK(table->status)) {
+		torture_assert_ntstatus_equal_goto(
+			tctx, status, table->status,
+			ret, done, "smb2_create failed\n");
+	} else {
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h2 = io2.out.file.handle;
+
+		if (io2.in.oplock_level != SMB2_OPLOCK_LEVEL_NONE) {
+			torture_assert_goto(
+				tctx,
+				io2.out.oplock_level == smb2_util_oplock_level(
+					table->new_granted_oplock),
+				ret, done,
+				"Bad lease state\n");
+		}
+
+		status = smb2_util_close(tree2, h2);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_close failed\n");
+		ZERO_STRUCT(h2);
+	}
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_close failed\n");
+	ZERO_STRUCT(h1);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+	}
+	TALLOC_FREE(tree1);
+	TALLOC_FREE(tree2);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+static bool test_persistent_reconnect_contended_oplock_do_table(
+		struct torture_context *tctx,
+		struct smb2_tree *_tree,
+		struct oplock_persistent_reconnect_contend_results *table)
+{
+	int i;
+	bool single;
+	bool ok;
+
+	i = torture_setting_int(tctx, "subtest", 0);
+	single = torture_setting_bool(tctx, "single", false);
+
+	for (; table[i].oplock != NULL; i++) {
+		ok = test_persistent_reconnect_contended_oplock_do_one(
+			tctx, _tree, &table[i], i);
+		if (!ok) {
+			return false;
+		}
+		if (single) {
+			return true;
+		}
+	}
+	return true;
+}
+
+static bool test_persistent_reconnect_contended_oplock(
+	struct torture_context *tctx,
+	struct smb2_tree *_tree)
+{
+	struct oplock_persistent_reconnect_contend_results *table = NULL;
+	uint32_t tcon_caps;
+
+	/*
+	 * Persistent Handles together with oplocks are broken on Windows:
+	 * oplocks are "silently" downgraded from B to S when reconnecting a PH,
+	 * instead of sending an oplock break with the downgraded oplock level
+	 * (eg --option=torture:subtest=7).
+	 *
+	 * Samba doesn't grant Persistent Handles with oplocks at all, only with
+	 * leases or without an oplock or lease.
+	 *
+	 * Skip these tests altogether, they're merely kept for historical
+	 * reference and in case this subject needs furthter exploration in the
+	 * future.
+	 */
+
+	torture_skip(tctx, "Broken on Windows\n");
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		table = oplock_contend_results_so;
+	} else {
+		table = oplock_contend_results_fo;
+	}
+
+	return test_persistent_reconnect_contended_oplock_do_table(
+		tctx, _tree, table);
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -7369,6 +7800,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reconnect-contended", test_persistent_reconnect_contended);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-win-broken", test_persistent_reconnect_contended_win_broken);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-two", test_persistent_reconnect_contended_two);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-oplock", test_persistent_reconnect_contended_oplock);
 
 	return suite;
 }
