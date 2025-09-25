@@ -4253,7 +4253,6 @@ NTSTATUS smb2_parse_file_rename_information(
 	char *newname = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	char *dst_original_lcomp = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	bool overwrite = false;
 	uint32_t len;
@@ -4323,20 +4322,6 @@ NTSTATUS smb2_parse_file_rename_information(
 					 &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	/*
-	 * Set the original last component, since
-	 * rename_internals_fsp() requires it.
-	 */
-	dst_original_lcomp = get_original_lcomp(smb_fname_dst,
-					conn,
-					newname,
-					ucf_flags);
-	if (dst_original_lcomp == NULL) {
-		TALLOC_FREE(newname);
-		TALLOC_FREE(smb_fname_dst);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 done:
