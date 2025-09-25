@@ -1148,8 +1148,7 @@ NTSTATUS smb2_parse_file_rename_information(
 	char **_newname,
 	bool *overwrite,
 	struct files_struct **_dst_dirfsp,
-	struct smb_filename **_smb_fname_dst,
-	char **_dst_original_lcomp);
+	struct smb_filename **_smb_fname_dst);
 
 /* The following definitions come from smbd/uid.c  */
 

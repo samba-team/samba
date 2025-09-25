@@ -582,7 +582,6 @@ static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
 	struct files_struct *fsp = state->fsp;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	char *dst_original_lcomp = NULL;
 	bool has_other_open;
 	NTSTATUS status;
 	NTSTATUS close_status;
@@ -605,12 +604,10 @@ static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
 						    &newname,
 						    &overwrite,
 						    &dst_dirfsp,
-						    &smb_fname_dst,
-						    &dst_original_lcomp);
+						    &smb_fname_dst);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	TALLOC_FREE(dst_original_lcomp);
 
 	if (!VALID_STAT(smb_fname_dst->st)) {
 		/* Doesn't exist, nothing to do here */
@@ -795,7 +792,6 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 	struct files_struct *fsp = state->fsp;
 	struct files_struct *dst_parent_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	char *dst_original_lcomp = NULL;
 	NTSTATUS status;
 
 	if (state->rename_dst_parent_check_done) {
@@ -819,8 +815,7 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 						    &newname,
 						    &overwrite,
 						    &dst_parent_dirfsp,
-						    &smb_fname_dst,
-						    &dst_original_lcomp);
+						    &smb_fname_dst);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

@@ -4248,8 +4248,7 @@ NTSTATUS smb2_parse_file_rename_information(
 	char **_newname,
 	bool *_overwrite,
 	struct files_struct **_dst_dirfsp,
-	struct smb_filename **_smb_fname_dst,
-	char **_dst_original_lcomp)
+	struct smb_filename **_smb_fname_dst)
 {
 	char *newname = NULL;
 	struct files_struct *dst_dirfsp = NULL;
@@ -4345,7 +4344,6 @@ done:
 	*_overwrite = overwrite;
 	*_dst_dirfsp = dst_dirfsp;
 	*_smb_fname_dst = smb_fname_dst;
-	*_dst_original_lcomp = dst_original_lcomp;
 	return NT_STATUS_OK;
 }
 
@@ -4363,7 +4361,6 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	struct smb_filename *smb_fname_src_rel = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	char *dst_original_lcomp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -4377,8 +4374,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 						    &newname,
 						    &overwrite,
 						    &dst_dirfsp,
-						    &smb_fname_dst,
-						    &dst_original_lcomp);
+						    &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
