@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/server_id.h"
+#include "lib/util/debug.h"
 #include "source3/lib/util_procid.h"
 #include "source3/param/param_proto.h"
 #include "serverid.h"
@@ -43,6 +44,12 @@ static bool serverid_exists_local(const struct server_id *id)
 
 	ret = messaging_dgm_get_unique(id->pid, &unique);
 	if (ret != 0) {
+		if (ret == EACCES) {
+			DBG_ERR("Access denied on msg.lock file for PID %jd, "
+				"assuming process still exists\n",
+				(intmax_t)id->pid);
+			return true;
+		}
 		return false;
 	}
 
