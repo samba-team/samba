@@ -17,10 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/samba_util.h"
 #include "lib/util/server_id.h"
+#include "source3/lib/util_procid.h"
+#include "source3/param/param_proto.h"
 #include "serverid.h"
-#include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "lib/messages_ctdb.h"
 #include "lib/messaging/messages_dgm.h"
