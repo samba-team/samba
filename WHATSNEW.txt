@@ -1,4 +1,60 @@
                    ==============================
+                   Release Notes for Samba 4.23.1
+                         September 26, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.0
+--------------------
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 15920: Incomplete bind configuration causes DLZ plugin to crash.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15914: winbind can crash at startup.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15919: vfs_ceph_new should not use ceph_ll_nonblocking_readv_writev for
+     fsync_send.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15904: CTDB does not support PCP 7.0.0.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15921: CTDB_SOCKET can be used even when CTDB_TEST_MODE is not set.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15919: vfs_ceph_new should not use ceph_ll_nonblocking_readv_writev for
+     fsync_send.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.23.0
                          September 12, 2025
                    ==============================
