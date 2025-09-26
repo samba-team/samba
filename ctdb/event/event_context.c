@@ -141,10 +141,13 @@ static int eventd_event_set(struct event_component *comp,
 		return ret;
 	}
 
-	TALLOC_FREE(event->script_list);
-	if (script_list != NULL) {
-		event->script_list = talloc_steal(event, script_list);
+	/* Don't replace previous result with a failed one */
+	if (script_list == NULL) {
+		return 0;
 	}
+
+	TALLOC_FREE(event->script_list);
+	event->script_list = talloc_steal(event, script_list);
 
 	return 0;
 }
