@@ -4242,8 +4242,7 @@ NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
 					    struct smb_request *req,
 					    const char *pdata,
 					    int total_data,
-					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src,
+					    bool posix,
 					    char **_newname,
 					    bool *_overwrite)
 {
@@ -4251,10 +4250,6 @@ NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
 	bool overwrite = false;
 	uint32_t len;
 	NTSTATUS status;
-
-	if (!fsp) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
 
 	if (total_data < 20) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4279,8 +4274,7 @@ NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = check_path_syntax(newname,
-			fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
+	status = check_path_syntax(newname, posix);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(newname);
 		return status;
@@ -4308,15 +4302,15 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	status = smb2_parse_file_rename_information(ctx,
-						    conn,
-						    req,
-						    pdata,
-						    total_data,
-						    fsp,
-						    smb_fname_src,
-						    &newname,
-						    &overwrite);
+	status = smb2_parse_file_rename_information(
+		ctx,
+		conn,
+		req,
+		pdata,
+		total_data,
+		fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH,
+		&newname,
+		&overwrite);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

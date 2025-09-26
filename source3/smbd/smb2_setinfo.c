@@ -412,15 +412,15 @@ static NTSTATUS smb2_parse_file_rename_information_dst(
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTSTATUS status;
 
-	status = smb2_parse_file_rename_information(mem_ctx,
-						    conn,
-						    req,
-						    pdata,
-						    total_data,
-						    fsp,
-						    smb_fname_src,
-						    &newname,
-						    &overwrite);
+	status = smb2_parse_file_rename_information(
+		mem_ctx,
+		conn,
+		req,
+		pdata,
+		total_data,
+		fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH,
+		&newname,
+		&overwrite);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

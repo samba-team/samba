@@ -1142,8 +1142,7 @@ NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
 					    struct smb_request *req,
 					    const char *pdata,
 					    int total_data,
-					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src,
+					    bool posix,
 					    char **_newname,
 					    bool *overwrite);
 
