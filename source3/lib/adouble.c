@@ -271,8 +271,8 @@ size_t ad_setentryoff(struct adouble *ad, int eid, size_t off)
 
 /*
  * All entries besides FinderInfo and resource fork must fit into the
- * buffer. FinderInfo is special as it may be larger then the default 32 bytes
- * if it contains marshalled xattrs, which we will fixup that in
+ * buffer. FinderInfo is special as it may be larger than the default 32 bytes
+ * if it contains marshalled xattrs, which we will fix up in
  * ad_convert(). The first 32 bytes however must also be part of the buffer.
  *
  * The resource fork is never accessed directly by the ad_data buf.
