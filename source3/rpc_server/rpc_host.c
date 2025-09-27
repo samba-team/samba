@@ -71,6 +71,7 @@
 #include "nsswitch/winbind_client.h"
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/security_token.h"
+#include "source3/lib/substitute.h"
 
 extern bool override_logfile;
 
@@ -2883,6 +2884,8 @@ int main(int argc, const char *argv[])
 	BlockSignals(true, SIGPIPE);
 
 	dump_core_setup(progname, lp_logfile(frame, lp_sub));
+
+	set_remote_machine_name("samba-dcerpcd", false);
 
 	reopen_logs();
 

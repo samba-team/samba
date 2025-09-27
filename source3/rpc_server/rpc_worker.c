@@ -45,6 +45,7 @@
 #include "libcli/security/security_token.h"
 #include "libcli/security/dom_sid.h"
 #include "source3/include/proto.h"
+#include "source3/lib/substitute.h"
 
 /*
  * This is the generic code that becomes the
@@ -1142,6 +1143,8 @@ int rpc_worker_main(
 #endif
 	/* Ignore children - no zombies. */
 	CatchChild();
+
+	set_remote_machine_name(progname, false);
 
 	reopen_logs();
 
