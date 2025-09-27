@@ -1726,6 +1726,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	struct smbd_smb2_create_state *state = tevent_req_data(
 		req, struct smbd_smb2_create_state);
 	connection_struct *conn = state->result->conn;
+	bool get_cookie = false;
 	NTSTATUS status;
 
 	/*
@@ -1821,9 +1822,15 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		}
 	}
 
-	if (!state->replay_operation && state->durable_requested &&
-	    (fsp_lease_type(state->result) & SMB2_LEASE_HANDLE))
-	{
+	if (!state->replay_operation) {
+		if (state->durable_requested &&
+		    (fsp_lease_type(state->result) & SMB2_LEASE_HANDLE))
+		{
+			get_cookie = true;
+		}
+	}
+
+	if (get_cookie) {
 		status = SMB_VFS_DURABLE_COOKIE(
 			state->result,
 			state->op,
