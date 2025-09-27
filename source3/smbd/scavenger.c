@@ -31,6 +31,7 @@
 #include "lib/util/server_id.h"
 #include "lib/util/util_process.h"
 #include "lib/util/sys_rw_data.h"
+#include "source3/lib/substitute.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SCAVENGER
@@ -255,6 +256,7 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 		}
 
 		process_set_title("smbd-scavenger", "scavenger");
+		set_remote_machine_name("scavenger", false);
 		reopen_logs();
 
 		state->am_scavenger = true;
