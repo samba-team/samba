@@ -5835,6 +5835,104 @@ done:
 	return ret;
 }
 
+/*
+ * Verifies the lease epoch is not incremented by the server (returns what the
+ * client sent in the request) if a lease was not granted ie lease_level=NONE.
+ */
+static bool test_lease_epoch(struct torture_context *tctx,
+			     struct smb2_tree *tree)
+{
+	struct smb2_create c;
+	struct smb2_lease ls1;
+	struct smb2_handle h1 = {};
+	struct smb2_write wr;
+	char dat = 'x';
+	DATA_BLOB data = (DATA_BLOB) {.data = (uint8_t *)&dat, .length = 1};
+	struct smb2_lock lck = {0};
+	struct smb2_lock_element el[1];
+	uint64_t lease1 = 1;
+	struct GUID create_guid = GUID_random();
+	char *fname = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	fname = talloc_asprintf(tctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	ZERO_STRUCT(wr);
+	wr.in.file.handle = h1;
+	wr.in.offset      = 0;
+	wr.in.data        = data;
+	status = smb2_write(tree, &wr);
+	torture_assert_ntstatus_ok(tctx, status, "smb2_write failed\n");
+
+	ZERO_ARRAY(el);
+	ZERO_STRUCT(lck);
+	el[0].offset = 0;
+	el[0].length = 1;
+	el[0].flags = SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	lck.in.locks = el;
+	lck.in.lock_count = 1;
+	lck.in.file.handle = h1;
+
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_OK,
+		ret, done, "smb2_lock failed\n");
+
+
+	smb2_lease_v2_create_share(&c,
+				   &ls1,
+				   false,
+				   fname,
+				   smb2_util_share_access("RWD"),
+				   lease1,
+				   NULL,
+				   smb2_util_lease_state("R"),
+				   100);
+	c.in.durable_open_v2 = true;
+	c.in.create_guid = create_guid;
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.oplock_level,
+		SMB2_OPLOCK_LEVEL_LEASE,
+		ret, done,
+		"Bad lease level\n");
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.lease_response_v2.lease_state,
+		0,
+		ret, done,
+		"Bad lease level\n");
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.lease_response_v2.lease_epoch,
+		100,
+		ret,
+		done,
+		"Bad lease epoch\n");
+
+done:
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5896,6 +5994,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 				     test_initial_delete_disconnect);
 	torture_suite_add_2smb2_test(suite, "rename_dir_openfile",
 				     torture_rename_dir_openfile);
+	torture_suite_add_1smb2_test(suite, "lease-epoch", test_lease_epoch);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
