@@ -716,6 +716,9 @@ static bool cleanupd_init(struct messaging_context *msg, bool interactive,
 	}
 
 	process_set_title("smbd-cleanupd", "cleanupd");
+	set_remote_machine_name("cleanupd", false);
+
+	reopen_logs();
 
 	se = tevent_add_signal(ev,
 			       ev,
