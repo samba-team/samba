@@ -8565,6 +8565,334 @@ done:
 	return ret;
 }
 
+static struct {
+	const char *requested_lease;
+	const char *expected_granted_fo_win;
+	const char *expected_granted_fo_ca_win;
+	const char *expected_granted_so_win;
+	const char *expected_granted_so_ca_win;
+	const char *expected_granted_fo_samba;
+	const char *expected_granted_fo_ca_samba;
+	const char *expected_granted_so_samba;
+	const char *expected_granted_so_ca_samba;
+} ph_dirlease_tests[] = {
+	/*      Windows behaviour               Samba behaviour */
+	/*      FO      FO_CA   SO      SO_CA   FO      FO_CA   SO      SO_CA */
+	{"",    "",     "",     "",     "",     "",     "",     "",     ""},
+	{"R",   "R",    "R",    "",     "",     "R",    "",     "R",    ""},
+	{"RW",  "R",    "R",    "",     "",     "R",    "",     "R",    ""},
+	{"RH",  "RH",   "RH",   "",     "",     "RH",   "",     "RH",   ""},
+	{"RWH", "RH",   "RH",   "",     "",     "RH",   "",     "RH",   ""},
+};
+
+/*
+ * Basic testing of Persistent Handles and various lease levels on directories
+ *
+ * Windows doesn't grant leases on SO. Samba differs and doesn't grant leases on
+ * CA. See smbd_smb2_tree_connect() for an explanation.
+ */
+static bool test_directory_leaselevels(struct torture_context *tctx,
+				       struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char *dname = NULL;
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1 = {};
+	uint32_t tcon_caps;
+	int i;
+	bool share_is_so;
+	bool share_is_ca;
+	NTSTATUS status;
+	bool ret = true;
+
+	if (TARGET_IS_SAMBA3(tctx)) {
+		torture_comment(tctx, "Target is Samba\n");
+	} else {
+		torture_comment(tctx, "Target is Windows\n");
+	}
+
+	tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CLUSTER)) {
+		torture_skip(tctx, "Supposed to be run against a cluster\n");
+	}
+	torture_comment(tctx, "SMB2_SHARE_CAP_CLUSTER\n");
+
+	share_is_so = (tcon_caps & SMB2_SHARE_CAP_SCALEOUT);
+	if (share_is_so) {
+		torture_comment(tctx, "SMB2_SHARE_CAP_SCALEOUT\n");
+	}
+	share_is_ca = (tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY);
+	if (share_is_ca) {
+		torture_comment(tctx,
+				"SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY\n");
+	}
+
+	for (i = 0; i < ARRAY_SIZE(ph_dirlease_tests); i++) {
+		const char *lease = ph_dirlease_tests[i].requested_lease;
+		uint64_t lease1 = random();
+		struct smb2_lease *_ls = NULL;
+		uint16_t expected_granted;
+		const char *exp_granted_str = NULL;
+
+		if (!TARGET_IS_SAMBA3(tctx)) {
+			if (share_is_so) {
+				if (share_is_ca) {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_so_ca_win;
+				} else {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_so_win;
+				}
+			} else {
+				if (share_is_ca) {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_fo_ca_win;
+				} else {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_fo_win;
+				}
+			}
+		} else {
+			if (share_is_so) {
+				if (share_is_ca) {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_so_ca_samba;
+				} else {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_so_samba;
+				}
+			} else {
+				if (share_is_ca) {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_fo_ca_samba;
+				} else {
+					exp_granted_str = ph_dirlease_tests[i].
+						expected_granted_fo_samba;
+				}
+			}
+		}
+
+		expected_granted = smb2_util_lease_state(exp_granted_str);
+
+		torture_comment(tctx, "%2d: Request PH with [%-4s] lease, "
+				"granted lease level [%-4s]\n",
+				i+1, lease, exp_granted_str);
+
+		dname = talloc_asprintf(tctx, "lease_break-%ld.dir", random());
+		torture_assert_not_null_goto(tctx, dname, ret, done,
+					     "talloc_asprintf failed\n");
+
+		if (lease[0] != '\0') {
+			_ls = &ls;
+		}
+
+		ZERO_STRUCT(io);
+		smb2_lease_v2_create_share(&io,
+					   _ls,
+					   true,
+					   dname,
+					   smb2_util_share_access("RWD"),
+					   lease1,
+					   NULL,
+					   smb2_util_lease_state(lease),
+					   0);
+		status = smb2_create(tree, mem_ctx, &io);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h1 = io.out.file.handle;
+
+		if (_ls != NULL) {
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.oplock_level,
+				SMB2_OPLOCK_LEVEL_LEASE,
+				ret, done,
+				"Bad lease level\n");
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.lease_response_v2.lease_state,
+				expected_granted,
+				ret, done,
+				"Bad lease level\n");
+		}
+
+		status = smb2_util_close(tree, h1);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"close failed\n");
+		ZERO_STRUCT(h1);
+
+		/*
+		 * Try the same again requesting a PH if the share is CA, should
+		 * grant the same lease level as without a PH.
+		 */
+
+		if (!share_is_ca) {
+			goto cleanup;
+		}
+
+		io.in.durable_open_v2 = true;
+		io.in.persistent_open = true;
+		io.in.create_guid = GUID_random();
+
+		status = smb2_create(tree, mem_ctx, &io);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h1 = io.out.file.handle;
+
+		if (_ls != NULL) {
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.oplock_level,
+				SMB2_OPLOCK_LEVEL_LEASE,
+				ret, done,
+				"Bad lease level\n");
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.lease_response_v2.lease_state,
+				expected_granted,
+				ret, done,
+				"Bad lease level\n");
+		}
+
+		status = smb2_util_close(tree, h1);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"close failed\n");
+		ZERO_STRUCT(h1);
+
+cleanup:
+		status = smb2_util_rmdir(tree, dname);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"unlink failed\n");
+
+		TALLOC_FREE(dname);
+	}
+
+done:
+	TALLOC_FREE(dname);
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+static bool test_directory_leaselevels_fo(struct torture_context *tctx,
+					  struct smb2_tree *_tree)
+{
+	struct smb2_tree *tree = NULL;
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		torture_skip(tctx, "Runs against standalone, "
+			     "skip against SO\n");
+	}
+
+	ret = torture_smb2_con_share(tctx, "fo", &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY) {
+		torture_fail(tctx, "Expect no CA\n");
+	}
+
+	ret = test_directory_leaselevels(tctx, tree);
+
+done:
+	TALLOC_FREE(tree);
+	return ret;
+}
+
+static bool test_directory_leaselevels_fo_ca(struct torture_context *tctx,
+					     struct smb2_tree *_tree)
+{
+	struct smb2_tree *tree = NULL;
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		torture_skip(tctx, "Runs against standalone, "
+			     "skip against SO\n");
+	}
+
+	ret = torture_smb2_con_share(tctx, "ca_fo", &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_fail(tctx, "Expect CA\n");
+	}
+
+	ret = test_directory_leaselevels(tctx, tree);
+
+done:
+	TALLOC_FREE(tree);
+	return ret;
+}
+
+static bool test_directory_leaselevels_so(struct torture_context *tctx,
+					  struct smb2_tree *_tree)
+{
+	struct smb2_tree *tree = NULL;
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_SCALEOUT)) {
+		torture_skip(tctx, "Need SO\n");
+	}
+
+	ret = torture_smb2_con_share(tctx, "so", &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY) {
+		torture_fail(tctx, "Expect no CA\n");
+	}
+
+	ret = test_directory_leaselevels(tctx, tree);
+
+done:
+	TALLOC_FREE(tree);
+	return ret;
+}
+
+static bool test_directory_leaselevels_so_ca(struct torture_context *tctx,
+					     struct smb2_tree *_tree)
+{
+	struct smb2_tree *tree = NULL;
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_SCALEOUT)) {
+		torture_skip(tctx, "Need SO\n");
+	}
+
+	ret = torture_smb2_con_share(tctx, "ca_so", &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_fail(tctx, "Expect CA\n");
+	}
+
+	ret = test_directory_leaselevels(tctx, tree);
+
+done:
+	TALLOC_FREE(tree);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -8585,6 +8913,11 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "rename-dir-open-files", test_persistent_rename_dir_open_files);
 	torture_suite_add_1smb2_test(suite, "replay-reconnect", test_persistent_replay_reconnect);
 	torture_suite_add_1smb2_test(suite, "replay-multi", test_persistent_replay_multi);
+	torture_suite_add_1smb2_test(suite, "directory-leaselevels", test_directory_leaselevels);
+	torture_suite_add_1smb2_test(suite, "directory-leaselevels-fo", test_directory_leaselevels_fo);
+	torture_suite_add_1smb2_test(suite, "directory-leaselevels-fo-ca", test_directory_leaselevels_fo_ca);
+	torture_suite_add_1smb2_test(suite, "directory-leaselevels-so", test_directory_leaselevels_so);
+	torture_suite_add_1smb2_test(suite, "directory-leaselevels-so-ca", test_directory_leaselevels_so_ca);
 
 	return suite;
 }
