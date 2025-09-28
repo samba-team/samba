@@ -8893,6 +8893,136 @@ done:
 	return ret;
 }
 
+/*
+ * Verifies a disconnected Persistent Handle on a directory adheres to the same
+ * basic rule as a file.
+ */
+static bool test_directory_disconnect(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	struct smbcli_options options = tree->session->transport->options;
+	uint64_t previous_session_id;
+	struct smb2_create c;
+	struct smb2_handle h1 = {};
+	struct smb2_handle ph= {};
+	char *dname = NULL;
+	struct GUID create_guid = GUID_random();
+	NTSTATUS status;
+	bool ret = true;
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	dname = talloc_asprintf(tctx, "lease_break-%ld.dir", random());
+	torture_assert_not_null_goto(tctx, dname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	smb2_lease_v2_create_share(&c,
+				   NULL,
+				   true,
+				   dname,
+				   smb2_util_share_access(""),
+				   0,
+				   NULL,
+				   smb2_util_lease_state(""),
+				   0);
+	c.in.desired_access = SEC_RIGHTS_FILE_READ;
+	c.in.durable_open_v2 = true;
+	c.in.persistent_open = true;
+	c.in.create_guid = create_guid;
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	/*
+	 * A second open must fail with STATUS_SHARING_VIOLATION
+	 */
+	c.in.durable_open_v2 = false;
+	c.in.persistent_open = false;
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_SHARING_VIOLATION,
+					   ret, done,
+					   "smb2_create failed\n");
+
+	/*
+	 * Now disconnect
+	 */
+	TALLOC_FREE(tree);
+	ph = h1;
+	ZERO_STRUCT(h1);
+	sleep(1);
+
+	/*
+	 * Now reconnect the session
+	 */
+	ret = torture_smb2_connection_ext(tctx, previous_session_id,
+					  &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2_lease_v2_create_share(&c,
+				   NULL,
+				   true,
+				   dname,
+				   smb2_util_share_access("RWD"),
+				   0,
+				   NULL,
+				   smb2_util_lease_state(""),
+				   0);
+
+	c.in.desired_access = SEC_RIGHTS_FILE_READ;
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   ret, done,
+					   "smb2_create failed\n");
+
+	smb2_lease_v2_create_share(&c,
+				   NULL,
+				   true,
+				   dname,
+				   smb2_util_share_access(""),
+				   0,
+				   NULL,
+				   smb2_util_lease_state(""),
+				   0);
+
+	c.in.desired_access = SEC_RIGHTS_FILE_READ;
+	c.in.persistent_open = true;
+	c.in.create_guid = create_guid;
+	c.in.durable_handle_v2 = &ph;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	h1 = c.out.file.handle;
+
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	status = smb2_util_rmdir(tree, dname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"unlink failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (tree != NULL) {
+		smb2_util_rmdir(tree, dname);
+	}
+	TALLOC_FREE(dname);
+	TALLOC_FREE(tree);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -8918,6 +9048,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "directory-leaselevels-fo-ca", test_directory_leaselevels_fo_ca);
 	torture_suite_add_1smb2_test(suite, "directory-leaselevels-so", test_directory_leaselevels_so);
 	torture_suite_add_1smb2_test(suite, "directory-leaselevels-so-ca", test_directory_leaselevels_so_ca);
+	torture_suite_add_1smb2_test(suite, "directory-disconnect", test_directory_disconnect);
 
 	return suite;
 }
