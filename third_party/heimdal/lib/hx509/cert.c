@@ -33,6 +33,7 @@
 
 #include "hx_locl.h"
 #include "crypto-headers.h"
+#include "rfc2459_asn1.h"
 #include <rtbl.h>
 
 /**
@@ -964,6 +965,63 @@ hx509_cert_find_subjectAltName_otherName(hx509_context context,
     }
 }
 
+/**
+ * @brief Return a list of rfc822 subject alternative names (email addresses)
+ *
+ * @param[in]  context hx509 context.
+ * @param[in]  cert    hx509 certificate
+ * @param[out] list    of rfc822 subjectAltNames.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ *
+ * @note The returned list of octet string should be freed with
+ *        hx509_free_octet_string_list().
+ *
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cert_find_subjectAltName_rfc822(hx509_context context,
+				      hx509_cert cert,
+				      hx509_octet_string_list *list)
+{
+    GeneralNames sa;
+    int ret = 0;
+    size_t i = 0;
+    size_t j = 0;
+
+    list->val = NULL;
+    list->len = 0;
+
+    i = 0;
+    while (1) {
+	ret = find_extension_subject_alt_name(_hx509_get_cert(cert), &i, &sa);
+	if (ret == HX509_EXTENSION_NOT_FOUND) {
+	    return 0;
+	} else if (ret != 0) {
+	    hx509_set_error_string(
+		context, 0, ret, "Error searching for RFC822 names");
+	    hx509_free_octet_string_list(list);
+	    return ret;
+	}
+
+	for (j = 0; j < sa.len; j++) {
+	    if (sa.val[j].element == choice_GeneralName_rfc822Name) {
+		ret = add_to_list(list, &sa.val[j].u.rfc822Name);
+		if (ret) {
+		    hx509_set_error_string(context, 0, ret,
+					   "Error adding an extra RFC822 name "
+					   "to return list");
+		    hx509_free_octet_string_list(list);
+		    free_GeneralNames(&sa);
+		    return ret;
+		}
+	    }
+	}
+	free_GeneralNames(&sa);
+    }
+}
+
 
 static int
 check_key_usage(hx509_context context, const Certificate *cert,
@@ -1865,6 +1923,40 @@ HX509_LIB_FUNCTION int HX509_LIB_CALL
 hx509_cert_get_subject_unique_id(hx509_context context, hx509_cert p, heim_bit_string *subject)
 {
     return get_x_unique_id(context, "subject", p->data->tbsCertificate.subjectUniqueID, subject);
+}
+
+/**
+ * @brief get the (SKI) Subject Key Identifier from a certificate
+ *
+ * @param[in]  context hx509 context
+ * @param[in]  cert    hx509 certificate
+ * @param[out] ski     subject key identifier
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @note ski should be freed with a call to free_SubjectKeyIdentifier
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_cert_get_subject_key_identifier(hx509_context context,
+                                      hx509_cert cert,
+                                      SubjectKeyIdentifier *ski)
+{
+    size_t i = 0;
+    size_t size = 0;
+    const Extension *ext = NULL;
+    int ret = 0;
+
+    ext = find_extension(cert->data,
+			 &asn1_oid_id_x509_ce_subjectKeyIdentifier,
+			 &i);
+    if (ext == NULL) {
+	return HX509_EXTENSION_NOT_FOUND;
+    }
+    ret = decode_SubjectKeyIdentifier(ext->extnValue.data,
+				      ext->extnValue.length,
+				      ski,
+				      &size);
+    return ret;
 }
 
 

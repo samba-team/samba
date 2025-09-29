@@ -160,6 +160,9 @@ HEIMDAL_HDB_1.0 {
 		free_HDB_Ext_KeyRotation;
 		free_HDB_Ext_KeySet;
 		free_HDB_Ext_KeyTrust;
+		free_HDB_Ext_KeyTrust;
+		free_HDB_Ext_CertificateMapping;
+		free_HDB_Ext_CertificateMappings;
 		free_HDB_Ext_PKINIT_acl;
 		free_hdb_keyset;
 		free_HDB_keyset;

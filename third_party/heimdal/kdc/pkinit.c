@@ -35,7 +35,6 @@
 
 #include "hdb_asn1.h"
 #include "kdc_locl.h"
-
 #ifdef PKINIT
 
 #include <heim_asn1.h>
@@ -427,7 +426,7 @@ pk_check_key_trust( krb5_context context, hdb_entry *client, hx509_cert *cert)
 	ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
 	krb5_set_error_message(
 	    context, ret, "Unable to get certificate public key");
-	goto out1;
+	goto out;
     }
 
     /*
@@ -439,7 +438,7 @@ pk_check_key_trust( krb5_context context, hdb_entry *client, hx509_cert *cert)
     if (ret) {
 	krb5_set_error_message(
 	    context, ret, "Unable to encode certificate public key");
-	goto out2;
+	goto out1;
     }
 
     keys = ext->data.u.key_trust;
@@ -456,10 +455,346 @@ pk_check_key_trust( krb5_context context, hdb_entry *client, hx509_cert *cert)
     }
     der_free_octet_string(&buf);
 
-out2:
-    free_SubjectPublicKeyInfo(&spki);
 out1:
-    free_HDB_extension(ext);
+    free_SubjectPublicKeyInfo(&spki);
+out:
+    return ret;
+}
+
+/**
+ * @brief Match the target name against the value on the certificate
+ *
+ * name is converted to it's rfc4514 form and compared to the target
+ *
+ * @param[in] context krb5 context
+ * @param[in] name    name on the certificate
+ * @param[in] target  value to match name against
+ *
+ * @return TRUE the name matches
+ *         FALSE the name DOES NOT match
+ */
+static krb5_boolean match_name(
+    const krb5_context context,
+    const hx509_name *name,
+    const heim_octet_string *target)
+{
+    krb5_boolean matched = FALSE;
+    char *ns = NULL;
+    char *ts = NULL;
+    krb5_error_code ret = 0;
+
+    ret = hx509_name_to_string(*name, &ns);
+    if (ret != 0) {
+	return FALSE;
+    }
+
+    ts = calloc(target->length + 1, sizeof(char));
+    if (ts == NULL) {
+	goto out;
+    }
+    memcpy(ts, target->data, target->length);
+    if (strncmp(ts, ns, target->length) == 0) {
+	matched = TRUE;
+    }
+    free(ts);
+
+out:
+    free(ns);
+    return matched;
+}
+
+/**
+ * @brief does the rfc822 name of the certificate match the value in mapping?
+ *
+ * @param[in] context krb5 context
+ * @param[in] cert    X509 certificate
+ * @param[in] m       certificate mapping
+ *
+ * @return TRUE the certificate matches
+ *         FALSE the certificate DOES NOT match
+ */
+static krb5_boolean
+match_rfc822_name(
+    const krb5_context context,
+    const hx509_cert *cert,
+    const HDB_Ext_CertificateMapping *m)
+{
+    krb5_error_code ret = 0;
+    krb5_boolean matched = FALSE;
+    size_t j = 0;
+    hx509_octet_string_list list;
+
+    ret = hx509_cert_find_subjectAltName_rfc822(context->hx509ctx,
+						*cert,
+						&list);
+    if (ret != 0) {
+	return FALSE;
+    }
+
+    for (j = 0, matched = FALSE; j < list.len && !matched; j++) {
+	if (list.val[j].length == m->rfc822->length &&
+	    memcmp(m->rfc822->data, list.val[j].data, list.val[j].length) == 0)
+	{
+	    matched = TRUE;
+	}
+    }
+    hx509_free_octet_string_list(&list);
+    return matched;
+}
+
+/**
+ * @brief does the SHA1 hash of the certificate public key match the
+ *        value in mapping?
+ *
+ * @param[in] context krb5 context
+ * @param[in] cert    X509 certificate
+ * @param[in] m       certificate mapping
+ *
+ * @return TRUE the certificate matches
+ *         FALSE the certificate DOES NOT match
+ */
+static krb5_boolean
+match_public_key(
+    const krb5_context context,
+    const hx509_cert *cert,
+    const HDB_Ext_CertificateMapping *m)
+{
+    krb5_error_code ret = 0;
+    krb5_boolean matched = FALSE;
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    EVP_MD_CTX *ctx = NULL;
+    unsigned int size = 0;
+
+    SubjectPublicKeyInfo spki;
+    ret = hx509_cert_get_SPKI(context->hx509ctx, *cert, &spki);
+    if (ret != 0) {
+	return FALSE;
+    }
+
+    /*
+     * Compute the SHA1 hash of the certificate subject public key
+     */
+    ctx = EVP_MD_CTX_create();
+    if (ctx == NULL) {
+	goto out;
+    }
+    EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+    EVP_DigestUpdate(
+	ctx, spki.subjectPublicKey.data, spki.subjectPublicKey.length/8);
+    EVP_DigestFinal_ex(ctx, digest, &size);
+    EVP_MD_CTX_destroy(ctx);
+
+    /*
+     * Now compare them
+     */
+    if (size == m->public_key->length &&
+	memcmp(digest, m->public_key->data, m->public_key->length) == 0) {
+	matched = TRUE;
+    }
+
+out:
+    free_SubjectPublicKeyInfo(&spki);
+    return matched;
+}
+
+/**
+ * @brief does the certificate SKI match the SKI in mapping?
+ *
+ * @param[in] context krb5 context
+ * @param[in] cert    X509 certificate
+ * @param[in] m       certificate mapping
+ *
+ * @return TRUE the certificate matches
+ *         FALSE the certificate DOES NOT match
+ */
+static krb5_boolean
+match_subject_key_identifier(
+    const krb5_context context,
+    const hx509_cert *cert,
+    const HDB_Ext_CertificateMapping *m)
+{
+    krb5_error_code ret = 0;
+    krb5_boolean matched = FALSE;
+
+    SubjectKeyIdentifier ski;
+    ret = hx509_cert_get_subject_key_identifier(context->hx509ctx, *cert, &ski);
+    if (ret != 0) {
+	return FALSE;
+    }
+    if (der_heim_octet_string_cmp(m->ski, &ski) == 0) {
+	matched = TRUE;
+    }
+    free_SubjectKeyIdentifier(&ski);
+    return matched;
+}
+
+/**
+ * @brief does the certificate serial number match the serial number in mapping?
+ *
+ * @param[in] cert X509 certificate
+ * @param[in] m    certificate mapping
+ *
+ * @return TRUE the certificate matches
+ *         FALSE the certificate DOES NOT match
+ */
+static krb5_boolean
+match_serial_number(
+    const hx509_cert *cert,
+    const HDB_Ext_CertificateMapping *m)
+{
+    krb5_error_code ret = 0;
+    krb5_boolean matched = FALSE;
+    heim_integer serial_number;
+
+    ret = hx509_cert_get_serialnumber(*cert, &serial_number);
+    if (ret != 0) {
+	return FALSE;
+    }
+    if (serial_number.length == m->serial_number->length &&
+	memcmp(serial_number.data,
+		m->serial_number->data,
+		serial_number.length) == 0) {
+	matched = TRUE;
+    }
+    der_free_heim_integer(&serial_number);
+    return matched;
+}
+
+/**
+ * @brief Validate the certificate against the criteria outlined in KB5014754
+ *
+ * @see KB5014754: Certificate-based authentication changes on Windows domain
+ *                 controllers
+ *      https://support.microsoft.com/en-us/topic/
+ *      kb5014754-certificate-based-authentication-changes-on-windows
+ *      -domain-controllers-ad2c23b0-15d8-4340-a468-4d4f3b188f16
+ *
+ * @param context[in] krb5 context
+ * @param client[in]  client hdb record
+ * @param cert[in]    X509 certificate used to sign the request.
+ *
+ * @return 0 no error
+ *         KRB5_KDC_ERR_CLIENT_NOT_TRUSTED certificate fails KB5014754
+ *         otherwise an error occurred processing the request.
+ */
+static krb5_error_code
+pk_check_certificate_binding(
+    krb5_context context,
+    hdb_entry *client,
+    hx509_cert *cert)
+{
+
+    krb5_error_code ret = 0;
+    HDB_extension *ext = NULL;
+    HDB_Ext_CertificateMappings mappings;
+    unsigned int i = 0;
+    krb5_boolean matched = FALSE;
+    krb5_boolean strong_mapping = FALSE;
+
+    memset(&mappings, 0, sizeof(mappings));
+
+    /*
+	* If there is no extension or the enforcement mode is none
+	* then there is nothing to do.
+	*/
+    ext = hdb_find_extension(client, choice_HDB_extension_data_cert_mappings);
+    if (ext == NULL) {
+	return 0;
+    }
+    mappings = ext->data.u.cert_mappings;
+    if (mappings.enforcement_mode == hdb_enf_mode_none) {
+	ret = 0;
+	goto out;
+    }
+
+    /*
+     * If there are no mappings then reject the logon
+     */
+    if (mappings.mappings == NULL) {
+	ret = KRB5_KDC_ERR_CERTIFICATE_MISMATCH;
+	krb5_set_error_message(
+	    context, ret, "Client has no certificate mappings");
+	goto out;
+    }
+
+    for (i = 0, matched = FALSE; i < mappings.mappings->len && !matched; i++) {
+	HDB_Ext_CertificateMapping *m = &mappings.mappings->val[i];
+
+	strong_mapping = m->strong_mapping;
+	/*
+	 * When enforcement mode is full only consider strong mappings
+	 */
+	if (mappings.enforcement_mode == hdb_enf_mode_full && !strong_mapping) {
+	    continue;
+	}
+
+	if (m->issuer_name != NULL) {
+	    hx509_name issuer;
+	    ret = hx509_cert_get_issuer(*cert, &issuer);
+	    if (ret != 0) {
+		continue;
+	    }
+	    matched = match_name(context, &issuer, m->issuer_name);
+	    hx509_name_free(&issuer);
+	    if (!matched) {
+		continue;
+	    }
+	}
+	if (m->subject_name != NULL) {
+	    hx509_name subject;
+	    ret = hx509_cert_get_subject(*cert, &subject);
+	    if (ret != 0) {
+		continue;
+	    }
+	    matched = match_name(context, &subject, m->subject_name);
+	    hx509_name_free(&subject);
+	    if (!matched) {
+		continue;
+	    }
+	}
+	if (m->rfc822 != NULL) {
+	    matched = match_rfc822_name(context, cert, m);
+	    if (!matched) {
+		continue;
+	    }
+	}
+	if (m->ski != NULL) {
+	    matched = match_subject_key_identifier(context, cert, m);
+	    if (!matched) {
+		continue;
+	    }
+	}
+	if (m->public_key != NULL) {
+	    matched = match_public_key(context, cert, m);
+	    if (!matched) {
+		continue;
+	    }
+	}
+	if (m->serial_number != NULL) {
+	    matched = match_serial_number(cert, m);
+	    if (!matched) {
+		continue;
+	    }
+	}
+    }
+
+    /*
+     * When enforcement mode is compatibility need to consider
+     * the age of the certificate for weak mappings
+     */
+    if (mappings.enforcement_mode == hdb_enf_mode_compatibility &&
+	matched &&
+	!strong_mapping) {
+
+	time_t certificate_start = hx509_cert_get_notBefore(*cert);
+	if (mappings.valid_certificate_start > certificate_start) {
+	    matched = FALSE;
+	}
+    }
+    if (!matched) {
+	krb5_warnx(context, "PKINIT: No matching certificate mappings");
+	ret = KRB5_KDC_ERR_CERTIFICATE_MISMATCH;
+    }
 out:
     return ret;
 }
@@ -720,6 +1055,10 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 		    context->hx509ctx, signer_certs, &cp->cert);
 		hx509_certs_free(&signer_certs);
 	    }
+	    if (ret) {
+		goto out;
+	    }
+	    ret = pk_check_certificate_binding(context, client, &cp->cert);
 	    if (ret) {
 		goto out;
 	    }

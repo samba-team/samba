@@ -196,6 +196,31 @@ HDB-Ext-KeyTrust ::= SEQUENCE OF SEQUENCE {
 	pub_key[0] OCTET STRING
 }
 
+HDB-Ext-CertificateMapping ::= SEQUENCE {
+	strong-mapping[0]	BOOLEAN,
+	issuer-name[1]		OCTET STRING OPTIONAL,
+	subject-name[2]		OCTET STRING OPTIONAL,
+	serial-number[3]	OCTET STRING OPTIONAL,
+	ski[4]			OCTET STRING OPTIONAL,
+	public-key[5]		OCTET STRING OPTIONAL,
+	rfc822[6]		OCTET STRING OPTIONAL,
+	...
+}
+
+HDB-Ext-EnforcementMode ::= ENUMERATED {
+	hdb_enf_mode_none		(0),
+	hdb_enf_mode_compatibility	(1),
+	hdb_enf_mode_full		(2),
+	...
+}
+
+HDB-Ext-CertificateMappings ::= SEQUENCE {
+	enforcement_mode[0]	    HDB-Ext-EnforcementMode,
+	valid_certificate_start[1]  KerberosTime,
+	mappings[2] SEQUENCE OF     HDB-Ext-CertificateMapping OPTIONAL,
+	...
+}
+
 HDB-extension ::= SEQUENCE {
         mandatory[0]    BOOLEAN,        -- kdc MUST understand this extension,
                                         --   if not the whole entry must
@@ -218,6 +243,7 @@ HDB-extension ::= SEQUENCE {
 		key-rotation[14]		HDB-Ext-KeyRotation,
 		krb5-config[15]		        OCTET STRING,
 		key-trust[16]			HDB-Ext-KeyTrust,
+		cert-mappings[17]		HDB-Ext-CertificateMappings,
 		...
 	},
 	...

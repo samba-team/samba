@@ -79,6 +79,7 @@ error_code CLIENT_NOT_TRUSTED,	"Client not trusted"
 error_code KDC_NOT_TRUSTED,	"KDC not trusted"
 error_code INVALID_SIG,		"Invalid signature"
 error_code DH_KEY_PARAMETERS_NOT_ACCEPTED, "DH parameters not accepted"
+error_code CERTIFICATE_MISMATCH, "The incorrect certificate was used"
 
 index 68
 prefix KRB5_KDC_ERR

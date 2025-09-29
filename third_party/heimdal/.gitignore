@@ -361,9 +361,13 @@ asn1_*_asn1.c
 /lib/hdb/asn1_HDB_EncTypeList.c
 /lib/hdb/asn1_HDB_EntryOrAlias.c
 /lib/hdb/asn1_HDB_Ext_Aliases.c
+/lib/hdb/asn1_HDB_Ext_CertificateMapping.c
+/lib/hdb/asn1_HDB_Ext_CertificateMappings.c
 /lib/hdb/asn1_HDB_Ext_Constrained_delegation_acl.c
+/lib/hdb/asn1_HDB_Ext_EnforcementMode.c
 /lib/hdb/asn1_HDB_Ext_KeyRotation.c
 /lib/hdb/asn1_HDB_Ext_KeySet.c
+/lib/hdb/asn1_HDB_Ext_KeyTrust.c
 /lib/hdb/asn1_HDB_Ext_Lan_Manager_OWF.c
 /lib/hdb/asn1_HDB_Ext_PKINIT_acl.c
 /lib/hdb/asn1_HDB_Ext_PKINIT_cert.c
