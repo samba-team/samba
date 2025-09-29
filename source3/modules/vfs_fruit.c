@@ -1001,7 +1001,7 @@ static bool readdir_attr_meta_finderi_stream(
 		return false;
 	}
 
-	nread = SMB_VFS_PREAD(fsp, &buf[0], AFP_INFO_SIZE, 0);
+	nread = SMB_VFS_PREAD(fsp, buf, sizeof(buf), 0);
 	if (nread != AFP_INFO_SIZE) {
 		DBG_ERR("short read [%s] [%zd/%d]\n",
 			smb_fname_str_dbg(stream_name), nread, AFP_INFO_SIZE);
