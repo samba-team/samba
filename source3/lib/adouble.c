@@ -183,7 +183,7 @@ struct ad_entry_order {
 
 /* Netatalk AppleDouble metadata xattr */
 static const
-struct ad_entry_order entry_order_meta_xattr[ADEID_NUM_XATTR + 1] = {
+struct ad_entry_order entry_order_meta_xattr[] = {
 	{ADEID_FINDERI,    ADEDOFF_FINDERI_XATTR,    ADEDLEN_FINDERI},
 	{ADEID_COMMENT,    ADEDOFF_COMMENT_XATTR,    0},
 	{ADEID_FILEDATESI, ADEDOFF_FILEDATESI_XATTR, ADEDLEN_FILEDATESI},
@@ -197,7 +197,7 @@ struct ad_entry_order entry_order_meta_xattr[ADEID_NUM_XATTR + 1] = {
 
 /* AppleDouble resource fork file (the ones prefixed by "._") */
 static const
-struct ad_entry_order entry_order_dot_und[ADEID_NUM_DOT_UND + 1] = {
+struct ad_entry_order entry_order_dot_und[] = {
 	{ADEID_FINDERI,    ADEDOFF_FINDERI_DOT_UND,  ADEDLEN_FINDERI},
 	{ADEID_RFORK,      ADEDOFF_RFORK_DOT_UND,    0},
 	{0, 0, 0}
