@@ -262,6 +262,7 @@ static void print_status(const char *component,
 			 int result,
 			 struct ctdb_event_reply_status *status)
 {
+	struct timeval prev = { .tv_sec = 0, };
 	int i;
 
 	if (result != 0) {
@@ -282,11 +283,27 @@ static void print_status(const char *component,
 
 	for (i=0; i<status->script_list->num_scripts; i++) {
 		struct ctdb_event_script *s = &status->script_list->script[i];
+		int ret = 0;
 
+		/*
+		 * Occurs when a new script is enabled, it hasn't
+		 * been previously run, and a previous script fails
+		 */
 		if (s->result == -ENODATA) {
 			continue;
 		}
+
+		/*
+		 * Occurs when data for s is from a previous run, so
+		 * it was run before the previous script
+		 */
+		ret = tevent_timeval_compare(&s->begin, &prev);
+		if (ret == -1) {
+			break;
+		}
+
 		print_status_one(s);
+		prev = s->begin;
 	}
 }
 

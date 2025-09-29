@@ -134,6 +134,9 @@ static int eventd_event_set(struct event_component *comp,
 			    struct run_event_script_list *script_list)
 {
 	struct event_event *event = NULL;
+	struct run_event_script_list *old_list = NULL;
+	unsigned int n = 0;
+	unsigned int o = 0;
 	int ret;
 
 	ret = eventd_event_add(comp, event_name, &event);
@@ -146,9 +149,62 @@ static int eventd_event_set(struct event_component *comp,
 		return 0;
 	}
 
-	TALLOC_FREE(event->script_list);
+	old_list = event->script_list;
 	event->script_list = talloc_steal(event, script_list);
 
+	/* No previous run, so the loop below can't be run */
+	if (old_list == NULL) {
+		goto done;
+	}
+
+	/* The loop below is a no-op if no script failed, so optimise */
+	if (script_list->summary == 0) {
+		goto done;
+	}
+
+	/*
+	 * Replace any "no data" items in the new list with the data
+	 * from the old list
+	 */
+	while (n < script_list->num_scripts && o < old_list->num_scripts) {
+		struct run_event_script *new = &script_list->script[n];
+		struct run_event_script *old = &old_list->script[o];
+
+		/*
+		 * If these are the same event, copy data if "no
+		 * data". Otherwise step through the lists.
+		 */
+		ret = strcmp(new->name, old->name);
+		if (ret < 0) {
+			n++;
+			continue;
+		}
+		if (ret > 0) {
+			o++;
+			continue;
+		}
+
+		if (new->summary == -ENODATA) {
+			/*
+			 * Do not do a struct assignment here.  This
+			 * would cause name and output to point to
+			 * memory allocated off old_list, and that is
+			 * freed below.
+			 */
+			new->begin = old->begin;
+			new->end = old->end;
+			new->result = old->result;
+			new->summary = old->summary;
+			new->output = talloc_move(event->script_list,
+						  &old->output);
+		}
+
+		n++;
+		o++;
+	}
+
+done:
+	TALLOC_FREE(old_list);
 	return 0;
 }
 
