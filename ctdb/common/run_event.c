@@ -546,6 +546,9 @@ static void run_event_cancel(struct tevent_req *req);
 static void run_event_trigger(struct tevent_req *req, void *private_data);
 static struct tevent_req *run_event_run_script(struct tevent_req *req);
 static void run_event_next_script(struct tevent_req *subreq);
+static void run_event_fail(struct tevent_req *req,
+			   struct run_event_script *script,
+			   id_t pid);
 static void run_event_debug(struct tevent_req *req, pid_t pid);
 static void run_event_debug_done(struct tevent_req *subreq);
 
@@ -763,17 +766,7 @@ static void run_event_next_script(struct tevent_req *subreq)
 		state->script_list->summary = script->summary;
 
 		if (! state->continue_on_failure) {
-			state->script_list->num_scripts = state->index + 1;
-
-			if (script->summary == -ETIMEDOUT && pid != -1) {
-				run_event_debug(req, pid);
-			}
-			D_NOTICE("%s event %s\n", state->event_str,
-				 (script->summary == -ETIMEDOUT) ?
-				  "timed out" :
-				  "failed");
-			run_event_stop_running(state->run_ctx);
-			tevent_req_done(req);
+			run_event_fail(req, script, pid);
 			return;
 		}
 	}
@@ -794,6 +787,25 @@ static void run_event_next_script(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, run_event_next_script, req);
 
 	state->script_subreq = subreq;
+}
+
+static void run_event_fail(struct tevent_req *req,
+			   struct run_event_script *script,
+			   id_t pid)
+{
+	struct run_event_state *state = tevent_req_data(
+		req, struct run_event_state);
+
+	state->script_list->num_scripts = state->index + 1;
+
+	if (script->summary == -ETIMEDOUT && pid != -1) {
+		run_event_debug(req, pid);
+	}
+	D_NOTICE("%s event %s\n",
+		 state->event_str,
+		 (script->summary == -ETIMEDOUT) ? "timed out" : "failed");
+	run_event_stop_running(state->run_ctx);
+	tevent_req_done(req);
 }
 
 static void run_event_debug(struct tevent_req *req, pid_t pid)
