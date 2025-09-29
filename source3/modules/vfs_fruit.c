@@ -4487,12 +4487,11 @@ static NTSTATUS fruit_freaddir_attr(struct vfs_handle_struct *handle,
 		}
 	}
 
-	*pattr_data = talloc_zero(mem_ctx, struct readdir_attr_data);
-	if (*pattr_data == NULL) {
+	attr_data = talloc(mem_ctx, struct readdir_attr_data);
+	if (attr_data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	attr_data = *pattr_data;
-	attr_data->type = RDATTR_AAPL;
+	*attr_data = (struct readdir_attr_data){.type = RDATTR_AAPL};
 
 	/*
 	 * Mac metadata: compressed FinderInfo, resource fork length
@@ -4535,12 +4534,13 @@ static NTSTATUS fruit_freaddir_attr(struct vfs_handle_struct *handle,
 		}
 	}
 
+	*pattr_data = attr_data;
 	return NT_STATUS_OK;
 
 fail:
 	DBG_WARNING("Path [%s], error: %s\n", fsp_str_dbg(fsp),
 		   nt_errstr(status));
-	TALLOC_FREE(*pattr_data);
+	TALLOC_FREE(attr_data);
 	return status;
 }
 
