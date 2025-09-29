@@ -795,8 +795,13 @@ static void run_event_fail(struct tevent_req *req,
 {
 	struct run_event_state *state = tevent_req_data(
 		req, struct run_event_state);
+	struct run_event_script_list *script_list = state->script_list;
+	unsigned int i;
 
-	state->script_list->num_scripts = state->index + 1;
+	/* Mark remaining scripts as having no data */
+	for (i = state->index + 1; i < script_list->num_scripts; i++) {
+		script_list->script[i].summary = -ENODATA;
+	}
 
 	if (script->summary == -ETIMEDOUT && pid != -1) {
 		run_event_debug(req, pid);

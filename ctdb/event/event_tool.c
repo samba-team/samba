@@ -281,7 +281,12 @@ static void print_status(const char *component,
 	}
 
 	for (i=0; i<status->script_list->num_scripts; i++) {
-		print_status_one(&status->script_list->script[i]);
+		struct ctdb_event_script *s = &status->script_list->script[i];
+
+		if (s->result == -ENODATA) {
+			continue;
+		}
+		print_status_one(s);
 	}
 }
 
