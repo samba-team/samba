@@ -2806,13 +2806,15 @@ struct smb_filename *adouble_name(TALLOC_CTX *mem_ctx,
  **/
 AfpInfo *afpinfo_new(TALLOC_CTX *ctx)
 {
-	AfpInfo *ai = talloc_zero(ctx, AfpInfo);
+	AfpInfo *ai = talloc(ctx, AfpInfo);
 	if (ai == NULL) {
 		return NULL;
 	}
-	ai->afpi_Signature = AFP_Signature;
-	ai->afpi_Version = AFP_Version;
-	ai->afpi_BackupTime = AD_DATE_START;
+	*ai = (AfpInfo){
+		.afpi_Signature = AFP_Signature,
+		.afpi_Version = AFP_Version,
+		.afpi_BackupTime = AD_DATE_START,
+	};
 	return ai;
 }
 
