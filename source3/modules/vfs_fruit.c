@@ -2371,7 +2371,7 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 	}
 
 	nread = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
-	if (nread == -1 || nread == n) {
+	if (nread == -1 || ((size_t)nread == n)) {
 		return nread;
 	}
 
@@ -2646,14 +2646,13 @@ static struct tevent_req *fruit_pread_send(
 
 	if (fruit_must_handle_aio_stream(fio)) {
 		state->nread = SMB_VFS_PREAD(fsp, data, n, offset);
-		if (state->nread != n) {
-			if (state->nread != -1) {
-				errno = EIO;
-			}
+		if (state->nread == -1) {
 			tevent_req_error(req, errno);
-			return tevent_req_post(req, ev);
+		} else if ((size_t)state->nread != n) {
+			tevent_req_error(req, EIO);
+		} else {
+			tevent_req_done(req);
 		}
-		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -2946,7 +2945,7 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (nwritten != to_write) {
+	if ((size_t)nwritten != to_write) {
 		return -1;
 	}
 
@@ -2994,7 +2993,7 @@ static ssize_t fruit_pwrite_rsrc_adouble(vfs_handle_struct *handle,
 
 	nwritten = SMB_VFS_NEXT_PWRITE(handle, fio->ad_fsp, data, n,
 				       offset + ad_getentryoff(ad, ADEID_RFORK));
-	if (nwritten != n) {
+	if ((nwritten == -1) || ((size_t)nwritten != n)) {
 		DBG_ERR("Short write on [%s] [%zd/%zd]\n",
 			fsp_str_dbg(fio->ad_fsp), nwritten, n);
 		TALLOC_FREE(ad);
@@ -3100,14 +3099,13 @@ static struct tevent_req *fruit_pwrite_send(
 
 	if (fruit_must_handle_aio_stream(fio)) {
 		state->nwritten = SMB_VFS_PWRITE(fsp, data, n, offset);
-		if (state->nwritten != n) {
-			if (state->nwritten != -1) {
-				errno = EIO;
-			}
+		if (state->nwritten == -1) {
 			tevent_req_error(req, errno);
-			return tevent_req_post(req, ev);
+		} else if ((size_t)state->nwritten != n) {
+			tevent_req_error(req, EIO);
+		} else {
+			tevent_req_done(req);
 		}
-		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -5177,7 +5175,7 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 	}
 
 	nread = SMB_VFS_NEXT_PREAD(handle, fsp, file_data, plist_file_size, 0);
-	if (nread != plist_file_size) {
+	if ((nread < 0) || ((size_t)nread != plist_file_size)) {
 		DBG_ERR("Short read on [%s]: %zu/%zd\n",
 			fsp_str_dbg(fsp), nread, plist_file_size);
 		ok = false;
