@@ -3480,8 +3480,7 @@ static int fruit_stat(vfs_handle_struct *handle,
 {
 	int rc = -1;
 
-	DEBUG(10, ("fruit_stat called for %s\n",
-		   smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("called for %s\n", smb_fname_str_dbg(smb_fname));
 
 	if (!is_named_stream(smb_fname)) {
 		rc = SMB_VFS_NEXT_STAT(handle, smb_fname);
