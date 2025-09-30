@@ -2161,11 +2161,12 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
-				    struct share_mode_lock *lck,
-				    const struct GUID *client_guid,
-				    const struct smb2_lease *lease,
-				    uint32_t granted)
+NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
+			     struct share_mode_lock *lck,
+			     const struct GUID *client_guid,
+			     const struct smb2_lease *lease,
+			     uint32_t granted,
+			     bool bump_epoch)
 {
 	NTSTATUS status;
 
@@ -2181,7 +2182,7 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 	fsp->lease->lease.lease_flags = lease->lease_flags;
 	fsp->lease->lease.lease_state = granted;
 	fsp->lease->lease.lease_epoch = lease->lease_epoch;
-	if (granted != 0) {
+	if (granted != 0 && bump_epoch) {
 		fsp->lease->lease.lease_epoch++;
 	}
 
@@ -2232,7 +2233,7 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		status = grant_new_fsp_lease(
-			fsp, lck, client_guid, lease, granted);
+			fsp, lck, client_guid, lease, granted, true);
 	}
 
 	return status;

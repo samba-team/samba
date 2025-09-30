@@ -699,6 +699,13 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     const struct smb2_create_blobs *in_context_blobs,
 			     struct smb2_create_blobs *out_context_blobs);
 
+NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
+			     struct share_mode_lock *lck,
+			     const struct GUID *client_guid,
+			     const struct smb2_lease *lease,
+			     uint32_t granted,
+			     bool bump_epoch);
+
 /* The following definitions come from smbd/oplock.c  */
 
 uint32_t get_lease_type(struct share_mode_entry *e, struct file_id id);
