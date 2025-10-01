@@ -849,12 +849,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 			NT_STATUS_RANGE_NOT_LOCKED);
 	}
 
-	/*
-	 * If we're flushing on a close we can get a write
-	 * error here, we must remember this.
-	 */
-
-	if (NT_STATUS_IS_OK(status) && fsp->op != NULL) {
+	if (fsp->op != NULL) {
 		is_durable = fsp->op->global->durable;
 	}
 
