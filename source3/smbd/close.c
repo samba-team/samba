@@ -1201,6 +1201,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	bool changed_user = false;
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *base_fname = NULL;
+	bool is_durable;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS status1 = NT_STATUS_OK;
 	NTSTATUS notify_status;
@@ -1215,6 +1216,16 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	}
 
 	assert_no_pending_aio(fsp, close_type);
+
+	is_durable = close_durable(req, fsp, close_type);
+	if (is_durable) {
+		return NT_STATUS_OK;
+	}
+
+	if (fsp->op != NULL) {
+		fsp->op->global->durable = false;
+		fsp->op->global->persistent = false;
+	}
 
 	/*
 	 * NT can set delete_on_close of the last open
