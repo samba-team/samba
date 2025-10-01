@@ -470,8 +470,6 @@ static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 
 static bool ad_empty_finderinfo(const struct adouble *ad)
 {
-	int cmp;
-	char emptybuf[ADEDLEN_FINDERI] = {0};
 	char *fi = NULL;
 
 	fi = ad_get_entry(ad, ADEID_FINDERI);
@@ -479,18 +477,12 @@ static bool ad_empty_finderinfo(const struct adouble *ad)
 		DBG_ERR("Missing FinderInfo in struct adouble [%p]\n", ad);
 		return false;
 	}
-
-	cmp = memcmp(emptybuf, fi, ADEDLEN_FINDERI);
-	return (cmp == 0);
+	return all_zero((const uint8_t *)fi, ADEDLEN_FINDERI);
 }
 
 static bool ai_empty_finderinfo(const AfpInfo *ai)
 {
-	int cmp;
-	char emptybuf[ADEDLEN_FINDERI] = {0};
-
-	cmp = memcmp(emptybuf, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
-	return (cmp == 0);
+	return all_zero(&ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
 }
 
 /**
