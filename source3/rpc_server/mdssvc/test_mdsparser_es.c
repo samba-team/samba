@@ -200,16 +200,23 @@ static void test_mdsparser_es(void **state)
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char *path_scope = "/foo/bar";
 	char *es_query = NULL;
+	char *default_path = NULL;
 	const char *path = NULL;
 	json_t *mappings = NULL;
 	json_error_t json_error;
 	int i;
 	bool ok;
 
+	default_path = talloc_asprintf(
+		frame,
+		"%s/mdssvc/elasticsearch_mappings.json",
+		get_dyn_SAMBA_DATADIR());
+	assert_non_null(default_path);
+
 	path = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 				    "elasticsearch",
 				    "mappings",
-				    NULL);
+				    default_path);
 	assert_non_null(path);
 
 	mappings = json_load_file(path, 0, &json_error);
