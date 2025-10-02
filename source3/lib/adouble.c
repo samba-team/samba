@@ -2369,9 +2369,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 	}
 
 	to_read = ad->ad_fsp->fsp_name->st.st_ex_size;
-	if (to_read > AD_XATTR_MAX_HDR_SIZE) {
-		to_read = AD_XATTR_MAX_HDR_SIZE;
-	}
+	to_read = MIN(to_read, AD_XATTR_MAX_HDR_SIZE);
 
 	len = SMB_VFS_NEXT_PREAD(handle,
 				 ad->ad_fsp,
