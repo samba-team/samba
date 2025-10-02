@@ -2869,3 +2869,64 @@ AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data, bool validate)
 
 	return ai;
 }
+
+bool adouble_buf_parse(const uint8_t *buf,
+		       size_t buflen,
+		       struct adouble_buf *ad)
+{
+	size_t i, nentries;
+
+	if (buflen < AD_HEADER_LEN) {
+		return false;
+	}
+
+	*ad = (struct adouble_buf){
+		.magic = PULL_BE_U32(buf, ADEDOFF_MAGIC),
+		.version = PULL_BE_U32(buf, ADEDOFF_VERSION),
+	};
+
+	if ((ad->magic != AD_MAGIC) || (ad->version != AD_VERSION)) {
+		return false;
+	}
+
+	nentries = PULL_BE_U16(buf, ADEDOFF_NENTRIES);
+
+	/*
+	 * no overflow, nentries is just 16 bits
+	 */
+
+	if ((AD_HEADER_LEN + (AD_ENTRY_LEN * (size_t)nentries)) > buflen) {
+		return false;
+	}
+
+	for (i = 0; i < nentries; i++) {
+		size_t eoff = AD_HEADER_LEN + i * AD_ENTRY_LEN;
+		uint32_t id = get_eid(PULL_BE_U32(buf, eoff));
+		uint32_t off = PULL_BE_U32(buf, eoff + 4);
+		uint32_t len = PULL_BE_U32(buf, eoff + 8);
+		bool ok;
+
+		if ((id == 0) || (id >= ADEID_MAX)) {
+			return false;
+		}
+
+		ok = ad_entry_check_size(id, buflen, off, len);
+		if (!ok) {
+			return false;
+		}
+
+		if (ad->entries[id].data != NULL) {
+			/*
+			 * Duplicate id
+			 */
+			return false;
+		}
+
+		ad->entries[i] = (DATA_BLOB){
+			.data = discard_const_p(uint8_t, buf) + off,
+			.length = len,
+		};
+	}
+
+	return true;
+}

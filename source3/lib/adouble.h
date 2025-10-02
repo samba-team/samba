@@ -191,4 +191,14 @@ AfpInfo *afpinfo_new(TALLOC_CTX *ctx);
 ssize_t afpinfo_pack(const AfpInfo *ai, char *buf);
 AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data, bool validate);
 
+struct adouble_buf {
+	uint32_t magic;
+	uint32_t version;
+	DATA_BLOB entries[ADEID_MAX];
+};
+
+bool adouble_buf_parse(const uint8_t *buf,
+		       size_t buflen,
+		       struct adouble_buf *dst);
+
 #endif
