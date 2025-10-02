@@ -3244,6 +3244,284 @@ static int fruit_fsync_recv(struct tevent_req *req,
 	return retval;
 }
 
+static int fruit_fstatat_meta(struct vfs_handle_struct *handle,
+			      const struct fruit_config_data *config,
+			      const struct files_struct *dirfsp,
+			      const struct smb_filename *_smb_relname,
+			      SMB_STRUCT_STAT *sbuf,
+			      int flags)
+{
+	struct adouble_buf ad = {};
+	struct smb_filename *smb_relname = NULL;
+	uint8_t ad_data[402];
+	NTSTATUS status;
+	int ret = -1;
+	ssize_t ealen;
+	ino_t ino;
+	bool ok;
+
+	{
+		/* Populate the stat struct with info from the base file. */
+
+		struct smb_filename base_name = *smb_relname;
+		base_name.stream_name = NULL;
+
+		ret = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, &base_name, sbuf, flags);
+	}
+
+	if (ret == -1) {
+		goto fail;
+	}
+
+	ino = hash_inode(sbuf, smb_relname->stream_name);
+
+	if (config->meta == FRUIT_META_STREAM) {
+		ret = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_relname, sbuf, flags);
+		if (ret == -1) {
+			goto fail;
+		}
+		sbuf->st_ex_ino = ino;
+		goto done;
+	}
+
+	if (config->meta != FRUIT_META_NETATALK) {
+		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
+		errno = EINVAL;
+		goto fail;
+	}
+
+	sbuf->st_ex_ino = ino;
+	sbuf->st_ex_size = AFP_INFO_SIZE;
+
+	/*
+	 * FRUIT_META_NETATALK
+	 */
+
+	smb_relname = cp_smb_filename_nostream(talloc_tos(), _smb_relname);
+	if (smb_relname == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	if (flags & AT_SYMLINK_NOFOLLOW) {
+		status = openat_pathref_fsp_lcomp(
+			discard_const_p(struct files_struct, dirfsp),
+			smb_relname,
+			0);
+	} else {
+		status = openat_pathref_fsp(dirfsp, smb_relname);
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		errno = ENOENT;
+		goto fail;
+	}
+
+	ealen = SMB_VFS_FGETXATTR(
+		smb_relname->fsp, AFPINFO_EA_NETATALK, ad_data,
+		sizeof(ad_data));
+	if (ealen == -1) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		goto fail;
+	}
+
+	ok = adouble_buf_parse(ad_data, ealen, &ad);
+	if (!ok) {
+		errno = EIO;
+		goto fail;
+	}
+
+	if (ad.entries[ADEID_FILEDATESI].data != NULL) {
+		/*
+		 * Update btime
+		 */
+		struct timespec btime = {};
+		uint32_t ad_btime;
+
+		memcpy(&ad_btime,
+		       ad.entries[ADEID_FILEDATESI].data,
+		       sizeof(ad_btime));
+		ad_btime = AD_DATE_TO_UNIX(ad_btime);
+		btime.tv_sec = convert_uint32_t_to_time_t(ad_btime);
+		update_stat_ex_create_time(sbuf, btime);
+	}
+
+done:
+	TALLOC_FREE(smb_relname);
+	return 0;
+
+fail:
+	{
+		int err = errno;
+		TALLOC_FREE(smb_relname);
+		errno = err;
+	}
+	return -1;
+}
+
+static int fruit_fstatat_rsrc(struct vfs_handle_struct *handle,
+			      const struct fruit_config_data *config,
+			      const struct files_struct *dirfsp,
+			      const struct smb_filename *smb_relname,
+			      SMB_STRUCT_STAT *sbuf,
+			      int flags)
+{
+	struct smb_filename *ad_name = NULL;
+	struct files_struct *ad_fsp = NULL;
+	uint8_t buf[65536];
+	struct adouble_buf adbuf = {};
+	ssize_t nread;
+	NTSTATUS status;
+	ino_t ino;
+	int ret;
+	bool ok;
+
+	if (config->rsrc == FRUIT_RSRC_STREAM) {
+		ret = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_relname, sbuf, flags);
+		return ret;
+	}
+
+	if (config->rsrc != FRUIT_RSRC_ADFILE) {
+		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		errno = ENOSYS;
+		return -1;
+	}
+
+	/*
+	 * FRUIT_RSRC_ADFILE
+	 */
+
+	{
+		/* Populate the stat struct with info from the base file. */
+
+		struct smb_filename base_name = *smb_relname;
+		base_name.stream_name = NULL;
+
+		ret = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, &base_name, sbuf, flags);
+	}
+
+	if (ret == -1) {
+		goto fail;
+	}
+
+	ino = hash_inode(sbuf, smb_relname->stream_name);
+
+	ad_name = cp_smb_filename_nostream(talloc_tos(), smb_relname);
+	if (ad_name == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+	ad_name->base_name = talloc_asprintf(ad_name,
+					     "._%s",
+					     ad_name->base_name);
+	if (ad_name->base_name == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	status = openat_pathref_fsp(dirfsp, ad_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto fail;
+	}
+
+	status = SMB_VFS_CREATE_FILE(handle->conn, /* conn */
+				     NULL,	   /* req */
+				     discard_const_p(struct files_struct,
+						     dirfsp), /* dirfsp */
+				     ad_name->fsp->fsp_name,  /* fname */
+				     FILE_READ_DATA,	      /* access_mask */
+				     (FILE_SHARE_READ |
+				      FILE_SHARE_WRITE | /* share_access */
+				      FILE_SHARE_DELETE),
+				     FILE_OPEN, /* create_disposition*/
+				     0,		/* create_options */
+				     0,		/* file_attributes */
+				     INTERNAL_OPEN_ONLY, /* oplock_request */
+				     NULL,		 /* lease */
+				     0,			 /* allocation_size */
+				     0,			 /* private_flags */
+				     NULL,		 /* sd */
+				     NULL,		 /* ea_list */
+				     &ad_fsp,		 /* result */
+				     NULL,		 /* pinfo */
+				     NULL,
+				     NULL); /* create context */
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto fail;
+	}
+
+	nread = SMB_VFS_PREAD(ad_fsp, buf, sizeof(buf), 0);
+	if (nread == -1) {
+		goto fail;
+	}
+
+	close_file_free(NULL, &ad_fsp, NORMAL_CLOSE);
+	ad_fsp = NULL;
+
+	ok = adouble_buf_parse(buf, nread, &adbuf);
+	if (!ok) {
+		errno = EINVAL;
+		goto fail;
+	}
+
+	sbuf->st_ex_ino = ino;
+	sbuf->st_ex_size = adbuf.entries[ADEID_RFORK].length;
+
+	TALLOC_FREE(ad_name);
+	return 0;
+
+fail:
+	{
+		int err = errno;
+		if (ad_fsp != NULL) {
+			close_file_free(NULL, &ad_fsp, NORMAL_CLOSE);
+			ad_fsp = NULL;
+		}
+		TALLOC_FREE(ad_name);
+		errno = err;
+	}
+	return -1;
+}
+
+static int fruit_fstatat(struct vfs_handle_struct *handle,
+			 const struct files_struct *dirfsp,
+			 const struct smb_filename *smb_relname,
+			 SMB_STRUCT_STAT *sbuf,
+			 int flags)
+{
+	struct fruit_config_data *config = NULL;
+	int rc;
+
+	DBG_DEBUG("called for %s/%s\n",
+		  fsp_str_dbg(dirfsp),
+		  smb_fname_str_dbg(smb_relname));
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct fruit_config_data,
+				return -1);
+
+	if (is_afpinfo_stream(smb_relname->stream_name)) {
+		rc = fruit_fstatat_meta(
+			handle, config, dirfsp, smb_relname, sbuf, flags);
+	} else if (is_afpresource_stream(smb_relname->stream_name)) {
+		rc = fruit_fstatat_rsrc(
+			handle, config, dirfsp, smb_relname, sbuf, flags);
+	} else {
+		rc = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_relname, sbuf, flags);
+	}
+
+	return rc;
+}
+
 /**
  * Helper to stat/lstat the base file of an smb_fname.
  */
@@ -5464,6 +5742,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.fsync_recv_fn = fruit_fsync_recv,
 	.stat_fn = fruit_stat,
 	.lstat_fn = fruit_lstat,
+	.fstatat_fn = fruit_fstatat,
 	.fstat_fn = fruit_fstat,
 	.fstreaminfo_fn = fruit_fstreaminfo,
 	.fntimes_fn = fruit_fntimes,
