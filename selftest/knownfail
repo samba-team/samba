@@ -191,7 +191,6 @@
 ^samba3.smb2.create.blob
 ^samba3.smb2.create.open
 ^samba3.smb2.notify.rec
-^samba3.smb2.notify.security
 ^samba3.smb2.durable-open.delete_on_close2
 ^samba3.smb2.durable-v2-open.app-instance
 ^samba3.smb2.durable-open.reopen1a-lease\(ad_dc\)$

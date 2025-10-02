@@ -167,8 +167,15 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 
 	sd_fsp = metadata_fsp(fsp);
 	status = SMB_VFS_FSET_NT_ACL(sd_fsp, security_info_sent, psd);
-
 	TALLOC_FREE(psd);
+
+	if (NT_STATUS_IS_OK(status)) {
+		notify_fname(fsp->conn,
+			     NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_SECURITY,
+			     fsp->fsp_name,
+			     NULL);
+	}
 
 	return status;
 }
