@@ -486,47 +486,6 @@ static bool ai_empty_finderinfo(const AfpInfo *ai)
 }
 
 /**
- * Update btime with btime from Netatalk
- **/
-static void update_btime(vfs_handle_struct *handle,
-			 struct smb_filename *smb_fname)
-{
-	uint32_t t;
-	struct timespec creation_time = {0};
-	struct adouble *ad;
-	struct fruit_config_data *config = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
-				return);
-
-	switch (config->meta) {
-	case FRUIT_META_STREAM:
-		return;
-	case FRUIT_META_NETATALK:
-		/* Handled below */
-		break;
-	default:
-		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
-		return;
-	}
-
-	ad = ad_get_meta_fsp(talloc_tos(), handle, smb_fname);
-	if (ad == NULL) {
-		return;
-	}
-	if (ad_getdate(ad, AD_DATE_UNIX | AD_DATE_CREATE, &t) != 0) {
-		TALLOC_FREE(ad);
-		return;
-	}
-	TALLOC_FREE(ad);
-
-	creation_time.tv_sec = convert_uint32_t_to_time_t(t);
-	update_stat_ex_create_time(&smb_fname->st, creation_time);
-
-	return;
-}
-
-/**
  * Map an access mask to a Netatalk single byte byte range lock
  **/
 static off_t access_to_netatalk_brl(enum apple_fork fork_type,
@@ -3548,273 +3507,42 @@ static int fruit_stat_base(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_stat_meta_stream(vfs_handle_struct *handle,
-				  struct smb_filename *smb_fname,
-				  bool follow_links)
-{
-	int ret;
-	ino_t ino;
-
-	ret = fruit_stat_base(handle, smb_fname, false);
-	if (ret != 0) {
-		return -1;
-	}
-
-	ino = hash_inode(&smb_fname->st, smb_fname->stream_name);
-
-	if (follow_links) {
-		ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	} else {
-		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-
-	smb_fname->st.st_ex_ino = ino;
-
-	return ret;
-}
-
-static int fruit_stat_meta_netatalk(vfs_handle_struct *handle,
-				    struct smb_filename *smb_fname,
-				    bool follow_links)
-{
-	struct adouble *ad = NULL;
-
-	/* Populate the stat struct with info from the base file. */
-	if (fruit_stat_base(handle, smb_fname, follow_links) == -1) {
-		return -1;
-	}
-
-	ad = ad_get_meta_fsp(talloc_tos(), handle, smb_fname);
-	if (ad == NULL) {
-		DBG_INFO("fruit_stat_meta %s: %s\n",
-			 smb_fname_str_dbg(smb_fname), strerror(errno));
-		errno = ENOENT;
-		return -1;
-	}
-	TALLOC_FREE(ad);
-
-	smb_fname->st.st_ex_size = AFP_INFO_SIZE;
-	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
-					      smb_fname->stream_name);
-	return 0;
-}
-
-static int fruit_stat_meta(vfs_handle_struct *handle,
-			   struct smb_filename *smb_fname,
-			   bool follow_links)
-{
-	struct fruit_config_data *config = NULL;
-	int ret;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	switch (config->meta) {
-	case FRUIT_META_STREAM:
-		ret = fruit_stat_meta_stream(handle, smb_fname, follow_links);
-		break;
-
-	case FRUIT_META_NETATALK:
-		ret = fruit_stat_meta_netatalk(handle, smb_fname, follow_links);
-		break;
-
-	default:
-		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
-		return -1;
-	}
-
-	return ret;
-}
-
-static int fruit_stat_rsrc_netatalk(vfs_handle_struct *handle,
-				    struct smb_filename *smb_fname,
-				    bool follow_links)
-{
-	struct adouble *ad = NULL;
-	int ret;
-
-	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_RSRC);
-	if (ad == NULL) {
-		errno = ENOENT;
-		return -1;
-	}
-
-	/* Populate the stat struct with info from the base file. */
-	ret = fruit_stat_base(handle, smb_fname, follow_links);
-	if (ret != 0) {
-		TALLOC_FREE(ad);
-		return -1;
-	}
-
-	smb_fname->st.st_ex_size = ad_getentrylen(ad, ADEID_RFORK);
-	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
-					      smb_fname->stream_name);
-	TALLOC_FREE(ad);
-	return 0;
-}
-
-static int fruit_stat_rsrc_stream(vfs_handle_struct *handle,
-				  struct smb_filename *smb_fname,
-				  bool follow_links)
-{
-	int ret;
-
-	if (follow_links) {
-		ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	} else {
-		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-
-	return ret;
-}
-
-static int fruit_stat_rsrc_xattr(vfs_handle_struct *handle,
-				 struct smb_filename *smb_fname,
-				 bool follow_links)
-{
-#ifdef HAVE_ATTROPEN
-	int ret;
-	int fd = -1;
-
-	/* Populate the stat struct with info from the base file. */
-	ret = fruit_stat_base(handle, smb_fname, follow_links);
-	if (ret != 0) {
-		return -1;
-	}
-
-	fd = attropen(smb_fname->base_name,
-		      AFPRESOURCE_EA_NETATALK,
-		      O_RDONLY);
-	if (fd == -1) {
-		return 0;
-	}
-
-	ret = sys_fstat(fd, &smb_fname->st, false);
-	if (ret != 0) {
-		close(fd);
-		DBG_ERR("fstat [%s:%s] failed\n", smb_fname->base_name,
-			AFPRESOURCE_EA_NETATALK);
-		return -1;
-	}
-	close(fd);
-	fd = -1;
-
-	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
-					     smb_fname->stream_name);
-
-	return ret;
-
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-static int fruit_stat_rsrc(vfs_handle_struct *handle,
-			   struct smb_filename *smb_fname,
-			   bool follow_links)
-{
-	struct fruit_config_data *config = NULL;
-	int ret;
-
-	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	switch (config->rsrc) {
-	case FRUIT_RSRC_STREAM:
-		ret = fruit_stat_rsrc_stream(handle, smb_fname, follow_links);
-		break;
-
-	case FRUIT_RSRC_XATTR:
-		ret = fruit_stat_rsrc_xattr(handle, smb_fname, follow_links);
-		break;
-
-	case FRUIT_RSRC_ADFILE:
-		ret = fruit_stat_rsrc_netatalk(handle, smb_fname, follow_links);
-		break;
-
-	default:
-		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
-		return -1;
-	}
-
-	return ret;
-}
-
 static int fruit_stat(vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname)
 {
-	int rc = -1;
+	struct stat_ex st = {};
+	int ret;
 
 	DBG_DEBUG("called for %s\n", smb_fname_str_dbg(smb_fname));
 
-	if (!is_named_stream(smb_fname)) {
-		rc = SMB_VFS_NEXT_STAT(handle, smb_fname);
-		if (rc == 0) {
-			update_btime(handle, smb_fname);
-		}
-		return rc;
+	ret = fruit_fstatat(handle, handle->conn->cwd_fsp, smb_fname, &st, 0);
+	if (ret == -1) {
+		return -1;
 	}
 
-	/*
-	 * Note if lp_posix_paths() is true, we can never
-	 * get here as is_ntfs_stream_smb_fname() is
-	 * always false. So we never need worry about
-	 * not following links here.
-	 */
-
-	if (is_afpinfo_stream(smb_fname->stream_name)) {
-		rc = fruit_stat_meta(handle, smb_fname, true);
-	} else if (is_afpresource_stream(smb_fname->stream_name)) {
-		rc = fruit_stat_rsrc(handle, smb_fname, true);
-	} else {
-		return SMB_VFS_NEXT_STAT(handle, smb_fname);
-	}
-
-	if (rc == 0) {
-		update_btime(handle, smb_fname);
-		smb_fname->st.st_ex_mode &= ~S_IFMT;
-		smb_fname->st.st_ex_mode |= S_IFREG;
-		smb_fname->st.st_ex_blocks =
-			smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
-	}
-	return rc;
+	smb_fname->st = st;
+	return 0;
 }
 
 static int fruit_lstat(vfs_handle_struct *handle,
 		       struct smb_filename *smb_fname)
 {
-	int rc = -1;
+	struct stat_ex st = {};
+	int ret;
 
-	DEBUG(10, ("fruit_lstat called for %s\n",
-		   smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("called for %s\n", smb_fname_str_dbg(smb_fname));
 
-	if (!is_named_stream(smb_fname)) {
-		rc = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-		if (rc == 0) {
-			update_btime(handle, smb_fname);
-		}
-		return rc;
+	ret = fruit_fstatat(handle,
+			    handle->conn->cwd_fsp,
+			    smb_fname,
+			    &st,
+			    AT_SYMLINK_NOFOLLOW);
+	if (ret == -1) {
+		return -1;
 	}
 
-	if (is_afpinfo_stream(smb_fname->stream_name)) {
-		rc = fruit_stat_meta(handle, smb_fname, false);
-	} else if (is_afpresource_stream(smb_fname->stream_name)) {
-		rc = fruit_stat_rsrc(handle, smb_fname, false);
-	} else {
-		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-
-	if (rc == 0) {
-		update_btime(handle, smb_fname);
-		smb_fname->st.st_ex_mode &= ~S_IFMT;
-		smb_fname->st.st_ex_mode |= S_IFREG;
-		smb_fname->st.st_ex_blocks =
-			smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
-	}
-	return rc;
+	smb_fname->st = st;
+	return 0;
 }
 
 static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
