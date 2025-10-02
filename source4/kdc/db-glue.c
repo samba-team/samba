@@ -3418,12 +3418,17 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 	nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
 					      mem_ctx, principal_string, attrs, dsdb_flags,
 					      realm_dn, msg);
+
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+		/* we will try again with a '$' appended */
 		krb5_principal fallback_principal = NULL;
 		unsigned int num_comp;
 		char *fallback_realm = NULL;
 		char *fallback_account = NULL;
+		char *with_dollar = NULL;
+		char *fallback_string = NULL;
 		krb5_error_code ret;
+		size_t len;
 
 		ret = krb5_parse_name(context, principal_string,
 				      &fallback_principal);
@@ -3433,6 +3438,11 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		}
 
 		num_comp = krb5_princ_size(context, fallback_principal);
+		if (num_comp != 1) {
+			krb5_free_principal(context, fallback_principal);
+			return SDB_ERR_NOENTRY;
+		}
+
 		fallback_realm = smb_krb5_principal_get_realm(
 			mem_ctx, context, fallback_principal);
 		if (fallback_realm == NULL) {
@@ -3440,68 +3450,62 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 			return ENOMEM;
 		}
 
-		if (num_comp == 1) {
-			size_t len;
-
-			ret = smb_krb5_principal_get_comp_string(mem_ctx,
-								 context, fallback_principal, 0, &fallback_account);
-			if (ret) {
-				krb5_free_principal(context, fallback_principal);
-				TALLOC_FREE(fallback_realm);
-				return ret;
-			}
-
-			len = strlen(fallback_account);
-			if (len >= 2 && fallback_account[len - 1] == '$') {
-				TALLOC_FREE(fallback_account);
-			}
+		ret = smb_krb5_principal_get_comp_string(mem_ctx,
+							 context, fallback_principal, 0, &fallback_account);
+		if (ret != 0) {
+			krb5_free_principal(context, fallback_principal);
+			TALLOC_FREE(fallback_realm);
+			return ret;
 		}
-		krb5_free_principal(context, fallback_principal);
-		fallback_principal = NULL;
 
-		if (fallback_account != NULL) {
-			char *with_dollar;
-
-			with_dollar = talloc_asprintf(mem_ctx, "%s$",
-						     fallback_account);
+		len = strlen(fallback_account);
+		if (len >= 2 && fallback_account[len - 1] == '$') {
+			/* there is already a $, so no fallback */
 			TALLOC_FREE(fallback_account);
-			if (with_dollar == NULL) {
-				TALLOC_FREE(fallback_realm);
-				return ENOMEM;
-			}
-
-			ret = smb_krb5_make_principal(context,
-						      &fallback_principal,
-						      fallback_realm,
-						      with_dollar, NULL);
-			TALLOC_FREE(with_dollar);
-			if (ret != 0) {
-				TALLOC_FREE(fallback_realm);
-				return ret;
-			}
+			TALLOC_FREE(fallback_realm);
+			krb5_free_principal(context, fallback_principal);
+			return SDB_ERR_NOENTRY;
 		}
-		TALLOC_FREE(fallback_realm);
 
-		if (fallback_principal != NULL) {
-			char *fallback_string = NULL;
-
-			ret = krb5_unparse_name(context,
-						fallback_principal,
-						&fallback_string);
-			if (ret != 0) {
-				krb5_free_principal(context, fallback_principal);
-				return ret;
-			}
-
-			nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
-							      mem_ctx,
-							      fallback_string,
-							      attrs, dsdb_flags,
-							      realm_dn, msg);
-			SAFE_FREE(fallback_string);
-		}
 		krb5_free_principal(context, fallback_principal);
 		fallback_principal = NULL;
+
+		with_dollar = talloc_asprintf(mem_ctx, "%s$",
+					      fallback_account);
+		TALLOC_FREE(fallback_account);
+		if (with_dollar == NULL) {
+			TALLOC_FREE(fallback_realm);
+			return ENOMEM;
+		}
+
+		ret = smb_krb5_make_principal(context,
+					      &fallback_principal,
+					      fallback_realm,
+					      with_dollar, NULL);
+		TALLOC_FREE(with_dollar);
+		TALLOC_FREE(fallback_realm);
+		if (ret != 0) {
+			return ret;
+		}
+		if (fallback_principal == NULL) {
+			return ENOMEM;
+		}
+
+		ret = krb5_unparse_name(context,
+					fallback_principal,
+					&fallback_string);
+		krb5_free_principal(context, fallback_principal);
+		fallback_principal = NULL;
+		if (ret != 0) {
+			return ret;
+		}
+
+		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+						      mem_ctx,
+						      fallback_string,
+						      attrs, dsdb_flags,
+						      realm_dn, msg);
+		SAFE_FREE(fallback_string);
 	}
 	TALLOC_FREE(principal_string);
 
