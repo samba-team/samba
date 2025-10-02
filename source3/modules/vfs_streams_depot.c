@@ -809,7 +809,6 @@ static int streams_depot_unlinkat_stream(vfs_handle_struct *handle,
 					 struct files_struct *dirfsp,
 					 const struct smb_filename *smb_fname)
 {
-	struct connection_struct *conn = handle->conn;
 	struct smb_filename sname = {};
 	struct smb_filename *base_name = NULL;
 	struct smb_filename *stream_dir = NULL;
@@ -858,7 +857,7 @@ static int streams_depot_unlinkat_stream(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = SMB_VFS_UNLINKAT(conn, stream_dir->fsp, &sname, 0);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle, stream_dir->fsp, &sname, 0);
 done:
 	{
 		int err = errno;
