@@ -2641,12 +2641,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 */
 	}
 
-	p->msg = talloc_steal(p, msg);
-	p->supported_enctypes = pa_supported_enctypes;
-
-	p->client_policy = talloc_steal(p, authn_client_policy);
-	p->server_policy = talloc_steal(p, authn_server_policy);
-
 	ret = get_key_trust_public_keys(tmp_ctx, kdc_db_ctx->samdb, msg, entry);
 	if (ret != 0) {
 		goto out;
@@ -2656,6 +2650,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	if (ret != 0) {
 		goto out;
 	}
+
+	p->msg = talloc_steal(p, msg);
+	p->supported_enctypes = pa_supported_enctypes;
+
+	p->client_policy = talloc_steal(p, authn_client_policy);
+	p->server_policy = talloc_steal(p, authn_server_policy);
 
 	talloc_steal(kdc_db_ctx, p);
 
