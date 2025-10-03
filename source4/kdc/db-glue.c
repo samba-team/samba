@@ -1466,13 +1466,13 @@ static krb5_error_code parse_certificate_mapping(
 	 * otherwise ignore the entry and return ENOENT
 	 */
 	if (data == NULL || length == 0) {
-		DBG_DEBUG("altSecurityIdentities, is empty");
+		DBG_DEBUG("altSecurityIdentities is empty");
 		ret = ENOENT;
 		goto out;
 	}
 	if (length <= X509_HEADER.length ||
 	    memcmp(X509_HEADER.data, data, X509_HEADER.length) != 0) {
-		DBG_DEBUG("altSecurityIdentities, entry is not X509 ignoring");
+		DBG_DEBUG("altSecurityIdentities entry is not X509, ignoring");
 		ret = ENOENT;
 		goto out;
 	}
@@ -1531,7 +1531,7 @@ static krb5_error_code parse_certificate_mapping(
 		}
 	}
 	if (state != value_state) {
-		DBG_WARNING("altSecurityIdentities, expected a value");
+		DBG_WARNING("altSecurityIdentities expected a value");
 		ret = EINVAL;
 		goto out;
 	}
