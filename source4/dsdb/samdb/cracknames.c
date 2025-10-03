@@ -286,7 +286,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	krb5_principal principal;
 	char *realm;
 	char *realm_encoded = NULL;
-	char *unparsed_name_short;
+	char *unparsed_name_short = NULL;
 	const char *unparsed_name_short_encoded = NULL;
 	const char *domain_attrs[] = { NULL };
 	struct ldb_result *domain_res = NULL;
