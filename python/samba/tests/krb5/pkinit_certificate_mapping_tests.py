@@ -52,11 +52,8 @@ from samba.tests.krb5.raw_testcase import PkInit, RawKerberosTest
 from samba.tests.krb5.rfc4120_constants import (
     DES_EDE3_CBC,
     KDC_ERR_CERTIFICATE_MISMATCH,
-    KU_PA_ENC_TIMESTAMP,
     NT_PRINCIPAL,
     NT_SRV_INST,
-    PADATA_AS_FRESHNESS,
-    PADATA_ENC_TIMESTAMP,
     PADATA_PK_AS_REP_19,
     PADATA_PK_AS_REQ,
 )
