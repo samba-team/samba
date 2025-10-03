@@ -1200,7 +1200,7 @@ static krb5_error_code samba_kdc_get_entry_principal(
  * @return 0      No error
  *         ENOMEM memory allocation error
  *
- * @note Memory is allocated, with malloc and needs to be freed
+ * @note Memory is allocated with malloc and needs to be freed
  */
 static krb5_error_code data_blob_to_krb5_data( DATA_BLOB *blob, krb5_data *krb5)
 {
@@ -1225,7 +1225,7 @@ static krb5_error_code data_blob_to_krb5_data( DATA_BLOB *blob, krb5_data *krb5)
  *         ENOMEM memory allocation error
  *         EINVAL data blob is not a valid hex string encoding
  *
- * @note Memory is allocated, with malloc and needs to be freed
+ * @note Memory is allocated with malloc and needs to be freed
  */
 static krb5_error_code db_hex_str_to_krb5_data(
 	DATA_BLOB *blob,
@@ -1289,7 +1289,7 @@ static const DATA_BLOB X509_HEADER = DATA_BLOB_STRING("X509:");
  *         EINVAL tag or value are invalid
  *         ENOMEM memory allocation error
  *
- * @note Memory is allocated, with malloc and needs to be freed with
+ * @note Memory is allocated with malloc and needs to be freed with
  *       sdb_certificate_mapping_free
  */
 static krb5_error_code populate_certificate_mapping(
@@ -1424,7 +1424,7 @@ static krb5_boolean is_strong_certificate_mapping(
  *     <S>           Subject Name
  *     <SR>          Serial Number
  *     <SKI>         SKI Subject Key Identifier
- *     <SHA1-PUBKEY> SHA1 checksum of the public key
+ *     <SHA1-PUKEY>  SHA1 checksum of the public key
  *     <RFC822>      Email address
  *
  *
@@ -1463,7 +1463,7 @@ static krb5_error_code parse_certificate_mapping(
 
 	/*
 	 * Ensure that there is data, and it starts with X509:
-	 * other wise ignore the entry and return ENOENT
+	 * otherwise ignore the entry and return ENOENT
 	 */
 	if (data == NULL || length == 0) {
 		DBG_DEBUG("altSecurityIdentities, is empty");
