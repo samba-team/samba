@@ -1448,11 +1448,6 @@ static int vfs_gpfs_get_winattrs_helper(
 
 	ret = gpfswrap_get_winattrs(fsp_get_pathref_fd(fd), &state->attrs);
 
-	if (ret == -1) {
-		state->job_state.vfs_aio_state.error = errno;
-		return ret;
-	}
-
 	if (ret == -1 && errno == EACCES) {
 		int saved_errno = 0;
 
@@ -1468,16 +1463,12 @@ static int vfs_gpfs_get_winattrs_helper(
 		ret = gpfswrap_get_winattrs(
 			fsp_get_pathref_fd(fd),
 			&state->attrs);
-		if (ret == -1) {
-			saved_errno = errno;
-		}
+
+		saved_errno = errno;
 
 		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
-		if (saved_errno != 0) {
-			state->job_state.vfs_aio_state.error = saved_errno;
-			ret = saved_errno;
-		}
+		errno = saved_errno;
 	}
 	return ret;
 }
@@ -1633,6 +1624,7 @@ static void vfs_gpfs_get_winattrs_do_async(void *private_data)
 	ret = vfs_gpfs_get_winattrs_helper(state);
 
 	if (ret == -1) {
+		state->job_state.vfs_aio_state.error = errno;
 		DBG_WARNING("Getting winattrs failed for %s: %s\n",
 				state->job_state.dir_fsp->fsp_name->base_name,
 				strerror(errno));
