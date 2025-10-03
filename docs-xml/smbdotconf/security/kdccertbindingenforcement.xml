@@ -35,7 +35,7 @@
                     <constant>Unless</constant>
                     <smbconfoption name="certificate backdating compensation"/>
                     has a value.  In that case the certificate may have been
-                    issued no more that number of minutes before the user
+                    issued no more than that number of minutes before the user
                     was created.
                 </para>
             </listitem>
@@ -59,7 +59,7 @@
                 <para>Example: "X509:&lt;I&gt;IssuerName&lt;S&gt;SubjectName"</para>
                 <para>
                     The values provided for the issuer name and subject name
-                    must match those in the users certificate exactly.
+                    must match those in the user's certificate exactly.
                 </para>
                 <para><emphasis>WEAK</emphasis></para>
             </listitem>
@@ -68,7 +68,7 @@
                 <para>Example: "X509:&lt;S&gt;SubjectName"</para>
                 <para>
                     The value provided for the issuer subject name
-                    must match that in the users certificate exactly.
+                    must match that in the user's certificate exactly.
                 </para>
                 <para><emphasis>WEAK</emphasis></para>
             </listitem>
@@ -97,7 +97,7 @@
                 <para>X509 public key SHA1 </para>
                 <para>Example: "X509:&lt;SHA1-PUKEY&gt;1234567890abcdef"</para>
                 <para>
-                    The SHA1 hash of the certificates public key
+                    The SHA1 hash of the certificate's public key
                 </para>
                 <para><emphasis>STRONG</emphasis></para>
             </listitem>

@@ -11,8 +11,8 @@
         </smbconfoption>
     </para>
     <para>
-        This parameter specifies number of minutes that a certificate's issue
-        date may precede the creation of a users account.
+        This parameter specifies the number of minutes that a certificate's issue
+        date may precede the creation of a user's account.
     </para>
 
     <para>More details can be found at
