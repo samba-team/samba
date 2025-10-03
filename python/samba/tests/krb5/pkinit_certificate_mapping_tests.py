@@ -451,6 +451,62 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             expect_error=self.STRONG_EXPECTED_RESULT,
         )
 
+    def test_object_sid(self):
+        """
+        Test PKINIT logon with a user account and a strong object SID mapping
+        """
+
+        client_creds = self._get_creds()
+        target_creds = self.get_service_creds()
+        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
+
+        # Create a certificate for the client signed by the CA which includes
+        # the object SID.
+        certificate = self.create_certificate(
+            client_creds,
+            ca_cert,
+            ca_private_key,
+            None,
+            [],
+            object_sid=client_creds.get_sid(),
+        )
+
+        self._pkinit_req(
+            client_creds,
+            target_creds,
+            certificate=certificate,
+            expect_error=self.STRONG_EXPECTED_RESULT,
+        )
+
+    def test_mismatched_object_sid(self):
+        """
+        Test PKINIT logon with a user account and a mismatched object SID
+        mapping
+        """
+
+        client_creds = self._get_creds()
+        target_creds = self.get_service_creds()
+        ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
+
+        # Create a certificate for the client signed by the CA which includes
+        # the object SID.
+        certificate = self.create_certificate(
+            client_creds,
+            ca_cert,
+            ca_private_key,
+            None,
+            [],
+            object_sid=target_creds.get_sid(),
+        )
+
+        self._pkinit_req(
+            client_creds,
+            target_creds,
+            certificate=certificate,
+            # We choose to treat the mapping as if it does not exist.
+            expect_error=self.NONE_EXPECTED_RESULT,
+        )
+
     def _rfc4514_string(self, name):
         """
         Convert an X509 name to it's RFC 4514 form, however we need
@@ -540,6 +596,7 @@ class PkInitCertificateMappingTests(KDCBaseTest):
         certificate_signature=None,
         san=[],
         notBefore=None,
+        object_sid=None,
     ):
         if certificate_signature is None:
             certificate_signature = hashes.SHA256
@@ -637,49 +694,56 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             critical=False,
         )
 
-        # If the certificate predates (as ours does) the existence of the
-        # account that presents it Windows will refuse to accept it unless
-        # there exists a strong mapping from one to the other. This strong
-        # mapping will in this case take the form of a certificate extension
-        # described in [MS-WCCE] 2.2.2.7.7.4 (szOID_NTDS_CA_SECURITY_EXT) and
-        # containing the account’s SID.
+        if object_sid is not None:
+            # If the certificate predates (as ours does) the existence of the
+            # account that presents it Windows will refuse to accept it unless
+            # there exists a strong mapping from one to the other. This strong
+            # mapping will in this case take the form of a certificate extension
+            # described in [MS-WCCE] 2.2.2.7.7.4 (szOID_NTDS_CA_SECURITY_EXT) and
+            # containing the account’s SID.
 
-        # Encode this structure manually until we are able to produce the same
-        # ASN.1 encoding that Windows does.
+            # Encode this structure manually until we are able to produce the same
+            # ASN.1 encoding that Windows does.
 
-        encoded_sid = creds.get_sid().encode("utf-8")
+            encoded_sid = object_sid.encode("utf-8")
 
-        # The OCTET STRING tag, followed by length and encoded SID…
-        security_ext = bytes([0x04]) + self.asn1_length(encoded_sid) + (encoded_sid)
+            # The OCTET STRING tag, followed by length and encoded SID…
+            security_ext = bytes([0x04]) + self.asn1_length(encoded_sid) + (encoded_sid)
 
-        # …enclosed in a construct tagged with the application-specific value
-        # 0…
-        security_ext = bytes([0xA0]) + self.asn1_length(security_ext) + (security_ext)
+            # …enclosed in a construct tagged with the application-specific value
+            # 0…
+            security_ext = (
+                bytes([0xA0]) + self.asn1_length(security_ext) + (security_ext)
+            )
 
-        # …preceded by the extension OID…
-        encoded_oid = self.der_encode(
-            krb5_asn1.szOID_NTDS_OBJECTSID, univ.ObjectIdentifier()
-        )
-        security_ext = encoded_oid + security_ext
+            # …preceded by the extension OID…
+            encoded_oid = self.der_encode(
+                krb5_asn1.szOID_NTDS_OBJECTSID, univ.ObjectIdentifier()
+            )
+            security_ext = encoded_oid + security_ext
 
-        # …and another application-specific tag 0…
-        # (This is the part about which I’m unsure. This length is not just of
-        # the OID, but of the entire structure so far, as if there’s some
-        # nesting going on.  So far I haven’t been able to replicate this with
-        # pyasn1.)
-        security_ext = bytes([0xA0]) + self.asn1_length(security_ext) + (security_ext)
+            # …and another application-specific tag 0…
+            # (This is the part about which I’m unsure. This length is not just of
+            # the OID, but of the entire structure so far, as if there’s some
+            # nesting going on.  So far I haven’t been able to replicate this with
+            # pyasn1.)
+            security_ext = (
+                bytes([0xA0]) + self.asn1_length(security_ext) + (security_ext)
+            )
 
-        # …all enclosed in a structure with a SEQUENCE tag.
-        security_ext = bytes([0x30]) + self.asn1_length(security_ext) + (security_ext)
+            # …all enclosed in a structure with a SEQUENCE tag.
+            security_ext = (
+                bytes([0x30]) + self.asn1_length(security_ext) + (security_ext)
+            )
 
-        # Add the security extension to the certificate.
-        builder = builder.add_extension(
-            x509.UnrecognizedExtension(
-                x509.ObjectIdentifier(str(krb5_asn1.szOID_NTDS_CA_SECURITY_EXT)),
-                security_ext,
-            ),
-            critical=False,
-        )
+            # Add the security extension to the certificate.
+            builder = builder.add_extension(
+                x509.UnrecognizedExtension(
+                    x509.ObjectIdentifier(str(krb5_asn1.szOID_NTDS_CA_SECURITY_EXT)),
+                    security_ext,
+                ),
+                critical=False,
+            )
 
         # Sign the certificate with the CA’s private key. Windows accepts both
         # SHA1 and SHA256 hashes.
