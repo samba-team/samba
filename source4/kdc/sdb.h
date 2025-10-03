@@ -149,7 +149,7 @@ struct sdb_entry {
 #define SDB_F_GET_ANY			( SDB_F_GET_CLIENT | \
 					  SDB_F_GET_SERVER | \
 					  SDB_F_GET_KRBTGT ) /* fetch any of client,server,krbtgt */
-#define SDB_F_CANON			0x00020	/* want canonicalition */
+#define SDB_F_CANON			0x00020	/* want canonicalization */
 #define SDB_F_ADMIN_DATA		0x00040	/* want data that kdc don't use  */
 #define SDB_F_KVNO_SPECIFIED		0x00080	/* we want a particular KVNO */
 #define SDB_F_FOR_AS_REQ		0x01000	/* fetch is for a AS REQ */
