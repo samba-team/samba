@@ -91,6 +91,141 @@ static int fake_acls_fuidgid(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int fake_acls_fstatat(struct vfs_handle_struct *handle,
+			     const struct files_struct *dirfsp,
+			     const struct smb_filename *smb_relname,
+			     SMB_STRUCT_STAT *sbuf,
+			     int flags)
+{
+	connection_struct *conn = handle->conn;
+	int ret = -1;
+	struct in_pathref_data *prd = NULL;
+	struct files_struct *root_fsp = NULL;
+	struct files_struct *new_dirfsp = NULL;
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *new_relname = NULL;
+	char *base_name = smb_relname->base_name;
+	uint32_t ucf_flags;
+	NTSTATUS status;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				prd,
+				struct in_pathref_data,
+				return -1);
+
+	ret = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, smb_relname, sbuf, flags);
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (smb_relname->fsp != NULL) {
+		ret = fake_acls_fuidgid(handle,
+					metadata_fsp(smb_relname->fsp),
+					&sbuf->st_ex_uid,
+					&sbuf->st_ex_gid);
+		return ret;
+	}
+
+	/*
+	 * Ensure openat_pathref_fsp() can't recurse into
+	 * fake_acls_stat().  openat_pathref_fsp() doesn't care about
+	 * the uid/gid values, it only wants a valid/invalid stat
+	 * answer and we know smb_fname exists as the
+	 * SMB_VFS_NEXT_STAT() returned zero above.
+	 */
+	if (prd->calling_pathref_fsp) {
+		return 0;
+	}
+
+	/* Recursion guard. */
+	prd->calling_pathref_fsp = true;
+
+	/*
+	 * Get a pathref fsp on the basename where we have the EAs,
+	 * ignore smb_relname->stream_name
+	 */
+	if (base_name[0] == '/') {
+		/*
+		 * filename_convert_dirfsp can't deal with absolute
+		 * paths, make this relative to "/"
+		 */
+		base_name += 1;
+		status = open_rootdir_pathref_fsp(conn, &root_fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = ENOENT;
+			return -1;
+		}
+		dirfsp = root_fsp;
+	}
+
+	if (ISDOT(base_name)) {
+		/*
+		 * filename_convert_dirfsp does not like ".", use ""
+		 */
+		base_name += 1;
+	}
+
+	ucf_flags = UCF_POSIX_PATHNAMES;
+
+	if (flags & AT_SYMLINK_NOFOLLOW) {
+		ucf_flags |= UCF_LCOMP_LNK_OK;
+	}
+
+	status = filename_convert_dirfsp_rel(
+		talloc_tos(),
+		conn,
+		discard_const_p(struct files_struct, dirfsp),
+		base_name,
+		ucf_flags,
+		smb_relname->twrp,
+		&new_dirfsp,
+		&smb_fname,
+		&new_relname);
+
+	/* End recursion guard. */
+	prd->calling_pathref_fsp = false;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Ignore errors here. We know the path exists (the
+		 * SMB_VFS_NEXT_STAT() above succeeded. So being
+		 * unable to open a pathref fsp can be due to a range
+		 * of errors (startup path beginning with '/' for
+		 * example, path = ".." when enumerating a
+		 * directory. Just treat this the same way as the path
+		 * not having the FAKE_UID or FAKE_GID EA's
+		 * present. For the test purposes of this module (fake
+		 * NT ACLs from windows clients) this is close enough.
+		 * Just report for debugging purposes.
+		 */
+		DBG_DEBUG("Unable to get pathref fsp on %s/%s. "
+			  "Error %s\n",
+			  fsp_str_dbg(dirfsp),
+			  smb_fname_str_dbg(smb_relname),
+			  nt_errstr(status));
+		return 0;
+	}
+
+	ret = fake_acls_fuidgid(handle,
+				smb_fname->fsp,
+				&sbuf->st_ex_uid,
+				&sbuf->st_ex_gid);
+
+	if (root_fsp != NULL) {
+		fd_close(root_fsp);
+		file_free(NULL, root_fsp);
+		root_fsp = NULL;
+	}
+	fd_close(new_dirfsp);
+	file_free(NULL, new_dirfsp);
+	new_dirfsp = NULL;
+
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(new_relname);
+
+	return ret;
+}
+
 static int fake_acls_stat(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname)
 {
@@ -685,6 +820,7 @@ static int fake_acls_connect(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.connect_fn = fake_acls_connect,
+	.fstatat_fn = fake_acls_fstatat,
 	.stat_fn = fake_acls_stat,
 	.lstat_fn = fake_acls_lstat,
 	.fstat_fn = fake_acls_fstat,
