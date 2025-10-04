@@ -75,6 +75,22 @@ static int fake_acls_fgid(vfs_handle_struct *handle,
 	return 0;
 }
 
+static int fake_acls_fuidgid(vfs_handle_struct *handle,
+			     files_struct *fsp,
+			     uid_t *uid,
+			     gid_t *gid)
+{
+	int ret;
+
+	ret = fake_acls_fuid(handle, fsp, uid);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = fake_acls_fgid(handle, fsp, gid);
+	return ret;
+}
+
 static int fake_acls_stat(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname)
 {
@@ -166,20 +182,10 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 		fsp = smb_fname_cp->fsp;
 	}
 
-	ret = fake_acls_fuid(handle,
-			     fsp,
-			     &smb_fname->st.st_ex_uid);
-	if (ret != 0) {
-		TALLOC_FREE(smb_fname_cp);
-		return ret;
-	}
-	ret = fake_acls_fgid(handle,
-			     fsp,
-			     &smb_fname->st.st_ex_gid);
-	if (ret != 0) {
-		TALLOC_FREE(smb_fname_cp);
-		return ret;
-	}
+	ret = fake_acls_fuidgid(handle,
+				fsp,
+				&smb_fname->st.st_ex_uid,
+				&smb_fname->st.st_ex_gid);
 	TALLOC_FREE(smb_fname_cp);
 	return ret;
 }
@@ -237,12 +243,10 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 			 * could fake them in xattr_tdb if we really wanted
 			 * to. We ignore errors because the link might not
 			 * point anywhere */
-			fake_acls_fuid(handle,
-				       smb_fname_base->fsp,
-				       &smb_fname->st.st_ex_uid);
-			fake_acls_fgid(handle,
-				       smb_fname_base->fsp,
-				       &smb_fname->st.st_ex_gid);
+			fake_acls_fuidgid(handle,
+					  smb_fname_base->fsp,
+					  &smb_fname->st.st_ex_uid,
+					  &smb_fname->st.st_ex_gid);
 		}
 		TALLOC_FREE(smb_fname_base);
 	}
@@ -255,16 +259,13 @@ static int fake_acls_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STR
 	int ret = -1;
 
 	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	if (ret == 0) {
-		ret = fake_acls_fuid(handle, fsp, &sbuf->st_ex_uid);
-		if (ret != 0) {
-			return ret;
-		}
-		ret = fake_acls_fgid(handle, fsp, &sbuf->st_ex_gid);
-		if (ret != 0) {
-			return ret;
-		}
+	if (ret != 0) {
+		return ret;
 	}
+	ret = fake_acls_fuidgid(handle,
+				fsp,
+				&sbuf->st_ex_uid,
+				&sbuf->st_ex_gid);
 	return ret;
 }
 
