@@ -98,6 +98,7 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 	struct in_pathref_data *prd = NULL;
 	struct smb_filename *smb_fname_cp = NULL;
 	struct files_struct *fsp = NULL;
+	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				prd,
@@ -110,77 +111,70 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 	}
 
 	if (smb_fname->fsp != NULL) {
-		fsp = metadata_fsp(smb_fname->fsp);
-	} else {
-		NTSTATUS status;
-
-		/*
-		 * Ensure openat_pathref_fsp()
-		 * can't recurse into fake_acls_stat().
-		 * openat_pathref_fsp() doesn't care
-		 * about the uid/gid values, it only
-		 * wants a valid/invalid stat answer
-		 * and we know smb_fname exists as
-		 * the SMB_VFS_NEXT_STAT() returned
-		 * zero above.
-		 */
-		if (prd->calling_pathref_fsp) {
-			return 0;
-		}
-
-		/*
-		 * openat_pathref_fsp() expects a talloc'ed
-		 * smb_filename. stat can be passed a struct
-		 * from the stack. Make a talloc'ed copy
-		 * so openat_pathref_fsp() can add its
-		 * destructor.
-		 */
-		smb_fname_cp = cp_smb_filename(talloc_tos(),
-					       smb_fname);
-		if (smb_fname_cp == NULL) {
-			errno = ENOMEM;
-			return -1;
-		}
-
-		if (fsp_get_pathref_fd(handle->conn->cwd_fsp) == -1) {
-			/*
-			 * No tcon around, fail as if we don't have
-			 * the EAs
-			 */
-			status = NT_STATUS_INVALID_HANDLE;
-		} else {
-			/* Recursion guard. */
-			prd->calling_pathref_fsp = true;
-			status = openat_pathref_fsp(handle->conn->cwd_fsp,
-						    smb_fname_cp);
-			/* End recursion guard. */
-			prd->calling_pathref_fsp = false;
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * Ignore errors here. We know
-			 * the path exists (the SMB_VFS_NEXT_STAT()
-			 * above succeeded. So being unable to
-			 * open a pathref fsp can be due to a
-			 * range of errors (startup path beginning
-			 * with '/' for example, path = ".." when
-			 * enumerating a directory. Just treat this
-			 * the same way as the path not having the
-			 * FAKE_UID or FAKE_GID EA's present. For the
-			 * test purposes of this module (fake NT ACLs
-			 * from windows clients) this is close enough.
-			 * Just report for debugging purposes.
-			 */
-			DBG_DEBUG("Unable to get pathref fsp on %s. "
-				  "Error %s\n",
-				  smb_fname_str_dbg(smb_fname_cp),
-				  nt_errstr(status));
-			TALLOC_FREE(smb_fname_cp);
-			return 0;
-		}
-		fsp = smb_fname_cp->fsp;
+		ret = fake_acls_fuidgid(handle,
+					metadata_fsp(smb_fname->fsp),
+					&smb_fname->st.st_ex_uid,
+					&smb_fname->st.st_ex_gid);
+		return ret;
 	}
+
+	/*
+	 * Ensure openat_pathref_fsp() can't recurse into
+	 * fake_acls_stat().  openat_pathref_fsp() doesn't care about
+	 * the uid/gid values, it only wants a valid/invalid stat
+	 * answer and we know smb_fname exists as the
+	 * SMB_VFS_NEXT_STAT() returned zero above.
+	 */
+	if (prd->calling_pathref_fsp) {
+		return 0;
+	}
+
+	/*
+	 * openat_pathref_fsp() expects a talloc'ed smb_filename. stat
+	 * can be passed a struct from the stack. Make a talloc'ed
+	 * copy so openat_pathref_fsp() can add its destructor.
+	 */
+	smb_fname_cp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (smb_fname_cp == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	if (fsp_get_pathref_fd(handle->conn->cwd_fsp) == -1) {
+		/*
+		 * No tcon around, fail as if we don't have the EAs
+		 */
+		status = NT_STATUS_INVALID_HANDLE;
+	} else {
+		/* Recursion guard. */
+		prd->calling_pathref_fsp = true;
+		status = openat_pathref_fsp(handle->conn->cwd_fsp,
+					    smb_fname_cp);
+		/* End recursion guard. */
+		prd->calling_pathref_fsp = false;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Ignore errors here. We know the path exists (the
+		 * SMB_VFS_NEXT_STAT() above succeeded. So being
+		 * unable to open a pathref fsp can be due to a range
+		 * of errors (startup path beginning with '/' for
+		 * example, path = ".." when enumerating a
+		 * directory. Just treat this the same way as the path
+		 * not having the FAKE_UID or FAKE_GID EA's
+		 * present. For the test purposes of this module (fake
+		 * NT ACLs from windows clients) this is close enough.
+		 * Just report for debugging purposes.
+		 */
+		DBG_DEBUG("Unable to get pathref fsp on %s. "
+			  "Error %s\n",
+			  smb_fname_str_dbg(smb_fname_cp),
+			  nt_errstr(status));
+		TALLOC_FREE(smb_fname_cp);
+		return 0;
+	}
+	fsp = smb_fname_cp->fsp;
 
 	ret = fake_acls_fuidgid(handle,
 				fsp,
