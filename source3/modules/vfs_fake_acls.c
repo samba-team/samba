@@ -189,6 +189,9 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 {
 	int ret = -1;
 	struct in_pathref_data *prd = NULL;
+	struct smb_filename *smb_fname_base = NULL;
+	SMB_STRUCT_STAT sbuf = {0};
+	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				prd,
@@ -196,54 +199,49 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 				return -1);
 
 	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	if (ret == 0) {
-		struct smb_filename *smb_fname_base = NULL;
-		SMB_STRUCT_STAT sbuf = { 0 };
-		NTSTATUS status;
-
-		/*
-		 * Ensure synthetic_pathref()
-		 * can't recurse into fake_acls_lstat().
-		 * synthetic_pathref() doesn't care
-		 * about the uid/gid values, it only
-		 * wants a valid/invalid stat answer
-		 * and we know smb_fname exists as
-		 * the SMB_VFS_NEXT_LSTAT() returned
-		 * zero above.
-		 */
-		if (prd->calling_pathref_fsp) {
-			return 0;
-		}
-
-		/* Recursion guard. */
-		prd->calling_pathref_fsp = true;
-		status = synthetic_pathref(talloc_tos(),
-					   handle->conn->cwd_fsp,
-					   smb_fname->base_name,
-					   NULL,
-					   &sbuf,
-					   smb_fname->twrp,
-					   0, /* we want stat, not lstat. */
-					   &smb_fname_base);
-		/* End recursion guard. */
-		prd->calling_pathref_fsp = false;
-		if (NT_STATUS_IS_OK(status)) {
-			/*
-			 * This isn't quite right (calling fgetxattr not
-			 * lgetxattr), but for the test purposes of this
-			 * module (fake NT ACLs from windows clients), it is
-			 * close enough.  We removed the l*xattr functions
-			 * because linux doesn't support using them, but we
-			 * could fake them in xattr_tdb if we really wanted
-			 * to. We ignore errors because the link might not
-			 * point anywhere */
-			fake_acls_fuidgid(handle,
-					  smb_fname_base->fsp,
-					  &smb_fname->st.st_ex_uid,
-					  &smb_fname->st.st_ex_gid);
-		}
-		TALLOC_FREE(smb_fname_base);
+	if (ret != 0) {
+		return ret;
 	}
+
+	/*
+	 * Ensure synthetic_pathref() can't recurse into
+	 * fake_acls_lstat().  synthetic_pathref() doesn't care about
+	 * the uid/gid values, it only wants a valid/invalid stat
+	 * answer and we know smb_fname exists as the
+	 * SMB_VFS_NEXT_LSTAT() returned zero above.
+	 */
+	if (prd->calling_pathref_fsp) {
+		return 0;
+	}
+
+	/* Recursion guard. */
+	prd->calling_pathref_fsp = true;
+	status = synthetic_pathref(talloc_tos(),
+				   handle->conn->cwd_fsp,
+				   smb_fname->base_name,
+				   NULL,
+				   &sbuf,
+				   smb_fname->twrp,
+				   0, /* we want stat, not lstat. */
+				   &smb_fname_base);
+	/* End recursion guard. */
+	prd->calling_pathref_fsp = false;
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * This isn't quite right (calling fgetxattr not
+		 * lgetxattr), but for the test purposes of this
+		 * module (fake NT ACLs from windows clients), it is
+		 * close enough.  We removed the l*xattr functions
+		 * because linux doesn't support using them, but we
+		 * could fake them in xattr_tdb if we really wanted
+		 * to. We ignore errors because the link might not
+		 * point anywhere */
+		fake_acls_fuidgid(handle,
+				  smb_fname_base->fsp,
+				  &smb_fname->st.st_ex_uid,
+				  &smb_fname->st.st_ex_gid);
+	}
+	TALLOC_FREE(smb_fname_base);
 
 	return ret;
 }
