@@ -43,6 +43,9 @@ USER_PASS = samba.generate_random_password(32, 32)
 SECOND_USER_NAME = "auditlogtestuser02"
 SECOND_USER_PASS = samba.generate_random_password(32, 32)
 
+MACHINE_NAME = "auditlogtestmachineuser"
+MACHINE_PASS = samba.generate_random_password(32, 32)
+
 
 class AuditLogPassChangeTests(AuditLogTestBase):
 
@@ -93,6 +96,17 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             "objectclass": "user",
             "sAMAccountName": USER_NAME,
             "userPassword": USER_PASS
+        })
+
+        # (Re)adds the test user MACHINE_NAME with password MACHINE_PASS
+        delete_force(
+            self.ldb,
+            "cn=" + MACHINE_NAME + ",cn=users," + self.base_dn)
+        self.ldb.add({
+            "dn": "cn=" + MACHINE_NAME + ",cn=users," + self.base_dn,
+            "objectclass": "computer",
+            "sAMAccountName": MACHINE_NAME,
+            "userPassword": MACHINE_PASS
         })
 
     #
@@ -465,7 +479,57 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(0, len(messages))
 
 
-    def _test_ldap_authentication_information(self, attribute, values):
+    def test_ldap_altSecurityIdentities(self):
+        """Test logging of altSecurityIdentities changes.
+        """
+        values = [
+            "X509:<SKI>123456789123",
+            "X509:<S>SubjectName<I>IssuerName",
+            "X509:<I>IssuerName<SR>123456789123"
+        ]
+        self._test_ldap_authentication_information(
+            "altSecurityIdentities", values)
+
+
+    def test_ldap_service_principal_name(self):
+        """Test logging of servicePrincipalName changes.
+        """
+        values = [
+            "HOST/principal1",
+            "HOST/principal2",
+            "HOST/Principla3"
+        ]
+        self._test_ldap_authentication_information(
+            "servicePrincipalName", values)
+
+
+    def test_ldap_dns_host_name(self):
+        """Test logging of dNSHostName changes.
+        """
+        values = [
+            "host1.test.samba.org",
+            "host2.test.samba.org",
+            "host3.test.samba.org"
+        ]
+        self._test_ldap_authentication_information(
+            "dNSHostName", values, user=MACHINE_NAME)
+
+    def test_ldap_msDS_AdditionalDnsHostName(self):
+        """Test logging of msDS-AdditionalDnsHostName changes.
+        """
+        values = [
+            "host1.test.samba.org",
+            "host2.test.samba.org",
+            "host3.test.samba.org"
+        ]
+        self._test_ldap_authentication_information(
+            "msDS-AdditionalDnsHostName", values, user=MACHINE_NAME)
+
+    def _test_ldap_authentication_information(
+            self,
+            attribute,
+            values,
+            user=USER_NAME ):
         """Test logging of authentication information changes.
         """
         #
@@ -473,7 +537,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         # we use sub-tests in this test.
         #
 
-        dn = f"cn={USER_NAME},cn=users,{self.base_dn}"
+        dn = f"cn={user},cn=users,{self.base_dn}"
         self.discardSetupMessages(dn)
 
         session_id = self.get_session()
