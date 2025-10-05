@@ -403,14 +403,90 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         session_id = self.get_session()
         service_description = self.get_service_description()
         self.assertEqual(service_description, "LDAP")
+
+        self._test_ldap_authentication_information(
+            "msDS-keyCredentialLink", kcls)
+
+        transactions_seen = set()
+
+        with self.subTest("add bad KCL DN value"):
+            self.ldb.modify_ldif(
+                f"dn: {dn}\n"
+                "changetype: modify\n"
+                "replace: msDS-keyCredentialLink\n"
+                f"msDS-keyCredentialLink: B:4:f1ea:{dn}\n")
+            messages = self.waitForMessages(1, dn=dn)
+            self.discardMessages()
+            audit = messages[0]["passwordChange"]
+            self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
+            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual(dn, audit["dn"])
+            self.assertIn(self.remoteAddress, audit["remoteAddress"])
+            self.assertEqual(session_id, audit["sessionId"])
+            self.assertEqual(0, audit["statusCode"])
+            transactions_seen.add(audit["transactionId"])
+
+        with self.subTest("add a second DN value"):
+            # should this fail?
+            self.ldb.modify_ldif(
+                f"dn: {dn}\n"
+                "changetype: modify\n"
+                "add: msDS-keyCredentialLink\n"
+                f"msDS-keyCredentialLink: B:4:f1ee:{dn}\n")
+            messages = self.waitForMessages(1, dn=dn)
+            self.discardMessages()
+            audit = messages[0]["passwordChange"]
+            self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
+            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual(dn, audit["dn"])
+            self.assertIn(self.remoteAddress, audit["remoteAddress"])
+            self.assertEqual(session_id, audit["sessionId"])
+            self.assertEqual(0, audit["statusCode"])
+            transactions_seen.add(audit["transactionId"])
+
+        # these should all have been separate transactions
+        with self.subTest("check transactions"):
+            self.assertEqual(len(transactions_seen), 2)
+            for t in transactions_seen:
+                self.assertTrue(self.is_guid(t))
+
+        with self.subTest("add bad Binary DN value"):
+            for bad_dn in ('B:6:f1ea:{dn}', 'flea', dn):
+                with self.assertRaises(LdbError) as e:
+                    self.ldb.modify_ldif(
+                        f"dn: {dn}\n"
+                        "changetype: modify\n"
+                        "replace: msDS-keyCredentialLink\n"
+                        f"msDS-keyCredentialLink: {bad_dn}\n")
+                self.assertEqual(e.exception.args[0], ERR_INVALID_DN_SYNTAX)
+            # no messages from those the 3 bad DNs
+            # because DN syntax check comes first
+            messages = self.waitForMessages(1, dn=dn)
+            self.assertEqual(0, len(messages))
+
+
+    def _test_ldap_authentication_information(self, attribute, values):
+        """Test logging of authentication information changes.
+        """
+        #
+        # To avoid all the set-up cost of making a fresh DB and user,
+        # we use sub-tests in this test.
+        #
+
+        dn = f"cn={USER_NAME},cn=users,{self.base_dn}"
+        self.discardSetupMessages(dn)
+
+        session_id = self.get_session()
+        service_description = self.get_service_description()
+        self.assertEqual(service_description, "LDAP")
         transactions_seen = set()
 
         with self.subTest("initial setup"):
             self.ldb.modify_ldif(
                 f"dn: {dn}\n"
                 "changetype: modify\n"
-                "add: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[0]}\n")
+                f"add: {attribute}\n"
+                f"{attribute}: {values[0]}\n")
             messages = self.waitForMessages(1, dn=dn)
             print("Received %d messages" % len(messages))
             self.assertEqual(1, len(messages))
@@ -428,8 +504,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.ldb.modify_ldif(
                 f"dn: {dn}\n"
                 "changetype: modify\n"
-                "replace: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[1]}\n")
+                f"replace: {attribute}\n"
+                f"{attribute}: {values[1]}\n")
             messages = self.waitForMessages(1, dn=dn)
             print("Received %d messages" % len(messages))
             self.assertEqual(1, len(messages))
@@ -446,10 +522,10 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.ldb.modify_ldif(
                 f"dn: {dn}\n"
                 "changetype: modify\n"
-                "delete: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[1]}\n"
-                "add: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[2]}\n")
+                f"delete: {attribute}\n"
+                f"{attribute}: {values[1]}\n"
+                f"add: {attribute}\n"
+                f"{attribute}: {values[2]}\n")
             messages = self.waitForMessages(1, dn=dn)
             print("Received %d messages" % len(messages))
             self.assertEqual(1, len(messages))
@@ -464,12 +540,12 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.discardMessages()
 
         with self.subTest("identical replace"):
-            # replacing the KCL with itself still sends the message.
+            # replacing the value with itself still sends the message.
             self.ldb.modify_ldif(
                 f"dn: {dn}\n"
                 "changetype: modify\n"
-                "replace: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[2]}\n")
+                f"replace: {attribute}\n"
+                f"{attribute}: {values[2]}\n")
             messages = self.waitForMessages(1, dn=dn)
             print("Received %d messages" % len(messages))
             self.assertEqual(1, len(messages))
@@ -483,13 +559,13 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             transactions_seen.add(audit["transactionId"])
             self.discardMessages()
 
-        with self.subTest("replace KCL AND password"):
+        with self.subTest("replace authentication information AND password"):
             # there should be two messages
             self.ldb.modify_ldif(
                 f"dn: {dn}\n"
                 "changetype: modify\n"
-                "replace: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[0]}\n"
+                f"replace:{attribute}\n"
+                f"{attribute}: {values[0]}\n"
                 "replace: userPassword\n"
                 "userPassword: gruffalo3.\n")
             messages = self.waitForMessages(2, dn=dn)
@@ -512,17 +588,18 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             del pwd_audit["action"]
             del kcl_audit["eventId"]
             del kcl_audit["action"]
+            # replacing an authentication information value with itself
+            # still sends the message.
             self.assertEqual(kcl_audit, pwd_audit)
             transactions_seen.add(pwd_audit["transactionId"])
             self.discardMessages()
 
         with self.subTest("delete"):
-            # replacing the KCL with itself still sends the message.
             self.ldb.modify_ldif(
                 f"dn: {dn}\n"
                 "changetype: modify\n"
-                "delete: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: {kcls[0]}\n")
+                f"delete: {attribute}\n"
+                f"{attribute}: {values[0]}\n")
             messages = self.waitForMessages(1, dn=dn)
             print("Received %d messages" % len(messages))
             self.assertEqual(1, len(messages))
@@ -542,8 +619,8 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                 self.ldb.modify_ldif(
                     f"dn: {dn}\n"
                     "changetype: modify\n"
-                    "delete: msDS-keyCredentialLink\n"
-                    f"msDS-keyCredentialLink: {kcls[2]}\n")
+                    f"delete: {attribute}\n"
+                    f"{attribute}: {values[2]}\n")
             self.assertEqual(e.exception.args[0], ERR_NO_SUCH_ATTRIBUTE)
             messages = self.waitForMessages(1, dn=dn)
             print("Received %d messages" % len(messages))
@@ -561,56 +638,9 @@ class AuditLogPassChangeTests(AuditLogTestBase):
                 self.assertEqual(ERR_NO_SUCH_ATTRIBUTE, audit["statusCode"])
                 self.assertEqual("No such attribute", audit["status"])
 
-        with self.subTest("add bad KCL DN value"):
-            self.ldb.modify_ldif(
-                f"dn: {dn}\n"
-                "changetype: modify\n"
-                "replace: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: B:4:f1ea:{dn}\n")
-            messages = self.waitForMessages(1, dn=dn)
-            self.discardMessages()
-            audit = messages[0]["passwordChange"]
-            self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
-            self.assertEqual(dn, audit["dn"])
-            self.assertIn(self.remoteAddress, audit["remoteAddress"])
-            self.assertEqual(session_id, audit["sessionId"])
-            self.assertEqual(0, audit["statusCode"])
-            transactions_seen.add(audit["transactionId"])
-
         # these should all have been separate transactions
         with self.subTest("check transactions"):
-            self.assertEqual(len(transactions_seen), 8)
+            self.assertEqual(len(transactions_seen), 7)
             for t in transactions_seen:
                 self.assertTrue(self.is_guid(t))
 
-        with self.subTest("add a second DN value"):
-            # should this fail?
-            self.ldb.modify_ldif(
-                f"dn: {dn}\n"
-                "changetype: modify\n"
-                "add: msDS-keyCredentialLink\n"
-                f"msDS-keyCredentialLink: B:4:f1ee:{dn}\n")
-            messages = self.waitForMessages(1, dn=dn)
-            self.discardMessages()
-            audit = messages[0]["passwordChange"]
-            self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
-            self.assertEqual(dn, audit["dn"])
-            self.assertIn(self.remoteAddress, audit["remoteAddress"])
-            self.assertEqual(session_id, audit["sessionId"])
-            self.assertEqual(0, audit["statusCode"])
-
-        with self.subTest("add bad Binary DN value"):
-            for bad_dn in ('B:6:f1ea:{dn}', 'flea', dn):
-                with self.assertRaises(LdbError) as e:
-                    self.ldb.modify_ldif(
-                        f"dn: {dn}\n"
-                        "changetype: modify\n"
-                        "replace: msDS-keyCredentialLink\n"
-                        f"msDS-keyCredentialLink: {bad_dn}\n")
-                self.assertEqual(e.exception.args[0], ERR_INVALID_DN_SYNTAX)
-            # no messages from those the 3 bad DNs
-            # because DN syntax check comes first
-            messages = self.waitForMessages(1, dn=dn)
-            self.assertEqual(0, len(messages))
