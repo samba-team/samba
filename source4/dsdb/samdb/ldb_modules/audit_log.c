@@ -523,7 +523,7 @@ static struct json_object password_change_json(
 	struct ldb_module *module,
 	const struct ldb_request *request,
 	const struct ldb_reply *reply,
-	bool public_key_changed)
+	bool auth_info_changed)
 {
 	struct ldb_context *ldb = NULL;
 	const struct dom_sid *sid = NULL;
@@ -545,8 +545,8 @@ static struct json_object password_change_json(
 	sid = dsdb_audit_get_user_sid(module);
 	dn = dsdb_audit_get_primary_dn(request);
 	unique_session_token = dsdb_audit_get_unique_session_token(module);
-	if (public_key_changed) {
-		action = "Public key change";
+	if (auth_info_changed) {
+		action = "Auth info change";
 		event_id = EVT_ID_DIRECTORY_OBJECT_CHANGE;
 	} else  {
 		action = get_password_action(request, reply);
@@ -818,7 +818,7 @@ static char *password_change_human_readable(
 	struct ldb_module *module,
 	const struct ldb_request *request,
 	const struct ldb_reply *reply,
-	bool is_public_key_change)
+	bool auth_info_change)
 {
 	struct ldb_context *ldb = NULL;
 	const char *remote_host = NULL;
@@ -837,8 +837,8 @@ static char *password_change_human_readable(
 	sid = dsdb_audit_get_user_sid(module);
 	timestamp = audit_get_timestamp(ctx);
 
-	if (is_public_key_change) {
-		action = "Public key change";
+	if (auth_info_change) {
+		action = "Auth info change";
 	} else {
 		action = get_password_action(request, reply);
 	}

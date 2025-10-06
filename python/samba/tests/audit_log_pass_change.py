@@ -433,7 +433,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.discardMessages()
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])
@@ -451,7 +451,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.discardMessages()
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])
@@ -556,7 +556,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(1, len(messages))
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])
@@ -575,7 +575,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(1, len(messages))
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertTrue(self.is_guid(audit["sessionId"]))
@@ -595,7 +595,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(1, len(messages))
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])
@@ -615,7 +615,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(1, len(messages))
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])
@@ -643,7 +643,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             del audit
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, kcl_audit["eventId"])
             self.assertEqual(EVT_ID_PASSWORD_RESET, pwd_audit["eventId"])
-            self.assertEqual("Public key change", kcl_audit["action"])
+            self.assertEqual("Auth info change", kcl_audit["action"])
             self.assertEqual("Reset", pwd_audit["action"])
             # if we delete the action and eventId, the rest of
             # structures should be the same (sessionId, transactionId,
@@ -669,7 +669,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(1, len(messages))
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])
@@ -692,7 +692,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
             self.assertEqual(1, len(messages))
             audit = messages[0]["passwordChange"]
             self.assertEqual(EVT_ID_DIRECTORY_OBJECT_CHANGE, audit["eventId"])
-            self.assertEqual("Public key change", audit["action"])
+            self.assertEqual("Auth info change", audit["action"])
             self.assertEqual(dn, audit["dn"])
             self.assertIn(self.remoteAddress, audit["remoteAddress"])
             self.assertEqual(session_id, audit["sessionId"])

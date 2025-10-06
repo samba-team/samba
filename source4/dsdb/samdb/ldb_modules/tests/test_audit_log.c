@@ -1174,7 +1174,7 @@ static void test_kcl_change_json(void **state)
 	v = json_object_get(audit, "action");
 	assert_non_null(v);
 	assert_true(json_is_string(v));
-	assert_string_equal("Public key change", json_string_value(v));
+	assert_string_equal("Auth info change", json_string_value(v));
 
 	json_free(&json);
 	TALLOC_FREE(ctx);
