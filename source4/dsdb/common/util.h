@@ -74,6 +74,18 @@
 	"dBCSPwd"
 
 /*
+ * Attributes that are used in the authentication of an account,
+ * but are not secret. However changes to them should be logged
+ * with password changes.
+ */
+#define DSDB_AUTHENTICATION_ATTRIBUTES \
+	"msDS-KeyCredentialLink", \
+	"altSecurityIdentities", \
+	"dNSHostName", \
+	"msDS-AdditionalDnsHostName", \
+	"servicePrincipalName"
+
+/*
  * ldb opaque values used to pass the user session information to ldb modules
  */
 #define DSDB_SESSION_INFO "sessionInfo"

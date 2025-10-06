@@ -338,8 +338,3 @@
 
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
-
-^samba.tests.audit_log_pass_change.samba.tests.audit_log_pass_change.AuditLogPassChangeTests.test_ldap_altSecurityIdentities
-^samba.tests.audit_log_pass_change.samba.tests.audit_log_pass_change.AuditLogPassChangeTests.test_ldap_service_principal_name
-^samba.tests.audit_log_pass_change.samba.tests.audit_log_pass_change.AuditLogPassChangeTests.test_ldap_msDS_AdditionalDnsHostName
-^samba.tests.audit_log_pass_change.samba.tests.audit_log_pass_change.AuditLogPassChangeTests.test_ldap_dns_host_name

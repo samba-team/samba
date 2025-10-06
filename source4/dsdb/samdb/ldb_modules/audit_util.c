@@ -22,6 +22,7 @@
  *
  */
 
+#include "common/util.h"
 #include "includes.h"
 #include "ldb_module.h"
 #include "lib/audit_logging/audit_logging.h"
@@ -48,6 +49,14 @@ static const char * const secret_attributes[] = {
  */
 static const char * const password_attributes[] = {
 	DSDB_PASSWORD_ATTRIBUTES,
+	NULL};
+
+/*
+ * List of attributes that while not secret, do control the authentication
+ * of an account.
+ */
+static const char * const  authentication_attributes[] = {
+	DSDB_AUTHENTICATION_ATTRIBUTES,
 	NULL};
 
 /*
@@ -85,6 +94,21 @@ bool dsdb_audit_is_password_attribute(const char * name)
 
 	bool is_password = ldb_attr_in_list(password_attributes, name);
 	return is_password;
+}
+
+
+/*
+ * @brief is the attribute an authentication information attribute?
+ *
+ * Is the attribute a authentication information attribute.
+ *
+ * @return True if the attribute is an "Authentication Information" attribute.
+ */
+bool dsdb_audit_is_authentication_information(const char * name)
+{
+
+	bool is_auth_info = ldb_attr_in_list(authentication_attributes, name);
+	return is_auth_info;
 }
 
 /*

@@ -120,38 +120,41 @@ static bool has_password_changed(const struct ldb_message *message)
 	return false;
 }
 /*
- * @brief Has a public key been set or unset in this message.
+ * @brief Has authentication information changed.
  *
- * We treat msDS-KeyCredentialLink a bit like a password change,
- * because it changes the remote certificate that is accepted.
+ * authentication information is any non secret information used for
+ * authentication purposes, i.e. msDS-KeyCredentialLink, altSecurityIdentities
  *
- * While this is not a secret, it is significant from a security point
- * of view because, as openssh likes to say, IT IS POSSIBLE THAT
- * SOMEONE IS DOING SOMETHING NASTY by changing trusted keys.
+ * We treat changes to authentication information a bit like a password change,
+ * because it changes the way a user is authenticated.
+ *
+ * While this information is not a secret, it is significant from a security
+ * point of view because, as openssh likes to say, IT IS POSSIBLE THAT
+ * SOMEONE IS DOING SOMETHING NASTY by changing it.
  *
  * A real password change only matters for this reason too. But a
  * *read* of the password hash is a security event in a way that a
- * read of msDS-KeyCredentialLink is not.
+ * read of the authentication information is not.
  *
- * That's why we don't add just public keys to DSDB_PASSWORD_ATTRIBUTES,
+ * That's why we don't add just them to DSDB_PASSWORD_ATTRIBUTES,
  * which is used elsewhere to check secrecy.
  *
  * This does not actually check that the message will change the
- * database -- a message setting msDS-KeyCredentialLink to its current
+ * database -- a message setting an attribute to its current
  * value will still be logged as a change.
  *
- * @return true if the message contains a public key, which currently
- * just means msDS-KeyCredentialLink.
+ * @return true if the message contains authentication information
  */
-static bool has_public_key_changed(const struct ldb_message *message)
+static bool has_authentication_information_changed(
+	const struct ldb_message *message)
 {
 	unsigned int i;
 	if (message == NULL) {
 		return false;
 	}
 	for (i = 0; i<message->num_elements; i++) {
-		if (ldb_attr_cmp(message->elements[i].name,
-				 "msDS-KeyCredentialLink") == 0) {
+		if (dsdb_audit_is_authentication_information(
+			message->elements[i].name)) {
 			return true;
 		}
 	}
@@ -1188,7 +1191,8 @@ static void log_standard_operation(
 
 	const struct ldb_message *message = dsdb_audit_get_message(request);
 	bool password_changed = has_password_changed(message);
-	bool public_key_changed = has_public_key_changed(message);
+	bool authentication_information_changed
+		= has_authentication_information_changed(message);
 	struct audit_private *audit_private =
 		talloc_get_type_abort(ldb_module_get_private(module),
 				      struct audit_private);
@@ -1225,7 +1229,7 @@ static void log_standard_operation(
 				PASSWORD_LOG_LVL);
 			TALLOC_FREE(entry);
 		}
-		if (public_key_changed) {
+		if (authentication_information_changed) {
 			char *entry = NULL;
 			entry = password_change_human_readable(
 				ctx,
@@ -1279,7 +1283,7 @@ static void log_standard_operation(
 			}
 			json_free(&json);
 		}
-		if (public_key_changed) {
+		if (authentication_information_changed) {
 			struct json_object json;
 			json = password_change_json(module, request, reply, true);
 			audit_log_json(
