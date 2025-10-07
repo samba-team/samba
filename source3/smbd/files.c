@@ -2714,4 +2714,13 @@ void fsp_apply_private_ntcreatex_flags(struct files_struct *fsp,
 	} else {
 		fsp->fsp_flags.ntcreatex_stream_baseopen = false;
 	}
+	if (flags & NTCREATEX_FLAG_PERSISTENT_OPEN) {
+		/*
+		 * Dereferencing op would crash anyway if NULL, but the assert
+		 * makes it more clear that op is expected when getting
+		 * NTCREATEX_FLAG_PERSISTENT_OPEN.
+		 */
+		SMB_ASSERT(fsp->op);
+		fsp->op->global->persistent = true;
+	}
 }

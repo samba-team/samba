@@ -325,6 +325,7 @@ struct interface {
  */
 #define NTCREATEX_FLAG_DENY_DOS			0x0001
 #define NTCREATEX_FLAG_DENY_FCB			0x0002
+#define NTCREATEX_FLAG_PERSISTENT_OPEN		0x0004
 
 /* Private flag for streams support */
 #define NTCREATEX_FLAG_STREAM_BASEOPEN		0x0010
