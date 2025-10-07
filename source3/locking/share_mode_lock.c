@@ -3558,6 +3558,9 @@ uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp)
 	if (fsp->fsp_flags.ntcreatex_deny_fcb) {
 		flags |= SHARE_ENTRY_FLAG_DENY_FCB;
 	}
+	if (fsp->op != NULL && fsp->op->global->persistent) {
+		flags |= SHARE_ENTRY_FLAG_PERSISTENT_OPEN;
+	}
 	return flags;
 }
 
