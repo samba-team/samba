@@ -772,6 +772,10 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 		dtl->parent_lease_key = lease->parent_lease_key;
 	}
 
+	if (fsp->op != NULL) {
+		dtl->open_persistent_id = fsp->op->global->open_persistent_id;
+	}
+
 	dtl->delete_nt_token = security_token_duplicate(d->delete_tokens, nt_tok);
 	if (dtl->delete_nt_token == NULL) {
 		return false;
@@ -894,6 +898,11 @@ void set_delete_on_close_lck(files_struct *fsp,
 			lease = fsp_get_smb2_lease(fsp);
 			if (lease != NULL) {
 				dt->parent_lease_key = lease->parent_lease_key;
+			}
+
+			if (fsp->op != NULL) {
+				dt->open_persistent_id =
+					fsp->op->global->open_persistent_id;
 			}
 
 			TALLOC_FREE(dt->delete_nt_token);

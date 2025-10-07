@@ -17,7 +17,8 @@ interface open_files
 		SHARE_ENTRY_FLAG_POSIX_OPEN		= 0x0001,
 		SHARE_ENTRY_FLAG_STREAM_BASEOPEN	= 0x0002,
 		SHARE_ENTRY_FLAG_DENY_DOS		= 0x0004,
-		SHARE_ENTRY_FLAG_DENY_FCB		= 0x0008
+		SHARE_ENTRY_FLAG_DENY_FCB		= 0x0008,
+		SHARE_ENTRY_FLAG_PERSISTENT_OPEN	= 0x0010
 	} share_entry_flags;
 
 	typedef [enum16bit] enum {
@@ -34,6 +35,7 @@ interface open_files
 		hyper		op_mid;
 		share_mode_entry_op_type op_type;
 		GUID		client_guid;
+		GUID		create_guid;
 		smb2_lease_key  lease_key;
 		uint32		access_mask;
 		uint32		share_access;
@@ -48,11 +50,17 @@ interface open_files
 		 * to store this share_mode_entry on disk.
 		 */
 		[skip] boolean8	stale;
+		/*
+		 * In-memory flag indicating a disconnected Persistent Handle.
+		 * We don't want to store this in the share_mode_entry on disk.
+		 */
+		[skip] boolean8	protect;
 	} share_mode_entry;
 
 	typedef [public] struct {
 		uint32		name_hash;
 		smb2_lease_key	parent_lease_key;
+		hyper		open_persistent_id;
 		security_token *delete_nt_token;
 		security_unix_token *delete_token;
 	} delete_token;
@@ -76,6 +84,7 @@ interface open_files
 		[string,charset(UTF8)] char *servicepath;
 		[string,charset(UTF8)] char *base_name;
 		[string,charset(UTF8)] char *stream_name;
+		uint32 num_persistent;
 		uint32 num_delete_tokens;
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
 		[skip] boolean8 not_stored;
@@ -130,6 +139,7 @@ interface open_files
 		hyper initial_allocation_size;
 		hyper position_information;
 		boolean8 write_time_forced;
+		boolean8 initial_delete_on_close;
 		vfs_default_durable_stat stat_info;
 	} vfs_default_durable_cookie;
 
