@@ -17,6 +17,7 @@
 
 #include "includes.h"
 #include "source3/locking/proto.h"
+#include "source3/smbd/proto.h"
 #include "rpc_worker.h"
 #include "librpc/gen_ndr/ndr_mdssvc.h"
 #include "librpc/gen_ndr/ndr_mdssvc_scompat.h"
@@ -49,6 +50,8 @@ static NTSTATUS mdssvc_servers(
 		DBG_ERR("posix_locking_init() failed\n");
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	mangle_reset_cache();
 
 	ep_servers[0] = mdssvc_get_ep_server();
 
