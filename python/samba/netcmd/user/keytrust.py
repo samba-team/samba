@@ -1,4 +1,4 @@
-# samba-tool commands to manager Key Credential Links on a user
+# samba-tool commands to manage Key Credential Links on a user
 #
 # Copyright © Douglas Bagnall <dbagnall@samba.org> 2025
 #
