@@ -6,10 +6,10 @@
 
 export CTDB_TIMEOUT=60
 
-if [ -n "$CTDB_TEST_REMOTE_DIR" ] ; then
+if [ -n "$CTDB_TEST_REMOTE_DIR" ]; then
 	CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
 else
-	_d=$(cd "$TEST_SCRIPTS_DIR" &&  echo "$PWD")
+	_d=$(cd "$TEST_SCRIPTS_DIR" && echo "$PWD")
 	CTDB_TEST_WRAPPER="$_d/test_wrap"
 fi
 export CTDB_TEST_WRAPPER
@@ -23,49 +23,49 @@ PATH="${TEST_SCRIPTS_DIR}:${PATH}"
 
 ######################################################################
 
-ctdb_test_on_cluster ()
+ctdb_test_on_cluster()
 {
 	[ -z "$CTDB_TEST_LOCAL_DAEMONS" ]
 }
 
-ctdb_test_exit ()
+ctdb_test_exit()
 {
-    local status=$?
+	local status=$?
 
-    trap - 0
+	trap - 0
 
-    # run_tests.sh pipes stdout into tee.  If the tee process is
-    # killed then any attempt to write to stdout (e.g. echo) will
-    # result in SIGPIPE, terminating the caller.  Ignore SIGPIPE to
-    # ensure that all clean-up is run.
-    trap '' PIPE
+	# run_tests.sh pipes stdout into tee.  If the tee process is
+	# killed then any attempt to write to stdout (e.g. echo) will
+	# result in SIGPIPE, terminating the caller.  Ignore SIGPIPE to
+	# ensure that all clean-up is run.
+	trap '' PIPE
 
-    # Avoid making a test fail from this point onwards.  The test is
-    # now complete.
-    set +e
+	# Avoid making a test fail from this point onwards.  The test is
+	# now complete.
+	set +e
 
-    echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
+	echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
 
-    eval "$ctdb_test_exit_hook" || true
-    unset ctdb_test_exit_hook
+	eval "$ctdb_test_exit_hook" || true
+	unset ctdb_test_exit_hook
 
-    echo "Stopping cluster..."
-    ctdb_nodes_stop || ctdb_test_error "Cluster shutdown failed"
+	echo "Stopping cluster..."
+	ctdb_nodes_stop || ctdb_test_error "Cluster shutdown failed"
 
-    exit $status
+	exit $status
 }
 
-ctdb_test_exit_hook_add ()
+ctdb_test_exit_hook_add()
 {
-    ctdb_test_exit_hook="${ctdb_test_exit_hook}${ctdb_test_exit_hook:+ ; }$*"
+	ctdb_test_exit_hook="${ctdb_test_exit_hook}${ctdb_test_exit_hook:+ ; }$*"
 }
 
 # Setting cleanup_pid to <pid>@<node> will cause <pid> to be killed on
 # <node> when the test completes.  To cancel, just unset cleanup_pid.
 ctdb_test_cleanup_pid=""
-ctdb_test_cleanup_pid_exit_hook ()
+ctdb_test_cleanup_pid_exit_hook()
 {
-	if [ -n "$ctdb_test_cleanup_pid" ] ; then
+	if [ -n "$ctdb_test_cleanup_pid" ]; then
 		local pid="${ctdb_test_cleanup_pid%@*}"
 		local node="${ctdb_test_cleanup_pid#*@}"
 
@@ -75,7 +75,7 @@ ctdb_test_cleanup_pid_exit_hook ()
 
 ctdb_test_exit_hook_add ctdb_test_cleanup_pid_exit_hook
 
-ctdb_test_cleanup_pid_set ()
+ctdb_test_cleanup_pid_set()
 {
 	local node="$1"
 	local pid="$2"
@@ -83,19 +83,19 @@ ctdb_test_cleanup_pid_set ()
 	ctdb_test_cleanup_pid="${pid}@${node}"
 }
 
-ctdb_test_cleanup_pid_clear ()
+ctdb_test_cleanup_pid_clear()
 {
 	ctdb_test_cleanup_pid=""
 }
 
 # -n option means do not configure/start cluster
-ctdb_test_init ()
+ctdb_test_init()
 {
 	trap "ctdb_test_exit" 0
 
 	ctdb_nodes_stop >/dev/null 2>&1 || true
 
-	if [ "$1" != "-n" ] ; then
+	if [ "$1" != "-n" ]; then
 		echo "Configuring cluster..."
 		setup_ctdb || ctdb_test_error "Cluster configuration failed"
 
@@ -103,12 +103,12 @@ ctdb_test_init ()
 		ctdb_init || ctdb_test_error "Cluster startup failed"
 	fi
 
-	echo  "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
+	echo "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
 }
 
-ctdb_nodes_start_custom ()
+ctdb_nodes_start_custom()
 {
-	if ctdb_test_on_cluster ; then
+	if ctdb_test_on_cluster; then
 		ctdb_test_error "ctdb_nodes_start_custom() on real cluster"
 	fi
 
@@ -121,16 +121,15 @@ ctdb_nodes_start_custom ()
 	ctdb_init || ctdb_test_fail "Cluster startup failed"
 }
 
-ctdb_test_skip_on_cluster ()
+ctdb_test_skip_on_cluster()
 {
-	if ctdb_test_on_cluster ; then
+	if ctdb_test_on_cluster; then
 		ctdb_test_skip \
 			"SKIPPING this test - only runs against local daemons"
 	fi
 }
 
-
-ctdb_nodes_restart ()
+ctdb_nodes_restart()
 {
 	ctdb_nodes_stop "$@"
 	ctdb_nodes_start "$@"
@@ -145,57 +144,59 @@ ctdb_nodes_restart ()
 out=""
 outfile="${CTDB_TEST_TMP_DIR}/try_command_on_node.out"
 
-outfile_cleanup ()
+outfile_cleanup()
 {
 	rm -f "$outfile"
 }
 
 ctdb_test_exit_hook_add outfile_cleanup
 
-try_command_on_node ()
+try_command_on_node()
 {
-    local nodespec="$1" ; shift
+	local nodespec="$1"
+	shift
 
-    local verbose=false
-    local onnode_opts=""
+	local verbose=false
+	local onnode_opts=""
 
-    while [ "${nodespec#-}" != "$nodespec" ] ; do
-	if [ "$nodespec" = "-v" ] ; then
-	    verbose=true
-	else
-	    onnode_opts="${onnode_opts}${onnode_opts:+ }${nodespec}"
+	while [ "${nodespec#-}" != "$nodespec" ]; do
+		if [ "$nodespec" = "-v" ]; then
+			verbose=true
+		else
+			onnode_opts="${onnode_opts}${onnode_opts:+ }${nodespec}"
+		fi
+		nodespec="$1"
+		shift
+	done
+
+	local cmd="$*"
+
+	local status=0
+	# Intentionally unquoted - might be empty
+	# shellcheck disable=SC2086
+	onnode -q $onnode_opts "$nodespec" "$cmd" >"$outfile" 2>&1 || status=$?
+	out=$(dd if="$outfile" bs=1k count=1 2>/dev/null)
+
+	if [ $status -ne 0 ]; then
+		echo "Failed to execute \"$cmd\" on node(s) \"$nodespec\""
+		cat "$outfile"
+		return $status
 	fi
-	nodespec="$1" ; shift
-    done
 
-    local cmd="$*"
-
-    local status=0
-    # Intentionally unquoted - might be empty
-    # shellcheck disable=SC2086
-    onnode -q $onnode_opts "$nodespec" "$cmd" >"$outfile" 2>&1 || status=$?
-    out=$(dd if="$outfile" bs=1k count=1 2>/dev/null)
-
-    if [ $status -ne 0 ] ; then
-	echo "Failed to execute \"$cmd\" on node(s) \"$nodespec\""
-	cat "$outfile"
-	return $status
-    fi
-
-    if $verbose ; then
-	echo "Output of \"$cmd\":"
-	cat "$outfile" || true
-    fi
+	if $verbose; then
+		echo "Output of \"$cmd\":"
+		cat "$outfile" || true
+	fi
 }
 
-_run_onnode ()
+_run_onnode()
 {
 	local thing="$1"
 	shift
 
 	local options nodespec
 
-	while : ; do
+	while :; do
 		case "$1" in
 		-*)
 			options="${options}${options:+ }${1}"
@@ -205,6 +206,7 @@ _run_onnode ()
 			nodespec="$1"
 			shift
 			break
+			;;
 		esac
 	done
 
@@ -213,52 +215,52 @@ _run_onnode ()
 	try_command_on_node $options "$nodespec" "${thing} $*"
 }
 
-ctdb_onnode ()
+ctdb_onnode()
 {
 	_run_onnode "$CTDB" "$@"
 }
 
-testprog_onnode ()
+testprog_onnode()
 {
 	_run_onnode "${CTDB_TEST_WRAPPER} ${VALGRIND}" "$@"
 }
 
-function_onnode ()
+function_onnode()
 {
 	_run_onnode "${CTDB_TEST_WRAPPER}" "$@"
 }
 
-sanity_check_output ()
+sanity_check_output()
 {
-    local min_lines="$1"
-    local regexp="$2" # Should be anchored as necessary.
+	local min_lines="$1"
+	local regexp="$2" # Should be anchored as necessary.
 
-    local ret=0
+	local ret=0
 
-    local num_lines
-    num_lines=$(wc -l <"$outfile" | tr -d '[:space:]')
-    echo "There are $num_lines lines of output"
-    if [ "$num_lines" -lt "$min_lines" ] ; then
-	ctdb_test_fail "BAD: that's less than the required number (${min_lines})"
-    fi
+	local num_lines
+	num_lines=$(wc -l <"$outfile" | tr -d '[:space:]')
+	echo "There are $num_lines lines of output"
+	if [ "$num_lines" -lt "$min_lines" ]; then
+		ctdb_test_fail "BAD: that's less than the required number (${min_lines})"
+	fi
 
-    local status=0
-    local unexpected # local doesn't pass through status of command on RHS.
-    unexpected=$(grep -Ev "$regexp" "$outfile") || status=$?
+	local status=0
+	local unexpected # local doesn't pass through status of command on RHS.
+	unexpected=$(grep -Ev "$regexp" "$outfile") || status=$?
 
-    # Note that this is reversed.
-    if [ $status -eq 0 ] ; then
-	echo "BAD: unexpected lines in output:"
-	echo "$unexpected" | cat -A
-	ret=1
-    else
-	echo "Output lines look OK"
-    fi
+	# Note that this is reversed.
+	if [ $status -eq 0 ]; then
+		echo "BAD: unexpected lines in output:"
+		echo "$unexpected" | cat -A
+		ret=1
+	else
+		echo "Output lines look OK"
+	fi
 
-    return $ret
+	return $ret
 }
 
-select_test_node ()
+select_test_node()
 {
 	try_command_on_node any ctdb pnn || return 1
 
@@ -269,136 +271,136 @@ select_test_node ()
 # This returns a list of "ip node" lines in $outfile
 all_ips_on_node()
 {
-    local node="$1"
-    try_command_on_node "$node" \
-	"$CTDB ip -X | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
+	local node="$1"
+	try_command_on_node "$node" \
+		"$CTDB ip -X | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
 }
 
-_select_test_node_and_ips ()
+_select_test_node_and_ips()
 {
-    try_command_on_node any \
-	"$CTDB ip -X all | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
+	try_command_on_node any \
+		"$CTDB ip -X all | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
 
-    test_node=""  # this matches no PNN
-    test_node_ips=""
-    local ip pnn
-    while read -r ip pnn ; do
-	if [ -z "$test_node" ] && [ "$pnn" != "-1" ] ; then
-	    test_node="$pnn"
-	fi
-	if [ "$pnn" = "$test_node" ] ; then
-	    test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
-	fi
-    done <"$outfile"
+	test_node="" # this matches no PNN
+	test_node_ips=""
+	local ip pnn
+	while read -r ip pnn; do
+		if [ -z "$test_node" ] && [ "$pnn" != "-1" ]; then
+			test_node="$pnn"
+		fi
+		if [ "$pnn" = "$test_node" ]; then
+			test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
+		fi
+	done <"$outfile"
 
-    echo "Selected node ${test_node} with IPs: ${test_node_ips}."
-    test_ip="${test_node_ips%% *}"
+	echo "Selected node ${test_node} with IPs: ${test_node_ips}."
+	test_ip="${test_node_ips%% *}"
 
-    # test_prefix used by caller
-    # shellcheck disable=SC2034
-    case "$test_ip" in
+	# test_prefix used by caller
+	# shellcheck disable=SC2034
+	case "$test_ip" in
 	*:*) test_prefix="${test_ip}/128" ;;
-	*)   test_prefix="${test_ip}/32"  ;;
-    esac
+	*) test_prefix="${test_ip}/32" ;;
+	esac
 
-    [ -n "$test_node" ] || return 1
+	[ -n "$test_node" ] || return 1
 }
 
-select_test_node_and_ips ()
+select_test_node_and_ips()
 {
-    local timeout=10
-    while ! _select_test_node_and_ips ; do
-	echo "Unable to find a test node with IPs assigned"
-	if [ $timeout -le 0 ] ; then
-	    ctdb_test_error "BAD: Too many attempts"
-	    return 1
-	fi
-	sleep_for 1
-	timeout=$((timeout - 1))
-    done
+	local timeout=10
+	while ! _select_test_node_and_ips; do
+		echo "Unable to find a test node with IPs assigned"
+		if [ $timeout -le 0 ]; then
+			ctdb_test_error "BAD: Too many attempts"
+			return 1
+		fi
+		sleep_for 1
+		timeout=$((timeout - 1))
+	done
 
-    return 0
+	return 0
 }
 
 # Sets: mask, iface
-get_test_ip_mask_and_iface ()
+get_test_ip_mask_and_iface()
 {
-    # Find the interface
-    ctdb_onnode "$test_node" "ip -v -X"
-    iface=$(awk -F'|' -v ip="$test_ip" '$2 == ip { print $4 }' "$outfile")
+	# Find the interface
+	ctdb_onnode "$test_node" "ip -v -X"
+	iface=$(awk -F'|' -v ip="$test_ip" '$2 == ip { print $4 }' "$outfile")
 
-    if ctdb_test_on_cluster ; then
-	# Find the netmask
-	try_command_on_node "$test_node" ip addr show to "$test_ip"
-	mask="${out##*/}"
-	mask="${mask%% *}"
-    else
-	mask="24"
-    fi
+	if ctdb_test_on_cluster; then
+		# Find the netmask
+		try_command_on_node "$test_node" ip addr show to "$test_ip"
+		mask="${out##*/}"
+		mask="${mask%% *}"
+	else
+		mask="24"
+	fi
 
-    echo "$test_ip/$mask is on $iface"
+	echo "$test_ip/$mask is on $iface"
 }
 
-ctdb_get_all_pnns ()
+ctdb_get_all_pnns()
 {
-    try_command_on_node -q all "$CTDB pnn"
-    all_pnns="$out"
+	try_command_on_node -q all "$CTDB pnn"
+	all_pnns="$out"
 }
 
 # The subtlety is that "ctdb delip" will fail if the IP address isn't
 # configured on a node...
-delete_ip_from_all_nodes ()
+delete_ip_from_all_nodes()
 {
-    _ip="$1"
+	_ip="$1"
 
-    ctdb_get_all_pnns
+	ctdb_get_all_pnns
 
-    _nodes=""
+	_nodes=""
 
-    for _pnn in $all_pnns ; do
-	all_ips_on_node "$_pnn"
-	while read -r _i _ ; do
-	    if [ "$_ip" = "$_i" ] ; then
-		_nodes="${_nodes}${_nodes:+,}${_pnn}"
-	    fi
-	done <"$outfile"
-    done
+	for _pnn in $all_pnns; do
+		all_ips_on_node "$_pnn"
+		while read -r _i _; do
+			if [ "$_ip" = "$_i" ]; then
+				_nodes="${_nodes}${_nodes:+,}${_pnn}"
+			fi
+		done <"$outfile"
+	done
 
-    try_command_on_node -pq "$_nodes" "$CTDB delip $_ip"
+	try_command_on_node -pq "$_nodes" "$CTDB delip $_ip"
 }
 
 #######################################
 
-sleep_for ()
+sleep_for()
 {
-    echo -n "=${1}|"
-    for i in $(seq 1 "$1") ; do
-	echo -n '.'
-	sleep 1
-    done
-    echo '|'
+	echo -n "=${1}|"
+	for i in $(seq 1 "$1"); do
+		echo -n '.'
+		sleep 1
+	done
+	echo '|'
 }
 
-_cluster_is_healthy ()
+_cluster_is_healthy()
 {
-    $CTDB nodestatus all >/dev/null
+	$CTDB nodestatus all >/dev/null
 }
 
-_cluster_is_recovered ()
+_cluster_is_recovered()
 {
-    node_has_status 0 recovered
+	node_has_status 0 recovered
 }
 
-_cluster_is_ready ()
+_cluster_is_ready()
 {
-    _cluster_is_healthy && _cluster_is_recovered
+	_cluster_is_healthy && _cluster_is_recovered
 }
 
-cluster_is_healthy ()
+cluster_is_healthy()
 {
-	if onnode 0 "$CTDB_TEST_WRAPPER" _cluster_is_healthy ; then
+	if onnode 0 "$CTDB_TEST_WRAPPER" _cluster_is_healthy; then
 		echo "Cluster is HEALTHY"
-		if ! onnode 0 "$CTDB_TEST_WRAPPER" _cluster_is_recovered ; then
+		if ! onnode 0 "$CTDB_TEST_WRAPPER" _cluster_is_recovered; then
 			echo "WARNING: cluster in recovery mode!"
 		fi
 		return 0
@@ -409,7 +411,7 @@ cluster_is_healthy ()
 	echo "DEBUG AT $(date '+%F %T'):"
 	local i
 	for i in "onnode -q 0 $CTDB status" \
-			 "onnode -q 0 onnode all $CTDB scriptstatus" ; do
+		"onnode -q 0 onnode all $CTDB scriptstatus"; do
 		echo "$i"
 		$i || true
 	done
@@ -417,24 +419,24 @@ cluster_is_healthy ()
 	return 1
 }
 
-wait_until_ready ()
+wait_until_ready()
 {
-    local timeout="${1:-120}"
+	local timeout="${1:-120}"
 
-    echo "Waiting for cluster to become ready..."
+	echo "Waiting for cluster to become ready..."
 
-    wait_until "$timeout" onnode -q any "$CTDB_TEST_WRAPPER" _cluster_is_ready
+	wait_until "$timeout" onnode -q any "$CTDB_TEST_WRAPPER" _cluster_is_ready
 }
 
 # This function is becoming nicely overloaded.  Soon it will collapse!  :-)
-node_has_status ()
+node_has_status()
 {
 	local pnn="$1"
 	local status="$2"
 
 	case "$status" in
 	recovered)
-		! $CTDB status -n "$pnn" | \
+		! $CTDB status -n "$pnn" |
 			grep -Eq '^Recovery mode:RECOVERY \(1\)$'
 		return
 		;;
@@ -446,19 +448,20 @@ node_has_status ()
 
 	local bits
 	case "$status" in
-	unhealthy)    bits="?|?|?|?|1|*" ;;
-	healthy)      bits="?|?|?|?|0|*" ;;
+	unhealthy) bits="?|?|?|?|1|*" ;;
+	healthy) bits="?|?|?|?|0|*" ;;
 	disconnected) bits="1|*" ;;
-	connected)    bits="0|*" ;;
-	banned)       bits="?|?|1|*" ;;
-	unbanned)     bits="?|?|0|*" ;;
-	disabled)     bits="?|?|?|1|*" ;;
-	enabled)      bits="?|?|?|0|*" ;;
-	stopped)      bits="?|?|?|?|?|1|*" ;;
-	notstopped)   bits="?|?|?|?|?|0|*" ;;
+	connected) bits="0|*" ;;
+	banned) bits="?|?|1|*" ;;
+	unbanned) bits="?|?|0|*" ;;
+	disabled) bits="?|?|?|1|*" ;;
+	enabled) bits="?|?|?|0|*" ;;
+	stopped) bits="?|?|?|?|?|1|*" ;;
+	notstopped) bits="?|?|?|?|?|0|*" ;;
 	*)
 		echo "node_has_status: unknown status \"$status\""
 		return 1
+		;;
 	esac
 	local out _ line
 
@@ -466,147 +469,149 @@ node_has_status ()
 
 	{
 		read -r _
-		while read -r line ; do
+		while read -r line; do
 			# This needs to be done in 2 steps to
 			# avoid false matches.
 			local line_bits="${line#|"${pnn}"|*|}"
 			[ "$line_bits" = "$line" ] && continue
 			# shellcheck disable=SC2295
 			# This depends on $bits being a pattern
-			[ "${line_bits#${bits}}" != "$line_bits" ] && \
+			[ "${line_bits#${bits}}" != "$line_bits" ] &&
 				return 0
 		done
 		return 1
 	} <<<"$out" # Yay bash!
 }
 
-wait_until_node_has_status ()
+wait_until_node_has_status()
 {
-    local pnn="$1"
-    local status="$2"
-    local timeout="${3:-30}"
-    local proxy_pnn="${4:-any}"
+	local pnn="$1"
+	local status="$2"
+	local timeout="${3:-30}"
+	local proxy_pnn="${4:-any}"
 
-    echo "Waiting until node $pnn has status \"$status\"..."
+	echo "Waiting until node $pnn has status \"$status\"..."
 
-    if ! wait_until "$timeout" onnode "$proxy_pnn" \
-	 "$CTDB_TEST_WRAPPER" node_has_status "$pnn" "$status" ; then
+	if ! wait_until "$timeout" onnode "$proxy_pnn" \
+		"$CTDB_TEST_WRAPPER" node_has_status "$pnn" "$status"; then
 
-	for i in "onnode -q any $CTDB status" "onnode -q any onnode all $CTDB scriptstatus" ; do
-	    echo "$i"
-	    $i || true
-	done
+		for i in "onnode -q any $CTDB status" "onnode -q any onnode all $CTDB scriptstatus"; do
+			echo "$i"
+			$i || true
+		done
 
-	return 1
-    fi
+		return 1
+	fi
 
 }
 
 # Useful for superficially testing IP failover.
 # IPs must be on the given node.
 # If the first argument is '!' then the IPs must not be on the given node.
-ips_are_on_node ()
+ips_are_on_node()
 {
-    local negating=false
-    if [ "$1" = "!" ] ; then
-	negating=true ; shift
-    fi
-    local node="$1" ; shift
-    local ips="$*"
+	local negating=false
+	if [ "$1" = "!" ]; then
+		negating=true
+		shift
+	fi
+	local node="$1"
+	shift
+	local ips="$*"
 
-    local out
+	local out
 
-    all_ips_on_node "$node"
+	all_ips_on_node "$node"
 
-    local check
-    for check in $ips ; do
-	local ip pnn
-	while read -r ip pnn ; do
-	    if [ "$check" = "$ip" ] ; then
-		if [ "$pnn" = "$node" ] ; then
-		    if $negating ; then return 1 ; fi
-		else
-		    if ! $negating ; then return 1 ; fi
+	local check
+	for check in $ips; do
+		local ip pnn
+		while read -r ip pnn; do
+			if [ "$check" = "$ip" ]; then
+				if [ "$pnn" = "$node" ]; then
+					if $negating; then return 1; fi
+				else
+					if ! $negating; then return 1; fi
+				fi
+				ips="${ips/${ip}/}" # Remove from list
+				break
+			fi
+			# If we're negating and we didn't see the address then it
+			# isn't hosted by anyone!
+			if $negating; then
+				ips="${ips/${check}/}"
+			fi
+		done <"$outfile"
+	done
+
+	ips="${ips// /}" # Remove any spaces.
+	[ -z "$ips" ]
+}
+
+wait_until_ips_are_on_node()
+{
+	# Go to some trouble to print a use description of what is happening
+	local not=""
+	if [ "$1" == "!" ]; then
+		not="no longer "
+	fi
+	local node=""
+	local ips=""
+	local i
+	for i; do
+		[ "$i" != "!" ] || continue
+		if [ -z "$node" ]; then
+			node="$i"
+			continue
 		fi
-		ips="${ips/${ip}}" # Remove from list
-		break
-	    fi
-	    # If we're negating and we didn't see the address then it
-	    # isn't hosted by anyone!
-	    if $negating ; then
-		ips="${ips/${check}}"
-	    fi
+		ips="${ips}${ips:+, }${i}"
+	done
+	echo "Waiting for ${ips} to ${not}be assigned to node ${node}"
+
+	wait_until 60 ips_are_on_node "$@"
+}
+
+node_has_some_ips()
+{
+	local node="$1"
+
+	local out
+
+	all_ips_on_node "$node"
+
+	while read -r ip pnn; do
+		if [ "$node" = "$pnn" ]; then
+			return 0
+		fi
 	done <"$outfile"
-    done
 
-    ips="${ips// }" # Remove any spaces.
-    [ -z "$ips" ]
+	return 1
 }
 
-wait_until_ips_are_on_node ()
+wait_until_node_has_some_ips()
 {
-    # Go to some trouble to print a use description of what is happening
-    local not=""
-    if [ "$1" == "!" ] ; then
-	not="no longer "
-    fi
-    local node=""
-    local ips=""
-    local i
-    for i ; do
-	[ "$i" != "!" ] || continue
-	if [ -z "$node" ] ; then
-	    node="$i"
-	    continue
-	fi
-	ips="${ips}${ips:+, }${i}"
-    done
-    echo "Waiting for ${ips} to ${not}be assigned to node ${node}"
+	echo "Waiting for some IPs to be assigned to node ${test_node}"
 
-    wait_until 60 ips_are_on_node "$@"
+	wait_until 60 node_has_some_ips "$@"
 }
 
-node_has_some_ips ()
+wait_until_node_has_no_ips()
 {
-    local node="$1"
+	echo "Waiting until no IPs are assigned to node ${test_node}"
 
-    local out
-
-    all_ips_on_node "$node"
-
-    while read -r ip pnn ; do
-	if [ "$node" = "$pnn" ] ; then
-	    return 0
-	fi
-    done <"$outfile"
-
-    return 1
-}
-
-wait_until_node_has_some_ips ()
-{
-    echo "Waiting for some IPs to be assigned to node ${test_node}"
-
-    wait_until 60 node_has_some_ips "$@"
-}
-
-wait_until_node_has_no_ips ()
-{
-    echo "Waiting until no IPs are assigned to node ${test_node}"
-
-    wait_until 60 ! node_has_some_ips "$@"
+	wait_until 60 ! node_has_some_ips "$@"
 }
 
 #######################################
 
-ctdb_init ()
+ctdb_init()
 {
-	if ! ctdb_nodes_start ; then
+	if ! ctdb_nodes_start; then
 		echo "Cluster start failed"
 		return 1
 	fi
 
-	if ! wait_until_ready 120 ; then
+	if ! wait_until_ready 120; then
 		echo "Cluster didn't become ready"
 		return 1
 	fi
@@ -618,16 +623,16 @@ ctdb_init ()
 	onnode -q 0 "$CTDB recover"
 	sleep_for 2
 
-	if ! onnode -q all "$CTDB_TEST_WRAPPER _cluster_is_recovered" ; then
+	if ! onnode -q all "$CTDB_TEST_WRAPPER _cluster_is_recovered"; then
 		echo "Cluster has gone into recovery again, waiting..."
 		if ! wait_until 30/2 onnode -q all \
-		     "$CTDB_TEST_WRAPPER _cluster_is_recovered" ; then
+			"$CTDB_TEST_WRAPPER _cluster_is_recovered"; then
 			echo "Cluster did not come out of recovery"
 			return 1
 		fi
 	fi
 
-	if ! onnode 0 "$CTDB_TEST_WRAPPER _cluster_is_healthy" ; then
+	if ! onnode 0 "$CTDB_TEST_WRAPPER _cluster_is_healthy"; then
 		echo "Cluster became UNHEALTHY again [$(date)]"
 		return 1
 	fi
@@ -639,7 +644,7 @@ ctdb_init ()
 	return 0
 }
 
-ctdb_base_show ()
+ctdb_base_show()
 {
 	echo "${CTDB_BASE:-${CTDB_SCRIPTS_BASE}}"
 }
@@ -647,7 +652,7 @@ ctdb_base_show ()
 #######################################
 
 # sets: leader
-_leader_get ()
+_leader_get()
 {
 	local node="$1"
 
@@ -657,7 +662,7 @@ _leader_get ()
 	leader="$out"
 }
 
-leader_get ()
+leader_get()
 {
 	local node="$1"
 
@@ -667,7 +672,7 @@ leader_get ()
 	echo
 }
 
-_leader_has_changed ()
+_leader_has_changed()
 {
 	local node="$1"
 	local leader_old="$2"
@@ -678,7 +683,7 @@ _leader_has_changed ()
 }
 
 # uses: leader
-wait_until_leader_has_changed ()
+wait_until_leader_has_changed()
 {
 	local node="$1"
 
@@ -691,7 +696,7 @@ wait_until_leader_has_changed ()
 #######################################
 
 # sets: generation
-_generation_get ()
+_generation_get()
 {
 	local node="$1"
 
@@ -701,7 +706,7 @@ _generation_get ()
 	generation=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")
 }
 
-generation_get ()
+generation_get()
 {
 	local node="$1"
 
@@ -711,7 +716,7 @@ generation_get ()
 	echo
 }
 
-_generation_has_changed ()
+_generation_has_changed()
 {
 	local node="$1"
 	local generation_old="$2"
@@ -722,7 +727,7 @@ _generation_has_changed ()
 }
 
 # uses: generation
-wait_until_generation_has_changed ()
+wait_until_generation_has_changed()
 {
 	local node="$1"
 
@@ -734,86 +739,92 @@ wait_until_generation_has_changed ()
 
 #######################################
 
-wait_for_monitor_event ()
+wait_for_monitor_event()
 {
-    local pnn="$1"
-    local timeout=120
+	local pnn="$1"
+	local timeout=120
 
-    echo "Waiting for a monitor event on node ${pnn}..."
+	echo "Waiting for a monitor event on node ${pnn}..."
 
-    ctdb_onnode "$pnn" scriptstatus || {
-	echo "Unable to get scriptstatus from node $pnn"
-	return 1
-    }
+	ctdb_onnode "$pnn" scriptstatus || {
+		echo "Unable to get scriptstatus from node $pnn"
+		return 1
+	}
 
-    mv "$outfile" "${outfile}.orig"
+	mv "$outfile" "${outfile}.orig"
 
-    wait_until 120 _ctdb_scriptstatus_changed
+	wait_until 120 _ctdb_scriptstatus_changed
 }
 
-_ctdb_scriptstatus_changed ()
+_ctdb_scriptstatus_changed()
 {
-    ctdb_onnode "$pnn" scriptstatus || {
-	echo "Unable to get scriptstatus from node $pnn"
-	return 1
-    }
+	ctdb_onnode "$pnn" scriptstatus || {
+		echo "Unable to get scriptstatus from node $pnn"
+		return 1
+	}
 
-    ! diff "$outfile" "${outfile}.orig" >/dev/null
+	! diff "$outfile" "${outfile}.orig" >/dev/null
 }
 
 #######################################
 
 # If the given IP is hosted then print 2 items: maskbits and iface
-ip_maskbits_iface ()
+ip_maskbits_iface()
 {
-    _addr="$1"
+	_addr="$1"
 
-    case "$_addr" in
-	*:*) _family="inet6" ; _bits=128 ;;
-	*)   _family="inet"  ; _bits=32  ;;
-    esac
+	case "$_addr" in
+	*:*)
+		_family="inet6"
+		_bits=128
+		;;
+	*)
+		_family="inet"
+		_bits=32
+		;;
+	esac
 
-    # Literal backslashes in awk script
-    # shellcheck disable=SC1004
-    ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
-	awk -v family="${_family}" \
-	    'NR == 1 { iface = $2; sub(":$", "", iface) } \
+	# Literal backslashes in awk script
+	# shellcheck disable=SC1004
+	ip addr show to "${_addr}/${_bits}" 2>/dev/null |
+		awk -v family="${_family}" \
+			'NR == 1 { iface = $2; sub(":$", "", iface) } \
              $1 ~ /inet/ { mask = $2; sub(".*/", "", mask); \
                            print mask, iface, family }'
 }
 
-drop_ip ()
+drop_ip()
 {
-    _addr="${1%/*}"  # Remove optional maskbits
+	_addr="${1%/*}" # Remove optional maskbits
 
-    # Intentional word splitting
-    # shellcheck disable=SC2046,SC2086
-    set -- $(ip_maskbits_iface $_addr)
-    if [ -n "$1" ] ; then
-	_maskbits="$1"
-	_iface="$2"
-	echo "Removing public address $_addr/$_maskbits from device $_iface"
-	ip addr del "$_ip/$_maskbits" dev "$_iface" >/dev/null 2>&1 || true
-    fi
+	# Intentional word splitting
+	# shellcheck disable=SC2046,SC2086
+	set -- $(ip_maskbits_iface $_addr)
+	if [ -n "$1" ]; then
+		_maskbits="$1"
+		_iface="$2"
+		echo "Removing public address $_addr/$_maskbits from device $_iface"
+		ip addr del "$_ip/$_maskbits" dev "$_iface" >/dev/null 2>&1 || true
+	fi
 }
 
-drop_ips ()
+drop_ips()
 {
-    for _ip ; do
-	drop_ip "$_ip"
-    done
+	for _ip; do
+		drop_ip "$_ip"
+	done
 }
 
 #######################################
 
 # $1: pnn, $2: DB name
-db_get_path ()
+db_get_path()
 {
 	ctdb_onnode -v "$1" "getdbstatus $2" | sed -n -e "s@^path: @@p"
 }
 
 # $1: pnn, $2: DB name
-db_ctdb_cattdb_count_records ()
+db_ctdb_cattdb_count_records()
 {
 	# Count the number of keys, excluding any that begin with '_'.
 	# This excludes at least the sequence number record in
@@ -824,41 +835,40 @@ db_ctdb_cattdb_count_records ()
 }
 
 # $1: pnn, $2: DB name, $3: key string, $4: value string, $5: RSN (default 7)
-db_ctdb_tstore ()
+db_ctdb_tstore()
 {
-    _tdb=$(db_get_path "$1" "$2")
-    _rsn="${5:-7}"
-    ctdb_onnode "$1" tstore "$_tdb" "$3" "$4" "$_rsn"
+	_tdb=$(db_get_path "$1" "$2")
+	_rsn="${5:-7}"
+	ctdb_onnode "$1" tstore "$_tdb" "$3" "$4" "$_rsn"
 }
 
 # $1: pnn, $2: DB name, $3: dbseqnum (must be < 255!!!!!)
-db_ctdb_tstore_dbseqnum ()
+db_ctdb_tstore_dbseqnum()
 {
-    # "__db_sequence_number__" + trailing 0x00
-    _key='0x5f5f64625f73657175656e63655f6e756d6265725f5f00'
+	# "__db_sequence_number__" + trailing 0x00
+	_key='0x5f5f64625f73657175656e63655f6e756d6265725f5f00'
 
-    # Construct 8 byte (unit64_t) database sequence number.  This
-    # probably breaks if $3 > 255
-    _value=$(printf "0x%02x%014x" "$3" 0)
+	# Construct 8 byte (unit64_t) database sequence number.  This
+	# probably breaks if $3 > 255
+	_value=$(printf "0x%02x%014x" "$3" 0)
 
-    db_ctdb_tstore "$1" "$2" "$_key" "$_value"
+	db_ctdb_tstore "$1" "$2" "$_key" "$_value"
 }
 
 ########################################
 
 # Make sure that $CTDB is set.
-if [ -z "$CTDB" ] ; then
+if [ -z "$CTDB" ]; then
 	CTDB="ctdb"
 fi
 
-if ctdb_test_on_cluster ; then
+if ctdb_test_on_cluster; then
 	. "${TEST_SCRIPTS_DIR}/integration_real_cluster.bash"
 else
 	. "${TEST_SCRIPTS_DIR}/integration_local_daemons.bash"
 fi
 
-
 local="${CTDB_TEST_SUITE_DIR}/scripts/local.bash"
-if [ -r "$local" ] ; then
-    . "$local"
+if [ -r "$local" ]; then
+	. "$local"
 fi
