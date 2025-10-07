@@ -148,5 +148,18 @@ setup_ctdb_base()
 		[ -e "$_i" ] || break
 
 		cp -pr "$_i" "${CTDB_BASE}/"
+
+	done
+
+	# Ensure existence of an event script component installation
+	# subdirectory corresponding to each event script component
+	# configuration subdirectory.
+	#
+	# This helps:
+	#   local_daemons.sh <dir> onnode <n> ctdb event script list <component>
+	# to work.
+	for _d in "${CTDB_BASE}/events/"*; do
+		_b=$(basename "$_d")
+		mkdir -p "${CTDB_BASE}/share/events/${_b}"
 	done
 }
