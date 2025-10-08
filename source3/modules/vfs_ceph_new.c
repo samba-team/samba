@@ -96,7 +96,7 @@ static const struct enum_list enum_vfs_cephfs_proxy_vals[] = {
 #define CEPH_FN(_name) typeof(_name) *_name ## _fn
 
 struct vfs_ceph_config {
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	struct tevent_threaded_context *tctx;
 #endif
 	const char *conf_file;
@@ -162,7 +162,7 @@ struct vfs_ceph_config {
 	CEPH_FN(ceph_version);
 	CEPH_FN(ceph_rewinddir);
 	CEPH_FN(ceph_readdir_r);
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	CEPH_FN(ceph_ll_nonblocking_readv_writev);
 #endif
 };
@@ -461,7 +461,7 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 	CHECK_CEPH_FN(libhandle, ceph_version);
 	CHECK_CEPH_FN(libhandle, ceph_rewinddir);
 	CHECK_CEPH_FN(libhandle, ceph_readdir_r);
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	CHECK_CEPH_FN(libhandle, ceph_ll_nonblocking_readv_writev);
 #endif
 
@@ -2005,7 +2005,7 @@ static int vfs_ceph_ll_fremovexattr(const struct vfs_handle_struct *handle,
 					      cfh->uperm);
 }
 
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 static int64_t vfs_ceph_ll_nonblocking_readv_writev(
 	const struct vfs_handle_struct *handle,
 	const struct vfs_ceph_fh *cfh,
@@ -2540,7 +2540,7 @@ out:
 struct vfs_ceph_aio_state {
 	struct vfs_ceph_config *config;
 	struct vfs_ceph_fh *cfh;
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	struct tevent_req *req;
 	struct tevent_immediate *im;
 	void *data;
@@ -2581,7 +2581,7 @@ static void vfs_ceph_aio_finish(struct vfs_ceph_aio_state *state,
 					  state->profile_bytes_x);
 }
 
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 
 static void vfs_ceph_aio_done(struct tevent_context *ev,
 			      struct tevent_immediate *im,
@@ -2732,7 +2732,7 @@ static void vfs_ceph_aio_prepare(struct vfs_handle_struct *handle,
 	state = tevent_req_data(req, struct vfs_ceph_aio_state);
 	state->config = config;
 
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	ret = vfs_ceph_require_tctx(state, ev);
 	if (ret != 0) {
 		tevent_req_error(req, -ret);
@@ -2788,7 +2788,7 @@ static struct tevent_req *vfs_ceph_pread_send(struct vfs_handle_struct *handle,
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->profile_bytes,
 					  state->profile_bytes_x);
 
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	state->req = req;
 	state->data = data;
 	state->len = n;
@@ -2902,7 +2902,7 @@ static struct tevent_req *vfs_ceph_pwrite_send(struct vfs_handle_struct *handle,
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->profile_bytes,
 					  state->profile_bytes_x);
 
-#if HAVE_CEPH_ASYNCIO
+#ifdef HAVE_CEPH_ASYNCIO
 	state->req = req;
 	state->data = discard_const(data);
 	state->len = n;
