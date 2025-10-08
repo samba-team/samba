@@ -123,10 +123,11 @@
 	<listitem><para>5: Replicated updates from another DC</para></listitem>
     </itemizedlist>
 
-    <para>Password changes and Password resets in the AD DC are logged
-    under <parameter>dsdb_password_audit</parameter> and a JSON
+    <para>In the AD DC, password changes, password resets, and certain
+    authentication related attribute changes are logged under
+    <parameter>dsdb_password_audit</parameter> and a JSON
     representation is logged under the
-    <parameter>dsdb_password_json_audit</parameter>.  Password changes
+    <parameter>dsdb_password_json_audit</parameter>. Password changes
     will also appears as authentication events via
     <parameter>auth_audit</parameter> and
     <parameter>auth_audit_json</parameter>.</para>
@@ -134,8 +135,23 @@
     <para>Log levels for <parameter>dsdb_password_audit</parameter> and
     <parameter>dsdb_password_json_audit</parameter> are:</para>
     <itemizedlist>
-	<listitem><para>5: Successful password changes and resets</para></listitem>
+	<listitem><para>5: Successful password changes and resets, and
+	authentication related attribute changes.</para></listitem>
     </itemizedlist>
+
+    <para>Changes to the following attributes are logged:</para>
+    <itemizedlist>
+	<listitem><para>altSecurityIdentities</para></listitem>
+	<listitem><para>dNSHostName</para></listitem>
+	<listitem><para>msDS-AdditionalDnsHostName</para></listitem>
+	<listitem><para>msDS-KeyCredentialLink</para></listitem>
+	<listitem><para>servicePrincipalName</para></listitem>
+    </itemizedlist>
+    <para>In the <parameter>dsdb_password_json_audit</parameter> log
+    these are given the value "Auth info change" in the "action"
+    field. Password changes and resets have the value "change" and
+    "reset" in this field, respectively.</para>
+
 
     <para>Transaction rollbacks and prepare commit failures are logged under
     the <parameter>dsdb_transaction_audit</parameter> and a JSON representation is logged under the
