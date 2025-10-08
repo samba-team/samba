@@ -845,6 +845,33 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 	return status;
 }
 
+/*
+ * Close the existing pathref fd and set the fsp flag
+ * is_pathref to false so we get a "normal" fd this time.
+ */
+static NTSTATUS reopen_from_fsp_namebased(struct files_struct *dirfsp,
+					  struct smb_filename *smb_fname,
+					  struct files_struct *fsp,
+					  const struct vfs_open_how *how,
+					  bool *p_file_created)
+{
+	NTSTATUS status;
+
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp->fsp_flags.is_pathref = false;
+
+	status = fd_open_atomic(dirfsp,
+				smb_fname,
+				fsp,
+				how,
+				p_file_created);
+	return status;
+}
+
 NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 			 struct smb_filename *smb_fname,
 			 struct files_struct *fsp,
@@ -894,7 +921,12 @@ NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 					 * point we get ENOENT. We
 					 * have to retry pathbased.
 					 */
-					goto namebased_open;
+					return reopen_from_fsp_namebased(dirfsp,
+									 smb_fname,
+									 fsp,
+									 how,
+									 p_file_created);
+
 				}
 				/* restore ENOENT if changed in the meantime */
 				errno = ENOENT;
@@ -914,22 +946,11 @@ NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
-#if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
-namebased_open:
-#endif
-	/*
-	 * Close the existing pathref fd and set the fsp flag
-	 * is_pathref to false so we get a "normal" fd this time.
-	 */
-	status = fd_close(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	fsp->fsp_flags.is_pathref = false;
-
-	status = fd_open_atomic(dirfsp, smb_fname, fsp, how, p_file_created);
-	return status;
+	return reopen_from_fsp_namebased(dirfsp,
+					 smb_fname,
+					 fsp,
+					 how,
+					 p_file_created);
 }
 
 /****************************************************************************
