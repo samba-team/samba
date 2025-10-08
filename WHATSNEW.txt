@@ -16,6 +16,23 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Authentication information audit support
+----------------------------------------
+
+There are some Active Directory attributes that are not secret, but
+are relied on in some forms of authentication. Changes to these
+attributes could indicate surreptitious activity. The
+"dsdb_password_audit" and "dsdb_password_json_audit" debug classes now
+log changes to the following attributes:
+
+ * altSecurityIdentities
+ * dNSHostName
+ * msDS-AdditionalDnsHostName
+ * msDS-KeyCredentialLink
+ * servicePrincipalName
+
+For the JSON logs, changes to these will be logged with the "action"
+field set to "Auth info change".
 
 REMOVED FEATURES
 ================
