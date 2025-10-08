@@ -26,6 +26,7 @@ from .delete import cmd_user_delete
 from .disable import cmd_user_disable
 from .edit import cmd_user_edit
 from .enable import cmd_user_enable
+from .generate_csr import cmd_user_generate_csr
 from .getgroups import cmd_user_getgroups
 from .keytrust import cmd_user_keytrust
 from .list import cmd_user_list
@@ -57,6 +58,7 @@ class cmd_user(SuperCommand):
     subcommands["list"] = cmd_user_list()
     subcommands["setexpiry"] = cmd_user_setexpiry()
     subcommands["password"] = cmd_user_password()
+    subcommands["generate-csr"] = cmd_user_generate_csr()
     subcommands["getgroups"] = cmd_user_getgroups()
     subcommands["setprimarygroup"] = cmd_user_setprimarygroup()
     subcommands["setpassword"] = cmd_user_setpassword()

@@ -36,6 +36,7 @@ from samba.samdb import SamDB
 from samba.common import get_bytes
 from subprocess import check_call, CalledProcessError
 from . import common
+from .computer_generate_csr import cmd_computer_generate_csr
 from .computer_keytrust import cmd_computer_keytrust
 
 
@@ -723,6 +724,7 @@ class cmd_computer(SuperCommand):
     subcommands["create"] = cmd_computer_add()
     subcommands["delete"] = cmd_computer_delete()
     subcommands["edit"] = cmd_computer_edit()
+    subcommands["generate-csr"] = cmd_computer_generate_csr()
     subcommands["list"] = cmd_computer_list()
     subcommands["show"] = cmd_computer_show()
     subcommands["move"] = cmd_computer_move()
