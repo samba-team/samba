@@ -872,6 +872,30 @@ static NTSTATUS reopen_from_fsp_namebased(struct files_struct *dirfsp,
 	return status;
 }
 
+static bool fsp_is_automount_mountpoint(struct files_struct *fsp, int old_fd)
+{
+#if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
+	struct statfs sbuf = {};
+	int ret;
+
+	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		return false;
+	}
+
+	ret = fstatfs(old_fd, &sbuf);
+	if (ret == -1) {
+		DBG_ERR("fstatfs failed: %s\n",	strerror(errno));
+		return false;
+	}
+	if (sbuf.f_type == AUTOFS_SUPER_MAGIC) {
+		return true;
+	}
+	return false;
+#else
+	return false;
+#endif
+}
+
 NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 			 struct smb_filename *smb_fname,
 			 struct files_struct *fsp,
@@ -906,33 +930,23 @@ NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 					fsp,
 					how);
 		if (new_fd == -1) {
-#if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
-			if (S_ISDIR(fsp->fsp_name->st.st_ex_mode) &&
-			    (errno == ENOENT)) {
-				struct statfs sbuf = {};
-				int ret = fstatfs(old_fd, &sbuf);
-				if (ret == -1) {
-					DBG_ERR("fstatfs failed: %s\n",
-						strerror(errno));
-				} else if (sbuf.f_type == AUTOFS_SUPER_MAGIC) {
-					/*
-					 * When reopening an as-yet
-					 * unmounted autofs mount
-					 * point we get ENOENT. We
-					 * have to retry pathbased.
-					 */
-					return reopen_from_fsp_namebased(dirfsp,
-									 smb_fname,
-									 fsp,
-									 how,
-									 p_file_created);
-
-				}
-				/* restore ENOENT if changed in the meantime */
-				errno = ENOENT;
+			int saved_errno = errno;
+			if (saved_errno == ENOENT &&
+			    fsp_is_automount_mountpoint(fsp, old_fd))
+			{
+				/*
+				 * When reopening an as-yet unmounted autofs
+				 * mount point we get ENOENT. We have to retry
+				 * pathbased.
+				 */
+				return reopen_from_fsp_namebased(dirfsp,
+								 smb_fname,
+								 fsp,
+								 how,
+								 p_file_created);
 			}
-#endif
-			status = map_nt_error_from_unix(errno);
+
+			status = map_nt_error_from_unix(saved_errno);
 			fd_close(fsp);
 			return status;
 		}
