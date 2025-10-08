@@ -896,68 +896,83 @@ static bool fsp_is_automount_mountpoint(struct files_struct *fsp, int old_fd)
 #endif
 }
 
+static NTSTATUS reopen_from_fsp_pathref_based(
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_fname,
+	struct files_struct *fsp,
+	const struct vfs_open_how *how,
+	bool *p_file_created)
+{
+	NTSTATUS status;
+	struct sys_proc_fd_path_buf buf;
+	int pathref_fd = fsp_get_pathref_fd(fsp);
+	struct smb_filename proc_fname = {
+		.base_name = sys_proc_fd_path(pathref_fd, &buf),
+	};
+	mode_t mode = fsp->fsp_name->st.st_ex_mode;
+	int new_fd;
+
+	if (S_ISLNK(mode)) {
+		return NT_STATUS_STOPPED_ON_SYMLINK;
+	}
+	if (!(S_ISREG(mode) || S_ISDIR(mode))) {
+		return NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED;
+	}
+
+	fsp->fsp_flags.is_pathref = false;
+
+	new_fd = SMB_VFS_OPENAT(fsp->conn,
+				fsp->conn->cwd_fsp,
+				&proc_fname,
+				fsp,
+				how);
+	if (new_fd == -1) {
+		int saved_errno = errno;
+		if (saved_errno == ENOENT &&
+		    fsp_is_automount_mountpoint(fsp, pathref_fd))
+		{
+			/*
+			 * When reopening an as-yet unmounted autofs
+			 * mount point we get ENOENT. We have to retry
+			 * pathbased.
+			 */
+			return reopen_from_fsp_namebased(dirfsp,
+							 smb_fname,
+							 fsp,
+							 how,
+							 p_file_created);
+		}
+
+		status = map_nt_error_from_unix(saved_errno);
+		fd_close(fsp);
+		return status;
+	}
+
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp_set_fd(fsp, new_fd);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 			 struct smb_filename *smb_fname,
 			 struct files_struct *fsp,
 			 const struct vfs_open_how *how,
 			 bool *p_file_created)
 {
-	NTSTATUS status;
 	int old_fd;
 
 	if (fsp->fsp_flags.have_proc_fds &&
-	    ((old_fd = fsp_get_pathref_fd(fsp)) != -1)) {
-
-		struct sys_proc_fd_path_buf buf;
-		struct smb_filename proc_fname = {
-			.base_name = sys_proc_fd_path(old_fd, &buf),
-		};
-		mode_t mode = fsp->fsp_name->st.st_ex_mode;
-		int new_fd;
-
-		if (S_ISLNK(mode)) {
-			return NT_STATUS_STOPPED_ON_SYMLINK;
-		}
-		if (!(S_ISREG(mode) || S_ISDIR(mode))) {
-			return NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED;
-		}
-
-		fsp->fsp_flags.is_pathref = false;
-
-		new_fd = SMB_VFS_OPENAT(fsp->conn,
-					fsp->conn->cwd_fsp,
-					&proc_fname,
-					fsp,
-					how);
-		if (new_fd == -1) {
-			int saved_errno = errno;
-			if (saved_errno == ENOENT &&
-			    fsp_is_automount_mountpoint(fsp, old_fd))
-			{
-				/*
-				 * When reopening an as-yet unmounted autofs
-				 * mount point we get ENOENT. We have to retry
-				 * pathbased.
-				 */
-				return reopen_from_fsp_namebased(dirfsp,
-								 smb_fname,
-								 fsp,
-								 how,
-								 p_file_created);
-			}
-
-			status = map_nt_error_from_unix(saved_errno);
-			fd_close(fsp);
-			return status;
-		}
-
-		status = fd_close(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		fsp_set_fd(fsp, new_fd);
-		return NT_STATUS_OK;
+	    ((old_fd = fsp_get_pathref_fd(fsp)) != -1))
+	{
+		return reopen_from_fsp_pathref_based(dirfsp,
+						     smb_fname,
+						     fsp,
+						     how,
+						     p_file_created);
 	}
 
 	return reopen_from_fsp_namebased(dirfsp,
