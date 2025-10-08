@@ -911,6 +911,7 @@ static NTSTATUS reopen_from_fsp_pathref_based(
 	};
 	mode_t mode = fsp->fsp_name->st.st_ex_mode;
 	int new_fd;
+	struct vfs_open_how pathref_how = *how;
 
 	if (S_ISLNK(mode)) {
 		return NT_STATUS_STOPPED_ON_SYMLINK;
@@ -921,26 +922,88 @@ static NTSTATUS reopen_from_fsp_pathref_based(
 
 	fsp->fsp_flags.is_pathref = false;
 
+#if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
+	/*
+	 * There is no point in setting RESOLVE_NO_XDEV if we can't
+	 * check with fstatfs later in fsp_is_automount_mountpoint
+	 */
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode) &&
+	    fsp->conn->open_how_resolve & VFS_OPEN_HOW_RESOLVE_NO_XDEV) {
+		/*
+		 * If the *at cwd_fsp is a pathref (opened with O_PATH)
+		 * and old_fd refers to an automounter mount point not
+		 * yet mounted, we will get a fd referring to the
+		 * mount point without actually triggering the mount
+		 * (man 2 openat). To detect this situation set the
+		 * RESOLVE_NO_XDEV flag so openat2 will return an
+		 * error when crossing mount points. Then check
+		 * with fstatfs if it is an autofs mount point or not,
+		 * falling back to name-based openat or retry without
+		 * RESOLVE_NO_XDEV otherwise (could be a bind mount,
+		 * other type of mount of an automounter mount point
+		 * already mounted).
+		 */
+		pathref_how.resolve |= VFS_OPEN_HOW_RESOLVE_NO_XDEV;
+	}
+#endif
+
+retry:
 	new_fd = SMB_VFS_OPENAT(fsp->conn,
 				fsp->conn->cwd_fsp,
 				&proc_fname,
 				fsp,
-				how);
+				&pathref_how);
 	if (new_fd == -1) {
 		int saved_errno = errno;
 		if (saved_errno == ENOENT &&
 		    fsp_is_automount_mountpoint(fsp, pathref_fd))
 		{
 			/*
-			 * When reopening an as-yet unmounted autofs
-			 * mount point we get ENOENT. We have to retry
-			 * pathbased.
+			 * This is a not yet triggered indirect automount
+			 * detected by openat(pathref_fd). Retry name-based.
 			 */
 			return reopen_from_fsp_namebased(dirfsp,
 							 smb_fname,
 							 fsp,
 							 how,
 							 p_file_created);
+		} else if (saved_errno == EXDEV &&
+		    pathref_how.resolve & VFS_OPEN_HOW_RESOLVE_NO_XDEV &&
+		    fsp_is_automount_mountpoint(fsp, pathref_fd))
+		{
+			/*
+			 * This is a not yet triggered direct or indirect
+			 * automount, detected by
+			 * openat2(pathref_fd, .., RESOLVE_NO_XDEV).
+			 * Retry name-based.
+			 */
+			return reopen_from_fsp_namebased(dirfsp,
+							 smb_fname,
+							 fsp,
+							 how,
+							 p_file_created);
+		} else if (saved_errno == ENOSYS &&
+		    pathref_how.resolve & VFS_OPEN_HOW_RESOLVE_NO_XDEV)
+		{
+			/*
+			 * The kernel doesn't support openat2() yet, or any
+			 * VFS module rejected the flag. Notify to the user
+			 * and retry without RESOLVE_NO_XDEV.
+			 */
+			DBG_WARNING("Failed to open directory disallowing the "
+				    "traversal of mount points during path "
+				    "resolution. Retrying allowing traversal, "
+				    "but automounts won't be triggered.\n");
+			pathref_how.resolve &= ~VFS_OPEN_HOW_RESOLVE_NO_XDEV;
+			goto retry;
+		} else if (saved_errno == EXDEV &&
+		    pathref_how.resolve & VFS_OPEN_HOW_RESOLVE_NO_XDEV)
+		{
+			/*
+			 * Just crossing a mount. Retry allowing traversals.
+			 */
+			pathref_how.resolve &= ~VFS_OPEN_HOW_RESOLVE_NO_XDEV;
+			goto retry;
 		}
 
 		status = map_nt_error_from_unix(saved_errno);
