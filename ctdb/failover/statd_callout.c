@@ -353,10 +353,27 @@ static void del_client_shared_dir(const char *cip)
 
 static void usage(void)
 {
-	printf("usage: %s: { add-client | del-client } <client-ip>\n", progname);
+	printf("usage: %s { add-client | del-client } <client-ip>\n", progname);
+	printf("       %s sm-notify mon_name ip_addr state\n", progname);
 	exit(1);
 }
 
+/**
+ * @brief To be used as the statd ha-callout program
+ *
+ * Examples
+ *         progname add-client 192.168.10.94 nsds2
+ *         progname del-client 192.168.10.94 nsds2
+ *         progname sm-notify sitar1 192.168.10.94 127
+ *
+ * @param[in] event     One of add-client, del-client, sm-notify
+ * @param[in] mon_name  The client being monitored.  For add-client, del-client
+ *                      this will be the IP address. For sm-notify it will
+ *                      be the hostname
+ * @param[in] other     We don't actually use this.  For add-client and
+ *                      del-client it will be NFS server hostname.
+ *			For sm-notify, it will be the client's state number.
+ */
 int main(int argc, const char *argv[])
 {
 	const char *event = NULL;
@@ -394,6 +411,8 @@ int main(int argc, const char *argv[])
 		case CTDB_SC_MODE_NONE:
 			break;
 		}
+	} else if (strcmp(event, "sm-notify") == 0) {
+		exit(0);
 	} else {
 		usage();
 	}
