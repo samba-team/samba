@@ -1880,14 +1880,16 @@ static krb5_error_code get_key_trust_public_keys(TALLOC_CTX *mem_ctx,
 					goto pub_keys_oom;
 				}
 			} else {
-				pub_keys.keys = realloc_p(pub_keys.keys,
-							struct sdb_pub_key,
-							pub_keys.len + 1);
-				if (pub_keys.keys == NULL) {
+				struct sdb_pub_key *keys = realloc_p(
+					pub_keys.keys,
+					struct sdb_pub_key,
+					pub_keys.len + 1);
+				if (keys == NULL) {
 					SAFE_FREE(pub_key.exponent.data);
 					SAFE_FREE(pub_key.modulus.data);
 					goto pub_keys_oom;
 				}
+				pub_keys.keys = keys;
 			}
 			pub_keys.keys[pub_keys.len] = pub_key;
 			pub_keys.len++;
