@@ -7,3 +7,7 @@
 ^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_rename_simple_bind.fl2003dc
 ^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_rename_simple_bind_2.fl2003dc
 ^samba4.ldap.passwords.python.fl2003dc..__main__.PasswordTests.test_old_password_simple_bind.fl2003dc
+# ad_dc_no_ntlm will fail password history checks because there are no
+# ntlm hashes to compare.
+samba4.ldap.passwords.python.+test_unicodePwd_policy_hints_history\(ad_dc_no_ntlm\)
+samba4.ldap.passwords.python.+test_unicodePwd_policy_hints_deprecated_history\(ad_dc_no_ntlm\)

@@ -24,6 +24,7 @@ import samba.getopt as options
 from samba.auth import system_session
 from samba.credentials import Credentials
 from samba.dcerpc import security
+from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX
 from samba.hresult import HRES_SEC_E_INVALID_TOKEN
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_ATTRIBUTE_OR_VALUE_EXISTS
@@ -541,6 +542,313 @@ add: unicodePwd
 unicodePwd:: {base64.b64encode('"thatsAcomplPASS2"'.encode('utf-16-le'))
         .decode('utf8')}
 """)
+
+    @staticmethod
+    def _upwd_encode(password):
+        return base64.b64encode(f'"{password}"'.encode('utf-16-le')).decode('utf8')
+
+    def _replace_unicode_pwd(self, ldb, old=None, new=None, controls=None):
+        ldif = (f"dn: cn=testuser,cn=users,{self.base_dn}\n"
+                "changetype: modify\n")
+        if old is not None:
+            # change
+            ldif += ("delete: unicodePwd\n"
+                     f"unicodePwd:: {self._upwd_encode(old)}\n"
+                     "add: unicodePwd\n"
+                     f"unicodePwd:: {self._upwd_encode(new)}\n")
+        else:
+            # reset
+            ldif += ("replace: unicodePwd\n"
+                     f"unicodePwd:: {self._upwd_encode(new)}\n")
+
+        #print(ldif)
+        ldb.modify_ldif(ldif, controls)
+
+    def _set_pwd_properties(self, new_pwd_properties):
+        """There is a race, noticeable on Windows, where pwdProperties
+        will not change instantly. This function changes and polls
+        until the change is noticed.
+        """
+        s = str(new_pwd_properties)
+        for i in range(10):
+            self.ldb.set_pwdProperties(s)
+            pwd_properties = int(self.ldb.get_pwdProperties())
+            if pwd_properties == new_pwd_properties:
+                return pwd_properties
+            time.sleep(0.1)
+
+        print("pwdProperties failed to change")
+
+    def _set_pwd_property_bits(self, bits_on=0, bits_off=0):
+        old_pwd_properties = int(self.ldb.get_pwdProperties())
+        new_pwd_properties = old_pwd_properties | bits_on
+        new_pwd_properties &= ~bits_off
+        return self._set_pwd_properties(new_pwd_properties)
+
+    def _test_unicodePwd_policy_hints_history(self, control):
+        """Performs a password cleartext reset operation on
+        'unicodePwd', but expect failure due to history, because the
+        policy_hints control is set.
+
+        We run this twice, once with "policy_hints", and once with
+        "policy_hints_deprecated" -- both should work exactly the
+        same.
+        """
+        self._replace_unicode_pwd(self.ldb2,
+                                  "thatsAcomplPASS1",
+                                  "thatsAcomplPASS2")
+
+        # can't replace with same password, even with no nthash history (ad_dc_no_ntlm)
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb2,
+                                      "thatsAcomplPASS2",
+                                      "thatsAcomplPASS2")
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+
+        # An ADMIN reset to the old password will work, ignoring history.
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "thatsAcomplPASS1")
+        self._replace_unicode_pwd(self.ldb2,
+                                  "thatsAcomplPASS1",
+                                  "thatsAcomplPASS3")
+
+        #self._replace_unicode_pwd(self.ldb,
+        #                          None,
+        #                          "thatsAcomplPASS2")
+        # An Admin reset with policy hints works if password is new
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "thatsAcomplPASS7",
+                                  [f"{control}:1:1"])
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "thatsAcomplPASS2")
+
+        # User change with wrong old password will fail
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb2,
+                                      "thatsAcomplPASS3",
+                                      "thatsAcomplPASS4")
+
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+
+        # A reset to the old password again will not work, using ldb2,
+        # which has the users credentials, because ordinary users
+        # can't reset their own passwords.
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb2,
+                                      None,
+                                      "thatsAcomplPASS1",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+
+        res = self.ldb.search(self.ldb.domain_dn(), scope=SCOPE_BASE,
+                              attrs=['pwdHistoryLength'])
+
+        history_len = int(res[0].get('pwdHistoryLength', idx=0))
+
+        if history_len < 2:
+            # We CAN switch to the old password if we have no history
+            # (as found on fl2003dc)
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "thatsAcomplPASS1",
+                                      [f"{control}:1:1"])
+            return
+
+        # An ADMIN reset to the *current* password will not work, if
+        # we give it the policy hints oid.
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "thatsAcomplPASS3",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        # An ADMIN reset to the old password again will not work, if
+        # we give it the policy hints oid.
+        #
+        # This is a knownfail on ad_dc_no_ntlm, because password_hash
+        # module needs the ntlm hash to compare.
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "thatsAcomplPASS1",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        # An ADMIN reset to the old password will work, if
+        # we give it the policy hints oid with a BAD VALUE.
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "thatsAcomplPASS1",
+                                  [f"{control}:1:2"])
+
+    def _test_unicodePwd_policy_hints_complexity(self, control):
+        """Performs a password cleartext reset operation on
+        'unicodePwd', but expect failure due to history, because the
+        policy_hints control is set.
+
+        We run this twice, once with "policy_hints", and once with
+        "policy_hints_deprecated" -- both should work exactly the
+        same.
+        """
+        # Now we are testing complexity constraints
+        # the policy hints control should allow them to be ignored.
+        # NOTE there is a race here.
+        old_pwd_properties = self._set_pwd_property_bits(DOMAIN_PASSWORD_COMPLEX)
+        self.addCleanup(self._set_pwd_properties, old_pwd_properties)
+
+        # ensure complexity constraints work
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb2,
+                                      "thatsAcomplPASS1",
+                                      "ooooooooooooooo")
+
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+
+        # reset with control should not work
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "ooooooooooooooo",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        # reset with no control will not work either!
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "ooooooooooooooo")
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Now we try with no complexity checks
+        tmp_pwd_properties = old_pwd_properties & ~DOMAIN_PASSWORD_COMPLEX
+        self._set_pwd_properties(tmp_pwd_properties)
+
+        self._replace_unicode_pwd(self.ldb2,
+                                  "thatsAcomplPASS1",
+                                  "eeeeeeeeeeeeeee")
+
+        # reset with control should work
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "aaaaaaaaaaaaaaaa",
+                                  [f"{control}:1:1"])
+
+        # reset to complex password still works of course.
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "thatsAnotherPass1")
+
+    def _test_unicodePwd_policy_hints_length(self, control):
+        """Test password cleartext reset operations on 'unicodePwd',
+        mixing under-legth passwords and the policy hints control.
+        """
+        # try with a too short password
+        old_min_length = self.ldb.get_minPwdLength()
+        print(old_min_length)
+        self.ldb.set_minPwdLength(8)
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "Short1*",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        # try it as a user change, which should fail the same way.
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb2,
+                                      "thatsAcomplPASS1",
+                                      "Short1*",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+
+        with self.assertRaises(LdbError) as e:
+            # reset without control should not work.
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "Short1*")
+
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.ldb.set_minPwdLength(old_min_length)
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "LongLong1*2*3")
+
+    def _test_unicodePwd_policy_hints_password_age(self, control):
+        """We narrow password age limits to a narrow band and see if
+        we can get a policy_hints control to make a difference.
+        """
+        # NOTE: we just ignore maxPwdAge in the password_hash module.
+
+        old_min = self.ldb.get_minPwdAge()
+        old_max = self.ldb.get_maxPwdAge()
+        print(f"{old_min=}, {old_max=}")
+        self.addCleanup(self.ldb.set_minPwdAge, old_min)
+        self.addCleanup(self.ldb.set_maxPwdAge, old_max)
+
+        self.ldb.set_minPwdAge(-2000000000)
+        self.ldb.set_maxPwdAge(-2000000001)
+
+        # as usual, constraint violation for user change,
+        # unwillingness for admin reset with policy hints
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      "thatsAcomplPASS1",
+                                      "thatsAcomplPASS2")
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
+
+        with self.assertRaises(LdbError) as e:
+            self._replace_unicode_pwd(self.ldb,
+                                      None,
+                                      "thatsAcomplPASS2",
+                                      [f"{control}:1:1"])
+        num, msg = e.exception.args
+        self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
+
+        # reset works with bad control value
+        self._replace_unicode_pwd(self.ldb,
+                                  None,
+                                  "thatsAcomplPASS2",
+                                  [f"{control}:1:0"])
+
+    def test_unicodePwd_policy_hints_history(self):
+        self._test_unicodePwd_policy_hints_history("policy_hints")
+
+    def test_unicodePwd_policy_hints_deprecated_history(self):
+        self._test_unicodePwd_policy_hints_history("policy_hints_deprecated")
+
+    def test_unicodePwd_policy_hints_complexity(self):
+        self._test_unicodePwd_policy_hints_complexity("policy_hints")
+
+    # We don't need to run all of these twice, since we have shown
+    # already that policy_hints and policy_hints_deprecated work the
+    # same. Let's skip these ones:
+    #
+    # def test_unicodePwd_policy_hints_deprecated_complexity(self):
+    # def test_unicodePwd_policy_hints_length(self):
+    # def test_unicodePwd_policy_hints_password_age(self):
+
+    def test_unicodePwd_policy_hints_deprecated_length(self):
+        self._test_unicodePwd_policy_hints_length("policy_hints_deprecated")
+
+    def test_unicodePwd_policy_hints_deprecated_password_age(self):
+        self._test_unicodePwd_policy_hints_password_age("policy_hints_deprecated")
 
     def test_dBCSPwd_hash_set(self):
         """Performs a password hash set operation on 'dBCSPwd' which should be prevented"""
