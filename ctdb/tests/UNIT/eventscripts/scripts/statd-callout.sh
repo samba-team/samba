@@ -204,6 +204,10 @@ EOF
 				rm -f "${state_dir}/mon@${_sip}@${1}"
 			done
 		;;
+	sm-notify)
+		cmd="${CTDB_SCRIPTS_HELPER_BINDIR}/statd_callout"
+		unit_test "$cmd" "$event" "$@"
+		;;
 	takeip)
 		cmd="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"
 		script_test "$cmd" "$event" "$@"
