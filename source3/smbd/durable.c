@@ -887,7 +887,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	state.fsp->file_pid = smb1req->smbpid;
 	state.fsp->vuid = smb1req->vuid;
 	state.fsp->fnum = op->local_id;
-	fsp_set_gen_id(state.fsp);
+	fh_set_gen_id(state.fsp->fh, op->global->open_global_id);
 
 	status = fsp_set_smb_fname(state.fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {

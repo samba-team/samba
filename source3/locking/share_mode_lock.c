@@ -2739,7 +2739,7 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 	ok = reset_share_mode_entry(
 		lck,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		fh_get_gen_id(fsp->fh),
+		fsp->op->global->open_persistent_id,
 		disconnected_pid,
 		UINT64_MAX,
 		fsp->op->global->open_persistent_id);

@@ -92,13 +92,16 @@ fail:
 
 void fsp_set_gen_id(files_struct *fsp)
 {
-	static uint64_t gen_id = 1;
+	static uint64_t gen_id = UINT32_MAX;
 
 	/*
-	 * A billion of 64-bit increments per second gives us
-	 * more than 500 years of runtime without wrap.
+	 * These ids are only used for internal opens, which gives us 4 billion
+	 * opens until we wrap.
 	 */
 	gen_id++;
+	if (gen_id == 0) {
+		gen_id = UINT32_MAX;
+	}
 	fh_set_gen_id(fsp->fh, gen_id);
 }
 
@@ -112,10 +115,9 @@ NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
 	NTTIME now;
 	NTSTATUS status;
 
-	fsp_set_gen_id(fsp);
-
 	if (req == NULL) {
 		DBG_DEBUG("INTERNAL_OPEN_ONLY, skipping smbXsrv_open\n");
+		fsp_set_gen_id(fsp);
 		return NT_STATUS_OK;
 	}
 
@@ -131,6 +133,7 @@ NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
 	}
 	fsp->op = op;
 	op->compat = fsp;
+	fh_set_gen_id(fsp->fh, fsp->op->global->open_global_id);
 	fsp->fnum = op->local_id;
 
 	fsp->mid = req->mid;
