@@ -729,7 +729,9 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 			handle, dirfsp, smb_fname, fsp, how);
 	}
 
-	if ((how->resolve & ~VFS_OPEN_HOW_WITH_BACKUP_INTENT) != 0) {
+	if ((how->resolve & ~(VFS_OPEN_HOW_WITH_BACKUP_INTENT |
+			      VFS_OPEN_HOW_RESOLVE_NO_XDEV)) != 0)
+	{
 		errno = ENOSYS;
 		return -1;
 	}
