@@ -7281,7 +7281,7 @@ done:
 		smb2_util_close(tree, h1);
 	}
 	if (!smb2_util_handle_empty(h2)) {
-		smb2_util_close(tree, h2);
+		smb2_util_close(tree2, h2);
 	}
 	if (!smb2_util_handle_empty(dirh1)) {
 		smb2_util_close(tree, dirh1);
