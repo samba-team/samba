@@ -2516,15 +2516,6 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 		}
 
 		requested = lease->lease_state;
-		if (fsp->fsp_flags.is_directory) {
-			/*
-			 * According to "MS-FSA 2.1.5.18 Server Requests an
-			 * Oplock" this should fail with
-			 * STATUS_INVALID_PARAMETER, but Windows 2022 just
-			 * ignores the SMB2_LEASE_WRITE bit.
-			 */
-			requested &= ~SMB2_LEASE_WRITE;
-		}
 	} else {
 		requested = map_oplock_to_lease_type(
 			oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
@@ -2583,6 +2574,16 @@ grant:
 	}
 
 	granted = requested;
+
+	if (fsp->fsp_flags.is_directory) {
+		/*
+		 * According to "MS-FSA 2.1.5.18 Server Requests an
+		 * Oplock" this should fail with
+		 * STATUS_INVALID_PARAMETER, but Windows 2022 just
+		 * ignores the SMB2_LEASE_WRITE bit.
+		 */
+		granted &= ~SMB2_LEASE_WRITE;
+	}
 
 	if (oplock_request == LEASE_OPLOCK) {
 		if (lp_kernel_oplocks(SNUM(fsp->conn))) {
