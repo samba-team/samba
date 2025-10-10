@@ -93,8 +93,10 @@ static void fsp_set_gen_id(files_struct *fsp)
 	static uint64_t gen_id = UINT32_MAX;
 
 	/*
-	 * These ids are only used for internal opens, which gives us 4 billion
-	 * opens until we wrap.
+	 * We use the space above UINT32_MAX for internal opens so
+	 * that we don't conflict with real opens. Real opens use the
+	 * persistent part of the file handle, which is cut to 32-bits
+	 * to be used as an index in srvsvc calls.
 	 */
 	gen_id++;
 	if (gen_id == 0) {
