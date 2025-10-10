@@ -88,7 +88,7 @@ fail:
 	return NULL;
 }
 
-void fsp_set_gen_id(files_struct *fsp)
+static void fsp_set_gen_id(files_struct *fsp)
 {
 	static uint64_t gen_id = UINT32_MAX;
 

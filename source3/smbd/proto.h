@@ -317,7 +317,6 @@ NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
 
 struct files_struct *fsp_new(TALLOC_CTX *mem_ctx,
 			     struct connection_struct *conn);
-void fsp_set_gen_id(files_struct *fsp);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
 NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req);
