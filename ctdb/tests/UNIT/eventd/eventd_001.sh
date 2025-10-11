@@ -21,7 +21,8 @@ Script 01.test does not exist in foobar
 EOF
 simple_test script enable foobar 01.test
 
+dir="${CTDB_BASE}/share/events/foobar"
 required_error ENOENT <<EOF
-Command script list finished with result=$(errcode ENOENT)
+Unable to find event script installation directory: ${dir}
 EOF
 simple_test script list foobar
