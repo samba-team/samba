@@ -137,8 +137,6 @@ setup_ctdb_base()
 		cp -pr "${CTDB_SCRIPTS_BASE}/${_i}" "${CTDB_BASE}/"
 	done
 
-	mkdir -p "${CTDB_BASE}/events/legacy"
-
 	if [ -z "$CTDB_TEST_SUITE_DIR" ]; then
 		return
 	fi
