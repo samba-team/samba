@@ -2,7 +2,8 @@
 HDB DEFINITIONS ::=
 BEGIN
 
-IMPORTS EncryptionKey, KerberosTime, Principal FROM krb5;
+IMPORTS EncryptionKey, KerberosTime, Principal FROM krb5
+	ObjectSid FROM rfc2459;
 
 hdb_db_format INTEGER ::= 2	-- format of database, 
 				-- update when making changes
@@ -244,6 +245,7 @@ HDB-extension ::= SEQUENCE {
 		krb5-config[15]		        OCTET STRING,
 		key-trust[16]			HDB-Ext-KeyTrust,
 		cert-mappings[17]		HDB-Ext-CertificateMappings,
+		object-sid[18]			ObjectSid,
 		...
 	},
 	...

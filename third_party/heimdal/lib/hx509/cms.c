@@ -1203,7 +1203,7 @@ add_one_attribute(Attribute **attr,
  * @param peer info about the peer the message to send the message to,
  * like what digest algorithm to use.
  * @param anchors trust anchors that the client will use, used to
- * polulate the certificates included in the message
+ * populate the certificates included in the message
  * @param pool certificates to use in try to build the path to the
  * trust anchors.
  * @param signed_data the output of the function, free with

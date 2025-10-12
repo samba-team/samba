@@ -130,17 +130,17 @@ jobs:
                   git ls-files -o|grep -v ^build/
                 fi
             - name: Upload Install Tarball
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v4
               with:
                 name: Install Tarball
                 path: '~/heimdal-install-linux-${{ matrix.compiler }}.tgz'
             - name: Upload Dist Tarball
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v4
               with:
                 name: Dist Tarball
                 path: 'build/heimdal-*.tar.gz'
             - name: Upload Logs Tarball
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v4
               with:
                 name: Test Logs
                 path: '~/logs-linux-${{ matrix.compiler }}.tgz'

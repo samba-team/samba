@@ -661,6 +661,31 @@ match_serial_number(
 }
 
 /**
+ * @brief Check to see if the certificate’s object SID matches the client’s.
+ *
+ * @param client[in]   client hdb record
+ * @param cert_sid[in] SID of certificate used to sign the request.
+ *
+ * @return TRUE the certificate matches
+ *         FALSE the certificate DOES NOT match
+ */
+static krb5_boolean
+match_object_sid(hdb_entry *client, ObjectSid *cert_sid)
+{
+    HDB_extension *ext = NULL;
+
+    ext = hdb_find_extension(client, choice_HDB_extension_data_object_sid);
+    if (ext == NULL) {
+	return FALSE;
+    }
+
+    /*
+     * Does the certificate’s object SID match the object SID for this client?
+     */
+    return der_heim_octet_string_cmp(&ext->data.u.object_sid, cert_sid) == 0;
+}
+
+/**
  * @brief Validate the certificate against the criteria outlined in KB5014754
  *
  * @see KB5014754: Certificate-based authentication changes on Windows domain
@@ -694,9 +719,9 @@ pk_check_certificate_binding(
     memset(&mappings, 0, sizeof(mappings));
 
     /*
-	* If there is no extension or the enforcement mode is none
-	* then there is nothing to do.
-	*/
+     * If there is no extension or the enforcement mode is none, don’t
+     * perform any certificate mapping or object SID checks.
+     */
     ext = hdb_find_extension(client, choice_HDB_extension_data_cert_mappings);
     if (ext == NULL) {
 	return 0;
@@ -707,73 +732,88 @@ pk_check_certificate_binding(
 	goto out;
     }
 
-    /*
-     * If there are no mappings then reject the logon
-     */
-    if (mappings.mappings == NULL) {
-	ret = KRB5_KDC_ERR_CERTIFICATE_MISMATCH;
-	krb5_set_error_message(
-	    context, ret, "Client has no certificate mappings");
-	goto out;
+    if (mappings.mappings != NULL) {
+	for (i = 0, matched = FALSE; i < mappings.mappings->len && !matched; i++) {
+	    HDB_Ext_CertificateMapping *m = &mappings.mappings->val[i];
+
+	    strong_mapping = m->strong_mapping;
+	    /*
+	     *     When enforcement mode is full only consider strong mappings
+	     */
+	    if (mappings.enforcement_mode == hdb_enf_mode_full && !strong_mapping) {
+		continue;
+	    }
+
+	    if (m->issuer_name != NULL) {
+		hx509_name issuer;
+		ret = hx509_cert_get_issuer(*cert, &issuer);
+		if (ret != 0) {
+		    ret = 0;
+		    continue;
+		}
+		matched = match_name(context, &issuer, m->issuer_name);
+		hx509_name_free(&issuer);
+		if (!matched) {
+		    krb5_warnx(context, "PKINIT: Issuer name does not match");
+		    continue;
+		}
+	    }
+	    if (m->subject_name != NULL) {
+		hx509_name subject;
+		ret = hx509_cert_get_subject(*cert, &subject);
+		if (ret != 0) {
+		    ret = 0;
+		    continue;
+		}
+		matched = match_name(context, &subject, m->subject_name);
+		hx509_name_free(&subject);
+		if (!matched) {
+		    krb5_warnx(context, "PKINIT: Subject name does not match");
+		    continue;
+		}
+	    }
+	    if (m->rfc822 != NULL) {
+		matched = match_rfc822_name(context, cert, m);
+		if (!matched) {
+		    krb5_warnx(context, "PKINIT: RFC822 name does not match");
+		    continue;
+		}
+	    }
+	    if (m->ski != NULL) {
+		matched = match_subject_key_identifier(context, cert, m);
+		if (!matched) {
+		    krb5_warnx(context, "PKINIT: Subject key identifier does not match");
+		    continue;
+		}
+	    }
+	    if (m->public_key != NULL) {
+		matched = match_public_key(context, cert, m);
+		if (!matched) {
+		    continue;
+		}
+	    }
+	    if (m->serial_number != NULL) {
+		matched = match_serial_number(cert, m);
+		if (!matched) {
+		    krb5_warnx(context, "PKINIT: Serial number does not match");
+		    continue;
+		}
+	    }
+	}
     }
 
-    for (i = 0, matched = FALSE; i < mappings.mappings->len && !matched; i++) {
-	HDB_Ext_CertificateMapping *m = &mappings.mappings->val[i];
+    if (!matched || !strong_mapping) {
+	ObjectSid cert_sid;
 
-	strong_mapping = m->strong_mapping;
-	/*
-	 * When enforcement mode is full only consider strong mappings
-	 */
-	if (mappings.enforcement_mode == hdb_enf_mode_full && !strong_mapping) {
-	    continue;
-	}
-
-	if (m->issuer_name != NULL) {
-	    hx509_name issuer;
-	    ret = hx509_cert_get_issuer(*cert, &issuer);
-	    if (ret != 0) {
-		continue;
-	    }
-	    matched = match_name(context, &issuer, m->issuer_name);
-	    hx509_name_free(&issuer);
+	ret = hx509_cert_get_object_sid(*cert, &cert_sid);
+	if (ret) {
+	    ret = 0;
+	} else {
+	    strong_mapping = TRUE;
+	    matched = match_object_sid(client, &cert_sid);
+	    free_ObjectSid(&cert_sid);
 	    if (!matched) {
-		continue;
-	    }
-	}
-	if (m->subject_name != NULL) {
-	    hx509_name subject;
-	    ret = hx509_cert_get_subject(*cert, &subject);
-	    if (ret != 0) {
-		continue;
-	    }
-	    matched = match_name(context, &subject, m->subject_name);
-	    hx509_name_free(&subject);
-	    if (!matched) {
-		continue;
-	    }
-	}
-	if (m->rfc822 != NULL) {
-	    matched = match_rfc822_name(context, cert, m);
-	    if (!matched) {
-		continue;
-	    }
-	}
-	if (m->ski != NULL) {
-	    matched = match_subject_key_identifier(context, cert, m);
-	    if (!matched) {
-		continue;
-	    }
-	}
-	if (m->public_key != NULL) {
-	    matched = match_public_key(context, cert, m);
-	    if (!matched) {
-		continue;
-	    }
-	}
-	if (m->serial_number != NULL) {
-	    matched = match_serial_number(cert, m);
-	    if (!matched) {
-		continue;
+		krb5_warnx(context, "PKINIT: Object SID does not match");
 	    }
 	}
     }

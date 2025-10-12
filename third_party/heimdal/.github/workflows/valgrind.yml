@@ -65,7 +65,7 @@ jobs:
               run: |
                 find build -name \*.trs|xargs grep -lw FAIL | sed -e 's/trs$/log/' | xargs cat
             - name: Upload Artifacts
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v4
               with:
                 name: Test Logs
                 path: '~/logs-linux-valgrind.tgz'

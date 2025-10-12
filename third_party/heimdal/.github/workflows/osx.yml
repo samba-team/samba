@@ -113,12 +113,12 @@ jobs:
               run: |
                 find build -name \*.trs|xargs grep -lw FAIL|sed -e 's/trs$/log/'|xargs cat
             - name: Upload Install Tarball
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v4
               with:
                 name: Install Tarball
                 path: '~/heimdal-install-osx.tgz'
             - name: Upload Artifacts
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v4
               with:
                 name: Upload Test Logs
                 path: '~/logs-osx.cpio'

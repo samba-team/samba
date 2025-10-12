@@ -65,7 +65,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_ANY		( HDB_F_GET_CLIENT | \
 				  HDB_F_GET_SERVER | \
 				  HDB_F_GET_KRBTGT ) /* fetch any of client,server,krbtgt */
-#define HDB_F_CANON		0x00020	/* want canonicalition */
+#define HDB_F_CANON		0x00020	/* want canonicalization */
 #define HDB_F_ADMIN_DATA	0x00040	/* want data that kdc don't use  */
 #define HDB_F_KVNO_SPECIFIED	0x00080	/* we want a particular KVNO */
 #define HDB_F_LIVE_CLNT_KVNOS	0x00200	/* we want all live keys for pre-auth */

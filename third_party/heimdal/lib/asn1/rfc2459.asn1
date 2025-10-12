@@ -362,6 +362,8 @@ GeneralName ::= CHOICE {
 
 GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
 
+SidExtension ::= GeneralNames
+
 id-x509-ce-keyUsage OBJECT IDENTIFIER ::=  { id-x509-ce 15 }
 
 KeyUsage ::= BIT STRING {
@@ -508,6 +510,19 @@ id-x509-ce-inhibitAnyPolicy OBJECT IDENTIFIER ::=  { id-x509-ce 54 }
 id-heim-ce-pkinit-princ-max-life OBJECT IDENTIFIER ::=
     { iso(1) member-body(2) se(752) su(43) heim-pkix(16) 4 }
 
+-- Microsoft extensions from MS-WCCE
+
+szOID-NTDS-CA-SECURITY-EXT OBJECT IDENTIFIER ::= {
+    iso(1) org(3) dod(6) internet(1) private(4) enterprise(1)
+    microsoft(311) directory-service(25) 2
+}
+
+szOID-NTDS-OBJECTSID OBJECT IDENTIFIER ::= {
+    iso(1) org(3) dod(6) internet(1) private(4) enterprise(1)
+    microsoft(311) directory-service(25) 2 1
+}
+
+ObjectSid ::= OCTET STRING
 
 DistributionPointReasonFlags ::= BIT STRING {
 	unused                  (0),
@@ -920,6 +935,10 @@ on-pkinit-ms-san _OTHER-NAME ::= {
     &id id-pkix-on-pkinit-ms-san,
     &Type AliasUTF8String
 }
+on-ntds-objectsid _OTHER-NAME ::= {
+    &id szOID-NTDS-OBJECTSID,
+    &Type ObjectSid
+}
 
 KnownOtherNameTypes _OTHER-NAME ::= {
     on-xmppAddr
@@ -928,6 +947,7 @@ KnownOtherNameTypes _OTHER-NAME ::= {
   | on-permanentIdentifier
   | on-krb5PrincipalName
   | on-pkinit-ms-san
+  | on-ntds-objectsid
 }
 
 OtherName ::= OtherName{KnownOtherNameTypes}

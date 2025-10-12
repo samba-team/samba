@@ -7,10 +7,16 @@ AC_DEFUN([rk_SYS_LARGEFILE],[
 AC_REQUIRE([AC_SYS_LARGEFILE])dnl
 dnl need to set this on the command line, since it might otherwise break
 dnl with generated code, such as lex
-if test "$enable_largefile" != no -a "$ac_cv_sys_large_files" != no; then
-	CPPFLAGS="$CPPFLAGS -D_LARGE_FILES=$ac_cv_sys_large_files"
-fi
-if test "$enable_largefile" != no -a "$ac_cv_sys_file_offset_bits" != no && test -n "$ac_cv_sys_file_offset_bits"; then
-	CPPFLAGS="$CPPFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
+if test "$enable_largefile" != no; then
+	if test -n "$ac_cv_sys_large_files" && test "$ac_cv_sys_large_files" != no; then
+		CPPFLAGS="$CPPFLAGS -D_LARGE_FILES=$ac_cv_sys_large_files"
+	fi
+	if test -n "$ac_cv_sys_file_offset_bits" && test "$ac_cv_sys_file_offset_bits" != no; then
+		CPPFLAGS="$CPPFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
+	fi
+	if test -n "$ac_cv_sys_largefile_opts"; then
+		AS_CASE([$ac_cv_sys_largefile_opts],[-D_FILE_OFFSET_BITS=*|-D_LARGE_FILES=*],
+			[CPPFLAGS="$CPPFLAGS $ac_cv_sys_largefile_opts"])
+	fi
 fi
 ])
