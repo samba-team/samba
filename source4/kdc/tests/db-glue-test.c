@@ -113,6 +113,7 @@ static void add_whenCreated(struct ldb_message *msg,
 			    time_t created)
 {
 	char* ts = ldb_timestring(msg, created);
+	assert_non_null(ts);
 	ldb_msg_add_string(msg, "whenCreated", ts);
 }
 
