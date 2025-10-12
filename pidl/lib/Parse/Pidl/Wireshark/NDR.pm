@@ -450,21 +450,23 @@ sub SwitchType($$;$)
 {
 	my ($e, $type, $nodiscriminant) = @_;
 
-	my $switch_dt =  getType($type);
 	my $switch_type = undef;
-	if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
-		$switch_type = Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
-	} elsif ($switch_dt->{DATA}->{TYPE} eq "BITMAP") {
-		$switch_type = Parse::Pidl::Typelist::bitmap_type_fn($switch_dt->{DATA});
-	} elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
-		if (defined $e->{SWITCH_TYPE}) {
-			$switch_type = "$e->{SWITCH_TYPE}";
-		} else {
-			$switch_type = "$switch_dt->{DATA}->{NAME}";
-		}
-	} elsif (not defined $e->{SWITCH_TYPE}) {
+	if (not defined($type)) {
 		$switch_type = $nodiscriminant;
-	}
+	} else {
+                my $switch_dt =  getType($type);
+                if ($switch_dt->{DATA}->{TYPE} eq "ENUM") {
+                        $switch_type = Parse::Pidl::Typelist::enum_type_fn($switch_dt->{DATA});
+                } elsif ($switch_dt->{DATA}->{TYPE} eq "BITMAP") {
+                        $switch_type = Parse::Pidl::Typelist::bitmap_type_fn($switch_dt->{DATA});
+                } elsif ($switch_dt->{DATA}->{TYPE} eq "SCALAR") {
+                        if (defined $e->{SWITCH_TYPE}) {
+                                $switch_type = "$e->{SWITCH_TYPE}";
+                        } else {
+                                $switch_type = "$switch_dt->{DATA}->{NAME}";
+                        }
+                }
+        }
 
 	return $switch_type
 }
