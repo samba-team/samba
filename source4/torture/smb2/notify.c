@@ -2727,6 +2727,196 @@ done:
 	return ret;
 }
 
+static bool torture_smb2_notify_acl_args(struct torture_context *torture,
+					 struct smb2_tree *tree,
+					 bool copy_sd_only,
+					 uint32_t completion_filter)
+{
+	NTSTATUS status;
+	struct smb2_create io;
+	const char *name = "sec_notify.txt";
+	bool ret = true;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle dir_handle = {{0}};
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_descriptor *sd;
+	struct smb2_notify notify;
+	struct smb2_request *req;
+	struct dom_sid *test_sid;
+	struct security_ace ace;
+	struct tevent_timer *te = NULL;
+
+	/* one secdesc update generates one notify, regardless of:
+	   * mask (FILE_NOTIFY_CHANGE_SECURITY or FILE_NOTIFY_CHANGE_ALL)
+	   * actual modification of sd (copied sd or added one ace)
+	 */
+
+	if (!smb2_util_setup_dir(torture, tree, BASEDIR))
+		return false;
+
+	torture_comment(torture, "Testing security notifications with completion_filter: 0x%08x\n", completion_filter);
+
+	/*
+	  get a handle on the directory
+	*/
+	ZERO_STRUCT(io);
+	io.level = RAW_OPEN_SMB2;
+	io.in.create_flags = 0;
+	io.in.desired_access = SEC_FILE_ALL;
+	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.alloc_size = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.in.security_flags = 0;
+	io.in.fname = BASEDIR;
+
+	status = smb2_create(tree, torture, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	dir_handle = io.out.file.handle;
+
+	/*
+	  get a handle on the file
+	*/
+	ZERO_STRUCT(io);
+	io.level = RAW_OPEN_SMB2;
+	io.in.create_flags = 0;
+	io.in.desired_access = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC | SEC_STD_WRITE_OWNER;
+	io.in.create_options = 0;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.alloc_size = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.in.security_flags = 0;
+	io.in.fname = talloc_asprintf(torture, "%s\\%s", BASEDIR, name);
+
+	status = smb2_create(tree, torture, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	handle = io.out.file.handle;
+
+	/* get the original sd */
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = handle;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	status = smb2_getinfo_file(tree, torture, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	sd = q.query_secdesc.out.sd;
+
+	/* setup notify_send */
+
+	ZERO_STRUCT(notify);
+	notify.level = RAW_NOTIFY_SMB2;
+	notify.in.buffer_size = 1024;
+	notify.in.completion_filter = completion_filter;
+	notify.in.file.handle = dir_handle;
+	notify.in.recursive = true;
+
+	req = smb2_notify_send(tree, &notify);
+	torture_assert_not_null_goto(torture, req, ret, done, "smb2_notify_send failed\n");
+
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (tevent_loop_once(torture->ev) != 0) {
+			break;
+		}
+	}
+
+	/* add new ACE */
+	if (!copy_sd_only) {
+		test_sid = dom_sid_parse_talloc(torture, SID_NT_AUTHENTICATED_USERS);
+		ZERO_STRUCT(ace);
+		ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+		ace.flags = 0;
+		ace.access_mask = SEC_STD_ALL;
+		ace.trustee = *test_sid;
+		status = security_descriptor_dacl_add(sd, &ace);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = handle;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+	status = smb2_setinfo_file(tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+
+	/* setup smb2_notify_receive */
+
+	/* setup timer so we can cancel after 5 seconds */
+	te = tevent_add_timer(torture->ev,
+			      tree,
+			      tevent_timeval_current_ofs(5, 0),
+			      notify_timeout,
+			      req);
+	torture_assert_not_null_goto(torture, te, ret, done, "tevent_add_timer failed\n");
+
+	status = smb2_notify_recv(req, torture, &notify);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+			"smb2_notify_recv failed\n");
+
+	/* check reply */
+	CHECK_VAL(notify.out.num_changes, 1);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_MODIFIED);
+	CHECK_WIRE_STR(notify.out.changes[0].name, name);
+
+ done:
+	if (!smb2_util_handle_empty(dir_handle)) {
+		smb2_util_close(tree, dir_handle);
+	}
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
+static bool torture_smb2_notify_acl(struct torture_context *torture,
+				    struct smb2_tree *tree)
+{
+	struct {
+		bool copy_sd_only;
+		uint32_t completion_filter;
+	} tests[] = {
+	{
+		.copy_sd_only  = true,
+		.completion_filter = FILE_NOTIFY_CHANGE_SECURITY,
+	},{
+		.copy_sd_only = false,
+		.completion_filter = FILE_NOTIFY_CHANGE_SECURITY,
+	},{
+		.copy_sd_only  = true,
+		.completion_filter = FILE_NOTIFY_CHANGE_ALL,
+	},{
+		.copy_sd_only = false,
+		.completion_filter = FILE_NOTIFY_CHANGE_ALL,
+	}
+	};
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+		bool ok;
+
+		ok = torture_smb2_notify_acl_args(torture, tree,
+				tests[i].copy_sd_only,
+				tests[i].completion_filter);
+		if (!ok) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /*
    basic testing of SMB2 change notify
 */
@@ -2763,6 +2953,8 @@ struct torture_suite *torture_smb2_notify_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite,
 				    "handle-permissions",
 				    torture_smb2_notify_handle_permissions);
+	torture_suite_add_1smb2_test(suite, "security",
+				     torture_smb2_notify_acl);
 
 	suite->description = talloc_strdup(suite, "SMB2-NOTIFY tests");
 
