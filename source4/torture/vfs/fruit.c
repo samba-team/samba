@@ -7847,7 +7847,7 @@ static bool test_readonly_exclusive_lock(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h;
+	struct smb2_handle h = {};
 	struct smb2_create create;
 	struct smb2_lock lock;
 	struct smb2_lock_element lock_element;
