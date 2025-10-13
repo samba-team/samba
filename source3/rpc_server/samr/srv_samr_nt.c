@@ -3020,21 +3020,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	r->lm_password_set		= 0;
 	r->nt_password_set		= 0;
 
-#if 0
-
-	/*
-	  Look at a user on a real NT4 PDC with usrmgr, press
-	  'ok'. Then you will see that fields_present is set to
-	  0x08f827fa. Look at the user immediately after that again,
-	  and you will see that 0x00fffff is returned. This solves
-	  the problem that you get access denied after having looked
-	  at the user.
-	  -- Volker
-	*/
-
-#endif
-
-
 	return NT_STATUS_OK;
 }
 
