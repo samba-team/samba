@@ -152,6 +152,7 @@ static int fake_acls_fstatat(struct vfs_handle_struct *handle,
 		base_name += 1;
 		status = open_rootdir_pathref_fsp(conn, &root_fsp);
 		if (!NT_STATUS_IS_OK(status)) {
+			prd->calling_pathref_fsp = false;
 			errno = ENOENT;
 			return -1;
 		}
