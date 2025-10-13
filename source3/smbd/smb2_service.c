@@ -126,7 +126,7 @@ bool chdir_current_service(connection_struct *conn)
 }
 
 /****************************************************************************
- do some basic sainity checks on the share.
+ do some basic sanity checks on the share.
  This function modifies dev, ecode.
 ****************************************************************************/
 
