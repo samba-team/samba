@@ -28,7 +28,7 @@
 
 const char *get_winbind_domain(void);
 const char *get_winbind_netbios_name(void);
-DATA_BLOB get_challenge(void) ;
+DATA_BLOB get_challenge(TALLOC_CTX *mem_ctx) ;
 NTSTATUS contact_winbind_auth_crap(const char *username,
 				   const char *domain,
 				   const char *workstation,

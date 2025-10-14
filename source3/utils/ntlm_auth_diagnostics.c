@@ -60,7 +60,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 	uchar user_session_key[16];
 	uchar lm_hash[16];
 	uchar nt_hash[16];
-	DATA_BLOB chall = get_challenge();
+	DATA_BLOB chall = get_challenge(talloc_tos());
 	char *error_string = NULL;
 
 	ZERO_STRUCT(lm_key);
@@ -199,7 +199,7 @@ static bool test_ntlm_in_lm(bool lanman_support_expected)
 	uchar lm_key[8];
 	uchar lm_hash[16];
 	uchar user_session_key[16];
-	DATA_BLOB chall = get_challenge();
+	DATA_BLOB chall = get_challenge(talloc_tos());
 	char *error_string = NULL;
 
 	ZERO_STRUCT(user_session_key);
@@ -291,7 +291,7 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 	uint8_t lm_hash[16];
 	uint8_t user_session_key[16];
 	uint8_t nt_hash[16];
-	DATA_BLOB chall = get_challenge();
+	DATA_BLOB chall = get_challenge(talloc_tos());
 	char *error_string = NULL;
 
 	ZERO_STRUCT(lm_key);
@@ -380,7 +380,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(NULL, get_winbind_netbios_name(), get_winbind_domain());
 	uint8_t authoritative = 1;
 	uchar user_session_key[16];
-	DATA_BLOB chall = get_challenge();
+	DATA_BLOB chall = get_challenge(talloc_tos());
 	char *error_string = NULL;
 
 	ZERO_STRUCT(user_session_key);

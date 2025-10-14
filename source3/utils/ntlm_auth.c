@@ -367,13 +367,13 @@ const char *get_winbind_netbios_name(void)
 
 }
 
-DATA_BLOB get_challenge(void)
+DATA_BLOB get_challenge(TALLOC_CTX *mem_ctx)
 {
 	static DATA_BLOB chal;
 	if (opt_challenge.length)
 		return opt_challenge;
 
-	chal = data_blob(NULL, 8);
+	chal = data_blob_talloc(mem_ctx, NULL, 8);
 
 	generate_random_buffer(chal.data, chal.length);
 	return chal;
