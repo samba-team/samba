@@ -292,6 +292,11 @@ static void prefork_fork_master(
 		return;
 	}
 
+	/*
+	 * We are the worker side of the tfork: the handle is of no use here.
+	 */
+	tfork_close(&t);
+
 	pid = getpid();
 
 	process_set_title("%s[master]", "task[%s] pre-fork master", service_name);
