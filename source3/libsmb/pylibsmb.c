@@ -2270,7 +2270,7 @@ static PyObject *py_cli_notify_get_changes(struct py_cli_notify_state *self,
 		return NULL;
 	}
 
-	status = cli_notify_recv(req, req, &num_changes, &changes);
+	status = cli_notify_recv(req, frame, &num_changes, &changes);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
