@@ -102,6 +102,10 @@
                 <para><emphasis>STRONG</emphasis></para>
             </listitem>
             </itemizedlist>
+
+        Certificate mappings may also take the form of a certificate extension
+        (extension 1.3.6.1.4.1.311.25.2) that contains the user's SID. This is
+        considered a <emphasis>STRONG</emphasis> mapping.
     </para>
 </description>
 
