@@ -718,6 +718,7 @@ static const struct ntlm_tests {
 
 bool diagnose_ntlm_auth(bool lanman_support_expected)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	unsigned int i;
 	bool pass = True;
 
@@ -736,6 +737,8 @@ bool diagnose_ntlm_auth(bool lanman_support_expected)
 			pass = False;
 		}
 	}
+
+	TALLOC_FREE(frame);
 
         return pass;
 }
