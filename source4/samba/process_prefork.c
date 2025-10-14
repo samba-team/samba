@@ -110,6 +110,19 @@ struct restart_context {
 	struct worker_restart_context *worker;
 };
 
+static int restart_context_destructor(struct restart_context *rc)
+{
+	/*
+	 * Only release our handle. Killing or waiting on the child here would
+	 * break shutdown: a parent freeing its event context must leave the
+	 * children to terminate on their own, and forked copies of the context
+	 * don't own the waiter.
+	 */
+	tfork_close(&rc->t);
+
+	return 0;
+}
+
 static void sighup_signal_handler(struct tevent_context *ev,
 				struct tevent_signal *se,
 				int signum, int count, void *siginfo,
@@ -268,6 +281,7 @@ static void prefork_fork_master(
 		if (rc == NULL) {
 			smb_panic("OOM allocating restart context\n");
 		}
+		talloc_set_destructor(rc, restart_context_destructor);
 		rc->t = t;
 		rc->lp_ctx = lp_ctx;
 		rc->service_name = service_name;
@@ -591,9 +605,6 @@ static void prefork_restart_fn(struct tevent_context *ev,
 				    restart_delay,
 				    &pd);
 	}
-	/* tfork allocates tfork structures with malloc */
-	tfork_destroy(&rc->t);
-	free(rc->t);
 	TALLOC_FREE(rc);
 }
 
@@ -652,9 +663,6 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 		}
 	}
 	if (!rc_inuse) {
-		/* tfork allocates tfork structures with malloc */
-		tfork_destroy(&rc->t);
-		free(rc->t);
 		TALLOC_FREE(rc);
 	}
 	return;
@@ -777,6 +785,7 @@ static void prefork_fork_worker(struct task_server *task,
 		if (rc == NULL) {
 			smb_panic("OOM allocating restart context\n");
 		}
+		talloc_set_destructor(rc, restart_context_destructor);
 		rc->t = w;
 		rc->lp_ctx = lp_ctx;
 		rc->service_name = service_name;
