@@ -58,7 +58,7 @@ create_test_data()
 	if have_command "od"; then # Use random file sizes
 		local RND_COUNT
 		for RND_COUNT in $(od -An -N$NUM_FILES -tu1 </dev/urandom); do
-			if ! dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$RND_COUNT >/dev/null 2>&1; then
+			if ! LD_PRELOAD='' dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$RND_COUNT >/dev/null 2>&1; then
 				echo "Couldn't create test file '$DIR/file.$I' (random size)"
 				false
 				return
@@ -67,7 +67,7 @@ create_test_data()
 		done
 	else # Fallback to same file sizes
 		while [ $I -le $NUM_FILES ]; do
-			if ! dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$NORND_COUNT >/dev/null 2>&1; then
+			if ! LD_PRELOAD='' dd if=/dev/urandom of="$DIR/file.$I" bs=$BS count=$NORND_COUNT >/dev/null 2>&1; then
 				echo "Couldn't create test file '$DIR/file.$I' (static size)"
 				false
 				return

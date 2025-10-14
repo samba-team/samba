@@ -42,7 +42,7 @@ destfile=tempfile.dst.$$
 destpath=${SELFTEST_TMPDIR}/$destfile
 
 # Create a source file with arbitrary contents
-dd if=$DD of=$sourcepath bs=1024 count=50 >/dev/null
+LD_PRELOAD='' dd if=$DD of=$sourcepath bs=1024 count=50 >/dev/null
 
 ls -l $sourcepath
 

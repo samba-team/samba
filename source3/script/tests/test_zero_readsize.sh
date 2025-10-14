@@ -40,7 +40,7 @@ do_setup()
 {
 	rm -f "${PREFIX}/zero_read_testfile"
 	rm -f "${PREFIX}/zero_read_testfile_get"
-	dd if=/dev/zero of="${PREFIX}/zero_read_testfile" bs=1024 count=1
+	LD_PRELOAD='' dd if=/dev/zero of="${PREFIX}/zero_read_testfile" bs=1024 count=1
 	global_inject_conf="$(dirname "${SERVERCONFFILE}")/global_inject.conf"
 	echo "smb2 max read = 0" >"$global_inject_conf"
 	${SMBCONTROL} ${CONF} smbd reload-config

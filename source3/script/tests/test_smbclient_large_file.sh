@@ -49,7 +49,7 @@ EOF
 }
 
 rm -f $PREFIX/largefile
-dd if=/dev/zero of=$PREFIX/largefile seek=$((20 * 1024 * 1024)) count=1 bs=1
+LD_PRELOAD='' dd if=/dev/zero of=$PREFIX/largefile seek=$((20 * 1024 * 1024)) count=1 bs=1
 
 incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh

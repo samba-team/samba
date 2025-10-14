@@ -34,12 +34,13 @@ samba_texpect="${BINDIR}/texpect"
 create_test_data()
 {
 	pushd $WORKDIR
-	dd if=/dev/urandom bs=1024 count=128 of=testfile
+	# Do not preload anything for dd
+	LD_PRELOAD='' dd if=/dev/urandom bs=1024 count=128 of=testfile
 	chmod 644 testfile
 	mkdir dir1
-	dd if=/dev/urandom bs=1024 count=128 of=dir1/testfile1
+	LD_PRELOAD='' dd if=/dev/urandom bs=1024 count=128 of=dir1/testfile1
 	mkdir dir2
-	dd if=/dev/urandom bs=1024 count=128 of=dir2/testfile2
+	LD_PRELOAD='' dd if=/dev/urandom bs=1024 count=128 of=dir2/testfile2
 	popd
 }
 
@@ -308,7 +309,8 @@ test_resume()
 test_resume_modified()
 {
 	clear_download_area
-	dd if=/dev/urandom bs=1024 count=2 of=testfile
+	# Do not preload anything for dd
+	LD_PRELOAD='' dd if=/dev/urandom bs=1024 count=2 of=testfile
 	$SMBGET --verbose --resume -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 1 ]; then
 		echo 'ERROR: RC does not match, expected: 1'

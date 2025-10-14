@@ -26,7 +26,8 @@ TESTDIR=$LOCAL_PATH/zero_data
 mkdir -p $TESTDIR
 chmod 777 p $TESTDIR
 
-dd if=/dev/urandom of=$TESTDIR/testfile bs=1024 count=128
+# Do not preload anything for dd
+LD_PRELOAD='' dd if=/dev/urandom of=$TESTDIR/testfile bs=1024 count=128
 chmod 777 $TESTDIR/testfile
 
 alloc_kb=$(du -k $TESTDIR/testfile | sed -e 's/\t.*//')
