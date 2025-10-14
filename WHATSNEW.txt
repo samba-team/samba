@@ -1,4 +1,52 @@
                    ==============================
+                   Release Notes for Samba 4.22.5
+                          October 15, 2025
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2025-9640:  Uninitialized memory disclosure via vfs_streams_xattr.
+                  https://www.samba.org/samba/security/CVE-2025-9640.html
+
+o CVE-2025-10230: Command injection via WINS server hook script.
+                  https://www.samba.org/samba/security/CVE-2025-10230.html
+
+
+Changes since 4.22.4
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15903: CVE-2025-10230.
+
+o  Andrew Walker <andrew.walker@truenas.com>
+   * BUG 15885: CVE-2025-9640.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.22.4
                           August 21, 2025
                    ==============================
@@ -66,8 +114,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.22.3
                            July 07, 2025
