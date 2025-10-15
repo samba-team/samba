@@ -18,9 +18,13 @@ def build(bld):
     # Link to librt if needed for clock_gettime()
     if bld.CONFIG_SET('HAVE_LIBRT'): extra_libs += ' rt'
 
+    cmocka_cflags = '-DHAVE_CONFIG_H=1'
+    if bld.CONFIG_SET('HAVE_WNO_ERROR_DECLARATION_AFTER_STATEMENT'):
+        cmocka_cflags += ' -Wno-error=declaration-after-statement'
+
     bld.SAMBA_LIBRARY('cmocka',
                       source='cmocka.c',
-                      cflags='-DHAVE_CONFIG_H=1',
+                      cflags_end=cmocka_cflags,
                       deps=extra_libs,
                       allow_warnings=True,
                       private_library=True)
