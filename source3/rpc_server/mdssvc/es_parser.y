@@ -412,7 +412,7 @@ static char *map_fts(const struct es_attr_map *attr,
 		end = ")";
 		break;
 	default:
-		DBG_ERR("Mapping fts [%s] unexpected op [%c]\n", val, op);
+		DBG_DEBUG("Mapping fts [%s] unexpected op [%c]\n", val, op);
 		return NULL;
 	}
 
