@@ -31,6 +31,10 @@
 #include "torture/nbt/proto.h"
 #include "param/param.h"
 
+/* rcode used when you don't want to check the rcode */
+#define WINS_TEST_RCODE_WE_DONT_CARE 255
+
+
 #define CHECK_VALUE(tctx, v, correct) \
 	torture_assert_int_equal(tctx, v, correct, "Incorrect value")
 
@@ -137,7 +141,9 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 					address));
 
 		CHECK_STRING(tctx, io.out.wins_server, address);
-		CHECK_VALUE(tctx, io.out.rcode, 0);
+		if (register_rcode != WINS_TEST_RCODE_WE_DONT_CARE) {
+			CHECK_VALUE(tctx, io.out.rcode, 0);
+		}
 
 		torture_comment(tctx, "register the name correct address\n");
 		name_register.in.name		= *name;
@@ -185,7 +191,9 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 			talloc_asprintf(tctx, "Bad response from %s for name register\n",
 					address));
 
-		CHECK_VALUE(tctx, name_register.out.rcode, 0);
+		if (register_rcode != WINS_TEST_RCODE_WE_DONT_CARE) {
+			CHECK_VALUE(tctx, name_register.out.rcode, 0);
+		}
 		CHECK_STRING(tctx, name_register.out.reply_addr, myaddress);
 	}
 
@@ -203,7 +211,9 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, "Bad response from %s for name register", address));
 	
 	CHECK_STRING(tctx, io.out.wins_server, address);
-	CHECK_VALUE(tctx, io.out.rcode, register_rcode);
+	if (register_rcode != WINS_TEST_RCODE_WE_DONT_CARE) {
+		CHECK_VALUE(tctx, io.out.rcode, register_rcode);
+	}
 
 	if (register_rcode != NBT_RCODE_OK) {
 		return true;
@@ -533,6 +543,124 @@ static bool nbt_test_wins(struct torture_context *tctx)
 }
 
 /*
+ * Test that the WINS server does not call 'wins hook' when the name
+ * contains dodgy characters.
+ */
+static bool nbt_test_wins_bad_names(struct torture_context *tctx)
+{
+	const char *address = NULL;
+	const char *wins_hook_file = NULL;
+	bool ret = true;
+	int err;
+	bool ok;
+	struct nbt_name name = {};
+	size_t i, j;
+	FILE *fh = NULL;
+
+	struct {
+		const char *name;
+		bool should_succeed;
+	} test_cases[] = {
+		{"NORMAL", true},
+		{"|look|", false},
+		{"look&true", false},
+		{"look\\;false", false},
+		{"&ls>foo", false},  /* already fails due to DN syntax */
+		{"has spaces", false},
+		{"hyphen-dot.0", true},
+	};
+
+	wins_hook_file = talloc_asprintf(tctx, "%s/wins_hook_writes_here",
+					 getenv("SELFTEST_TMPDIR"));
+
+	if (!torture_nbt_get_name(tctx, &name, &address)) {
+		return false;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(test_cases); i++) {
+		err =  unlink(wins_hook_file);
+		if (err != 0 && errno != ENOENT) {
+			/* we expect ENOENT, but nothing else */
+			torture_comment(tctx,
+					"unlink %zu of '%s' failed\n",
+					i, wins_hook_file);
+		}
+
+		name.name = test_cases[i].name;
+		name.type = NBT_NAME_CLIENT;
+		ok = nbt_test_wins_name(tctx, address,
+					&name,
+					NBT_NODE_H,
+					true,
+					WINS_TEST_RCODE_WE_DONT_CARE
+			);
+		if (ok == false) {
+			/*
+			 * This happens when the name interferes with
+			 * the DN syntax when it is put in winsdb.
+			 *
+			 * The wins hook will not be reached.
+			 */
+			torture_comment(tctx, "tests for '%s' failed\n",
+					name.name);
+		}
+
+		/*
+		 * poll for the file being created by the wins hook.
+		 */
+		for (j = 0; j < 10; j++) {
+			usleep(200000);
+			fh = fopen(wins_hook_file, "r");
+			if (fh != NULL) {
+				break;
+			}
+		}
+
+		if (fh == NULL) {
+			if (errno == ENOENT) {
+				if (test_cases[i].should_succeed) {
+					torture_comment(
+						tctx,
+						"wins hook for '%s' failed\n",
+						test_cases[i].name);
+					ret = false;
+				}
+			} else {
+				torture_comment(
+					tctx,
+					"wins hook for '%s' unexpectedly failed with %d\n",
+					test_cases[i].name,
+					errno);
+				ret = false;
+			}
+		} else {
+			char readback[17] = {0};
+			size_t n = fread(readback, 1, 16, fh);
+			torture_comment(tctx,
+					"wins hook wrote '%s' read '%.*s'\n",
+					test_cases[i].name,
+					(int)n, readback);
+
+			if (! test_cases[i].should_succeed) {
+				torture_comment(tctx,
+						"wins hook for '%s' should fail\n",
+						test_cases[i].name);
+				ret = false;
+			}
+			fclose(fh);
+		}
+	}
+	err = unlink(wins_hook_file);
+	if (err != 0 && errno != ENOENT) {
+		torture_comment(tctx, "final unlink of '%s' failed\n",
+				wins_hook_file);
+	}
+	torture_assert(tctx, ret, "wins hook failure\n");
+	return ret;
+}
+
+
+/*
   test WINS operations
 */
 struct torture_suite *torture_nbt_wins(TALLOC_CTX *mem_ctx)
@@ -540,6 +668,8 @@ struct torture_suite *torture_nbt_wins(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "wins");
 
 	torture_suite_add_simple_test(suite, "wins", nbt_test_wins);
+	torture_suite_add_simple_test(suite, "wins_bad_names",
+				      nbt_test_wins_bad_names);
 
 	return suite;
 }
