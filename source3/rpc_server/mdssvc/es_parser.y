@@ -219,6 +219,13 @@ FUNC_INRANGE OBRACE attribute COMMA WORD COMMA WORD CBRACE {
 	} else {
 		$$ = map_expr($3, '~', $5, $7);
 	}
+}
+| FUNC_INRANGE OBRACE attribute COMMA isodate COMMA isodate CBRACE {
+	if ($3 == NULL) {
+		$$ = NULL;
+	} else {
+		$$ = map_expr($3, '~', $5, $7);
+	}
 };
 
 attribute:
