@@ -613,7 +613,15 @@ static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
 		 */
 		ctdb_vnn_unassign_iface(ctdb, state->vnn);
 		state->vnn->iface = state->old;
-		state->vnn->iface->references++;
+		/*
+		 * state->old (above) can be NULL if the IP wasn't
+		 * recorded as held by this node but the system thinks
+		 * the IP was assigned.  In that case, a move could
+		 * still be desirable..
+		 */
+		if (state->vnn->iface != NULL) {
+			state->vnn->iface->references++;
+		}
 
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 		talloc_free(state);
