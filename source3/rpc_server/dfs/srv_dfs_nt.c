@@ -97,9 +97,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 				   remote_address,
 				   local_address,
 				   jn, &consumedcnt, &self_ref);
-	if(!NT_STATUS_IS_OK(status) &&
-	   !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND))
-	{
+	if(!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
 
