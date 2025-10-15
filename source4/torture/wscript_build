@@ -301,7 +301,7 @@ bld.SAMBA_MODULE('TORTURE_NTP',
 	)
 
 bld.SAMBA_MODULE('TORTURE_VFS',
-	source='vfs/vfs.c vfs/fruit.c vfs/acl_xattr.c',
+	source='vfs/vfs.c vfs/fruit.c vfs/acl_xattr.c vfs/streams_xattr.c',
 	subsystem='smbtorture',
 	deps='LIBCLI_SMB TORTURE_UTIL smbclient-raw TORTURE_RAW',
 	internal_module=True,

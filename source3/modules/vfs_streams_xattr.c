@@ -959,15 +959,18 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         if ((offset + n) > ea.value.length-1) {
 		uint8_t *tmp;
+		size_t new_sz = offset + n + 1;
 
 		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
-					   offset + n + 1);
+					   new_sz);
 
 		if (tmp == NULL) {
 			TALLOC_FREE(ea.value.data);
                         errno = ENOMEM;
                         return -1;
                 }
+
+		memset(tmp + ea.value.length, 0, new_sz - ea.value.length);
 		ea.value.data = tmp;
 		ea.value.length = offset + n + 1;
 		ea.value.data[offset+n] = 0;

@@ -43,8 +43,17 @@ void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec,
 	int child;
 	char *cmd = NULL;
 	TALLOC_CTX *tmp_mem = NULL;
+	const char *p = NULL;
 
 	if (!wins_hook_script || !wins_hook_script[0]) return;
+
+	for (p = rec->name->name; *p; p++) {
+		if (!(isalnum((int)*p) || strchr_m("._-", *p))) {
+			DBG_ERR("not calling wins hook for invalid name %s\n",
+				rec->name->name);
+			return;
+		}
+	}
 
 	tmp_mem = talloc_new(h);
 	if (!tmp_mem) goto failed;

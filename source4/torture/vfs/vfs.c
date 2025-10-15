@@ -115,6 +115,7 @@ NTSTATUS torture_vfs_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_vfs_fruit_timemachine(suite));
 	torture_suite_add_suite(suite, torture_vfs_fruit_conversion(suite));
 	torture_suite_add_suite(suite, torture_vfs_fruit_unfruit(suite));
+	torture_suite_add_suite(suite, torture_vfs_streams_xattr(suite));
 	torture_suite_add_1smb2_test(suite, "fruit_validate_afpinfo", test_fruit_validate_afpinfo);
 
 	torture_register_suite(ctx, suite);
