@@ -42,7 +42,6 @@ class LibsmbTests(samba.tests.TestCase):
         server_conf_dir = os.path.dirname(server_conf)
         self.global_inject = os.path.join(server_conf_dir, "global_inject.conf")
 
-        self.server = samba.tests.env_get_var_value("SERVER")
         self.server_ip = samba.tests.env_get_var_value("SERVER_IP")
 
     def clean_file(self, conn, filename):
