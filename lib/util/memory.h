@@ -40,7 +40,7 @@
 #define BURN_FREE_STR(x) do { \
 				if ((x) != NULL) { \
 					size_t s = strlen(x); \
-					memset_s((x), s, 0, s); \
+					memset_explicit((x), 0, s); \
 					free(x); (x) = NULL; \
 				} \
 			} while(0)
@@ -53,7 +53,7 @@
  **/
 #define BURN_FREE(x, s) do { \
 				if ((x) != NULL) { \
-					memset_s((x), (s), 0, (s)); \
+					memset_explicit((x), 0, (s)); \
 					free(x); (x) = NULL; \
 				} \
 			} while(0)
@@ -78,7 +78,7 @@
  * Zero a structure.
  */
 #ifndef ZERO_STRUCT
-#define ZERO_STRUCT(x) memset_s((char *)&(x), sizeof(x), 0, sizeof(x))
+#define ZERO_STRUCT(x) memset_explicit((char *)&(x), 0, sizeof(x))
 #endif
 
 /**
@@ -87,7 +87,7 @@
 #ifndef ZERO_STRUCTP
 #define ZERO_STRUCTP(x) do { \
 	if ((x) != NULL) { \
-		memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x))); \
+		memset_explicit((char *)(x), 0, sizeof(*(x))); \
 	} \
 } while(0)
 #endif
@@ -96,7 +96,7 @@
  * Zero a structure given a pointer to the structure - no zero check.
  */
 #ifndef ZERO_STRUCTPN
-#define ZERO_STRUCTPN(x) memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x)))
+#define ZERO_STRUCTPN(x) memset_explicit((char *)(x), 0, sizeof(*(x)))
 #endif
 
 /**
@@ -104,13 +104,15 @@
  * pointer.
  */
 #ifndef ZERO_ARRAY
-#define ZERO_ARRAY(x) memset_s((char *)(x), sizeof(x), 0, sizeof(x))
+#define ZERO_ARRAY(x) memset_explicit((char *)(x), 0, sizeof(x))
 #endif
 
 /**
  * Zero a given len of an array
  */
-#define ZERO_ARRAY_LEN(x, l) memset_s((char *)(x), (l), 0, (l))
+#ifndef ZERO_ARRAY_LEN
+#define ZERO_ARRAY_LEN(x, l) memset_explicit((char *)(x), 0, (l))
+#endif
 
 /**
  * Work out how many elements there are in a static array

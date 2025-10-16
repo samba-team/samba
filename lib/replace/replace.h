@@ -811,50 +811,50 @@ typedef unsigned long long ptrdiff_t ;
 /**
  * Zero a structure.
  */
-#define ZERO_STRUCT(x) memset_s((char *)&(x), sizeof(x), 0, sizeof(x))
+#define ZERO_STRUCT(x) memset_explicit((char *)&(x), 0, sizeof(x))
 
 /**
  * Zero a structure given a pointer to the structure.
  */
 #define ZERO_STRUCTP(x) do { \
 	if ((x) != NULL) { \
-		memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x))); \
+		memset_explicit((char *)(x), 0, sizeof(*(x))); \
 	} \
 } while(0)
 
 /**
  * Zero a structure given a pointer to the structure - no zero check
  */
-#define ZERO_STRUCTPN(x) memset_s((char *)(x), sizeof(*(x)), 0, sizeof(*(x)))
+#define ZERO_STRUCTPN(x) memset_explicit((char *)(x), 0, sizeof(*(x)))
 
 /**
  * Zero an array - note that sizeof(array) must work - ie. it must not be a
  * pointer
  */
-#define ZERO_ARRAY(x) memset_s((char *)(x), sizeof(x), 0, sizeof(x))
+#define ZERO_ARRAY(x) memset_explicit((char *)(x), 0, sizeof(x))
 
 /**
  * Zero a given len of an array
  */
-#define ZERO_ARRAY_LEN(x, l) memset_s((char *)(x), (l), 0, (l))
+#define ZERO_ARRAY_LEN(x, l) memset_explicit((char *)(x), 0, (l))
 
 /**
  * Explicitly zero data from memory. This is guaranteed to be not optimized
  * away.
  */
-#define BURN_DATA(x) memset_s((char *)&(x), sizeof(x), 0, sizeof(x))
+#define BURN_DATA(x) memset_explicit((char *)&(x), 0, sizeof(x))
 
 /**
  * Explicitly zero data from memory. This is guaranteed to be not optimized
  * away.
  */
-#define BURN_DATA_SIZE(x, s) memset_s((char *)&(x), (s), 0, (s))
+#define BURN_DATA_SIZE(x, s) memset_explicit((char *)&(x), 0, (s))
 
 /**
  * Explicitly zero data from memory. This is guaranteed to be not optimized
  * away.
  */
-#define BURN_PTR_SIZE(x, s) memset_s((x), (s), 0, (s))
+#define BURN_PTR_SIZE(x, s) memset_explicit((x), 0, (s))
 
 /**
  * Explicitly zero data in string. This is guaranteed to be not optimized
@@ -863,7 +863,7 @@ typedef unsigned long long ptrdiff_t ;
 #define BURN_STR(x)	do { \
 				if ((x) != NULL) { \
 					size_t s = strlen(x); \
-					memset_s((x), s, 0, s); \
+					memset_explicit((x), 0, s); \
 				} \
 			} while(0)
 

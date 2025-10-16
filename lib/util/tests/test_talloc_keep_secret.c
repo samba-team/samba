@@ -8,12 +8,11 @@
 #include <talloc.h>
 #include "lib/util/talloc_keep_secret.h"
 
-int rep_memset_s(void *dest, size_t destsz, int ch, size_t count);
+int rep_memset_explicit(void *dest, int ch, size_t count);
 
-int rep_memset_s(void *dest, size_t destsz, int ch, size_t count)
+int rep_memset_explicit(void *dest, int ch, size_t count)
 {
 	check_expected_ptr(dest);
-	check_expected(destsz);
 	check_expected(ch);
 	check_expected(count);
 
@@ -44,10 +43,9 @@ static void test_talloc_keep_secret(void ** state)
 	ptr1_size = talloc_get_size(ptr1);
 	assert_int_equal(ptr1_size, strlen(ptr1) + 1);
 
-	expect_string(rep_memset_s, dest, "secret");
-	expect_value(rep_memset_s, destsz, strlen(ptr1) + 1);
-	expect_value(rep_memset_s, ch, (int)'\0');
-	expect_value(rep_memset_s, count, strlen(ptr1) + 1);
+	expect_string(rep_memset_explicit, dest, "secret");
+	expect_value(rep_memset_explicit, ch, (int)'\0');
+	expect_value(rep_memset_explicit, count, strlen(ptr1) + 1);
 
 	talloc_free(ptr1);
 
@@ -73,10 +71,9 @@ static void test_talloc_keep_secret_validate_memset(void **state)
 	assert_non_null(password);
 	talloc_keep_secret(password);
 
-	expect_string(rep_memset_s, dest, "secret");
-	expect_value(rep_memset_s, destsz, strlen(password) + 1);
-	expect_value(rep_memset_s, ch, (int)'\0');
-	expect_value(rep_memset_s, count, strlen(password) + 1);
+	expect_string(rep_memset_explicit, dest, "secret");
+	expect_value(rep_memset_explicit, ch, (int)'\0');
+	expect_value(rep_memset_explicit, count, strlen(password) + 1);
 
 	talloc_free(mem_ctx);
 }

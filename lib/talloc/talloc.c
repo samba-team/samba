@@ -2837,7 +2837,7 @@ _PUBLIC_ void *_talloc_realloc_array_zero(const void *ctx,
 
 	if (newsize > existing) {
 		size_t to_zero = newsize - existing;
-		memset_s(((char *)newptr) + existing, to_zero, 0, to_zero);
+		memset_explicit(((char *)newptr) + existing, 0, to_zero);
 	}
 
 	return newptr;
