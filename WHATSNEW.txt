@@ -1,4 +1,67 @@
                    ==============================
+                   Release Notes for Samba 4.22.6
+                          October 16, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.22 release series.
+
+
+Changes since 4.22.5
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15843: macOS Finder client DFS broken on 4.22.0.
+   * BUG 15926: Samba 4.22 breaks Time Machine
+   * BUG 15927: Spotlight search restriction for shares incomplete and default
+     search searches in too many attributes
+   * BUG 15931: rpcd_mdssvc may crash because name mangling is not initialized
+   * BUG 15933: Only increment lease epoch if a lease was granted
+
+o Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15905: samba-4.21 fails to join AD when multiple DCs are returned
+
+o MikeLiu <mikeliu@qnap.com>
+   * BUG 15900: 'net ads group' failed to list domain groups.
+
+o Anoop C S <anoopcs@samba.org>
+   * BUG 15919: vfs_ceph_new should not use ceph_ll_nonblocking_readv_writev for
+     fsync_send.
+
+o Shachar Sharon <ssharon@redhat.com>
+   * BUG 15919: vfs_ceph_new should not use ceph_ll_nonblocking_readv_writev for
+     fsync_send.
+
+o Andreas Schneider <asn@samba.org>
+   * BUG 15905: samba-4.21 fails to join AD when multiple DCs are returned
+
+o Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15921: CTDB_SOCKET can be used even when CTDB_TEST_MODE is not set.
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.22.5
                           October 15, 2025
                    ==============================
@@ -44,8 +107,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.22.4
                           August 21, 2025
