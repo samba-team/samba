@@ -630,6 +630,10 @@ tickle_tcp_connections()
 	_conns=$(get_tcp_connections_for_ip "$_ip" |
 		awk '{ print $1, $2 ; print $2, $1 }')
 
+	if [ -z "$_conns" ]; then
+		return
+	fi
+
 	echo "$_conns" | awk '{ print "Tickle TCP connection", $1, $2 }'
 	echo "$_conns" | ctdb tickle
 }
