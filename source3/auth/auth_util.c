@@ -1883,12 +1883,9 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 	char *real_username = NULL;
 	struct passwd *passwd;
 
-	lower_username = talloc_strdup(mem_ctx, username);
+	lower_username = strlower_talloc(mem_ctx, username);
 	if (!lower_username) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	if (!strlower_m( lower_username )) {
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	orig_dom_user = talloc_asprintf(mem_ctx,
