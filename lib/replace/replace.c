@@ -1131,6 +1131,19 @@ void rep_setproctitle_init(int argc, char *argv[], char *envp[])
 }
 #endif
 
+#ifndef HAVE_MEMSET_EXPLICIT
+void *rep_memset_explicit(void *block, int c, size_t size)
+{
+	void *ptr = memset(block, c, size);
+#ifdef HAVE_GCC_VOLATILE_MEMORY_PROTECTION
+	/* See http://llvm.org/bugs/show_bug.cgi?id=15495 */
+	__asm__ volatile("" : : "g"(block) : "memory");
+#endif /* HAVE_GCC_VOLATILE_MEMORY_PROTECTION */
+
+	return ptr;
+}
+#endif
+
 #ifndef HAVE_MEMSET_S
 # ifndef RSIZE_MAX
 #  define RSIZE_MAX (SIZE_MAX >> 1)

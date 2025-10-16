@@ -990,6 +990,11 @@ void rep_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 void rep_setproctitle_init(int argc, char *argv[], char *envp[]);
 #endif
 
+#ifndef HAVE_MEMSET_EXPLICIT
+#define memset_explicit rep_memset_explicit
+void *rep_memset_explicit(void *block, int c, size_t size);
+#endif
+
 #ifndef HAVE_MEMSET_S
 #define memset_s rep_memset_s
 int rep_memset_s(void *dest, size_t destsz, int ch, size_t count);

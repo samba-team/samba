@@ -890,7 +890,7 @@ REPLACEMENT_FUNCTIONS = {
                   'utime', 'utimes', 'dup2', 'chown', 'link', 'readlink',
                   'symlink', 'lchown', 'realpath', 'memmem', 'vdprintf',
                   'dprintf', 'get_current_dir_name', 'copy_file_range',
-                  'strerror_r', 'clock_gettime', 'memset_s'],
+                  'strerror_r', 'clock_gettime', 'memset_explicit', 'memset_s'],
     'timegm.c': ['timegm'],
     # Note: C99_VSNPRINTF is not a function, but a special condition
     # for replacement
