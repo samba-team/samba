@@ -1,7 +1,7 @@
-This subsystem ensures that we can always use a certain core set of 
-functions and types, that are either provided by the OS or by replacement 
-functions / definitions in this subsystem. The aim is to try to stick 
-to POSIX functions in here as much as possible. Convenience functions 
+This subsystem ensures that we can always use a certain core set of
+functions and types, that are either provided by the OS or by replacement
+functions / definitions in this subsystem. The aim is to try to stick
+to POSIX functions in here as much as possible. Convenience functions
 that are available on no platform at all belong in other subsystems
 (such as LIBUTIL).
 
