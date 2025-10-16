@@ -80,6 +80,11 @@ get_iface_ip_maskbits()
 				"$ip" "$maskbits" "$_maskbits_in"
 		fi
 	else
+		if [ "$_iface_in" = "__none__" ]; then
+			echo "WARNING: Unable to determine interface for IP ${ip}"
+			iface="$_iface_in"
+			return
+		fi
 		die "ERROR: Unable to determine interface for IP ${ip}"
 	fi
 }
@@ -216,10 +221,14 @@ updateip)
 		exit 0
 	fi
 
-	ip_block "$ip" "$oiface"
-
-	delete_ip_from_iface "$oiface" "$ip" "$maskbits" 2>/dev/null
-	delete_ip_from_iface "$niface" "$ip" "$maskbits" 2>/dev/null
+	# Behave more like takeip when the IP is not assigned.  No
+	# need for a similar condition around ip_unblock()s because
+	# they will silently fail.
+	if [ "$oiface" != "__none__" ]; then
+		ip_block "$ip" "$oiface"
+		delete_ip_from_iface "$oiface" "$ip" "$maskbits" >/dev/null 2>&1
+	fi
+	delete_ip_from_iface "$niface" "$ip" "$maskbits" >/dev/null 2>&1
 
 	add_ip_to_iface "$niface" "$ip" "$maskbits" || {
 		ip_unblock "$ip" "$oiface"
