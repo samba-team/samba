@@ -375,6 +375,11 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/getuserinfo.c
     '''
 
+    if not bld.CONFIG_SET('HAVE_MEMSET_S'):
+        ROKEN_SOURCE += '''
+            lib/roken/memset_s.c
+        '''
+
     HEIMDAL_LIBRARY('roken',
         ROKEN_SOURCE,
         includes='../heimdal/lib/roken ../heimdal/include ../heimdal_build/include',

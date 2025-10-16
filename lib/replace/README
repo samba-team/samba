@@ -73,7 +73,6 @@ realpath
 poll
 setproctitle
 memset_explicit
-memset_s
 
 Types:
 bool
