@@ -211,7 +211,6 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_P(type) (type *)smb_xmalloc_array(sizeof(type),1)
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
-#define TALLOC_SIZE(ctx, size) talloc_named_const(ctx, size, __location__)
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
 #define talloc_destroy(ctx) talloc_free(ctx)
 #ifndef TALLOC_FREE

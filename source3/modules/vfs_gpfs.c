@@ -748,7 +748,7 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 	gacl_len = offsetof(gpfs_acl_t, ace_v4) + sizeof(unsigned int)
 		+ smb_get_naces(smbacl) * sizeof(gpfs_ace_v4_t);
 
-	gacl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, gacl_len);
+	gacl = (struct gpfs_acl *)talloc_size(mem_ctx, gacl_len);
 	if (gacl == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		errno = ENOMEM;
