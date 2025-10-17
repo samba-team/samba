@@ -104,7 +104,7 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 					req->session,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
-		conn_free(conn);
+		TALLOC_FREE(conn);
 		TALLOC_FREE(tcon);
 		return NULL;
 	}

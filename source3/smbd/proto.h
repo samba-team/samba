@@ -157,7 +157,6 @@ bool conn_using_smb2(struct smbd_server_connection *sconn);
 connection_struct *conn_new(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint64_t vuid);
-void conn_free(connection_struct *conn);
 void conn_setup_case_options(connection_struct *conn);
 void conn_force_tdis(
 	struct smbd_server_connection *sconn,

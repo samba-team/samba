@@ -131,10 +131,6 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	DLIST_ADD(sconn->connections, conn);
 	sconn->num_connections++;
 
-	/*
-	 * Catches the case where someone forgets to call
-	 * conn_free().
-	 */
 	talloc_set_destructor(conn, conn_struct_destructor);
 	return conn;
 
@@ -239,15 +235,6 @@ static void conn_free_internal(connection_struct *conn)
 	}
 
 	ZERO_STRUCTP(conn);
-}
-
-/****************************************************************************
- Free a conn structure.
-****************************************************************************/
-
-void conn_free(connection_struct *conn)
-{
-	TALLOC_FREE(conn);
 }
 
 /*

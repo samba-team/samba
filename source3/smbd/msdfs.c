@@ -272,7 +272,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 				    "denied due to security "
 				    "descriptor.\n",
 				    servicename);
-			conn_free(conn);
+			TALLOC_FREE(conn);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		conn->read_only = true;
@@ -281,21 +281,21 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	if (!smbd_vfs_init(conn)) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
 		DBG_ERR("smbd_vfs_init failed.\n");
-		conn_free(conn);
+		TALLOC_FREE(conn);
 		return status;
 	}
 
 	/* this must be the first filesystem operation that we do */
 	if (SMB_VFS_CONNECT(conn, servicename, vfs_user) < 0) {
 		DBG_ERR("VFS connect failed!\n");
-		conn_free(conn);
+		TALLOC_FREE(conn);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ok = canonicalize_connect_path(conn);
 	if (!ok) {
 		DBG_ERR("Failed to canonicalize sharepath\n");
-		conn_free(conn);
+		TALLOC_FREE(conn);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -313,7 +313,7 @@ static int conn_struct_tos_destructor(struct conn_struct_tos *c)
 		TALLOC_FREE(c->oldcwd_fname);
 	}
 	SMB_VFS_DISCONNECT(c->conn);
-	conn_free(c->conn);
+	TALLOC_FREE(c->conn);
 	return 0;
 }
 

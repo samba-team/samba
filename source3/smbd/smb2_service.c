@@ -899,7 +899,7 @@ connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 					req->session,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
-		conn_free(conn);
+		TALLOC_FREE(conn);
 		return NULL;
 	}
 	return conn;
@@ -970,5 +970,5 @@ void close_cnum(connection_struct *conn,
 		TALLOC_FREE(cmd);
 	}
 
-	conn_free(conn);
+	TALLOC_FREE(conn);
 }
