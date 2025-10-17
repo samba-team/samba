@@ -2263,7 +2263,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	data_in = (uint8_t *) TALLOC(tmp_ctx, data_in_size);
+	data_in = talloc_array(tmp_ctx, uint8_t, data_in_size);
 	if (data_in == NULL) {
 		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
@@ -3298,7 +3298,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	data_in = (uint8_t *) TALLOC(tmp_ctx, data_in_size);
+	data_in = talloc_array(tmp_ctx, uint8_t, data_in_size);
 	if (data_in == NULL) {
 		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;

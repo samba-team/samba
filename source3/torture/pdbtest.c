@@ -636,9 +636,11 @@ int main(int argc, const char **argv)
 
 	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &history);
 	if (history * PW_HISTORY_ENTRY_LEN < NT_HASH_LEN) {
-		buf = (uint8_t *)TALLOC(ctx, NT_HASH_LEN);
+		buf = talloc_array(ctx, uint8_t, NT_HASH_LEN);
 	} else {
-		buf = (uint8_t *)TALLOC(ctx, history * PW_HISTORY_ENTRY_LEN);
+		buf = talloc_array(ctx,
+				   uint8_t,
+				   history * PW_HISTORY_ENTRY_LEN);
 	}
 
 	/* Generate some random hashes */

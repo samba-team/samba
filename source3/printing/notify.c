@@ -156,7 +156,7 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 	}
 	offset += 4; /* For count. */
 
-	buf = (char *)TALLOC(send_ctx, offset);
+	buf = talloc_array(send_ctx, char, offset);
 	if (!buf) {
 		DEBUG(0,("print_notify_send_messages: Out of memory\n"));
 		talloc_free_children(send_ctx);

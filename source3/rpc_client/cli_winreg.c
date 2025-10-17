@@ -797,7 +797,7 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 		data_size = max_valbufsize;
 		data = NULL;
 		if (data_size) {
-			data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+			data = talloc_array(tmp_ctx, uint8_t, data_size);
 		}
 		length = 0;
 

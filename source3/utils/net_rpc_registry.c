@@ -356,7 +356,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		name_buf.size = max_valnamelen + 2;
 
 		data_size = max_valbufsize;
-		data = (uint8_t *)TALLOC(mem_ctx, data_size);
+		data = talloc_array(mem_ctx, uint8_t, data_size);
 		value_length = 0;
 
 		status = dcerpc_winreg_EnumValue(b, mem_ctx, key_hnd,
@@ -479,7 +479,7 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 		name_buf.size = max_valnamelen + 2;
 
 		data_size = max_valbufsize;
-		data = (uint8_t *)TALLOC(mem_ctx, data_size);
+		data = talloc_array(mem_ctx, uint8_t, data_size);
 		value_length = 0;
 
 		status = dcerpc_winreg_EnumValue(b, mem_ctx, key_hnd,
