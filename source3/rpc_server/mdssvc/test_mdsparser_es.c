@@ -155,6 +155,9 @@ static struct {
 	}, {
 		"InRange(kMDItemFSSize,1,2)",
 		"file.filesize:[1 TO 2]"
+	}, {
+		"InRange(kMDItemContentCreationDate,$time.iso(2024-12-31T23:00:00Z),$time.iso(2025-12-31T23:00:00Z))",
+		"file.created:[2024\\\\-12\\\\-31T23\\\\:00\\\\:00Z TO 2025\\\\-12\\\\-31T23\\\\:00\\\\:00Z]"
 	}
 };
 
