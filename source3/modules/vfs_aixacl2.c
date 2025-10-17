@@ -36,18 +36,18 @@ typedef union aixjfs2_acl_t {
 static int32_t aixacl2_getlen(AIXJFS2_ACL_T *acl, acl_type_t *type)
 {
 	int32_t len;
- 
+
 		if(type->u64 == ACL_NFS4) {
 			len = acl->jfs2_acl[0].aclLength;
-		}	
+		}
 		else {
 			if(type->u64 == ACL_AIXC) {
 				len = acl->aixc_acl[0].acl_len;
 			} else {
 				DEBUG(0,("aixacl2_getlen:unknown type:%d\n",type->u64));
                 		return False;
-			}	
-		}		
+			}
+		}
 		DEBUG(10,("aixacl2_getlen:%d\n",len));
 	return len;
 }
@@ -97,7 +97,7 @@ static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name,
 	struct SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
-	
+
 	AIXJFS2_ACL_T *pacl = NULL;
 	nfs4_acl_int_t *jfs2_acl = NULL;
 	nfs4_ace_int_t *jfs2_ace = NULL;
@@ -390,7 +390,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struc
 		result = set_nt_acl(fsp, security_info_sent, psd);
 	} else
 		result = map_nt_error_from_unix(errno); /* query failed */
-	
+
 	return result;
 }
 
