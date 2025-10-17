@@ -211,10 +211,6 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_P(type) (type *)smb_xmalloc_array(sizeof(type),1)
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
-#ifndef TALLOC_FREE
-#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
-#endif
-
 /* only define PARANOID_MALLOC_CHECKER with --enable-developer */
 
 #if defined(DEVELOPER)
