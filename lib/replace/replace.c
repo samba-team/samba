@@ -37,6 +37,10 @@
 #include <sys/syscall.h>
 #endif
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #ifdef _WIN32
 #define mkdir(d,m) _mkdir(d)
 #endif
@@ -944,8 +948,183 @@ int rep_usleep(useconds_t sec)
 #ifndef HAVE_SETPROCTITLE
 void rep_setproctitle(const char *fmt, ...)
 {
+#if defined(HAVE_PRCTL) && defined(PR_SET_MM_MAP) && defined(__NR_brk)
+	/*
+	 * Implementation based on setproctitle from lcx under LGPL-2.1+
+	 * https://github.com/lxc/lxc/
+	 *
+	 * Using PR_SET_MM_MAP requires CAP_SYS_RESOURCE.
+	 */
+	static char *proctitle = NULL;
+	char *tmp_proctitle = NULL;
+	char buf[2048] = {0};
+	char title[2048] = {0};
+	va_list ap;
+	char *ptr = NULL;
+	FILE *f = NULL;
+	size_t title_len;
+	int ret = 0;
+	struct prctl_mm_map prctl_map = {
+		.exe_fd = -1,
+	};
+	long brk_val = 0;
+	/* See `man proc_pid_stat.5` */
+	unsigned long start_code = 0;            // 26
+	unsigned long end_code = 0;              // 27
+	unsigned long start_stack = 0;           // 28
+
+	unsigned long start_data = 0;            // 45
+	unsigned long end_data = 0;              // 46
+	unsigned long start_brk = 0;             // 47
+	unsigned long arg_start = 0;             // 48
+	unsigned long arg_end = 0;               // 49
+	unsigned long env_start = 0;             // 50
+	unsigned long env_end = 0;               // 51
+
+	f = fopen("/proc/self/stat", "r");
+	if (f == NULL) {
+		return;
+	}
+
+	ptr = fgets(buf, sizeof(buf), f);
+	fclose(f);
+	if (ptr == NULL) {
+		return;
+	}
+
+	/*
+	 * Find the last ')' to skip the comm field which can contain spaces and
+	 * maybe ')'.
+	 */
+	ptr = strrchr(buf, ')');
+	if (ptr == NULL || ptr[1] == '\0') {
+		return;
+	}
+	ptr += 2; // Skip ') '
+
+	/* See `man proc_pid_stat.5` */
+	ret = sscanf(
+		ptr,
+		"%*c "        // 3 (state)
+		"%*d "        // 4 (ppid)
+		"%*d "        // 5 (pgrp)
+		"%*d "        // 6 (session)
+		"%*d "        // 7 (tty_nr)
+		"%*d "        // 8 (tpgid)
+		"%*u "        // 9 (flags)
+		"%*u "        // 10 (minflt)
+		"%*u "        // 11 (cminflt)
+		"%*u "        // 12 (majflt)
+		"%*u "        // 13 (cmajflt)
+		"%*u "        // 14 (utime)
+		"%*u "        // 15 (stime)
+		"%*d "        // 16 (cutime)
+		"%*d "        // 17 (cstime)
+		"%*d "        // 18 (priority)
+		"%*d "        // 19 (nice)
+		"%*d "        // 20 (num_threads)
+		"%*d "        // 21 (itrealvalue)
+		"%*u "        // 22 (starttime)
+		"%*u "        // 23 (vsize)
+		"%*d "        // 24 (rss)
+		"%*u "        // 25 (rsslim)
+		"%lu "        // 26 (start_code)
+		"%lu "        // 27 (end_code)
+		"%lu "        // 28 (start_stack)
+		"%*u "        // 29 (kstkesp)
+		"%*u "        // 30 (kstkeip)
+		"%*u "        // 31 (signal)
+		"%*u "        // 32 (blocked)
+		"%*u "        // 33 (sigignore)
+		"%*u "        // 34 (sigcatch)
+		"%*u "        // 35 (wchan)
+		"%*u "        // 36 (nswap)
+		"%*u "        // 37 (cnswap)
+		"%*d "        // 38 (exit_signal)
+		"%*d "        // 39 (processor)
+		"%*d "        // 40 (rt_priority)
+		"%*u "        // 41 (policy)
+		"%*u "        // 42 (delayacct_blkio_ticks)
+		"%*u "        // 43 (guest_time)
+		"%*d "        // 44 (cguest_time)
+		"%lu "        // 45 (start_data)
+		"%lu "        // 46 (end_data)
+		"%lu "        // 47 (start_brk)
+		"%lu "        // 48 (arg_start)
+		"%lu "        // 49 (arg_end)
+		"%lu "        // 50 (env_start)
+		"%lu",        // 51 (env_end)
+		&start_code,  // 26
+		&end_code,    // 27
+		&start_stack, // 28
+		&start_data,  // 45
+		&end_data,    // 46
+		&start_brk,   // 47
+		&arg_start,   // 48
+		&arg_end,     // 49
+		&env_start,   // 50
+		&env_end      // 51
+	);
+	if (ret != 10) {
+		return;
+	}
+
+	va_start(ap, fmt);
+	ret = vsnprintf(title, sizeof(title), fmt, ap);
+	va_end(ap);
+	if (ret <= 0) {
+		return;
+	}
+	/*
+	 * Include the null byte here, because in the calculations below
+	 * we want to have room for it.
+	 */
+	title_len = ret + 1;
+
+	/* This will leak memory */
+	tmp_proctitle = realloc(proctitle, title_len);
+	if (tmp_proctitle == NULL) {
+		return;
+	}
+	proctitle = tmp_proctitle;
+
+	arg_start = (uint64_t)proctitle;
+	arg_end = arg_start + title_len;
+
+	brk_val = syscall(__NR_brk, 0);
+	if (brk_val < 0) {
+		return;
+	}
+
+	prctl_map = (struct prctl_mm_map) {
+		.start_code = start_code,
+		.end_code = end_code,
+		.start_stack = start_stack,
+		.start_data = start_data,
+		.end_data = end_data,
+		.start_brk = start_brk,
+		.brk = brk_val,
+		.arg_start = arg_start,
+		.arg_end = arg_end,
+		.env_start = env_start,
+		.env_end = env_end,
+		.auxv = NULL,
+		.auxv_size = 0,
+		.exe_fd = -1,
+	};
+
+	ret = prctl(PR_SET_MM,
+		    PR_SET_MM_MAP,
+		    (long)&prctl_map,
+		    sizeof(prctl_map),
+		    0);
+	if (ret == 0) {
+		strlcpy((char *)arg_start, title, title_len);
+	}
+#endif /* HAVE_PRCTL */
 }
 #endif
+
 #ifndef HAVE_SETPROCTITLE_INIT
 void rep_setproctitle_init(int argc, char *argv[], char *envp[])
 {
