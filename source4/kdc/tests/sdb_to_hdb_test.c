@@ -38,7 +38,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "../../../third_party/cmocka/cmocka.h"
+#include <cmocka.h>
 
 #include "../sdb_to_hdb.c"
 #include "hdb_asn1.h"

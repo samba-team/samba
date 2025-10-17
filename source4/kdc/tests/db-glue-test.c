@@ -38,7 +38,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-#include "../../../third_party/cmocka/cmocka.h"
+#include <cmocka.h>
 
 #include "../db-glue.c"
 #include "krb5-protos.h"
