@@ -112,7 +112,7 @@ again:
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
-		buf = (uint8_t *)TALLOC_REALLOC(send_ctx, buf, len);
+		buf = talloc_realloc(send_ctx, buf, uint8_t, len);
 		if (!buf)
 			return False;
 		buflen = len;

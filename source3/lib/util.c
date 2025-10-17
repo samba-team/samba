@@ -549,8 +549,9 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		*array = TALLOC_REALLOC(mem_ctx, *array,
-					element_size * (*array_size));
+		*array = talloc_realloc_size(mem_ctx,
+					     *array,
+					     element_size * (*array_size));
 
 		if (*array == NULL) {
 			goto error;
