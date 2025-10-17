@@ -2553,7 +2553,8 @@ void reply_nttrans(struct smb_request *req)
 			goto bad_param;
 		}
 
-		state->setup = (uint16_t *)TALLOC(state, state->setup_count);
+		state->setup = (uint16_t *)talloc_size(state,
+						       state->setup_count);
 		if (state->setup == NULL) {
 			DEBUG(0,("reply_nttrans : Out of memory\n"));
 			SAFE_FREE(state->data);
