@@ -90,12 +90,6 @@ bool conn_using_smb2(struct smbd_server_connection *sconn)
 	return (proto >= PROTOCOL_SMB2_02);
 }
 
-/****************************************************************************
- Find first available connection slot, starting from a random position.
- The randomisation stops problems with the server dying and clients
- thinking the server is still available.
-****************************************************************************/
-
 connection_struct *conn_new(struct smbd_server_connection *sconn)
 {
 	connection_struct *conn = NULL;
