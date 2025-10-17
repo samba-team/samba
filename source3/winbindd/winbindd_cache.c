@@ -4131,7 +4131,7 @@ static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 							  v_state);
 
 			SAFE_FREE(keystr);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return ret;
 		}
 	}

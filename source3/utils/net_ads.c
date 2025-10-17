@@ -2420,7 +2420,7 @@ static int net_ads_printer_publish(struct net_context *c,
 
 	ret = 0;
 out:
-	talloc_destroy(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 
 	return ret;
 }

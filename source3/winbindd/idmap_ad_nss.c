@@ -264,9 +264,7 @@ static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
 	nt_status = NT_STATUS_OK;
 
 done:
-	if (filter) {
-		talloc_destroy(filter);
-	}
+	TALLOC_FREE(filter);
 	if (msg) {
 		ads_msgfree(ctx->ads, msg);
 	}

@@ -89,7 +89,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 
  done:
 	SAFE_FREE(name_escaped);
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	return status;
 }
 
@@ -126,7 +126,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 
  done:
 	SAFE_FREE(name_escaped);
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	return status;
 }
 #endif

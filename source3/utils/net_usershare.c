@@ -546,7 +546,7 @@ static int net_usershare_info(struct net_context *c, int argc, const char **argv
 	pi.c = c;
 
 	ret = process_share_list(info_fn, &pi);
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	return ret;
 }
 
@@ -1091,7 +1091,7 @@ static int net_usershare_list(struct net_context *c, int argc,
 	pi.c = c;
 
 	ret = process_share_list(info_fn, &pi);
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	return ret;
 }
 

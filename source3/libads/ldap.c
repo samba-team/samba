@@ -1553,7 +1553,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	ldap_controls_free(rcontrols);
 
 done:
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 
 	if (ext_be) {
 		ber_free(ext_be, 1);
@@ -1766,7 +1766,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	}
 
  done:
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	/* if/when we decide to utf8-encode attrs, take out this next line */
 	TALLOC_FREE(search_attrs);
 	return ADS_ERROR(rc);
@@ -2402,7 +2402,7 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	}
 
 	if (!(mods = ads_init_mods(ctx))) {
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
@@ -2410,12 +2410,12 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_clear_service_principal_names: Error creating strlist.\n"));
 		ads_msgfree(ads, res);
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		return ret;
 	}
 	dn_string = ads_get_dn(ads, talloc_tos(), res);
 	if (!dn_string) {
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
@@ -2425,12 +2425,12 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 		DEBUG(1,("ads_clear_service_principal_names: Error: Updating Service Principals for machine %s in LDAP\n",
 			machine_name));
 		ads_msgfree(ads, res);
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		return ret;
 	}
 
 	ads_msgfree(ads, res);
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	return ret;
 }
 
@@ -2903,7 +2903,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 
 done:
 	SAFE_FREE(machine_escaped);
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 
 	return ret;
 }
@@ -3199,7 +3199,7 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 		fn(ads, NULL, NULL, data_area); /* completed an entry */
 
 	}
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 }
 
 /**

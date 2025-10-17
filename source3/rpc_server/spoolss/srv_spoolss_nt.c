@@ -990,7 +990,7 @@ static void notify_msg_ctr_destroy( SPOOLSS_NOTIFY_MSG_CTR *ctr )
 		return;
 
 	if ( ctr->ctx )
-		talloc_destroy(ctr->ctx);
+		TALLOC_FREE(ctr->ctx);
 
 	ZERO_STRUCTP(ctr);
 

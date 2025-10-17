@@ -176,7 +176,7 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 out:
 	ads_msgfree(ads, res);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }
@@ -217,7 +217,7 @@ static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **ar
 	dump_gplink(&gp_link);
 
 out:
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }
@@ -262,7 +262,7 @@ static int net_ads_gpo_link_add(struct net_context *c, int argc, const char **ar
 	}
 
 out:
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }
@@ -301,7 +301,7 @@ static int net_ads_gpo_link_delete(struct net_context *c, int argc, const char *
 	}
 
 out:
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }
@@ -361,7 +361,7 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 	dump_gpo(&gpo, 0);
 
 out:
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }

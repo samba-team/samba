@@ -2280,7 +2280,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 					    pname,
 					    &secdesc);
 	if (!W_ERROR_IS_OK(result)) {
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -2298,7 +2298,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 						 parent_secdesc->group_sid,
 						 false);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return ntstatus_to_werror(status);
 		}
 
@@ -2313,7 +2313,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 
 	DEBUG(4, ("access check was %s\n", NT_STATUS_IS_OK(status) ? "SUCCESS" : "FAILURE"));
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return ntstatus_to_werror(status);
 }

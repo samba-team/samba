@@ -303,8 +303,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		ldap_value_free(values);
 	if (msg != NULL)
 		ldap_msgfree(msg);
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return ntstatus;
 }

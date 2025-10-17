@@ -10261,7 +10261,7 @@ static bool run_eatest(int dummy)
 	printf("starting eatest\n");
 
 	if (!torture_open_connection(&cli, 0)) {
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return False;
 	}
 
@@ -10273,7 +10273,7 @@ static bool run_eatest(int dummy)
                               0x4044, 0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open failed - %s\n", nt_errstr(status));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return False;
 	}
 
@@ -10286,7 +10286,7 @@ static bool run_eatest(int dummy)
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("ea_set of name %s failed - %s\n", ea_name,
 			       nt_errstr(status));
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return False;
 		}
 	}
@@ -10301,7 +10301,7 @@ static bool run_eatest(int dummy)
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("ea_set of name %s failed - %s\n", ea_name,
 			       nt_errstr(status));
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return False;
 		}
 	}
@@ -10338,7 +10338,7 @@ static bool run_eatest(int dummy)
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("ea_set of name %s failed - %s\n", ea_name,
 			       nt_errstr(status));
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return False;
 		}
 	}
@@ -10370,7 +10370,7 @@ static bool run_eatest(int dummy)
 		correct = False;
 	}
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}

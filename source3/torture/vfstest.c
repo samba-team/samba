@@ -218,8 +218,7 @@ static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	/* Cleanup */
-	talloc_destroy(mem_ctx);
-	mem_ctx = NULL;
+	TALLOC_FREE(mem_ctx);
 	vfs->data = NULL;
 	vfs->data_size = 0;
 	return NT_STATUS_OK;
@@ -228,7 +227,7 @@ static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	/* Cleanup */
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */

@@ -1777,7 +1777,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	}
 
 out:
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return result;
 }
 

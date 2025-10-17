@@ -42,8 +42,7 @@ void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 		return;
 	}
 
-	if ((*qt_list)->mem_ctx)
-		talloc_destroy((*qt_list)->mem_ctx);
+	TALLOC_FREE((*qt_list)->mem_ctx);
 
 	(*qt_list) = NULL;
 

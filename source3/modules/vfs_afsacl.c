@@ -83,9 +83,7 @@ static bool init_afs_acl(struct afs_acl *acl)
 
 static void free_afs_acl(struct afs_acl *acl)
 {
-	if (acl->ctx != NULL)
-		talloc_destroy(acl->ctx);
-	acl->ctx = NULL;
+	TALLOC_FREE(acl->ctx);
 	acl->num_aces = 0;
 	acl->acelist = NULL;
 }

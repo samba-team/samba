@@ -1148,14 +1148,14 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 
 	message = collect_onlinestatus(mem_ctx);
 	if (message == NULL) {
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return;
 	}
 
 	messaging_send_buf(msg_ctx, server_id, MSG_WINBIND_ONLINESTATUS,
 			   (const uint8_t *)message, strlen(message) + 1);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 }
 
 void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
@@ -1190,7 +1190,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 		message = NDR_PRINT_STRUCT_STRING(mem_ctx, winbindd_domain,
 						  find_domain_from_name_noinit(domain));
 		if (!message) {
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return;
 		}
 
@@ -1198,7 +1198,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 				   MSG_WINBIND_DUMP_DOMAIN_LIST,
 				   (const uint8_t *)message, strlen(message) + 1);
 
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 
 		return;
 	}
@@ -1208,13 +1208,13 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 	for (dom = domain_list(); dom; dom=dom->next) {
 		message = NDR_PRINT_STRUCT_STRING(mem_ctx, winbindd_domain, dom);
 		if (!message) {
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return;
 		}
 
 		s = talloc_asprintf_append(s, "%s\n", message);
 		if (!s) {
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return;
 		}
 	}
@@ -1227,7 +1227,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 		nt_errstr(status)));
 	}
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 }
 
 static void account_lockout_policy_handler(struct tevent_context *ctx,
@@ -1987,7 +1987,7 @@ void winbindd_terminate(bool is_parent)
 		char *description = talloc_describe_all(mem_ctx);
 
 		DEBUG(3, ("tallocs left:\n%s\n", description));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 	}
 #endif
 

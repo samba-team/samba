@@ -924,7 +924,7 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
 	    !print_alias_memberships(mem_ctx, &global_sid_Builtin, &member))
 		return -1;
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }

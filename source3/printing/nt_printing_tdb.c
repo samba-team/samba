@@ -266,7 +266,7 @@ static bool upgrade_to_version_4(void)
 
 	result = tdb_traverse( tdb_printers, sec_desc_upg_fn, ctx );
 
-	talloc_destroy( ctx );
+	TALLOC_FREE( ctx );
 
 	return ( result >= 0 );
 }
@@ -334,7 +334,7 @@ static bool upgrade_to_version_5(void)
 
 	result = tdb_traverse( tdb_printers, normalize_printers_fn, NULL );
 
-	talloc_destroy( ctx );
+	TALLOC_FREE( ctx );
 
 	return ( result >= 0 );
 }

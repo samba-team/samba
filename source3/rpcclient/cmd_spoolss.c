@@ -3404,7 +3404,7 @@ static bool compare_printer( struct rpc_pipe_client *cli1, struct policy_handle 
 					   &info1);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 	printf("ok\n");
@@ -3417,12 +3417,12 @@ static bool compare_printer( struct rpc_pipe_client *cli1, struct policy_handle 
 					   &info2);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 	printf("ok\n");
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return true;
 }
@@ -3487,7 +3487,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 	printf("Security descriptors match\n");
 
 done:
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return result;
 }
 

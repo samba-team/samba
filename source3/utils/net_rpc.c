@@ -254,7 +254,7 @@ fail:
 		cli_shutdown(cli);
 	}
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -509,7 +509,7 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 		if (!c->msg_ctx) {
 			d_fprintf(stderr, _("Could not initialise message context. "
 				"Try running as root\n"));
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		}
 
@@ -539,7 +539,7 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 					     &info);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		}
 
@@ -554,12 +554,12 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
 			domain, nt_errstr(status));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	}
 
 	printf("Join to '%s' is OK\n",domain);
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }
@@ -6923,7 +6923,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
 			  nt_errstr(nt_status)));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -6933,7 +6933,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -6967,14 +6967,14 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	}
 	if (NT_STATUS_IS_ERR(result)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(result)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	}
 
@@ -6998,7 +6998,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
 			cli_shutdown(cli);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		};
 		if (NT_STATUS_IS_ERR(result)) {
@@ -7006,7 +7006,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(result)));
 			cli_shutdown(cli);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		};
 
@@ -7021,7 +7021,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 							   dom_list.domains[i].name.string);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				cli_shutdown(cli);
-				talloc_destroy(mem_ctx);
+				TALLOC_FREE(mem_ctx);
 				return -1;
 			}
 		};
@@ -7040,14 +7040,14 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
 	/* close lsarpc pipe and connection to IPC$ */
 	cli_shutdown(cli);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return 0;
 }
 
@@ -7116,7 +7116,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
 			  nt_errstr(nt_status)));
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -7126,7 +7126,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
 			nt_errstr(nt_status) ));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -7160,14 +7160,14 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	}
 	if (NT_STATUS_IS_ERR(result)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(result)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	}
 
@@ -7193,14 +7193,14 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
 			cli_shutdown(cli);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		};
 		if (NT_STATUS_IS_ERR(result)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(result)));
 			cli_shutdown(cli);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		};
 
@@ -7228,7 +7228,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -7248,7 +7248,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise samr pipe. Error was %s\n", nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -7264,7 +7264,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 	if (!NT_STATUS_IS_OK(result)) {
@@ -7272,7 +7272,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(result)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -7288,7 +7288,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 	if (!NT_STATUS_IS_OK(result)) {
@@ -7296,7 +7296,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(result)));
 		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		return -1;
 	};
 
@@ -7321,7 +7321,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(nt_status)));
 			cli_shutdown(cli);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		};
 		if (NT_STATUS_IS_ERR(result)) {
@@ -7329,7 +7329,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(result)));
 			cli_shutdown(cli);
-			talloc_destroy(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return -1;
 		};
 
@@ -7353,7 +7353,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			/* set opt_* variables to remote domain */
 			if (!strupper_m(str)) {
 				cli_shutdown(cli);
-				talloc_destroy(mem_ctx);
+				TALLOC_FREE(mem_ctx);
 				return -1;
 			}
 			c->opt_workgroup = talloc_strdup(mem_ctx, str);
@@ -7404,7 +7404,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	/* close samr pipe and connection to IPC$ */
 	cli_shutdown(cli);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return 0;
 }
 

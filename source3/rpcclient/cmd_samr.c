@@ -2581,7 +2581,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	if ((argc < 1) || (argc > 3)) {
 		printf("Usage: %s [rid|-d] [sec_info]\n", argv[0]);
 		printf("\tSpecify rid for security on user, -d for security on domain\n");
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		return NT_STATUS_OK;
 	}
 
@@ -2666,7 +2666,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 done:
-	talloc_destroy(ctx);
+	TALLOC_FREE(ctx);
 	return status;
 }
 

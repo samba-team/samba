@@ -832,7 +832,7 @@ BECOMES.....
 
 				if(l_new == NULL) {
 					DEBUG(0,("posix_lock_list: talloc fail.\n"));
-					return NULL; /* The talloc_destroy takes care of cleanup. */
+					return NULL; /* The TALLOC_FREE takes care of cleanup. */
 				}
 
 				ZERO_STRUCTP(l_new);
@@ -948,7 +948,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 
 	if ((ll = talloc(l_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("set_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
-		talloc_destroy(l_ctx);
+		TALLOC_FREE(l_ctx);
 		return False;
 	}
 
@@ -1028,7 +1028,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 		increment_lock_ref_count(fsp);
 	}
 
-	talloc_destroy(l_ctx);
+	TALLOC_FREE(l_ctx);
 	return ret;
 }
 
@@ -1077,7 +1077,7 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 
 	if ((ul = talloc(ul_ctx, struct lock_list)) == NULL) {
 		DBG_ERR("unable to talloc unlock list.\n");
-		talloc_destroy(ul_ctx);
+		TALLOC_FREE(ul_ctx);
 		return False;
 	}
 
@@ -1126,7 +1126,7 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_RDLCK)) {
 			DBG_ERR("downgrade of lock failed with error %s !\n",
 				strerror(errno));
-			talloc_destroy(ul_ctx);
+			TALLOC_FREE(ul_ctx);
 			return False;
 		}
 	}
@@ -1149,7 +1149,7 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		}
 	}
 
-	talloc_destroy(ul_ctx);
+	TALLOC_FREE(ul_ctx);
 	return ret;
 }
 
@@ -1329,7 +1329,7 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 
 	if ((ul = talloc(ul_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("release_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
-		talloc_destroy(ul_ctx);
+		TALLOC_FREE(ul_ctx);
 		return False;
 	}
 
@@ -1375,6 +1375,6 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 	if (!locks_exist_on_context(plocks, num_locks, lock_ctx)) {
 		decrement_posix_lock_count(fsp, lock_ctx->smblctx);
 	}
-	talloc_destroy(ul_ctx);
+	TALLOC_FREE(ul_ctx);
 	return ret;
 }

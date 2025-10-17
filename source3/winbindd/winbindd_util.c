@@ -2434,7 +2434,7 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 	ret = true;
 
 done:
-	talloc_destroy(frame);
+	TALLOC_FREE(frame);
 
 	return ret;
 }

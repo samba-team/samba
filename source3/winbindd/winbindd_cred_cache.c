@@ -948,13 +948,13 @@ static NTSTATUS winbindd_add_memory_creds_internal(const char *username,
 	}
 	memcredp->username = talloc_strdup(memcredp, username);
 	if (!memcredp->username) {
-		talloc_destroy(memcredp);
+		TALLOC_FREE(memcredp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = store_memory_creds(memcredp, pass);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(memcredp);
+		TALLOC_FREE(memcredp);
 		return status;
 	}
 
@@ -1029,7 +1029,7 @@ NTSTATUS winbindd_delete_memory_creds(const char *username)
 	if (memcredp->ref_count <= 0) {
 		delete_memory_creds(memcredp);
 		DLIST_REMOVE(memory_creds_list, memcredp);
-		talloc_destroy(memcredp);
+		TALLOC_FREE(memcredp);
 		DEBUG(10,("winbindd_delete_memory_creds: "
 			"deleted entry for user %s\n",
 			username));

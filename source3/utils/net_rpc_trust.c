@@ -695,7 +695,7 @@ done:
 	data_blob_clear_free(&session_key[1]);
 	cli_shutdown(cli[0]);
 	cli_shutdown(cli[1]);
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return success;
 }
 

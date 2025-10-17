@@ -1296,7 +1296,7 @@ static void regfio_mem_free( REGF_FILE *file )
 	/* free any talloc()'d memory */
 
 	if ( file && file->mem_ctx )
-		talloc_destroy( file->mem_ctx );
+		TALLOC_FREE( file->mem_ctx );
 }
 
 /*******************************************************************

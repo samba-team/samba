@@ -100,7 +100,7 @@ static NTSTATUS net_sh_run(struct net_context *c,
 
 	TALLOC_FREE(pipe_hnd);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return status;
 }
