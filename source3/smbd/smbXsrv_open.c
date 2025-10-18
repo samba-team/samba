@@ -303,6 +303,12 @@ static void smbXsrv_open_global_lookup_fn(struct db_record *rec,
 	struct smbXsrv_open_global_lookup_state *state = private_data;
 	TDB_DATA key = dbwrap_record_get_key(rec);
 
+	if (val.dsize == 0) {
+		/* Likely a ctdb tombstone record */
+		state->status = NT_STATUS_NOT_FOUND;
+		return;
+	}
+
 	state->status = smbXsrv_open_global_parse_record(state->mem_ctx,
 							 key,
 							 val,
@@ -329,6 +335,10 @@ static NTSTATUS smbXsrv_open_global_lookup(
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("dbwrap_do_locked failed\n");
 		return status;
+	}
+	if (NT_STATUS_EQUAL(state.status, NT_STATUS_NOT_FOUND)) {
+		DBG_DEBUG("smbXsrv_open record not found\n");
+		return state.status;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
 		DBG_ERR("smbXsrv_open_global_lookup_fn failed\n");
