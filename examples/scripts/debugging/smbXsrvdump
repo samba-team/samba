@@ -47,8 +47,15 @@ def print_record(data, ndr_type, watched, ctdb):
             print_watchers(num_watched, blob)
             blob = blob[num_watched*4:]
 
-    unpacked = ndr_unpack(ndr_type, blob, allow_remaining=True)
-    print(ndr_print(unpacked))
+    try:
+        unpacked = ndr_unpack(ndr_type, blob, allow_remaining=True)
+    except Exception:
+        unpacked = None
+        pass
+    if unpacked is not None:
+        print(ndr_print(unpacked))
+    else:
+        print("<failed to parse>")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
