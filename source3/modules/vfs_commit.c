@@ -124,10 +124,10 @@ static int commit(
 	off_t			offset,
         ssize_t			        last_write)
 {
-        struct commit_info *c;
+	struct commit_info *c = VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	int ret;
 
-        if ((c = (struct commit_info *)VFS_FETCH_FSP_EXTENSION(handle, fsp))
-	    == NULL) {
+	if (c == NULL) {
 		return 0;
 	}
 
@@ -144,21 +144,26 @@ static int commit(
 		return 0;
 	}
 
-	/* This write hit or went past our cache the file size. */
-	if ((offset + last_write) >= c->eof) {
-		if (commit_do(c, fsp_get_io_fd(fsp)) == -1) {
-			return -1;
-		}
-
-		/* Hinted mode only commits the first time we hit EOF. */
-		if (c->on_eof == EOF_HINTED) {
-		    c->eof = -1;
-		} else if (c->on_eof == EOF_GROWTH) {
-		    c->eof = offset + last_write;
-		}
+	if ((offset + last_write) < c->eof) {
+		return 0;
 	}
 
-        return 0;
+	/* This write hit or went past our cache the file size. */
+
+	ret = commit_do(c, fsp_get_io_fd(fsp));
+
+	if (ret == -1) {
+		return -1;
+	}
+
+	/* Hinted mode only commits the first time we hit EOF. */
+	if (c->on_eof == EOF_HINTED) {
+		c->eof = -1;
+	} else if (c->on_eof == EOF_GROWTH) {
+		c->eof = offset + last_write;
+	}
+
+	return 0;
 }
 
 static int commit_connect(
