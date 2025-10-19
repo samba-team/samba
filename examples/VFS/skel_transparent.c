@@ -48,6 +48,13 @@ static void skel_disconnect(vfs_handle_struct *handle)
 	SMB_VFS_NEXT_DISCONNECT(handle);
 }
 
+static int skel_open_share_root(struct vfs_handle_struct *handle,
+				struct files_struct *root_fsp,
+				const char *connectpath)
+{
+	return SMB_VFS_NEXT_OPEN_SHARE_ROOT(handle, root_fsp, connectpath);
+}
+
 static uint64_t skel_disk_free(vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       uint64_t *bsize,
@@ -1266,6 +1273,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 
 	.connect_fn = skel_connect,
 	.disconnect_fn = skel_disconnect,
+	.open_share_root_fn = skel_open_share_root,
 	.disk_free_fn = skel_disk_free,
 	.get_quota_fn = skel_get_quota,
 	.set_quota_fn = skel_set_quota,

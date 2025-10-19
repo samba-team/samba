@@ -107,6 +107,7 @@
 	<member>offload_write_send</member>
 	<member>open</member>
 	<member>openat</member>
+	<member>open_share_root</member>
 	<member>parent_pathname</member>
 	<member>pread</member>
 	<member>pread_recv</member>

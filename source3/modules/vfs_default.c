@@ -96,6 +96,14 @@ static void vfswrap_disconnect(vfs_handle_struct *handle)
 {
 }
 
+static int vfswrap_open_share_root(struct vfs_handle_struct *handle,
+				   struct files_struct *root_fsp,
+				   const char *connectpath)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 /* Disk operations */
 
 static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,
@@ -4058,6 +4066,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	.connect_fn = vfswrap_connect,
 	.disconnect_fn = vfswrap_disconnect,
+	.open_share_root_fn = vfswrap_open_share_root,
 	.disk_free_fn = vfswrap_disk_free,
 	.get_quota_fn = vfswrap_get_quota,
 	.set_quota_fn = vfswrap_set_quota,

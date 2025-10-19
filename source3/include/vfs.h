@@ -404,6 +404,7 @@
  * Version 53 - Change GET_QUOTA to take a fsp instead of a name
  * Version 53 - Add fsp to SET_QUOTA
  * Version 53 - Remove GETWD
+ * Version 53 - Add open_share_root
  */
 
 #define SMB_VFS_INTERFACE_VERSION 53
@@ -989,6 +990,9 @@ struct vfs_fn_pointers {
 
 	int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 	void (*disconnect_fn)(struct vfs_handle_struct *handle);
+	int (*open_share_root_fn)(struct vfs_handle_struct *handle,
+				  struct files_struct *root_fsp,
+				  const char *connectpath);
 	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 uint64_t *bsize,
@@ -1447,6 +1451,9 @@ void _smb_vfs_deny_pop(struct smb_vfs_deny_state *state, const char *location);
 int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user);
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
+int smb_vfs_call_open_share_root(struct vfs_handle_struct *handle,
+				 struct files_struct *root_fsp,
+				 const char *connectpath);
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				uint64_t *bsize,
@@ -1881,6 +1888,9 @@ int vfs_not_implemented_connect(
 			const char *service,
 			const char *user);
 void vfs_not_implemented_disconnect(vfs_handle_struct *handle);
+int vfs_not_implemented_open_share_root(struct vfs_handle_struct *handle,
+					struct files_struct *root_fsp,
+					const char *connectpath);
 uint64_t vfs_not_implemented_disk_free(vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       uint64_t *bsize,

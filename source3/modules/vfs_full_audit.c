@@ -96,6 +96,7 @@ typedef enum _vfs_op_type {
 
 	SMB_VFS_OP_CONNECT = 0,
 	SMB_VFS_OP_DISCONNECT,
+	SMB_VFS_OP_OPEN_SHARE_ROOT,
 	SMB_VFS_OP_DISK_FREE,
 	SMB_VFS_OP_GET_QUOTA,
 	SMB_VFS_OP_SET_QUOTA,
@@ -236,6 +237,7 @@ static struct {
 } vfs_op_names[] = {
 	{ SMB_VFS_OP_CONNECT,	"connect" },
 	{ SMB_VFS_OP_DISCONNECT,	"disconnect" },
+	{ SMB_VFS_OP_OPEN_SHARE_ROOT,	"open_share_root" },
 	{ SMB_VFS_OP_DISK_FREE,	"disk_free" },
 	{ SMB_VFS_OP_GET_QUOTA,	"get_quota" },
 	{ SMB_VFS_OP_SET_QUOTA,	"set_quota" },
@@ -807,6 +809,19 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 
 	/* The bitmaps will be disconnected when the private
 	   data is deleted. */
+}
+
+static int smb_full_audit_open_share_root(struct vfs_handle_struct *handle,
+					  struct files_struct *root_fsp,
+					  const char *connectpath)
+{
+	int result = SMB_VFS_NEXT_OPEN_SHARE_ROOT(handle,
+						  root_fsp,
+						  connectpath);
+
+	do_log(SMB_VFS_OP_OPEN_SHARE_ROOT, errmsg_unix(result), handle, "");
+
+	return result;
 }
 
 static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
@@ -3129,6 +3144,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 
 	.connect_fn = smb_full_audit_connect,
 	.disconnect_fn = smb_full_audit_disconnect,
+	.open_share_root_fn = smb_full_audit_open_share_root,
 	.disk_free_fn = smb_full_audit_disk_free,
 	.get_quota_fn = smb_full_audit_get_quota,
 	.set_quota_fn = smb_full_audit_set_quota,

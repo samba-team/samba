@@ -1233,6 +1233,14 @@ void smb_vfs_call_disconnect(struct vfs_handle_struct *handle)
 	handle->fns->disconnect_fn(handle);
 }
 
+int smb_vfs_call_open_share_root(struct vfs_handle_struct *handle,
+				 struct files_struct *root_fsp,
+				 const char *connectpath)
+{
+	VFS_FIND(open_share_root);
+	return handle->fns->open_share_root_fn(handle, root_fsp, connectpath);
+}
+
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				uint64_t *bsize,

@@ -41,6 +41,15 @@ void vfs_not_implemented_disconnect(vfs_handle_struct *handle)
 }
 
 _PUBLIC_
+int vfs_not_implemented_open_share_root(struct vfs_handle_struct *handle,
+					struct files_struct *root_fsp,
+					const char *connectpath)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+_PUBLIC_
 uint64_t vfs_not_implemented_disk_free(vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       uint64_t *bsize,
@@ -1047,6 +1056,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 
 	.connect_fn = vfs_not_implemented_connect,
 	.disconnect_fn = vfs_not_implemented_disconnect,
+	.open_share_root_fn = vfs_not_implemented_open_share_root,
 	.disk_free_fn = vfs_not_implemented_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,

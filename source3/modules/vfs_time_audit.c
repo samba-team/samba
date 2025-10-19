@@ -173,6 +173,26 @@ static void smb_time_audit_disconnect(vfs_handle_struct *handle)
 	}
 }
 
+static int smb_time_audit_open_share_root(struct vfs_handle_struct *handle,
+					  struct files_struct *root_fsp,
+					  const char *connectpath)
+{
+	struct timespec ts1, ts2;
+	double timediff;
+	int result;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_OPEN_SHARE_ROOT(handle, root_fsp, connectpath);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("open_share_root", timediff);
+	}
+
+	return result;
+}
+
 static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
 					 struct files_struct *fsp,
 					 uint64_t *bsize,
@@ -2666,6 +2686,7 @@ static NTSTATUS smb_time_audit_durable_reconnect(struct vfs_handle_struct *handl
 static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.connect_fn = smb_time_audit_connect,
 	.disconnect_fn = smb_time_audit_disconnect,
+	.open_share_root_fn = smb_time_audit_open_share_root,
 	.disk_free_fn = smb_time_audit_disk_free,
 	.get_quota_fn = smb_time_audit_get_quota,
 	.set_quota_fn = smb_time_audit_set_quota,
