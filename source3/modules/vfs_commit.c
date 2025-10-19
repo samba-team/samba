@@ -216,7 +216,7 @@ static int commit_openat(struct vfs_handle_struct *handle,
                         c->dthresh = dthresh;
                         c->dbytes = 0;
                         c->on_eof = EOF_NONE;
-                        c->eof = 0;
+			c->eof = -2; /* uninitialized */
                 }
         }
         /* Process eof_mode tunable */
@@ -234,25 +234,6 @@ static int commit_openat(struct vfs_handle_struct *handle,
 		return fd;
 	}
 
-        /* EOF commit modes require us to know the initial file size. */
-        if (c && (c->on_eof != EOF_NONE)) {
-                SMB_STRUCT_STAT st;
-		/*
-		 * Setting the fd of the FSP is a hack
-		 * but also practiced elsewhere -
-		 * needed for calling the VFS.
-		 */
-		fsp_set_fd(fsp, fd);
-		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
-			int saved_errno = errno;
-			SMB_VFS_CLOSE(fsp);
-			fsp_set_fd(fsp, -1);
-			errno = saved_errno;
-                        return -1;
-                }
-		c->eof = st.st_ex_size;
-        }
-
         return fd;
 }
 
@@ -263,9 +244,18 @@ static ssize_t commit_pwrite(
         size_t              count,
 	off_t	    offset)
 {
-        ssize_t ret;
+	struct commit_info *c = VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t ret;
 
-        ret = SMB_VFS_NEXT_PWRITE(handle, fsp, data, count, offset);
+	if ((c != NULL) && (c->on_eof != EOF_NONE) && (c->eof == -2)) {
+		struct stat_ex st = {};
+		int statret = SMB_VFS_NEXT_FSTAT(handle, fsp, &st);
+		if (statret == 0) {
+			c->eof = st.st_ex_size;
+		}
+	}
+
+	ret = SMB_VFS_NEXT_PWRITE(handle, fsp, data, count, offset);
         if (ret > 0) {
                 if (commit(handle, fsp, offset, ret) == -1) {
                         return -1;
@@ -291,6 +281,7 @@ static struct tevent_req *commit_pwrite_send(struct vfs_handle_struct *handle,
 					     const void *data,
 					     size_t n, off_t offset)
 {
+	struct commit_info *c = VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	struct tevent_req *req, *subreq;
 	struct commit_pwrite_state *state;
 
@@ -300,6 +291,14 @@ static struct tevent_req *commit_pwrite_send(struct vfs_handle_struct *handle,
 	}
 	state->handle = handle;
 	state->fsp = fsp;
+
+	if ((c != NULL) && (c->on_eof != EOF_NONE) && (c->eof == -2)) {
+		struct stat_ex st = {};
+		int ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &st);
+		if (ret == 0) {
+			c->eof = st.st_ex_size;
+		}
+	}
 
 	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
 					  n, offset);
