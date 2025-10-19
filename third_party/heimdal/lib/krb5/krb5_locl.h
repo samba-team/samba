@@ -331,6 +331,7 @@ typedef struct krb5_context_data {
 #define KRB5_CTX_F_FCACHE_STRICT_CHECKING	32
 #define KRB5_CTX_F_ENFORCE_OK_AS_DELEGATE	64
 #define KRB5_CTX_F_REPORT_CANONICAL_CLIENT_NAME	128
+#define KRB5_CTX_F_ALWAYS_INCLUDE_PAC		256
     struct send_to_kdc *send_to_kdc;
 #ifdef PKINIT
     hx509_context hx509ctx;
