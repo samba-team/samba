@@ -1,4 +1,4 @@
-/* 
+/*
  * TEST implementation of an Shadow Copy module
  *
  * Copyright (C) Stefan Metzmacher	2003
@@ -8,12 +8,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,7 +26,7 @@
 
 /* USE THIS MODULE ONLY FOR TESTING!!!! */
 
-/*    
+/*
     For this share
     Z:\
 
@@ -37,7 +37,7 @@
     Z:\@GMT-2003.08.05-12.02.00\
 
     e.g.
-    
+
     Z:\testfile.txt
     Z:\@GMT-2003.08.05-12.02.00\testfile.txt
 
@@ -48,7 +48,7 @@
 
 
     Note: Files must differ to be displayed via Windows Explorer!
-	  Directories are always displayed...    
+	  Directories are always displayed...
 */
 
 static int test_get_shadow_copy_data(vfs_handle_struct *handle,
@@ -58,10 +58,10 @@ static int test_get_shadow_copy_data(vfs_handle_struct *handle,
 {
 	uint32_t num = 3;
 	uint32_t i;
-	
+
 	shadow_copy_data->num_volumes = num;
-	
-	if (labels) {	
+
+	if (labels) {
 		if (num) {
 			shadow_copy_data->labels = talloc_zero_array(shadow_copy_data,SHADOW_COPY_LABEL,num);
 		} else {
