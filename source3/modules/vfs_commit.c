@@ -105,18 +105,17 @@ static int commit_all(
         struct vfs_handle_struct *	handle,
         files_struct *		        fsp)
 {
-        struct commit_info *c;
+	struct commit_info *c = VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-        if ((c = (struct commit_info *)VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
-                if (c->dbytes) {
-                        DEBUG(module_debug,
-                                ("%s: flushing %zu dirty bytes\n",
-                                 MODULE, c->dbytes));
+	if ((c == NULL) || (c->dbytes == 0)) {
+		return 0;
+	}
 
-                        return commit_do(c, fsp_get_io_fd(fsp));
-                }
-        }
-        return 0;
+	DEBUG(module_debug,
+	      ("%s: flushing %zu dirty bytes\n",
+	       MODULE, c->dbytes));
+
+	return commit_do(c, fsp_get_io_fd(fsp));
 }
 
 static int commit(
