@@ -69,8 +69,8 @@ enum eof_mode
 struct commit_info
 {
         /* For chunk-based commits */
-        off_t dbytes;	/* Dirty (uncommitted) bytes */
-        off_t dthresh;	/* Dirty data threshold */
+        size_t dbytes;	/* Dirty (uncommitted) bytes */
+        size_t dthresh;	/* Dirty data threshold */
         /* For commits on EOF */
         enum eof_mode on_eof;
         off_t eof;		/* Expected file size */
@@ -83,8 +83,8 @@ static int commit_do(
         int result;
 
 	DEBUG(module_debug,
-		("%s: flushing %lu dirty bytes\n",
-		 MODULE, (unsigned long)c->dbytes));
+		("%s: flushing %zu dirty bytes\n",
+		 MODULE, c->dbytes));
 
 #if defined(HAVE_FDATASYNC)
         result = fdatasync(fd);
@@ -110,8 +110,8 @@ static int commit_all(
         if ((c = (struct commit_info *)VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
                 if (c->dbytes) {
                         DEBUG(module_debug,
-                                ("%s: flushing %lu dirty bytes\n",
-                                 MODULE, (unsigned long)c->dbytes));
+                                ("%s: flushing %zu dirty bytes\n",
+                                 MODULE, c->dbytes));
 
                         return commit_do(c, fsp_get_io_fd(fsp));
                 }
