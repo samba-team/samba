@@ -37,6 +37,9 @@
 #include "../lib/util/util_tdb.h"
 #include <krb5/send_to_kdc_plugin.h>
 #endif
+#ifdef USING_EMBEDDED_HEIMDAL
+#include <krb5_locl.h>
+#endif
 
 /*
   context structure for operations on cldap packets
@@ -816,6 +819,16 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	}
 	krb5_set_warn_dest(kctx, logf);
 #endif
+#ifdef USING_EMBEDDED_HEIMDAL
+	/*
+	 * The KRB5_CTX_F_ALWAYS_INCLUDE_PAC flag is a Samba extension to
+	 * Heimdal and is only available in the embedded heimdal
+	 */
+	if (lpcfg_kdc_always_include_pac(lp_ctx)) {
+		kctx->flags |= KRB5_CTX_F_ALWAYS_INCLUDE_PAC;
+	}
+#endif
+
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
 
