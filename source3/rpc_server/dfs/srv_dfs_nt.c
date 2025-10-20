@@ -162,14 +162,12 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	}
 
 	if (r->in.servername && r->in.sharename) {
-		altpath = talloc_asprintf(ctx, "%s\\%s",
-			r->in.servername,
-			r->in.sharename);
+		altpath = talloc_asprintf_strlower_m(ctx,
+						     "%s\\%s",
+						     r->in.servername,
+						     r->in.sharename);
 		if (!altpath) {
 			return WERR_NOT_ENOUGH_MEMORY;
-		}
-		if (!strlower_m(altpath)) {
-			return WERR_INVALID_PARAMETER;
 		}
 		DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
