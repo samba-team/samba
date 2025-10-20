@@ -66,7 +66,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	const char *pathnamep = r->in.path;
 
 	if (session_info->unix_token->uid != sec_initial_uid()) {
-		DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
+		DBG_DEBUG("uid != 0. Access denied.\n");
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -75,8 +75,10 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	DEBUG(5,("init_reply_dfs_add: Request to add %s -> %s\\%s.\n",
-		r->in.path, r->in.server, r->in.share));
+	DBG_INFO("Request to add %s -> %s\\%s.\n",
+		 r->in.path,
+		 r->in.server,
+		 r->in.share);
 
 	altpath = talloc_asprintf(ctx, "%s\\%s",
 			r->in.server,
@@ -112,7 +114,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 
 	jn->referral_list = talloc_array(ctx, struct referral, jn->referral_count);
 	if(jn->referral_list == NULL) {
-		DEBUG(0,("init_reply_dfs_add: talloc failed for referral list!\n"));
+		DBG_ERR("talloc failed for referral list!\n");
 		return WERR_NERR_DFSINTERNALERROR;
 	}
 
@@ -152,7 +154,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	const char *pathnamep = r->in.dfs_entry_path;
 
 	if (session_info->unix_token->uid != sec_initial_uid()) {
-		DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
+		DBG_DEBUG("uid != 0. Access denied.\n");
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -169,8 +171,10 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		if (!altpath) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
-		DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
-			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
+		DBG_INFO("Request to remove %s -> %s\\%s.\n",
+			 r->in.dfs_entry_path,
+			 r->in.servername,
+			 r->in.sharename);
 	}
 
 	while (IS_DIRECTORY_SEP(pathnamep[0]) &&
@@ -206,11 +210,12 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			trim_char(refpath, '\\', '\\');
-			DEBUG(10,("_dfs_remove:  refpath: .%s.\n", refpath));
+			DBG_DEBUG("refpath: .%s.\n", refpath);
 			if(strequal(refpath, altpath)) {
 				*(jn->referral_list[i].alternate_path)='\0';
-				DEBUG(10,("_dfs_remove: Removal request matches referral %s\n",
-					refpath));
+				DBG_DEBUG("Removal request matches "
+					  "referral %s\n",
+					  refpath);
 				found = True;
 			}
 		}
@@ -242,7 +247,7 @@ static bool init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,st
 	if (dfs1->path == NULL)
 		return False;
 
-	DEBUG(5,("init_reply_dfs_info_1: initing entrypath: %s\n",dfs1->path));
+	DBG_INFO("initing entrypath: %s\n", dfs1->path);
 	return True;
 }
 
@@ -298,7 +303,7 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 		trim_char(path,'\\','\0');
 		p = strrchr_m(path,'\\');
 		if(p==NULL) {
-			DEBUG(4,("init_reply_dfs_info_3: invalid path: no \\ found in %s\n",path));
+			DBG_INFO("invalid path: no \\ found in %s\n", path);
 			continue;
 		}
 		*p = '\0';
@@ -332,8 +337,9 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 		jn = NULL;
 	}
 
-	DEBUG(5,("_dfs_Enum: %u junctions found in Dfs, doing level %d\n",
-				(unsigned int)num_jn, r->in.level));
+	DBG_INFO("%zu junctions found in Dfs, doing level %" PRIu32 "\n",
+		 num_jn,
+		 r->in.level);
 
 	*r->out.total = num_jn;
 
