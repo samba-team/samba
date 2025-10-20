@@ -963,6 +963,7 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.strong_certificate_binding_enforcement
 		= KDC_CERT_BINDING_FULL;
 	Globals.certificate_backdating_compensation = 0;
+	Globals.kdc_always_include_pac = true;
 
 	Globals.winbind_debug_traceid = true;
 

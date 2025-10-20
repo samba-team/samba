@@ -2959,6 +2959,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "kdc enable fast", "True");
 	lpcfg_do_global_parameter(lp_ctx, "strong certificate binding enforcement", "full");
 	lpcfg_do_global_parameter(lp_ctx, "certificate backdating compensation", "0");
+	lpcfg_do_global_parameter(lp_ctx, "kdc always include pac", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "nt status support", "True");
 

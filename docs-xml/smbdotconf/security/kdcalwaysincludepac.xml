@@ -1,0 +1,20 @@
+<samba:parameter name="kdc always include pac"
+                 type="boolean"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+        This option over-rides the PA-PAC-REQUEST received from the client.
+        When enabled (the default) a PAC will always be included in the
+        kerberos responses.
+	</para>
+
+    <para>
+        This option currently only applies if the embedded Heimdal
+        KDC is used.
+    </para>
+
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
