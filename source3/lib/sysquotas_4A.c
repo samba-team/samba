@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    System QUOTA function wrappers for QUOTACTL_4A
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -211,7 +211,7 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			 * didn't work!
 			 * So we just return 0
 			 * --metze
-			 * 
+			 *
 			 * On HPUX we didn't have the mount path,
 			 * we need to fix sys_path_to_bdev()
 			 *
@@ -226,25 +226,25 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			if ((qflags&QUOTAS_DENY_DISK)||(qflags&QUOTAS_ENABLED)) {
 				if (ret == 0) {
 					char *quota_file = NULL;
-					
+
 					asprintf(&quota_file,"/%s/%s%s",path, QUOTAFILENAME,USERQUOTAFILE_EXTENSION);
 					if (quota_file == NULL) {
 						DEBUG(0,("asprintf() failed!\n"));
 						errno = ENOMEM;
 						return -1;
 					}
-					
+
 					ret = quotactl(QCMD(Q_QUOTAON,USRQUOTA), (caddr_t)bdev, -1,(void *)quota_file);
 				} else {
-					ret = 0;	
+					ret = 0;
 				}
 			} else {
 				if (ret != 0) {
 					/* turn off */
-					ret = quotactl(QCMD(Q_QUOTAOFF,USRQUOTA), (caddr_t)bdev, -1, (void *)0);	
+					ret = quotactl(QCMD(Q_QUOTAOFF,USRQUOTA), (caddr_t)bdev, -1, (void *)0);
 				} else {
 					ret = 0;
-				}		
+				}
 			}
 
 			DEBUG(0,("sys_set_vfs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
@@ -268,7 +268,7 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			 * didn't work!
 			 * So we just return 0
 			 * --metze
-			 * 
+			 *
 			 * On HPUX we didn't have the mount path,
 			 * we need to fix sys_path_to_bdev()
 			 *
@@ -283,25 +283,25 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			if ((qflags&QUOTAS_DENY_DISK)||(qflags&QUOTAS_ENABLED)) {
 				if (ret == 0) {
 					char *quota_file = NULL;
-					
+
 					asprintf(&quota_file,"/%s/%s%s",path, QUOTAFILENAME,GROUPQUOTAFILE_EXTENSION);
 					if (quota_file == NULL) {
 						DEBUG(0,("asprintf() failed!\n"));
 						errno = ENOMEM;
 						return -1;
 					}
-					
+
 					ret = quotactl(QCMD(Q_QUOTAON,GRPQUOTA), (caddr_t)bdev, -1,(void *)quota_file);
 				} else {
-					ret = 0;	
+					ret = 0;
 				}
 			} else {
 				if (ret != 0) {
 					/* turn off */
-					ret = quotactl(QCMD(Q_QUOTAOFF,GRPQUOTA), (caddr_t)bdev, -1, (void *)0);	
+					ret = quotactl(QCMD(Q_QUOTAOFF,GRPQUOTA), (caddr_t)bdev, -1, (void *)0);
 				} else {
 					ret = 0;
-				}		
+				}
 			}
 
 			DEBUG(0,("sys_set_vfs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",

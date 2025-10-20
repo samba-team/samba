@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    System QUOTA function wrappers
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,7 +27,7 @@
 
 #ifdef HAVE_SYS_QUOTAS
 
-#if defined(HAVE_QUOTACTL_4A) 
+#if defined(HAVE_QUOTACTL_4A)
 
 /*#endif HAVE_QUOTACTL_4A */
 #elif defined(HAVE_QUOTACTL_4B)
@@ -117,7 +117,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	if (fp == NULL) {
 		goto out;
 	}
-  
+
 	while ((mnt = getmntent(fp))) {
 		if (!strequal(mnt->mnt_dir, stat_mntpath)) {
 			continue;
@@ -165,15 +165,15 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	(*mntpath) = NULL;
 	(*bdev) = NULL;
 	(*fs) = NULL;
-	
+
 	/* find the block device file */
 
 	if ((ret=sys_stat(path, &S, false))!=0) {
 		return ret;
 	}
-	
+
 	if ((ret=devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 1))!=0) {
-		return ret;	
+		return ret;
 	}
 
 	/* we should get the mntpath right...
@@ -188,10 +188,10 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 		SAFE_FREE(*mntpath);
 		SAFE_FREE(*bdev);
 		ret = -1;
-	}	
-	
-	
-	return ret;	
+	}
+
+
+	return ret;
 }
 
 /* #endif HAVE_DEVNM */
@@ -207,7 +207,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	(*mntpath) = NULL;
 	(*bdev) = NULL;
 	(*fs) = NULL;
-	
+
 	(*mntpath) = SMB_STRDUP(path);
 	if (*mntpath) {
 		ret = 0;
@@ -364,7 +364,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 			if (p && *p) {
 				dp->ihardlimit = STR_TO_SMB_BIG_UINT(p, &p);
 			} else {
-				goto invalid_param;	
+				goto invalid_param;
 			}
 
 			while (p && *p && isspace(*p)) {
@@ -382,7 +382,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			DEBUG (3, ("Parsed output of get_quota, ...\n"));
 
-			DEBUGADD (5,( 
+			DEBUGADD (5,(
 				"qflags:%"PRIu32" curblocks:%"PRIu64" softlimit:%"PRIu64" hardlimit:%"PRIu64"\n"
 				"curinodes:%"PRIu64" isoftlimit:%"PRIu64" ihardlimit:%"PRIu64" bsize:%"PRIu64"\n",
 				dp->qflags,dp->curblocks,
@@ -498,7 +498,7 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	if (!path||!dp)
 		smb_panic("sys_get_quota: called with NULL pointer");
 
-	if (command_get_quota(path, qtype, id, dp)==0) {	
+	if (command_get_quota(path, qtype, id, dp)==0) {
 		return 0;
 	} else if (errno != ENOSYS) {
 		return -1;
@@ -523,8 +523,8 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid)));
 			}
 			ready = True;
-			break;	
-		}		
+			break;
+		}
 	}
 
 	if (!ready) {
@@ -560,7 +560,7 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	if (!path||!dp)
 		smb_panic("get_smb_quota: called with NULL pointer");
 
-	if (command_set_quota(path, qtype, id, dp)==0) {	
+	if (command_set_quota(path, qtype, id, dp)==0) {
 		return 0;
 	} else if (errno != ENOSYS) {
 		return -1;
@@ -572,7 +572,7 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	}
 
 	errno = 0;
-	DEBUG(10,("sys_set_quota() uid(%u, %u)\n", (unsigned)getuid(), (unsigned)geteuid())); 
+	DEBUG(10,("sys_set_quota() uid(%u, %u)\n", (unsigned)getuid(), (unsigned)geteuid()));
 
 	for (i=0;(fs && sys_quota_backends[i].name && sys_quota_backends[i].set_quota);i++) {
 		if (strcmp(fs,sys_quota_backends[i].name)==0) {
@@ -586,7 +586,7 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 			}
 			ready = True;
 			break;
-		}		
+		}
 	}
 
 	if (!ready) {
@@ -605,7 +605,7 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	SAFE_FREE(bdev);
 	SAFE_FREE(fs);
 
-	return ret;		
+	return ret;
 }
 
 #else /* HAVE_SYS_QUOTAS */
@@ -616,4 +616,3 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	return;
 }
 #endif /* HAVE_SYS_QUOTAS */
-

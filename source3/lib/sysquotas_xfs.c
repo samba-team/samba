@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    System QUOTA function wrappers for XFS
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -26,7 +26,7 @@
 #if defined(HAVE_SYS_QUOTAS) && defined(HAVE_XFS_QUOTAS)
 
 #ifdef HAVE_SYS_QUOTA_H
-#include <sys/quota.h> 
+#include <sys/quota.h>
 #endif
 
 /* this one should actually come from glibc: */
@@ -49,7 +49,7 @@
 #define Q_XGETQSTAT Q_GETQSTAT
 #endif /* Q_XGETQSTAT */
 
-/* currently doesn't support Group and Project quotas on IRIX 
+/* currently doesn't support Group and Project quotas on IRIX
  */
 
 #ifndef QCMD
@@ -81,10 +81,10 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 
 	if (!bdev||!dp)
 		smb_panic("sys_get_xfs_quota: called with NULL pointer");
-		
+
 	ZERO_STRUCT(*dp);
 	dp->qtype = qtype;
-		
+
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
 			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
@@ -184,7 +184,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 
 	if (!bdev||!dp)
 		smb_panic("sys_set_xfs_quota: called with NULL pointer");
-	
+
 	if (bsize == dp->bsize) {
 		D.d_blk_softlimit = dp->softlimit;
 		D.d_blk_hardlimit = dp->hardlimit;
@@ -219,13 +219,13 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				path, bdev, (unsigned)id.uid));
 
 			quotactl(QCMD(Q_XGETQSTAT,USRQUOTA), bdev, -1, (caddr_t)&F);
-			
+
 			if (qflags & QUOTAS_DENY_DISK) {
 				if (!(F.qs_flags & XFS_QUOTA_UDQ_ENFD))
 					q_on |= XFS_QUOTA_UDQ_ENFD;
 				if (!(F.qs_flags & XFS_QUOTA_UDQ_ACCT))
 					q_on |= XFS_QUOTA_UDQ_ACCT;
-				
+
 				if (q_on != 0) {
 					ret = quotactl(QCMD(Q_XQUOTAON,USRQUOTA),bdev, -1, (caddr_t)&q_on);
 				} else {
@@ -277,13 +277,13 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				path, bdev, (unsigned)id.gid));
 
 			quotactl(QCMD(Q_XGETQSTAT,GRPQUOTA), bdev, -1, (caddr_t)&F);
-			
+
 			if (qflags & QUOTAS_DENY_DISK) {
 				if (!(F.qs_flags & XFS_QUOTA_GDQ_ENFD))
 					q_on |= XFS_QUOTA_GDQ_ENFD;
 				if (!(F.qs_flags & XFS_QUOTA_GDQ_ACCT))
 					q_on |= XFS_QUOTA_GDQ_ACCT;
-				
+
 				if (q_on != 0) {
 					ret = quotactl(QCMD(Q_XQUOTAON,GRPQUOTA),bdev, -1, (caddr_t)&q_on);
 				} else {
