@@ -994,6 +994,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
+	bool in_group;
 
 	map = talloc_zero(mem_ctx, GROUP_MAP);
 	if (!map) {
@@ -1019,17 +1020,21 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( !(account = samu_new( NULL )) ) {
+	account = samu_new(mem_ctx);
+	if (account == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_getsampwsid(account, &member_sid) ||
 	    !sid_to_uid(&member_sid, &uid) ||
 	    ((pwd = getpwuid_alloc(mem_ctx, uid)) == NULL)) {
+		TALLOC_FREE(account);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (pdb_user_in_group(mem_ctx, account, &group_sid)) {
+	in_group = pdb_user_in_group(mem_ctx, account, &group_sid);
+	if (in_group) {
+		TALLOC_FREE(account);
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
@@ -1040,7 +1045,9 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 
 	smb_add_user_group(group_name, pwd->pw_name);
 
-	if (!pdb_user_in_group(mem_ctx, account, &group_sid)) {
+	in_group = pdb_user_in_group(mem_ctx, account, &group_sid);
+	TALLOC_FREE(account);
+	if (!in_group) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
