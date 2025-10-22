@@ -883,16 +883,14 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 static char *
 uri_unescape_alloc(const char *uritok)
 {
-	char *ret;
-	char *end;
-	ret = (char *) SMB_STRDUP(uritok);
+	char *end = NULL;
+	char *ret = talloc_strdup(talloc_tos(), uritok);
 	if (!ret) {
 		return NULL;
 	}
 
 	end = rfc1738_unescape(ret);
 	if (end == NULL) {
-		free(ret);
 		return NULL;
 	}
 	return ret;
