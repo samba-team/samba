@@ -82,7 +82,7 @@ NTSTATUS smb_register_vfs(int version, const char *name,
 		DEBUG(0, ("Failed to register vfs module.\n"
 		          "The module was compiled against SMB_VFS_INTERFACE_VERSION %d,\n"
 		          "current SMB_VFS_INTERFACE_VERSION is %d.\n"
-		          "Please recompile against the current Samba Version!\n",  
+		          "Please recompile against the current Samba Version!\n",
 			  version, SMB_VFS_INTERFACE_VERSION));
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
   	}
@@ -1478,7 +1478,7 @@ int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				      bool labels)
 {
 	VFS_FIND(get_shadow_copy_data);
-	return handle->fns->get_shadow_copy_data_fn(handle, fsp, 
+	return handle->fns->get_shadow_copy_data_fn(handle, fsp,
 						    shadow_copy_data,
 						    labels);
 }
@@ -2480,7 +2480,7 @@ NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  const struct security_descriptor *psd)
 {
 	VFS_FIND(fset_nt_acl);
-	return handle->fns->fset_nt_acl_fn(handle, fsp, security_info_sent, 
+	return handle->fns->fset_nt_acl_fn(handle, fsp, security_info_sent,
 					   psd);
 }
 
@@ -2495,7 +2495,7 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 
 int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
-				     TALLOC_CTX *mem_ctx, 
+				     TALLOC_CTX *mem_ctx,
 				     char **blob_description,
 				     DATA_BLOB *blob)
 {
