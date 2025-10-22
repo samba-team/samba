@@ -1323,7 +1323,7 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 		loadparm_s3_global_substitution();
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 	struct smb_filename *smb_fname_cpath = NULL;
-	struct vfs_statvfs_struct statbuf;
+	struct vfs_statvfs_struct statbuf = {};
 	int ret;
 
 	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
@@ -1336,7 +1336,6 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 		return caps;
 	}
 
-	ZERO_STRUCT(statbuf);
 	ret = SMB_VFS_STATVFS(conn, smb_fname_cpath, &statbuf);
 	if (ret == 0) {
 		caps = statbuf.FsCapabilities;
