@@ -1119,7 +1119,7 @@ static bool wbinfo_xids_to_sids(const char *arg)
 	p = arg;
 
 	while (next_token_talloc(frame, &p, &idstr, LIST_SEP)) {
-		xids = talloc_realloc(xids,
+		xids = talloc_realloc(frame,
 				      xids,
 				      struct wbcUnixId,
 				      num_xids + 1);
