@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library - command line handling for ldb tools
 
    Copyright (C) Andrew Tridgell  2005
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -317,7 +317,7 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 	}
 
 	options = *ret;
-	
+
 	/* pull in URL */
 	options.url = getenv("LDB_URL");
 
@@ -366,7 +366,7 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 			break;
 
 		case 'o':
-			options.options = talloc_realloc(ret, options.options, 
+			options.options = talloc_realloc(ret, options.options,
 							 const char *, num_options+3);
 			if (options.options == NULL) {
 				fprintf(stderr, "Out of memory!\n");
@@ -398,7 +398,7 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 				}
 			}
 
-			break;	  
+			break;
 		}
 		case 'P':
 			if (!add_control(ret, "paged_results:1:1024")) {
@@ -449,7 +449,7 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 			}
 			break;
 		default:
-			fprintf(stderr, "Invalid option %s: %s\n", 
+			fprintf(stderr, "Invalid option %s: %s\n",
 				poptBadOption(pc, 0), poptStrerror(opt));
 			if (usage) usage(ldb);
 			goto failed;
@@ -504,7 +504,7 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 
 	/* now connect to the ldb */
 	if (ldb_connect(ldb, ret->url, flags, ret->options) != LDB_SUCCESS) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
+		fprintf(stderr, "Failed to connect to %s - %s\n",
 			ret->url, ldb_errstring(ldb));
 		goto failed;
 	}
