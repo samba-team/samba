@@ -34,6 +34,22 @@ log changes to the following attributes:
 For the JSON logs, changes to these will be logged with the "action"
 field set to "Auth info change".
 
+
+vfs_streams_xattr can hold larger streams
+-----------------------------------------
+
+On Linux the size of a single extended attribute is limited to 65536
+bytes of size. For some file systems, this is also the overall limit
+of space for xattrs, but for example xfs can hold more than that 64k
+of extended xattrs, although the individual xattr is still limited to
+64k. Setting
+
+streams_xattr:max xattrs per stream = 1
+
+to a higher value than 1 will allow Samba to shard the stream to more
+than one xattr. It has an artificial limit of 16 for a maximum stream
+length of 1MB.
+
 REMOVED FEATURES
 ================
 
