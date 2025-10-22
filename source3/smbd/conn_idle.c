@@ -70,7 +70,7 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 
 /****************************************************************************
  Forcibly unmount a share - async
- All instances of the parameter 'sharename' share are unmounted.
+ All shares where "check_fn" returns true are closed.
  The special sharename '*' forces unmount of all shares.
 ****************************************************************************/
 
