@@ -2037,10 +2037,9 @@ static bool wbinfo_pam_logon(char *username, bool verbose)
 			d_printf(" %s", buf);
 		}
 		d_printf("\n");
-
-		wbcFreeMemory(info);
-		info = NULL;
 	}
+	wbcFreeMemory(info);
+	info = NULL;
 
 	wbcFreeMemory(params.blobs);
 
