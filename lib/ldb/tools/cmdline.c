@@ -386,10 +386,10 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 
 				t = strchr(p, ',');
 				if (t == NULL) {
-					c = talloc_strdup(options.controls, p);
+					c = talloc_strdup(ret, p);
 					p = NULL;
 				} else {
-					c = talloc_strndup(options.controls, p, t-p);
+					c = talloc_strndup(ret, p, t-p);
 			        	p = t + 1;
 				}
 				if (c == NULL || !add_control(ret, c)) {
