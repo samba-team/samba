@@ -36,10 +36,9 @@ static bool fsp_attach_smb_fname(struct files_struct *fsp,
 /**
  * create new fsp to be used for file_new or a durable handle reconnect
  */
-NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
-		 files_struct **result)
+struct files_struct *fsp_new(TALLOC_CTX *mem_ctx,
+			     struct connection_struct *conn)
 {
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	files_struct *fsp = NULL;
 	struct smbd_server_connection *sconn = conn->sconn;
 
@@ -78,8 +77,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 	DBG_INFO("allocated files structure (%u used)\n",
 		(unsigned int)sconn->num_files);
 
-	*result = fsp;
-	return NT_STATUS_OK;
+	return fsp;
 
 fail:
 	if (fsp != NULL) {
@@ -87,7 +85,7 @@ fail:
 	}
 	TALLOC_FREE(fsp);
 
-	return status;
+	return NULL;
 }
 
 void fsp_set_gen_id(files_struct *fsp)
@@ -152,9 +150,9 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	files_struct *fsp;
 	NTSTATUS status;
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	GetTimeOfDay(&fsp->open_time);
@@ -416,9 +414,9 @@ static NTSTATUS openat_pathref_fullname(
 
 	SMB_ASSERT(smb_fname->fsp == NULL);
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	GetTimeOfDay(&fsp->open_time);
@@ -594,9 +592,9 @@ NTSTATUS open_rootdir_pathref_fsp(connection_struct *conn,
 	int fd;
 	bool ok;
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 	GetTimeOfDay(&fsp->open_time);
 	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
@@ -674,9 +672,9 @@ NTSTATUS open_stream_pathref_fsp(
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		goto nomem;
 	}
 
 	GetTimeOfDay(&fsp->open_time);
@@ -1074,10 +1072,10 @@ NTSTATUS openat_pathref_fsp_nosymlink(
 
 	DBG_DEBUG("path_in=%s\n", path_in);
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("fsp_new() failed: %s\n", nt_errstr(status));
-		goto fail;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		DBG_DEBUG("fsp_new() failed\n");
+		goto nomem;
 	}
 
 	GetTimeOfDay(&fsp->open_time);
@@ -1392,11 +1390,10 @@ next:
 		dirfsp = fsp;
 
 		if (tmp == in_dirfsp) {
-			status = fsp_new(conn, conn, &fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_DEBUG("fsp_new() failed: %s\n",
-					  nt_errstr(status));
-				goto fail;
+			fsp = fsp_new(conn, conn);
+			if (fsp == NULL) {
+				DBG_DEBUG("fsp_new() failed\n");
+				goto nomem;
 			}
 			fsp->fsp_name = &full_fname;
 		} else {
@@ -1544,10 +1541,10 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 		return NT_STATUS_NETWORK_OPEN_RESTRICTION;
 	}
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("fsp_new() failed: %s\n", nt_errstr(status));
-		return status;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		DBG_DEBUG("fsp_new() failed\n");
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	GetTimeOfDay(&fsp->open_time);
@@ -1689,10 +1686,10 @@ NTSTATUS openat_pathref_fsp_dot(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fsp_new(conn, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("fsp_new() failed: %s\n", nt_errstr(status));
-		return status;
+	fsp = fsp_new(conn, conn);
+	if (fsp == NULL) {
+		DBG_DEBUG("fsp_new() failed\n");
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	GetTimeOfDay(&fsp->open_time);

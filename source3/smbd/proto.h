@@ -315,8 +315,8 @@ NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
 
 /* The following definitions come from smbd/files.c  */
 
-NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
-		 files_struct **result);
+struct files_struct *fsp_new(TALLOC_CTX *mem_ctx,
+			     struct connection_struct *conn);
 void fsp_set_gen_id(files_struct *fsp);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);

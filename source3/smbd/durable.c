@@ -878,11 +878,10 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = fsp_new(conn, conn, &state.fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("failed to create new fsp: %s\n",
-			nt_errstr(status));
-		return status;
+	state.fsp = fsp_new(conn, conn);
+	if (state.fsp == NULL) {
+		DBG_ERR("failed to create new fsp\n");
+		return NT_STATUS_NO_MEMORY;
 	}
 	state.fsp->file_id = file_id;
 	state.fsp->file_pid = smb1req->smbpid;
