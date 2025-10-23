@@ -210,7 +210,7 @@ _PRIVATE_ NTSTATUS fss_state_store(TALLOC_CTX *mem_ctx,
 		goto err_ctx_free;
 	}
 
-	ret = dbwrap_wipe(db);
+	ret = dbwrap_wipe(db, (struct dbwrap_wipe_flags){.wipe_default=true});
 	if (ret != 0) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto err_db_free;

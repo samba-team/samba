@@ -161,7 +161,24 @@ struct tevent_req *dbwrap_parse_record_send(
 	void *private_data,
 	enum dbwrap_req_state *req_state);
 NTSTATUS dbwrap_parse_record_recv(struct tevent_req *req);
-int dbwrap_wipe(struct db_context *db);
+
+/**
+ * Wipe a database
+ *
+ * @param[in]  db           Database to wipe
+
+ * @param[in] flags         DBWRAP_DROP_PERSISTENT: On databases opened with
+ *                          DBWRAP_FLAG_PER_REC_PERSISTENT, wipe the persistent
+ *                          backup database.
+ *
+ * @return                  0 on success, -1 on error
+ **/
+struct dbwrap_wipe_flags {
+	bool wipe_default : 1;
+	bool wipe_persistent_backup_db : 1;
+};
+int dbwrap_wipe(struct db_context *db, struct dbwrap_wipe_flags flags);
+bool dbwrap_wipe_flags_default(struct dbwrap_wipe_flags flags);
 int dbwrap_check(struct db_context *db);
 int dbwrap_get_seqnum(struct db_context *db);
 /* Returns 0 if unknown. */

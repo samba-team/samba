@@ -73,7 +73,7 @@ struct db_context {
 					 void *private_data),
 			      void *private_data);
 	int (*exists)(struct db_context *db,TDB_DATA key);
-	int (*wipe)(struct db_context *db);
+	int (*wipe)(struct db_context *db, struct dbwrap_wipe_flags flags);
 	int (*check)(struct db_context *db);
 	size_t (*id)(struct db_context *db, uint8_t *id, size_t idlen);
 

@@ -224,7 +224,7 @@ static int db_tdb_exists(struct db_context *db, TDB_DATA key)
 	return tdb_exists(ctx->wtdb->tdb, key);
 }
 
-static int db_tdb_wipe(struct db_context *db)
+static int db_tdb_wipe(struct db_context *db, struct dbwrap_wipe_flags flags)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);

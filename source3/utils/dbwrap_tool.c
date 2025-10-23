@@ -291,7 +291,7 @@ static int dbwrap_tool_erase(struct db_context *db,
 {
 	int ret;
 
-	ret = dbwrap_wipe(db);
+	ret = dbwrap_wipe(db, (struct dbwrap_wipe_flags){.wipe_default=true});
 
 	if (ret != 0) {
 		d_fprintf(stderr, "ERROR erasing the database\n");

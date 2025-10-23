@@ -1239,7 +1239,10 @@ static bool check_ctx_write_new_db(struct check_ctx *ctx) {
 	assert(ctx->odb);
 
 	if (ctx->opt.wipe) {
-		int ret = dbwrap_wipe(ctx->odb);
+		int ret = dbwrap_wipe(ctx->odb,
+				      (struct dbwrap_wipe_flags){
+					      .wipe_default=true
+				      });
 		if (ret != 0) {
 			DEBUG(0, ("wiping %s failed\n", ctx->opt.output));
 			return false;
