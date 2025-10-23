@@ -502,7 +502,6 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
 	bool on_err_call_dis_hook = false;
@@ -791,16 +790,6 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 			goto err_root_exit;
 		}
 	}
-	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
-					conn->connectpath,
-					NULL,
-					NULL,
-					0,
-					0);
-	if (smb_fname_cpath == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_root_exit;
-	}
 
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
@@ -808,7 +797,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
 
-	ret = SMB_VFS_STAT(conn, smb_fname_cpath);
+	ret = SMB_VFS_OPEN_SHARE_ROOT(conn, conn->cwd_fsp, conn->connectpath);
 	if (ret != 0) {
 		DBG_ERR("'%s' does not exist or permission denied "
 			"when connecting to [%s] Error was %s\n",
@@ -819,7 +808,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		goto err_root_exit;
 	}
 
-	if (!S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
+	if (!S_ISDIR(conn->cwd_fsp->fsp_name->st.st_ex_mode)) {
 		DBG_ERR("'%s' is not a directory, when connecting to "
 			"[%s]\n",
 			conn->connectpath,
@@ -828,7 +817,7 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		goto err_root_exit;
 	}
 
-	conn->base_share_dev = smb_fname_cpath->st.st_ex_dev;
+	conn->base_share_dev = conn->cwd_fsp->fsp_name->st.st_ex_dev;
 
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted within a share path have
@@ -874,7 +863,6 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
   err_root_exit:
 
-	TALLOC_FREE(smb_fname_cpath);
 	/* We must exit this function as root. */
 	if (geteuid() != 0) {
 		change_to_root_user();
