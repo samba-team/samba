@@ -1185,13 +1185,14 @@ static void rename_open_files(connection_struct *conn,
 {
 	files_struct *fsp;
 	bool did_rename = False;
-	NTSTATUS status;
 	uint32_t new_name_hash = 0;
 
 	for(fsp = file_find_di_first(conn->sconn, id, false); fsp;
 	    fsp = file_find_di_next(fsp, false)) {
 		SMB_STRUCT_STAT fsp_orig_sbuf;
 		struct file_id_buf idbuf;
+		bool ok;
+
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
 		/* TODO - create the absolute path and manipulate the newname
@@ -1221,8 +1222,8 @@ static void rename_open_files(connection_struct *conn,
 		 * any of this metadata to the client anyway.
 		 */
 		fsp_orig_sbuf = fsp->fsp_name->st;
-		status = fsp_set_smb_fname(fsp, smb_fname_dst);
-		if (NT_STATUS_IS_OK(status)) {
+		ok = fsp_set_smb_fname(fsp, smb_fname_dst);
+		if (ok) {
 			did_rename = True;
 			new_name_hash = fsp->name_hash;
 			/* Restore existing stat. */

@@ -5326,7 +5326,8 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 
 	if (strcmp(fsp->conn->connectpath, msg->servicepath) == 0) {
 		SMB_STRUCT_STAT fsp_orig_sbuf;
-		NTSTATUS status;
+		bool ok;
+
 		DBG_DEBUG("renaming file %s from %s -> %s\n",
 			  fsp_fnum_dbg(fsp),
 			  fsp_str_dbg(fsp),
@@ -5349,10 +5350,9 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 		 * any of this metadata to the client anyway.
 		 */
 		fsp_orig_sbuf = fsp->fsp_name->st;
-		status = fsp_set_smb_fname(fsp, smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("fsp_set_smb_fname failed: %s\n",
-				  nt_errstr(status));
+		ok = fsp_set_smb_fname(fsp, smb_fname);
+		if (!ok) {
+			DBG_DEBUG("fsp_set_smb_fname failed\n");
 		}
 		fsp->fsp_name->st = fsp_orig_sbuf;
 	} else {
@@ -6377,6 +6377,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			file_free(NULL, tmp_base_fsp);
 		}
 	} else {
+		bool ok;
+
 		/*
 		 * No fsp passed in that we can use, create one
 		 */
@@ -6386,9 +6388,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 		free_fsp_on_error = true;
 
-		status = fsp_set_smb_fname(fsp, smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
+		ok = fsp_set_smb_fname(fsp, smb_fname);
+		if (!ok) {
+			goto nomem;
 		}
 	}
 
@@ -6415,6 +6417,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 	} else {
+		bool ok;
+
 		/*
 		 * Get a pathref on the parent. We can re-use this for
 		 * multiple calls to check parent ACLs etc. to avoid
@@ -6430,9 +6434,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 
 		dirfsp = parent_dir_fname->fsp;
-		status = fsp_set_smb_fname(dirfsp, parent_dir_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
+		ok = fsp_set_smb_fname(dirfsp, parent_dir_fname);
+		if (!ok) {
+			goto nomem;
 		}
 	}
 
@@ -6612,7 +6616,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	return NT_STATUS_OK;
 
- fail:
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
 	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {

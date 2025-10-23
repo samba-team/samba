@@ -145,6 +145,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 		loadparm_s3_global_substitution();
 	files_struct *fsp = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	/* access check */
 	if (geteuid() != sec_initial_uid()) {
@@ -172,8 +173,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	fh_set_pos(fsp->fh, -1);
 	fsp->fsp_flags.can_lock = false; /* Should this be true ? - No, JRA */
 	fsp->access_mask = access_mask;
-	status = fsp_set_smb_fname(fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	ok = fsp_set_smb_fname(fsp, smb_fname);
+	if (!ok) {
 		file_free(req, fsp);
 		return NT_STATUS_NO_MEMORY;
 	}

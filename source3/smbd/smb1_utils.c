@@ -44,6 +44,7 @@ struct files_struct *fcb_or_dos_open(
 	struct files_struct *fsp = NULL, *new_fsp = NULL;
 	size_t new_refcount;
 	NTSTATUS status;
+	bool ok;
 
 	if ((private_flags &
 	     (NTCREATEX_FLAG_DENY_DOS|
@@ -125,10 +126,10 @@ struct files_struct *fcb_or_dos_open(
 		new_fsp->fsp_flags.can_write = false;
 	}
 
-	status = fsp_set_smb_fname(new_fsp, fsp->fsp_name);
+	ok = fsp_set_smb_fname(new_fsp, fsp->fsp_name);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("fsp_set_smb_fname failed: %s\n", nt_errstr(status));
+	if (!ok) {
+		DBG_DEBUG("fsp_set_smb_fname failed\n");
 		file_free(req, new_fsp);
 		return NULL;
 	}

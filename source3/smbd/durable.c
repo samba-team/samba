@@ -801,6 +801,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	struct file_id file_id;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
+	bool ok;
 
 	*result = NULL;
 	*new_cookie = data_blob_null;
@@ -889,12 +890,11 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	state.fsp->fnum = op->local_id;
 	fh_set_gen_id(state.fsp->fh, op->global->open_global_id);
 
-	status = fsp_set_smb_fname(state.fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("fsp_set_smb_fname failed: %s\n",
-			  nt_errstr(status));
+	ok = fsp_set_smb_fname(state.fsp, smb_fname);
+	if (!ok) {
+		DBG_ERR("fsp_set_smb_fname failed\n");
 		file_free(smb1req, state.fsp);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
