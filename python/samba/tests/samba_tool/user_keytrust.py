@@ -366,7 +366,7 @@ class SambaToolUserKeyTrustTest(SambaToolCmdTest):
         self.assertEqual(len(self.get_links(self.user2)), 2)
 
 
-class SambaToolComputesrKeyTrustTest(SambaToolUserKeyTrustTest):
+class SambaToolComputerKeyTrustTest(SambaToolUserKeyTrustTest):
     cmd = "computer"
     user1 = 'ADDC'
     user2 = 'ADDC'
