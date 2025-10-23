@@ -2515,9 +2515,9 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
  * Return a jenkins hash of a pathname on a connection.
  */
 
-static NTSTATUS file_name_hash(connection_struct *conn,
-			       const char *name,
-			       uint32_t *p_name_hash)
+static bool file_name_hash(connection_struct *conn,
+			   const char *name,
+			   uint32_t *p_name_hash)
 {
 	char tmpbuf[PATH_MAX];
 	char *fullpath = NULL, *to_free = NULL;
@@ -2537,9 +2537,9 @@ static NTSTATUS file_name_hash(connection_struct *conn,
 				    sizeof(tmpbuf),
 				    &fullpath,
 				    &to_free);
-	}
-	if (len == -1) {
-		return NT_STATUS_NO_MEMORY;
+		if (len == -1) {
+			return false;
+		}
 	}
 	key = (TDB_DATA) { .dptr = (uint8_t *)fullpath, .dsize = len+1 };
 	*p_name_hash = tdb_jenkins_hash(&key);
@@ -2547,7 +2547,7 @@ static NTSTATUS file_name_hash(connection_struct *conn,
 	DBG_DEBUG("%s hash 0x%" PRIx32 "\n", fullpath, *p_name_hash);
 
 	TALLOC_FREE(to_free);
-	return NT_STATUS_OK;
+	return true;
 }
 
 static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
@@ -2558,6 +2558,7 @@ static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 	const char *name_str = NULL;
 	uint32_t name_hash = 0;
 	NTSTATUS status;
+	bool ok;
 
 	name_str = smb_fname_str_dbg(smb_fname_new);
 	if (name_str == NULL) {
@@ -2565,13 +2566,11 @@ static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = file_name_hash(fsp->conn,
-				name_str,
-				&name_hash);
+	ok = file_name_hash(fsp->conn, name_str, &name_hash);
 	TALLOC_FREE(frame);
 	name_str = NULL;
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = fsp_smb_fname_link(fsp,
