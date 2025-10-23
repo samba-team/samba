@@ -30,8 +30,8 @@
 
 #define FILE_HANDLE_OFFSET 0x1000
 
-static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
-				     struct smb_filename **_smb_fname);
+static bool fsp_attach_smb_fname(struct files_struct *fsp,
+				 struct smb_filename **_smb_fname);
 
 /**
  * create new fsp to be used for file_new or a durable handle reconnect
@@ -425,9 +425,9 @@ static NTSTATUS openat_pathref_fullname(
 
 	fsp->fsp_flags.is_pathref = true;
 
-	status = fsp_attach_smb_fname(fsp, full_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	ok = fsp_attach_smb_fname(fsp, full_fname);
+	if (!ok) {
+		goto nomem;
 	}
 
 	status = fd_openat(dirfsp, smb_fname, fsp, how);
@@ -681,9 +681,9 @@ NTSTATUS open_stream_pathref_fsp(
 
 	fsp->fsp_flags.is_pathref = true;
 
-	status = fsp_attach_smb_fname(fsp, &full_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	ok = fsp_attach_smb_fname(fsp, &full_fname);
+	if (!ok) {
+		goto nomem;
 	}
 	fsp_set_base_fsp(fsp, base_fsp);
 
@@ -1562,13 +1562,12 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fsp_attach_smb_fname(fsp, &full_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("fsp_attach_smb_fname(fsp, %s) failed: %s\n",
-			  smb_fname_str_dbg(full_fname),
-			  nt_errstr(status));
+	ok = fsp_attach_smb_fname(fsp, &full_fname);
+	if (!ok) {
+		DBG_DEBUG("fsp_attach_smb_fname(fsp, %s) failed\n",
+			  smb_fname_str_dbg(full_fname));
 		file_free(NULL, fsp);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	fd = smb_vfs_openat_ci(smb_fname_rel,
@@ -1708,13 +1707,12 @@ NTSTATUS openat_pathref_fsp_dot(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fsp_attach_smb_fname(fsp, &full_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("fsp_attach_smb_fname(fsp, %s) failed: %s\n",
-			  smb_fname_str_dbg(full_fname),
-			  nt_errstr(status));
+	ok = fsp_attach_smb_fname(fsp, &full_fname);
+	if (!ok) {
+		DBG_DEBUG("fsp_attach_smb_fname(fsp, %s) failed\n",
+			  smb_fname_str_dbg(full_fname));
 		file_free(NULL, fsp);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	fd = SMB_VFS_OPENAT(conn, dirfsp, dot, fsp, &how);
@@ -2550,8 +2548,8 @@ static bool file_name_hash(connection_struct *conn,
 	return true;
 }
 
-static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
-				     struct smb_filename **_smb_fname)
+static bool fsp_attach_smb_fname(struct files_struct *fsp,
+				 struct smb_filename **_smb_fname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname_new = talloc_move(fsp, _smb_fname);
@@ -2562,28 +2560,28 @@ static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
 	name_str = smb_fname_str_dbg(smb_fname_new);
 	if (name_str == NULL) {
 		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+		return false;
 	}
 
 	ok = file_name_hash(fsp->conn, name_str, &name_hash);
 	TALLOC_FREE(frame);
 	name_str = NULL;
 	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
+		return false;
 	}
 
 	ok = fsp_smb_fname_link(fsp,
 				&smb_fname_new->fsp_link,
 				&smb_fname_new->fsp);
 	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
+		return false;
 	}
 
 	fsp->name_hash = name_hash;
 	fsp->fsp_name = smb_fname_new;
 	fsp->fsp_name->st.cached_dos_attributes = FILE_ATTRIBUTE_INVALID;
 	*_smb_fname = NULL;
-	return NT_STATUS_OK;
+	return true;
 }
 
 /**
@@ -2594,17 +2592,17 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 {
 	struct smb_filename *smb_fname_old = fsp->fsp_name;
 	struct smb_filename *smb_fname_new = NULL;
-	NTSTATUS status;
+	bool ok;
 
 	smb_fname_new = cp_smb_filename(fsp, smb_fname_in);
 	if (smb_fname_new == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fsp_attach_smb_fname(fsp, &smb_fname_new);
-	if (!NT_STATUS_IS_OK(status)) {
+	ok = fsp_attach_smb_fname(fsp, &smb_fname_new);
+	if (!ok) {
 		TALLOC_FREE(smb_fname_new);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (smb_fname_old != NULL) {
