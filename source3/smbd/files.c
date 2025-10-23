@@ -2582,9 +2582,9 @@ static NTSTATUS file_name_hash(connection_struct *conn,
 			       uint32_t *p_name_hash)
 {
 	char tmpbuf[PATH_MAX];
-	char *fullpath, *to_free;
+	char *fullpath = NULL, *to_free = NULL;
 	ssize_t len;
-	TDB_DATA key;
+	TDB_DATA key = {.dptr = NULL};
 
 	/* Set the hash of the full pathname. */
 
@@ -2592,7 +2592,6 @@ static NTSTATUS file_name_hash(connection_struct *conn,
 		strlcpy(tmpbuf, name, sizeof(tmpbuf));
 		fullpath = tmpbuf;
 		len = strlen(fullpath);
-		to_free = NULL;
 	} else {
 		len = full_path_tos(conn->connectpath,
 				    name,
