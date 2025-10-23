@@ -2607,9 +2607,7 @@ static NTSTATUS file_name_hash(connection_struct *conn,
 	key = (TDB_DATA) { .dptr = (uint8_t *)fullpath, .dsize = len+1 };
 	*p_name_hash = tdb_jenkins_hash(&key);
 
-	DEBUG(10,("file_name_hash: %s hash 0x%x\n",
-		  fullpath,
-		(unsigned int)*p_name_hash ));
+	DBG_DEBUG("%s hash 0x%" PRIx32 "\n", fullpath, *p_name_hash);
 
 	TALLOC_FREE(to_free);
 	return NT_STATUS_OK;
