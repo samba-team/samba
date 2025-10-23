@@ -25,6 +25,7 @@
 #include "libcli/security/security.h"
 #include "lib/util/sys_rw_data.h"
 #include "smbd/fd_handle.h"
+#include "source3/smbd/smbXsrv_open.h"
 
 /****************************************************************************
  Special FCB or DOS processing in the case of a sharing violation.
@@ -285,4 +286,61 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 	*_mask_out = talloc_move(ctx, &mask);
 
 	return status;
+}
+
+/****************************************************************************
+ Get an fsp from a packet given a 16 bit fnum.
+****************************************************************************/
+
+files_struct *file_fsp(struct smb_request *req, uint16_t fid)
+{
+	struct smbXsrv_open *op;
+	NTSTATUS status;
+	NTTIME now = 0;
+	files_struct *fsp;
+
+	if (req == NULL) {
+		/*
+		 * We should never get here. req==NULL could in theory
+		 * only happen from internal opens with a non-zero
+		 * root_dir_fid. Internal opens just don't do that, at
+		 * least they are not supposed to do so. And if they
+		 * start to do so, they better fake up a smb_request
+		 * from which we get the right smbd_server_conn. While
+		 * this should never happen, let's return NULL here.
+		 */
+		return NULL;
+	}
+
+	if (req->chain_fsp != NULL) {
+		if (req->chain_fsp->fsp_flags.closing) {
+			return NULL;
+		}
+		return req->chain_fsp;
+	}
+
+	if (req->xconn == NULL) {
+		return NULL;
+	}
+
+	now = timeval_to_nttime(&req->request_time);
+
+	status = smb1srv_open_lookup(req->xconn,
+				     fid, now, &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	fsp = op->compat;
+	if (fsp == NULL) {
+		return NULL;
+	}
+
+	if (fsp->fsp_flags.closing) {
+		return NULL;
+	}
+
+	req->chain_fsp = fsp;
+	fsp->fsp_name->st.cached_dos_attributes = FILE_ATTRIBUTE_INVALID;
+	return fsp;
 }

@@ -42,5 +42,6 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					   struct files_struct **_dirfsp,
 					   struct smb_filename **_smb_fname_out,
 					   char **_mask_out);
+struct files_struct *file_fsp(struct smb_request *req, uint16_t fid);
 
 #endif
