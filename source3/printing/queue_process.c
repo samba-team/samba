@@ -265,6 +265,7 @@ static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
+	lp_load_with_shares(get_dyn_CONFIGFILE());
 	pcap_cache_reload(state->ev, msg_ctx, reload_pcap_change_notify);
 	printing_subsystem_queue_tasks(state);
 }
@@ -322,6 +323,8 @@ struct bq_state *register_printing_bq_handlers(
 		goto fail_free_handlers;
 	}
 
+	/* Load shares, needed for [printers] */
+	lp_load_with_shares(get_dyn_CONFIGFILE());
 	/* Initialize the printcap cache as soon as the daemon starts. */
 	pcap_cache_reload(state->ev, state->msg, reload_pcap_change_notify);
 
