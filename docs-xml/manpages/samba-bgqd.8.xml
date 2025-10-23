@@ -14,28 +14,53 @@
 <refnamediv>
 	<refname>samba-bgqd</refname>
 	<refpurpose>This is an internal helper program performing
-	asynchronous printing-related jobs.</refpurpose>
+	asynchronous printing-related tasks</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>samba-bgqd</command>
+		<arg choice="opt">-D|--daemon</arg>
+		<arg choice="opt">-i|--interactive</arg>
+		<arg choice="opt">-F|--foreground</arg>
+		<arg choice="opt">--no-process-group</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=&lt;configuration file&gt;</arg>
+		<arg choice="opt">--option=&lt;name&gt;=&lt;value&gt;</arg>
+		<arg choice="opt">-l|--log-basename &lt;log directory&gt;</arg>
+		<arg choice="opt">--ready-signal-fd &lt;fd&gt;</arg>
+		<arg choice="opt">--parent-watch-fd &lt;fd&gt;</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the
+	<para>This program is part of the
 	<citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>samba-bgqd is an helper program to be spawned by smbd or
-	spoolssd to perform jobs like updating the printer list or
-	other management tasks asynchronously on demand. It is not
-	intended to be called by users or administrators.</para>
+	<para><command>samba-bgqd</command> is not intended to be invoked
+	directly by users.</para>
+
+	<para>Likewise, while <command>samba-bgqd</command> is also not
+	intended to be run manually by system administrators, on systems with a
+	large number of printers configured via CUPS, it is recommended to run
+	<command>samba-bgqd</command> as a systemd service to improve
+	performance and responsiveness of printing operations.</para>
 </refsect1>
 
+<refsect1>
+	<title>SEE ALSO</title>
+
+	<para>
+	<citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, and
+	<citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>.
+	</para>
+</refsect1>
 <refsect1>
 	<title>AUTHOR</title>
 
