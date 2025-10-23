@@ -1,4 +1,4 @@
-/* 
+/*
  * implementation of an Shadow Copy module
  *
  * Copyright (C) Stefan Metzmacher	2003-2004
@@ -7,12 +7,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -36,7 +36,7 @@
     Z:\@GMT-2003.08.05-12.02.00\
 
     e.g.
-    
+
     Z:\testfile.txt
     Z:\@GMT-2003.08.05-12.02.00\testfile.txt
 
@@ -47,7 +47,7 @@
 
 
     Note: Files must differ to be displayed via Windows Explorer!
-	  Directories are always displayed...    
+	  Directories are always displayed...
 */
 
 static int vfs_shadow_copy_debug_level = DBGC_VFS;
@@ -149,8 +149,8 @@ static int shadow_copy_closedir(vfs_handle_struct *handle, DIR *_dirp)
 
 	SAFE_FREE(dirp->dirs);
 	SAFE_FREE(dirp);
- 
-	return 0;	
+
+	return 0;
 }
 
 static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
@@ -269,7 +269,7 @@ NTSTATUS vfs_shadow_copy_init(TALLOC_CTX *ctx)
 		DEBUG(0, ("%s: Couldn't register custom debugging class!\n",
 			"vfs_shadow_copy_init"));
 	} else {
-		DEBUG(10, ("%s: Debug class number of '%s': %d\n", 
+		DEBUG(10, ("%s: Debug class number of '%s': %d\n",
 			"vfs_shadow_copy_init","shadow_copy",vfs_shadow_copy_debug_level));
 	}
 

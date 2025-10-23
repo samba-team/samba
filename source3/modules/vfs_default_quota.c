@@ -1,4 +1,4 @@
-/* 
+/*
  * Store default Quotas in a specified quota record
  *
  * Copyright (C) Stefan (metze) Metzmacher 2003
@@ -7,12 +7,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -35,7 +35,7 @@
  *  it can be overwrittem when you load the module in
  *  the 'vfs objects' parameter like this:
  *  vfs objects = default_quota:myprefix)
- * 
+ *
  * "<myprefix>:uid" parameter takes a integer argument,
  *     it specifies the uid of the quota record, that will be taken for
  *     storing the default USER-quotas.
@@ -47,10 +47,10 @@
  *     it specifies if we should report the stored default quota values,
  *     also for the user record, or if you should just report NO_LIMIT
  *     to the windows client for the user specified by the "<prefix>:uid" parameter.
- *     
+ *
  *     - default value: yes (that means to report NO_LIMIT)
  *     - e.g.: default_quota:uid nolimit = no
- * 
+ *
  * "<myprefix>:gid" parameter takes a integer argument,
  *     it's just like "<prefix>:uid" but for group quotas.
  *     (NOTE: group quotas are not supported from the windows explorer!)
@@ -61,7 +61,7 @@
  * "<myprefix>:gid nolimit" parameter takes a boolean argument,
  *     it's just like "<prefix>:uid nolimit" but for group quotas.
  *     (NOTE: group quotas are not supported from the windows explorer!)
- *     
+ *
  *     - default value: yes (that means to report NO_LIMIT)
  *     - e.g.: default_quota:uid nolimit = no
  *

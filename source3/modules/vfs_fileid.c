@@ -157,7 +157,7 @@ static void fileid_load_mount_entries(struct fileid_handle_data *data)
 	}
 	endmntent(f);
 	return;
-	
+
 nomem:
 	if (f) endmntent(f);
 
@@ -187,7 +187,7 @@ static struct fileid_mount_entry *fileid_find_mount_entry(struct fileid_handle_d
 		if (data->mount_entries[i].device == dev) {
 			return &data->mount_entries[i];
 		}
-	}	
+	}
 	return NULL;
 }
 
