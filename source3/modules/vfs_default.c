@@ -210,18 +210,16 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 				   handle->conn->sconn->remote_address,
 				   handle->conn->sconn->local_address,
 				   junction, &consumedcnt, &self_referral);
-	if (!NT_STATUS_IS_OK(status)) {
-		struct smb_filename connectpath_fname = {
-			.base_name = handle->conn->connectpath
-		};
-		vfs_ChDir(handle->conn, &connectpath_fname);
-		return status;
-	}
+
 	{
 		struct smb_filename connectpath_fname = {
 			.base_name = handle->conn->connectpath
 		};
 		vfs_ChDir(handle->conn, &connectpath_fname);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (!self_referral) {
