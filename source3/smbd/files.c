@@ -2577,8 +2577,9 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
  * Return a jenkins hash of a pathname on a connection.
  */
 
-NTSTATUS file_name_hash(connection_struct *conn,
-			const char *name, uint32_t *p_name_hash)
+static NTSTATUS file_name_hash(connection_struct *conn,
+			       const char *name,
+			       uint32_t *p_name_hash)
 {
 	char tmpbuf[PATH_MAX];
 	char *fullpath, *to_free;
