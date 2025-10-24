@@ -612,7 +612,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	if (config->keeptree) {
+	if (config->keeptree && !ISDOT(path_name)) {
 		temp_name = talloc_asprintf(frame, "%s/%s",
 					    config->repository,
 					    path_name);
