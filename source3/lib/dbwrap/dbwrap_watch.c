@@ -908,6 +908,15 @@ static int dbwrap_watched_exists(struct db_context *db, TDB_DATA key)
 	return dbwrap_exists(ctx->backend, key);
 }
 
+static int dbwrap_watched_wipe(struct db_context *db,
+			       struct dbwrap_wipe_flags flags)
+{
+	struct db_watched_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_watched_ctx);
+
+	return dbwrap_wipe(ctx->backend, flags);
+}
+
 static size_t dbwrap_watched_id(struct db_context *db, uint8_t *id,
 				size_t idlen)
 {
@@ -954,6 +963,7 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 	db->parse_record_send = dbwrap_watched_parse_record_send;
 	db->parse_record_recv = dbwrap_watched_parse_record_recv;
 	db->exists = dbwrap_watched_exists;
+	db->wipe = dbwrap_watched_wipe;
 	db->id = dbwrap_watched_id;
 	db->name = dbwrap_name(ctx->backend);
 
