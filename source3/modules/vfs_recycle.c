@@ -363,9 +363,9 @@ static bool matchdirparam(const char **dir_exclude_list, char *path)
 		return False;
 	}
 
-	/* 
+	/*
 	 * Walk the components of path, looking for matches with the
-	 * exclude list on each component. 
+	 * exclude list on each component.
 	 */
 
 	for (startp = path; startp; startp = endp) {
