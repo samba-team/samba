@@ -5633,3 +5633,274 @@ struct torture_suite *torture_smb2_durable_v2_regressions_init(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+static struct {
+	const char *req_lease;
+	const char *exp_granted_fo_win;
+	const char *exp_granted_so_win;
+	const char *exp_granted_fo_samba;
+	const char *exp_granted_fo_max_rwh_samba;
+	const char *exp_granted_so_samba;
+} ph_lease_tests[] = {
+	/*      Windows         Samba             */
+	/* Req  FO      SO      FO(R)   FO(RWH) SO */
+	{"",    "",     "",     "",     "",     "",},
+	{"R",   "R",    "R",    "R",    "R",    "R"},
+	{"RW",  "RW",   "R",    "R",    "RW",   "R"},
+	{"RH",  "RH",   "R",    "R",    "RH",   "R"},
+	{"RWH", "RWH",  "R",    "R",    "RWH",  "R"},
+};
+
+/*
+ * Basic testing of reconnecting persistent opens with various lease levels
+ *
+ * This demonstrates that you don't need a lease for a persistent open.
+ *
+ * Windows only grants R leases on SO-shares. On non-SO shares (FO), Windows
+ * grants RWH, Samba defaults to only grant R, as true active/passive failover
+ * is currently not tested in our CI, where the lease state is lost and in
+ * theory recreated when reconnecting. We have the option "smb3 ca:max lease
+ * mask" to allow changing this, which is what this test uses to check both
+ * behaviours.
+ */
+static bool test_persistent_leaselevels_share(struct torture_context *tctx,
+					      struct smb2_tree *_tree,
+					      const char *share)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_tree *tree = NULL;
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1 = {};
+	uint32_t tcon_caps;
+	int i;
+	bool share_is_so;
+	NTSTATUS status;
+	bool ret = true;
+
+	for (i = 0; i < ARRAY_SIZE(ph_lease_tests); i++) {
+		char *fname = NULL;
+		const char *lease = ph_lease_tests[i].req_lease;
+		uint64_t previous_session_id;
+		struct smbcli_options options =
+			_tree->session->transport->options;
+		uint64_t lease1 = random();
+		struct GUID create_guid = GUID_random();
+		struct smb2_lease *_ls = NULL;
+		uint16_t expected_granted;
+		const char *exp_granted_str = NULL;
+
+		fname = talloc_asprintf(tctx, "lease_break-%ld.dat", random());
+		torture_assert_not_null_goto(tctx, fname, ret, done,
+					     "talloc_asprintf failed\n");
+
+		options.client_guid = GUID_random();
+
+		ret = torture_smb2_connection_share_ext(
+			tctx, share, 0, &options, &tree);
+		torture_assert_goto(tctx, ret, ret, done,
+				    "torture_smb2_connection_ext failed\n");
+		previous_session_id = smb2cli_session_current_id(
+			tree->session->smbXcli);
+
+		tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+		if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+			torture_fail(tctx, "Expect CA\n");
+		}
+		share_is_so = (tcon_caps & SMB2_SHARE_CAP_SCALEOUT);
+		if (share_is_so) {
+			torture_comment(tctx, "SMB2_SHARE_CAP_SCALEOUT\n");
+		}
+
+		if (TARGET_IS_SAMBA3(tctx)) {
+			if (share_is_so) {
+				exp_granted_str = ph_lease_tests[i].
+					exp_granted_so_samba;
+			} else {
+				if (strequal(share, "ca_fo_max_rwh")) {
+					exp_granted_str = ph_lease_tests[i].
+						exp_granted_fo_max_rwh_samba;
+				} else {
+					exp_granted_str = ph_lease_tests[i].
+						exp_granted_fo_samba;
+				}
+			}
+		} else {
+			if (share_is_so) {
+				exp_granted_str = ph_lease_tests[i].
+					exp_granted_so_win;
+			} else {
+				exp_granted_str = ph_lease_tests[i].
+					exp_granted_fo_win;
+			}
+		}
+
+		expected_granted = smb2_util_lease_state(exp_granted_str);
+
+		torture_comment(tctx, "%2d: Request PH with [%-4s] lease, "
+				"granted lease level [%-4s]\n",
+				i+1, lease, exp_granted_str);
+
+		/*
+		 * Grab durable open
+		 */
+		if (lease[0] != '\0') {
+			_ls = &ls;
+		}
+
+		ZERO_STRUCT(io);
+		smb2_lease_create_share(&io, _ls, false, fname,
+					smb2_util_share_access("RWD"), lease1,
+					smb2_util_lease_state(lease));
+		io.in.durable_open_v2 = true;
+		io.in.persistent_open = true;
+		io.in.create_guid = create_guid;
+		status = smb2_create(tree, mem_ctx, &io);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h1 = io.out.file.handle;
+
+		if (_ls != NULL) {
+			torture_assert_int_equal_goto(
+				tctx, io.out.oplock_level,
+				SMB2_OPLOCK_LEVEL_LEASE,
+				ret, done, "Bad lease level\n");
+			torture_assert_int_equal_goto(
+				tctx, io.out.lease_response.lease_state,
+				expected_granted,
+				ret, done, "Bad lease level\n");
+		}
+
+		/*
+		 * Now disconnect
+		 */
+		TALLOC_FREE(tree);
+		sleep(1);
+
+		/*
+		 * Now reconnect the session and the persistent handle
+		 */
+		ret = torture_smb2_connection_share_ext(tctx,
+							share,
+							previous_session_id,
+							&options,
+							&tree);
+		torture_assert_goto(tctx, ret, ret, done,
+				    "torture_smb2_connection_ext failed\n");
+		tree->session->transport->lease.handler	= torture_lease_handler;
+		tree->session->transport->lease.private_data = tree;
+
+		ZERO_STRUCT(io);
+		smb2_lease_create(&io, _ls, false, fname, lease1,
+				  smb2_util_lease_state(lease));
+		h1.data[1] = 0;
+		io.in.durable_handle_v2 = &h1;
+		io.in.create_guid = create_guid;
+		io.in.persistent_open = true;
+		status = smb2_create(tree, mem_ctx, &io);
+
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"reconnect failed\n");
+		h1 = io.out.file.handle;
+
+		if (_ls != NULL) {
+			torture_assert_goto(
+				tctx,
+				io.out.oplock_level == SMB2_OPLOCK_LEVEL_LEASE,
+				ret, done, "Bad oplock level\n");
+			torture_assert_int_equal_goto(
+				tctx,
+				io.out.lease_response.lease_state,
+				expected_granted,
+				ret, done, "Bad lease level\n");
+		}
+		smb2_util_close(tree, h1);
+		ZERO_STRUCT(h1);
+
+		status = smb2_util_unlink(_tree, fname);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"unlink failed\n");
+		TALLOC_FREE(tree);
+		TALLOC_FREE(fname);
+	}
+
+ done:
+	if (!smb2_util_handle_empty(h1) && tree != NULL) {
+		smb2_util_close(tree, h1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+static bool test_persistent_leaselevels(struct torture_context *tctx,
+					struct smb2_tree *_tree)
+{
+	const char *share = torture_setting_string(tctx, "share", NULL);
+
+	return test_persistent_leaselevels_share(tctx, _tree, share);
+}
+
+static bool test_persistent_leaselevels_fo(struct torture_context *tctx,
+					   struct smb2_tree *_tree)
+{
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		torture_skip(tctx, "Runs against standalone, "
+			     "skip against SO\n");
+	}
+
+	ret = test_persistent_leaselevels_share(tctx, _tree, "ca_fo");
+	return ret;
+}
+
+static bool test_persistent_leaselevels_fo_max_rwh(struct torture_context *tctx,
+						   struct smb2_tree *_tree)
+{
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (tcon_caps & SMB2_SHARE_CAP_SCALEOUT) {
+		torture_skip(tctx, "Runs against standalone, "
+			     "skip against SO\n");
+	}
+
+	ret = test_persistent_leaselevels_share(tctx, _tree, "ca_fo_max_rwh");
+	return ret;
+}
+
+static bool test_persistent_leaselevels_so(struct torture_context *tctx,
+					   struct smb2_tree *_tree)
+{
+	uint32_t tcon_caps;
+	bool ret;
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_SCALEOUT)) {
+		torture_skip(tctx, "Runs against SO, "
+			     "skip against standalone\n");
+	}
+
+	ret = test_persistent_leaselevels_share(tctx, _tree, "ca_so");
+	return ret;
+}
+
+struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(ctx, "persistent-open");
+
+	suite->description = talloc_strdup(suite, "SMB2-PERSISTENT-OPEN tests");
+
+	torture_suite_add_1smb2_test(suite, "leaselevels", test_persistent_leaselevels);
+	torture_suite_add_1smb2_test(suite, "leaselevels_fo", test_persistent_leaselevels_fo);
+	torture_suite_add_1smb2_test(suite, "leaselevels_fo_max_rwh", test_persistent_leaselevels_fo_max_rwh);
+	torture_suite_add_1smb2_test(suite, "leaselevels_so", test_persistent_leaselevels_so);
+
+	return suite;
+}

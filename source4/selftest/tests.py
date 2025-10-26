@@ -430,6 +430,7 @@ smb2_s3only = [
     "smb2.create_no_streams",
     "smb2.streams",
     "smb2.maximum_allowed",
+    "smb2.persistent-open",
 ]
 smb2 = [x for x in smbtorture4_testsuites("smb2.") if x not in smb2_s3only]
 

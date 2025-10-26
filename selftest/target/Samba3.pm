@@ -557,6 +557,19 @@ sub setup_clusteredmember
        smbd:FSCTL_SMBTORTURE = yes
        clusteredmember:stop_node = $prefix/stop_node.sh
        clusteredmember:start_node = $prefix/start_node.sh
+
+[so]
+	path = $prefix/shared
+	continuous availability = no
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
+[ca_so]
+	path = $prefix/shared
+	continuous availability = yes
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
 ";
 
 		my $node_ret = $self->provision(
@@ -1978,6 +1991,7 @@ sub setup_fileserver
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	server smb transports = +quic
+	persistent handles = yes
 
         smb3 unix extensions = yes
 	kernel change notify = yes
@@ -2156,6 +2170,32 @@ sub setup_fileserver
 	path = $share_dir
 	vfs objects = streams_depot
 	inherit permissions = yes
+
+[fo]
+	path = $share_dir
+	smb3 share cap:CLUSTER = yes
+	smb3 share cap:SCALE OUT = no
+	continuous availability = no
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
+[ca_fo]
+	path = $share_dir
+	smb3 share cap:CLUSTER = yes
+	smb3 share cap:SCALE OUT = no
+	continuous availability = yes
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
+[ca_fo_max_rwh]
+	path = $share_dir
+	smb3 share cap:CLUSTER = yes
+	smb3 share cap:SCALE OUT = no
+	continuous availability = yes
+	smb3 ca:max lease mask = RWH
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
 ";
 
 	if (defined($more_conf)) {
