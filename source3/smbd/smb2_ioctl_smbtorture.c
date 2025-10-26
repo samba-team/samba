@@ -132,6 +132,70 @@ static void smbd_fsctl_torture_async_sleep_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static NTSTATUS smbd_fsctl_torture_stop_ctdb_node(uint8_t pnn)
+{
+	const char *opt = NULL;
+	char *cmd = NULL;
+	int ret;
+
+	DBG_WARNING("Received stop node %"PRIu8" request\n", pnn);
+
+	opt = lp_parm_const_string (-1, "clusteredmember", "stop_node", NULL);
+	if (opt == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	cmd = talloc_asprintf(talloc_tos(), "%s %"PRIu8, opt, pnn);
+	if (cmd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_WARNING("cmd: '%s'\n", cmd);
+
+	ret = smbrun(cmd, NULL, NULL);
+	if (ret != 0) {
+		DBG_WARNING("'%s' failed\n", cmd);
+		TALLOC_FREE(cmd);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	TALLOC_FREE(cmd);
+
+	DBG_WARNING("Finished stop node %"PRIu8" request\n", pnn);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smbd_fsctl_torture_start_ctdb_node(uint8_t pnn)
+{
+	const char *opt = NULL;
+	char *cmd = NULL;
+	int ret;
+
+	DBG_WARNING("Received start node %"PRIu8" request\n", pnn);
+
+	opt = lp_parm_const_string (-1, "clusteredmember", "start_node", NULL);
+	if (opt == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	cmd = talloc_asprintf(talloc_tos(), "%s %"PRIu8, opt, pnn);
+	if (cmd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_WARNING("cmd: '%s'\n", cmd);
+
+	ret = smbrun(cmd, NULL, NULL);
+	if (ret != 0) {
+		DBG_WARNING("'%s' failed\n", cmd);
+		TALLOC_FREE(cmd);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	TALLOC_FREE(cmd);
+
+	DBG_WARNING("Finished start node %"PRIu8" request\n", pnn);
+	return NT_STATUS_OK;
+}
+
 struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
 					 struct tevent_context *ev,
 					 struct tevent_req *req,
@@ -213,6 +277,53 @@ struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
 					req);
 		return req;
         }
+
+	case FSCTL_SMBTORTURE_GET_CTDB_PNN: {
+		uint32_t pnn = get_my_vnn();
+
+		if (state->in_input.length != 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		state->out_output = data_blob_talloc(state, NULL, 1);
+		if (state->out_output.data == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return tevent_req_post(req, ev);
+		}
+
+		SCVAL(state->out_output.data, 0x00, (uint8_t)pnn);
+
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	case FSCTL_SMBTORTURE_STOP_CTDB_NODE:
+		if (state->in_input.length != 1) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		status = smbd_fsctl_torture_stop_ctdb_node(
+			PULL_BE_U8(state->in_input.data, 0));
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+
+	case FSCTL_SMBTORTURE_START_CTDB_NODE:
+		if (state->in_input.length != 1) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		status = smbd_fsctl_torture_start_ctdb_node(
+			PULL_BE_U8(state->in_input.data, 0));
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 
 	default:
 		goto not_supported;
