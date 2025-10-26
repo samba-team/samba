@@ -1020,3 +1020,107 @@ NTSTATUS torture_smb2_check_privilege(struct smb2_tree *tree,
 
 	return smb2lsa_sid_check_privilege(tree, sid_str, privilege);
 }
+
+bool torture_stop_ctdb_node(struct torture_context *tctx,
+			    struct smb2_tree **_tree,
+			    uint8_t *_pnn)
+{
+	struct smb2_tree *tree = *_tree;
+	struct smb2_ioctl ioctl = {};
+	struct smb2_handle h = {};
+	struct tevent_req *req = NULL;
+	uint8_t pnn;
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_comment(tctx, "Stopping ctdbd on my node...\n");
+
+	status = torture_smb2_testdir(tree, "", &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	ioctl.in.file.handle = h;
+	ioctl.in.function = FSCTL_SMBTORTURE_GET_CTDB_PNN;
+	ioctl.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	ioctl.in.max_output_response = 1;
+
+	status = smb2_ioctl(tree, tree, &ioctl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_ioctl failed\n");
+
+	pnn = PULL_BE_U8(ioctl.out.out.data, 0);
+
+	ioctl.in.file.handle = h;
+	ioctl.in.function = FSCTL_SMBTORTURE_STOP_CTDB_NODE;
+	ioctl.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	ioctl.in.out.data = &pnn;
+	ioctl.in.out.length = 1;
+
+	status = smb2_ioctl(tree, tree, &ioctl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_ioctl failed\n");
+
+	req = smbXcli_conn_samba_suicide_send(
+		tctx,
+		tctx->ev,
+		tree->session->transport->conn,
+		SMB_SUICIDE_EXIT_STATUS_BYPASS_CLEANUP);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "suicide failed");
+	ret = tevent_req_poll_ntstatus(req, tctx->ev, &status);
+	torture_assert_goto(tctx, ret, ret, done, "suicide failed");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "suicide failed");
+
+	*_pnn = pnn;
+
+	torture_comment(tctx, "Stopped ctdbd on my node %"PRIu8"\n", pnn);
+
+	sleep(5);
+
+done:
+	TALLOC_FREE(tree);
+	*_tree = NULL;
+
+	return ret;
+}
+
+bool torture_start_ctdb_node(struct torture_context *tctx,
+			     struct smb2_tree *tree,
+			     uint8_t pnn)
+{
+	struct smb2_ioctl ioctl = {};
+	struct smb2_handle h = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_comment(tctx, "Starting ctdbd on node %"PRIu8"...\n", pnn);
+
+	status = torture_smb2_testdir(tree, "", &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	ioctl.in.file.handle = h;
+	ioctl.in.function = FSCTL_SMBTORTURE_START_CTDB_NODE;
+	ioctl.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	ioctl.in.out.data = &pnn;
+	ioctl.in.out.length = 1;
+
+	status = smb2_ioctl(tree, tree, &ioctl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_ioctl failed\n");
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h);
+
+	torture_comment(tctx, "Started ctdbd on node %"PRIu8"\n", pnn);
+
+	sleep(5);
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	return ret;
+}
