@@ -61,6 +61,7 @@
 #include "source3/lib/substitute.h"
 #include "lib/addrchange.h"
 #include "../source4/lib/tls/tls.h"
+#include "libcli/smb/smbXcli_base.h"
 
 #ifdef HAVE_LIBQUIC
 #include <netinet/quic.h>
@@ -879,7 +880,8 @@ static void cleanupd_started(struct tevent_req *req)
 
 static void remove_child_pid(struct smbd_parent_context *parent,
 			     pid_t pid,
-			     bool unclean_shutdown)
+			     bool unclean_shutdown,
+			     bool ignore)
 {
 	struct smbd_child_pid *child;
 	NTSTATUS status;
@@ -898,6 +900,11 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	if (child == NULL) {
 		/* not all forked child processes are added to the children list */
 		DEBUG(2, ("Could not find child %d -- ignoring\n", (int)pid));
+		return;
+	}
+
+	if (ignore) {
+		DBG_WARNING("Ignoring exit of child %d\n", pid);
 		return;
 	}
 
@@ -986,13 +993,19 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
 		bool unclean_shutdown = False;
+		bool ignore = false;
 
 		/* If the child terminated normally, assume
 		   it was an unclean shutdown unless the
 		   status is 0
 		*/
 		if (WIFEXITED(status)) {
-			unclean_shutdown = WEXITSTATUS(status);
+			int exitcode = WEXITSTATUS(status);
+			unclean_shutdown = (exitcode != 0);
+#ifdef ENABLE_SELFTEST
+			ignore = (exitcode ==
+				  SMB_SUICIDE_EXIT_STATUS_BYPASS_CLEANUP);
+#endif
 		}
 		/* If the child terminated due to a signal
 		   we always assume it was unclean.
@@ -1000,7 +1013,7 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 		if (WIFSIGNALED(status)) {
 			unclean_shutdown = True;
 		}
-		remove_child_pid(parent, pid, unclean_shutdown);
+		remove_child_pid(parent, pid, unclean_shutdown, ignore);
 	}
 }
 

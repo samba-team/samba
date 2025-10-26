@@ -22,6 +22,7 @@
 #define _SMBXCLI_BASE_H_
 
 #define SMB_SUICIDE_PACKET 0x74697865
+#define SMB_SUICIDE_EXIT_STATUS_BYPASS_CLEANUP 234
 
 #include "replace.h"
 #include <tevent.h>
