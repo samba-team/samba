@@ -552,6 +552,11 @@ sub setup_clusteredmember
        dbwrap_tdb_mutexes:* = yes
        ${require_mutexes}
        sync machine password to keytab = $node_prefix/keytab0:account_name:machine_password:sync_kvno
+       persistent handles = yes
+       smb3 directory leases = yes
+       smbd:FSCTL_SMBTORTURE = yes
+       clusteredmember:stop_node = $prefix/stop_node.sh
+       clusteredmember:start_node = $prefix/start_node.sh
 ";
 
 		my $node_ret = $self->provision(
@@ -4266,6 +4271,8 @@ sub provision_ctdb($$$$)
 {
 	my ($self, $prefix, $num_nodes) = @_;
 	my $rc;
+	my $abs_prefix = abs_path($prefix);
+	my $ctdb = abs_path(Samba::bindir_path($self, "ctdb"));
 
 	print "PROVISIONING CTDB...\n";
 
@@ -4370,6 +4377,34 @@ sub provision_ctdb($$$$)
 		chomp $out;
 		$nodes[$i]->{NODE_PREFIX} = "$out";
 	}
+
+	my $srcdir_abs = abs_path($self->{srcdir});
+
+	unless (open(SCRIPT, ">$abs_prefix/stop_node.sh")) {
+		warn("Unable to open '$abs_prefix/stop_node.sh'");
+		return undef;
+	}
+	print SCRIPT "
+#!/bin/sh
+cmd=\"$srcdir_abs/ctdb/tests/local_daemons.sh $prefix onnode \$1 $srcdir_abs/bin/ctdb stop\"
+echo Running cmd = \$cmd >&2
+\$cmd
+";
+	close(SCRIPT);
+	chmod 0755, "$abs_prefix/stop_node.sh";
+
+	unless (open(SCRIPT, ">$abs_prefix/start_node.sh")) {
+		warn("Unable to open '$abs_prefix/start_node.sh'");
+		return undef;
+	}
+	print SCRIPT "
+#!/bin/sh
+cmd=\"$srcdir_abs/ctdb/tests/local_daemons.sh $prefix onnode \$1 $srcdir_abs/bin/ctdb continue\"
+echo Running cmd = \$cmd >&2
+\$cmd
+";
+	close(SCRIPT);
+	chmod 0755, "$abs_prefix/start_node.sh";
 
 	my %ret = ();
 
