@@ -3718,6 +3718,9 @@ sub provision($$)
 	path = $recycle_shrdir
 	vfs objects = recycle
 	recycle : repository = .trash
+	recycle : keeptree = yes
+	recycle : touch = yes
+	recycle : touch_mtime = yes
 	recycle : exclude = *.tmp
 	recycle : directory_mode = 755
 

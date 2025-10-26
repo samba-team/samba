@@ -42,6 +42,7 @@ do_cleanup()
 		cd "$share_test_dir" || return
 		rm -f testfile1
 		rm -f testfile2.tmp
+		rm -f test_mtime
 		rm -rf .trash
 	)
 	(
@@ -117,6 +118,38 @@ quit
 	return 0
 }
 
+test_touch()
+{
+	tmpfile=$PREFIX/test_mtime
+	touch "$tmpfile"
+	if ! $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/recycle -I$SERVER_IP $ADDARGS -c "put $tmpfile test_mtime" ; then
+		printf "failed recycle smbclient"
+		return 1
+	fi
+	rm -f "$tmpfile"
+	atime1=`stat -c '%x' "$share_test_dir/test_mtime"`
+	mtime1=`stat -c '%y' "$share_test_dir/test_mtime"`
+	if ! $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/recycle -I$SERVER_IP $ADDARGS -c 'del test_mtime' ; then
+		printf "failed recycle smbclient"
+		return 1
+	fi
+	test -e "$share_test_dir/.trash/test_mtime" || {
+		printf ".trash/test_mtime expected to exist but does NOT exist\n"
+		return 1
+	}
+	atime2=`stat -c '%x' "$share_test_dir/.trash/test_mtime"`
+	mtime2=`stat -c '%y' "$share_test_dir/.trash/test_mtime"`
+	test "$atime1" != "$atime2" || {
+		printf "recycle:touch failed: atime should differ: $atime1, $atime2\n"
+		return 1
+	}
+	test "$mtime1" != "$mtime2" || {
+		printf "recycle:touch_mtime failed: mtime should differ: $mtime1, $mtime2\n"
+		return 1
+	}
+	return 0
+}
+
 test_recycle_crossrename()
 {
 	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
@@ -166,6 +199,10 @@ panic_count_0=$(grep -c PANIC $SMBD_TEST_LOG)
 
 testit "recycle" \
 	test_recycle ||
+	failed=$((failed + 1))
+
+testit "recycle_touch" \
+	test_touch ||
 	failed=$((failed + 1))
 
 testit "recycle_crossrename" \
