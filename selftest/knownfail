@@ -5,6 +5,7 @@
 # a successful run for any of these tests an error.
 
 ^samba3.blackbox.failure.failure # this is designed to fail, for testing our test infrastructure
+^samba3.blackbox.recycle.recycle_touch # recycle:touch_mtime is not working
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
  ^samba3.smbtorture_s3.crypt_server\(nt4_dc\).SMB2-SESSION-REAUTH # expected to give ACCESS_DENIED SMB2.1 doesn't have encryption
 ^samba3.smbtorture_s3.crypt_server\(nt4_dc\).SMB2-SESSION-RECONNECT # expected to give CONNECTION_DISCONNECTED, we need to fix the test
