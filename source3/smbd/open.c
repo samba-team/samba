@@ -3662,21 +3662,21 @@ static void possibly_set_archive(struct connection_struct *conn,
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
 
-static NTSTATUS open_file_ntcreate(connection_struct *conn,
-			    struct smb_request *req,
-			    uint32_t access_mask,		/* access bits (FILE_READ_DATA etc.) */
-			    uint32_t share_access,	/* share constants (FILE_SHARE_READ etc) */
-			    uint32_t create_disposition,	/* FILE_OPEN_IF etc. */
-			    uint32_t create_options,	/* options such as delete on close. */
-			    uint32_t new_dos_attributes,	/* attributes used for new file. */
-			    int oplock_request, 	/* internal Samba oplock codes. */
-			    const struct smb2_lease *lease,
-				 			/* Information (FILE_EXISTS etc.) */
-			    uint32_t private_flags,     /* Samba specific flags. */
-			    struct files_struct *dirfsp,
-			    struct smb_filename *smb_fname_atname, /* atname relative to parent. */
-			    int *pinfo,
-			    files_struct *fsp)
+static NTSTATUS open_file_ntcreate(
+	connection_struct *conn,
+	struct smb_request *req,
+	uint32_t access_mask,  /* access bits (FILE_READ_DATA etc.) */
+	uint32_t share_access, /* share constants (FILE_SHARE_READ etc) */
+	uint32_t create_disposition,	/* FILE_OPEN_IF etc. */
+	uint32_t create_options,	/* options such as delete on close. */
+	uint32_t new_dos_attributes,	/* attributes used for new file. */
+	int oplock_request,		/* internal Samba oplock codes. */
+	const struct smb2_lease *lease, /* Information (FILE_EXISTS etc.) */
+	uint32_t private_flags,		/* Samba specific flags. */
+	struct files_struct *dirfsp,
+	struct smb_filename *smb_fname_atname, /* atname relative to parent. */
+	int *pinfo,
+	files_struct *fsp)
 {
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	int flags=0;
