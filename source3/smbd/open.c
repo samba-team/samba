@@ -6824,7 +6824,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	}
 
  done:
-	DEBUG(10, ("create_file: info=%d\n", info));
+	DBG_DEBUG("info=%d\n", info);
 
 	*result = fsp;
 	if (pinfo != NULL) {
@@ -6833,7 +6833,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	return NT_STATUS_OK;
 
  fail:
-	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
+	DBG_DEBUG("%s\n", nt_errstr(status));
 
 	if (fsp != NULL) {
 		close_file_free(req, &fsp, ERROR_CLOSE);
