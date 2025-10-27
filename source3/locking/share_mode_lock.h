@@ -61,10 +61,9 @@ bool set_share_mode(
 bool reset_share_mode_entry(
 	struct share_mode_lock *lck,
 	struct server_id old_pid,
-	uint64_t old_share_file_id,
+	uint64_t open_global_id,
 	struct server_id new_pid,
-	uint64_t new_mid,
-	uint64_t new_share_file_id);
+	uint64_t new_mid);
 
 bool mark_share_mode_disconnected(
 	struct share_mode_lock *lck, struct files_struct *fsp);

@@ -670,8 +670,7 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 		e.pid,
 		e.share_file_id,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		state->smb1req->mid,
-		fh_get_gen_id(fsp->fh));
+		state->smb1req->mid);
 	if (!ok) {
 		DBG_DEBUG("Could not set new share_mode_entry values\n");
 		state->status = NT_STATUS_INTERNAL_ERROR;

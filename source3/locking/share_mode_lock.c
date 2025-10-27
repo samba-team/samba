@@ -2741,8 +2741,7 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
 		fsp->op->global->open_persistent_id,
 		disconnected_pid,
-		UINT64_MAX,
-		fsp->op->global->open_persistent_id);
+		UINT64_MAX);
 
 	return ok;
 }
@@ -2750,10 +2749,9 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 bool reset_share_mode_entry(
 	struct share_mode_lock *lck,
 	struct server_id old_pid,
-	uint64_t old_share_file_id,
+	uint64_t open_global_id,
 	struct server_id new_pid,
-	uint64_t new_mid,
-	uint64_t new_share_file_id)
+	uint64_t new_mid)
 {
 	struct file_id id = share_mode_lock_file_id(lck);
 	struct share_mode_data *d = NULL;
@@ -2801,7 +2799,7 @@ bool reset_share_mode_entry(
 		ltdb->share_entries,
 		ltdb->num_share_entries,
 		new_pid,
-		new_share_file_id,
+		open_global_id,
 		&e,
 		&found);
 	if (found) {
@@ -2810,7 +2808,7 @@ bool reset_share_mode_entry(
 			file_id_str_buf(id, &id_buf),
 			ltdb->num_share_entries,
 			server_id_str_buf(new_pid, &pid_buf2),
-			new_share_file_id);
+			open_global_id);
 		goto done;
 	}
 
@@ -2818,7 +2816,7 @@ bool reset_share_mode_entry(
 		ltdb->share_entries,
 		ltdb->num_share_entries,
 		old_pid,
-		old_share_file_id,
+		open_global_id,
 		&e,
 		&found);
 	if (!found) {
@@ -2827,7 +2825,7 @@ bool reset_share_mode_entry(
 			    file_id_str_buf(id, &id_buf),
 			    ltdb->num_share_entries,
 			    server_id_str_buf(old_pid, &pid_buf1),
-			    old_share_file_id);
+			    open_global_id);
 		goto done;
 	}
 	DBG_DEBUG("%s - num_share_modes=%zu "
@@ -2836,17 +2834,17 @@ bool reset_share_mode_entry(
 		  file_id_str_buf(id, &id_buf),
 		  ltdb->num_share_entries,
 		  server_id_str_buf(old_pid, &pid_buf1),
-		  old_share_file_id,
+		  open_global_id,
 		  old_idx,
 		  server_id_str_buf(new_pid, &pid_buf2),
-		  new_share_file_id,
+		  open_global_id,
 		  new_idx);
 
 	e.pid = new_pid;
 	if (new_mid != UINT64_MAX) {
 		e.op_mid = new_mid;
 	}
-	e.share_file_id = new_share_file_id;
+	e.share_file_id = open_global_id;
 
 	ok = share_mode_entry_put(&e, &e_buf);
 	if (!ok) {
