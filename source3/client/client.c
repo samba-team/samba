@@ -6232,7 +6232,7 @@ static int process_stdin(void)
  Process commands from the client.
 ****************************************************************************/
 
-static int process(const char *base_directory)
+static int process(TALLOC_CTX *mem_ctx, const char *base_directory)
 {
 	int rc = 0;
 	NTSTATUS status;
@@ -6804,7 +6804,7 @@ int main(int argc,char *argv[])
 		rc = do_host_query(lp_ctx, qhost);
 	} else if (message) {
 		rc = do_message_op(creds);
-	} else if (process(base_directory)) {
+	} else if (process(frame, base_directory)) {
 		rc = 1;
 	}
 
