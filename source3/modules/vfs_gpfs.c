@@ -300,7 +300,6 @@ static NTSTATUS vfs_gpfs_get_real_filename_at(struct vfs_handle_struct *handle,
 	char real_pathname[PATH_MAX+1], tmpbuf[PATH_MAX];
 	size_t full_path_len;
 	int buflen;
-	bool mangled;
 	struct gpfs_config_data *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -308,12 +307,6 @@ static NTSTATUS vfs_gpfs_get_real_filename_at(struct vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->getrealfilename) {
-		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
-			handle, dirfsp, name, mem_ctx, found_name);
-	}
-
-	mangled = mangle_is_mangled(name, handle->conn->params);
-	if (mangled) {
 		return SMB_VFS_NEXT_GET_REAL_FILENAME_AT(
 			handle, dirfsp, name, mem_ctx, found_name);
 	}
