@@ -570,8 +570,17 @@ static bool share_mode_cleanup_disconnected(
 					       &state.e.lease_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			struct GUID_txt_buf gbuf;
+			int dbg_level = DBGLVL_WARNING;
 
-			DBG_WARNING("Failed to clean up lease associated "
+			if ((state.e.flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) &&
+			    NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
+			{
+				dbg_level = DBGLVL_DEBUG;
+				ret = true;
+			}
+
+			DBG_PREFIX(dbg_level,
+				   ("Failed to clean up lease associated "
 				    "with file (file-id='%s', servicepath='%s', "
 				    "name='%s', open_persistent_id=%" PRIu64
 				    "client_guid=%s, "
@@ -583,7 +592,7 @@ static bool share_mode_cleanup_disconnected(
 				    GUID_buf_string(&state.e.client_guid, &gbuf),
 				    state.e.lease_key.data[0],
 				    state.e.lease_key.data[1],
-				    nt_errstr(status));
+				    nt_errstr(status)));
 			goto done;
 		}
 	}
