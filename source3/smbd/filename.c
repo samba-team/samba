@@ -269,11 +269,11 @@ static bool sname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
-					const char *name,
-					bool mangled,
-					TALLOC_CTX *mem_ctx,
-					char **found_name)
+static NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
+					       const char *name,
+					       bool mangled,
+					       TALLOC_CTX *mem_ctx,
+					       char **found_name)
 {
 	struct connection_struct *conn = dirfsp->conn;
 	struct smb_Dir *cur_dir = NULL;
