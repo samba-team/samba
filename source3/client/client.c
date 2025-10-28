@@ -6161,6 +6161,7 @@ static void cli_status_check(void)
 
 static int process_stdin(void)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int rc = 0;
 
 	if (!quiet) {
@@ -6168,7 +6169,6 @@ static int process_stdin(void)
 	}
 
 	while (!finished) {
-		TALLOC_CTX *frame = talloc_stackframe();
 		char *tok = NULL;
 		char *the_prompt = NULL;
 		char *line = NULL;
@@ -6179,12 +6179,11 @@ static int process_stdin(void)
 					     "smb: %s> ",
 					     client_get_cur_dir());
 		if (the_prompt == NULL) {
-			TALLOC_FREE(frame);
 			break;
 		}
 		line = smb_readline(the_prompt, cli_status_check, completion_fn);
+		TALLOC_FREE(the_prompt);
 		if (!line) {
-			TALLOC_FREE(frame);
 			break;
 		}
 
@@ -6195,14 +6194,12 @@ static int process_stdin(void)
 					line+1);
 			}
 			SAFE_FREE(line);
-			TALLOC_FREE(frame);
 			continue;
 		}
 
 		/* and get the first part of the command */
 		cmd_ptr = line;
 		if (!next_token_talloc(frame, &cmd_ptr,&tok,NULL)) {
-			TALLOC_FREE(frame);
 			SAFE_FREE(line);
 			continue;
 		}
@@ -6221,9 +6218,11 @@ static int process_stdin(void)
 		} else {
 			d_printf("%s: command not found\n",tok);
 		}
+		TALLOC_FREE(tok);
 		SAFE_FREE(line);
-		TALLOC_FREE(frame);
 	}
+
+	TALLOC_FREE(frame);
 	return rc;
 }
 
