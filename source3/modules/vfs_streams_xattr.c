@@ -1653,7 +1653,8 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 
 	if (length < 1) {
 		errno = EINVAL;
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
 	length -= 1;
@@ -1663,14 +1664,17 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 
 	/* Attempt to read past EOF. */
         if (length <= (size_t)offset) { /* offset>=0, see above */
-                return 0;
+                ret = 0;
+                goto done;
         }
 
         overlap = (offset + n) > length ? (length - offset) : n;
 	memcpy(data, val + offset, overlap);
+	ret = overlap;
 
+done:
 	TALLOC_FREE(val);
-	return overlap;
+	return ret;
 }
 
 struct streams_xattr_pread_state {
