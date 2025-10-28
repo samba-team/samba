@@ -2444,17 +2444,18 @@ static bool delay_for_oplock_fn(
 		break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
 	}
 
-	DBG_DEBUG("breaking from %d to %d\n",
-		  (int)e_lease_type,
-		  (int)break_to);
-	send_break_message(
-		fsp->conn->sconn->msg_ctx, &fsp->file_id, e, break_to);
 	if (e_lease_type & state->delay_mask) {
 		state->delay = true;
 	}
 	if (lease_is_breaking && !state->first_open_attempt) {
 		state->delay = true;
 	}
+
+	DBG_DEBUG("breaking from %d to %d\n",
+		  (int)e_lease_type,
+		  (int)break_to);
+	send_break_message(
+		fsp->conn->sconn->msg_ctx, &fsp->file_id, e, break_to);
 
 	if (!state->delay) {
 		return false;
