@@ -399,8 +399,7 @@ static int do_cd(const char *new_dir)
 
 	newdir = talloc_strdup(ctx, new_dir);
 	if (!newdir) {
-		TALLOC_FREE(ctx);
-		return 1;
+		goto out;
 	}
 
 	normalize_name(newdir);
@@ -409,8 +408,7 @@ static int do_cd(const char *new_dir)
 
 	saved_dir = talloc_strdup(ctx, client_get_cur_dir());
 	if (!saved_dir) {
-		TALLOC_FREE(ctx);
-		return 1;
+		goto out;
 	}
 
 	if (*newdir == CLI_DIRSEP_CHAR) {
@@ -447,8 +445,8 @@ static int do_cd(const char *new_dir)
 	}
 
 	if (strequal(targetpath,CLI_DIRSEP_STR )) {
-		TALLOC_FREE(ctx);
-		return 0;
+		ret = 0;
+		goto out;
 	}
 
 
