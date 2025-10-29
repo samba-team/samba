@@ -1472,9 +1472,10 @@ static bool do_altname(const char *name)
 static int cmd_quit(void)
 {
 	cli_shutdown(cli);
-	exit(0);
-	/* NOTREACHED */
-	return 0;
+	cli = NULL;
+
+	/* Use INT_MAX for QUIT */
+	return INT_MAX;
 }
 
 /****************************************************************************
@@ -5838,11 +5839,18 @@ static int process_command_string(const char *cmd_in)
 
 		if ((i = process_tok(tok)) >= 0) {
 			rc = commands[i].fn();
+			/* QUIT COMMAND */
+			if (rc == INT_MAX) {
+				TALLOC_FREE(tok);
+				rc = 0;
+				break;
+			}
 		} else if (i == -2) {
 			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
 			d_printf("%s: command not found\n",tok);
 		}
+		TALLOC_FREE(tok);
 	}
 
 	return rc;
@@ -6201,6 +6209,13 @@ static int process_stdin(void)
 
 		if ((i = process_tok(tok)) >= 0) {
 			rc = commands[i].fn();
+			/* QUIT COMMAND */
+			if (rc == INT_MAX) {
+				rc = 0;
+				SAFE_FREE(line);
+				TALLOC_FREE(tok);
+				break;
+			}
 		} else if (i == -2) {
 			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
@@ -6247,7 +6262,7 @@ static int process(const char *base_directory)
 	if (cmdstr) {
 		rc = process_command_string(cmdstr);
 	} else {
-		process_stdin();
+		rc = process_stdin();
 	}
 
 	cli_shutdown(cli);
