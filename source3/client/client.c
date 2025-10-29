@@ -5519,7 +5519,7 @@ out:
  iosize command
 ***************************************************************************/
 
-int cmd_iosize(void)
+static int cmd_iosize(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;

@@ -43,7 +43,6 @@ NTSTATUS do_list(const char *mask,
 			bool rec,
 			bool dirs);
 int set_remote_attr(const char *filename, uint32_t new_attr, int mode);
-int cmd_iosize(void);
 
 /* The following definitions come from client/dnsbrowse.c  */
 
