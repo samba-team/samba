@@ -5786,7 +5786,7 @@ static int cmd_help(void)
  Process a -c command string.
 ****************************************************************************/
 
-static int process_command_string(const char *cmd_in)
+static int process_command_string(TALLOC_CTX *mem_ctx, const char *cmd_in)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *cmd = talloc_strdup(frame, cmd_in);
@@ -5802,7 +5802,9 @@ static int process_command_string(const char *cmd_in)
 	if (!cli) {
 		NTSTATUS status;
 
-		status = cli_cm_open(frame, NULL,
+		/* cli_cm_open() needs to use a long lived talloc context */
+		status = cli_cm_open(mem_ctx,
+				     NULL,
 				     desthost,
 				     service,
 				     creds,
@@ -6261,7 +6263,7 @@ static int process(TALLOC_CTX *mem_ctx, const char *base_directory)
 	}
 
 	if (cmdstr) {
-		rc = process_command_string(cmdstr);
+		rc = process_command_string(mem_ctx, cmdstr);
 	} else {
 		rc = process_stdin();
 	}
@@ -6782,7 +6784,7 @@ int main(int argc,char *argv[])
 
 	if (tar_to_process(tar_ctx)) {
 		if (cmdstr)
-			process_command_string(cmdstr);
+			process_command_string(frame, cmdstr);
 		rc = do_tar_op(frame, base_directory);
 	} else if (query_host && *query_host) {
 		char *qhost = query_host;
