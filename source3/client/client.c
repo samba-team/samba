@@ -6358,7 +6358,7 @@ out:
  Handle a tar operation.
 ****************************************************************************/
 
-static int do_tar_op(const char *base_directory)
+static int do_tar_op(TALLOC_CTX *mem_ctx, const char *base_directory)
 {
 	struct tar *tar_ctx = tar_get_ctx();
 	int ret = 0;
@@ -6369,7 +6369,7 @@ static int do_tar_op(const char *base_directory)
 	if (!cli) {
 		NTSTATUS status;
 
-		status = cli_cm_open(talloc_tos(), NULL,
+		status = cli_cm_open(mem_ctx, NULL,
 				     desthost,
 				     service,
 				     creds,
@@ -6783,7 +6783,7 @@ int main(int argc,char *argv[])
 	if (tar_to_process(tar_ctx)) {
 		if (cmdstr)
 			process_command_string(cmdstr);
-		rc = do_tar_op(base_directory);
+		rc = do_tar_op(frame, base_directory);
 	} else if (query_host && *query_host) {
 		char *qhost = query_host;
 		char *slash;
