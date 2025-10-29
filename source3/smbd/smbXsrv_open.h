@@ -90,6 +90,9 @@ NTSTATUS smbXsrv_open_global_traverse_per_rec_persistent_read(
 		  void *private_data),
 	void *private_data);
 
+struct dbwrap_wipe_flags;
+NTSTATUS smbXsrv_open_global_wipe(struct dbwrap_wipe_flags flags);
+
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
 NTSTATUS smbXsrv_replay_cleanup(const struct GUID *client_guid,
 				const struct GUID *create_guid);

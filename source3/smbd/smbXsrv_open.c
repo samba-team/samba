@@ -1717,3 +1717,27 @@ NTSTATUS smbXsrv_open_global_traverse_per_rec_persistent_read(
 		&count);
 	return status;
 }
+
+NTSTATUS smbXsrv_open_global_wipe(struct dbwrap_wipe_flags flags)
+{
+	NTSTATUS status;
+	int ret;
+
+	become_root();
+	status = smbXsrv_open_global_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		unbecome_root();
+		DBG_ERR("Failed to initialize open_global: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+	unbecome_root();
+
+	ret = dbwrap_wipe(smbXsrv_open_global_db_ctx, flags);
+	if (ret != 0) {
+		DBG_ERR("dbwrap_wipe failed\n");
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
