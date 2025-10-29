@@ -136,4 +136,6 @@ NTSTATUS g_lock_watch_data_recv(
 	struct server_id *blocker);
 void g_lock_wake_watchers(struct g_lock_ctx *ctx, TDB_DATA key);
 
+NTSTATUS g_lock_wipe(struct g_lock_ctx *ctx, struct dbwrap_wipe_flags flags);
+
 #endif

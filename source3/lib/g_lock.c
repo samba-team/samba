@@ -2031,3 +2031,14 @@ void g_lock_wake_watchers(struct g_lock_ctx *ctx, TDB_DATA key)
 			  nt_errstr(status));
 	}
 }
+
+NTSTATUS g_lock_wipe(struct g_lock_ctx *ctx, struct dbwrap_wipe_flags flags)
+{
+	int ret;
+
+	ret = dbwrap_wipe(ctx->db, flags);
+	if (ret != 0) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+	return NT_STATUS_OK;
+}
