@@ -5788,21 +5788,21 @@ static int cmd_help(void)
 
 static int process_command_string(const char *cmd_in)
 {
-	TALLOC_CTX *ctx = talloc_tos();
-	char *cmd = talloc_strdup(ctx, cmd_in);
-	int rc = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *cmd = talloc_strdup(frame, cmd_in);
+	int rc = 1;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
 	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	if (!cmd) {
-		return 1;
+		goto out;
 	}
 	/* establish the connection if not already */
 
 	if (!cli) {
 		NTSTATUS status;
 
-		status = cli_cm_open(talloc_tos(), NULL,
+		status = cli_cm_open(frame, NULL,
 				     desthost,
 				     service,
 				     creds,
@@ -5811,7 +5811,7 @@ static int process_command_string(const char *cmd_in)
 				     name_type,
 				     &cli);
 		if (!NT_STATUS_IS_OK(status)) {
-			return 1;
+			goto out;
 		}
 		cli_set_timeout(cli, io_timeout*1000);
 	}
@@ -5833,7 +5833,7 @@ static int process_command_string(const char *cmd_in)
 
 		/* and get the first part of the command */
 		cmd_ptr = line;
-		if (!next_token_talloc(ctx, &cmd_ptr,&tok,NULL)) {
+		if (!next_token_talloc(frame, &cmd_ptr, &tok, NULL)) {
 			continue;
 		}
 
@@ -5853,6 +5853,8 @@ static int process_command_string(const char *cmd_in)
 		TALLOC_FREE(tok);
 	}
 
+out:
+	TALLOC_FREE(frame);
 	return rc;
 }
 
