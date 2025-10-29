@@ -209,3 +209,6 @@ NTSTATUS _share_mode_entry_prepare_unlock(
 
 uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp);
 void fsp_apply_share_entry_flags(struct files_struct *fsp, uint16_t flags);
+
+struct dbwrap_wipe_flags;
+NTSTATUS locking_wipe(struct dbwrap_wipe_flags flags);
