@@ -22,10 +22,10 @@
 
 struct tar;
 
-int cmd_block(void);
-int cmd_tarmode(void);
-int cmd_setmode(void);
-int cmd_tar(void);
+int cmd_block(TALLOC_CTX *mem_ctx);
+int cmd_tarmode(TALLOC_CTX *mem_ctx);
+int cmd_setmode(TALLOC_CTX *mem_ctx);
+int cmd_tar(TALLOC_CTX *mem_ctx);
 int tar_process(struct tar* tar);
 int tar_parse_args(struct tar *tar, const char *flag, const char **val, int valsize);
 bool tar_to_process(struct tar *tar);
