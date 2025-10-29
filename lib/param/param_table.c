@@ -494,5 +494,5 @@ static const struct enum_list enum_client_netlogon_ping_protocol[] = {
 
 int num_parameters(void)
 {
-	return (sizeof(parm_table) / sizeof(struct parm_struct));
+	return ARRAY_SIZE(parm_table);
 }
