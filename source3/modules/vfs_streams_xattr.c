@@ -419,9 +419,6 @@ static int streams_xattr_get_ea_value_fsp(
 	ssize_t sizeret;
 	bool refuse;
 
-	if (fsp == NULL) {
-		return EINVAL;
-	}
 	refuse = refuse_symlink_fsp(fsp);
 	if (refuse) {
 		return EACCES;
