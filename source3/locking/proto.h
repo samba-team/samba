@@ -109,6 +109,8 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);
 bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id);
 void brl_set_modified(struct byte_range_lock *br_lck, bool modified);
 bool file_has_brlocks(files_struct *fsp);
+struct dbwrap_wipe_flags;
+NTSTATUS brlock_wipe(struct dbwrap_wipe_flags flags);
 
 /* The following definitions come from locking/locking.c  */
 

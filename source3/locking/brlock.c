@@ -2100,3 +2100,14 @@ bool file_has_brlocks(files_struct *fsp)
 	}
 	return false;
 }
+
+NTSTATUS brlock_wipe(struct dbwrap_wipe_flags flags)
+{
+	int ret;
+
+	ret = dbwrap_wipe(brlock_db, flags);
+	if (ret != 0) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+	return NT_STATUS_OK;
+}
