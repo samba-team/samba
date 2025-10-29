@@ -385,7 +385,7 @@ char *client_clean_name(TALLOC_CTX *ctx, const char *name)
  Change directory - inner section.
 ****************************************************************************/
 
-static int do_cd(const char *new_dir)
+static int do_cd(TALLOC_CTX *mem_ctx, const char *new_dir)
 {
 	char *newdir = NULL;
 	char *saved_dir = NULL;
@@ -435,7 +435,12 @@ static int do_cd(const char *new_dir)
 	new_cd = client_clean_name(ctx, new_cd);
 	client_set_cur_dir(new_cd);
 
-	status = cli_resolve_path(ctx, "",
+	/*
+	 * This needs to use a long lived memory context, as it might return a
+	 * new or already existing cli context.
+	 */
+	status = cli_resolve_path(mem_ctx,
+				  "",
 				  creds,
 				cli, new_cd, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -487,7 +492,7 @@ static int cmd_cd(TALLOC_CTX *mem_ctx)
 	int rc = 0;
 
 	if (next_token_talloc(talloc_tos(), &cmd_ptr, &buf,NULL)) {
-		rc = do_cd(buf);
+		rc = do_cd(mem_ctx, buf);
 	} else {
 		d_printf("Current directory is %s\n",client_get_cur_dir());
 	}
@@ -501,7 +506,7 @@ static int cmd_cd(TALLOC_CTX *mem_ctx)
 
 static int cmd_cd_oneup(TALLOC_CTX *mem_ctx)
 {
-	return do_cd("..");
+	return do_cd(mem_ctx, "..");
 }
 
 /*******************************************************************
@@ -6255,7 +6260,7 @@ static int process(TALLOC_CTX *mem_ctx, const char *base_directory)
 	cli_set_timeout(cli, io_timeout*1000);
 
 	if (base_directory && *base_directory) {
-		rc = do_cd(base_directory);
+		rc = do_cd(mem_ctx, base_directory);
 		if (rc) {
 			cli_shutdown(cli);
 			return rc;
@@ -6388,7 +6393,7 @@ static int do_tar_op(TALLOC_CTX *mem_ctx, const char *base_directory)
 	recurse = true;
 
 	if (base_directory && *base_directory)  {
-		ret = do_cd(base_directory);
+		ret = do_cd(mem_ctx, base_directory);
 		if (ret) {
             goto out_cli;
 		}
