@@ -6274,14 +6274,15 @@ static int process(TALLOC_CTX *mem_ctx, const char *base_directory)
  Handle a -L query.
 ****************************************************************************/
 
-static int do_host_query(struct loadparm_context *lp_ctx,
+static int do_host_query(TALLOC_CTX *mem_ctx,
+			 struct loadparm_context *lp_ctx,
 			 const char *query_host)
 {
 	NTSTATUS status;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
 	struct smb_transports ts = smbsock_transports_from_port(port);
 
-	status = cli_cm_open(talloc_tos(), NULL,
+	status = cli_cm_open(mem_ctx, NULL,
 			     query_host,
 			     "IPC$",
 			     creds,
@@ -6331,7 +6332,7 @@ static int do_host_query(struct loadparm_context *lp_ctx,
 		cli_shutdown(cli);
 		d_printf("Reconnecting with SMB1 for workgroup listing.\n");
 		lpcfg_set_cmdline(lp_ctx, "client max protocol", "NT1");
-		status = cli_cm_open(talloc_tos(), NULL,
+		status = cli_cm_open(mem_ctx, NULL,
 				     query_host,
 				     "IPC$",
 				     creds,
@@ -6801,7 +6802,7 @@ int main(int argc,char *argv[])
 			sscanf(p, "%x", &name_type);
 		}
 
-		rc = do_host_query(lp_ctx, qhost);
+		rc = do_host_query(frame, lp_ctx, qhost);
 	} else if (message) {
 		rc = do_message_op(creds);
 	} else if (process(frame, base_directory)) {
