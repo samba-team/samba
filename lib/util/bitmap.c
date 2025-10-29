@@ -34,9 +34,13 @@ struct bitmap {
 /****************************************************************************
 talloc a bitmap
 ****************************************************************************/
-struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
+struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, unsigned n)
 {
 	struct bitmap *bm;
+
+	if (n > (UINT_MAX - 32)) {
+		return NULL;
+	}
 
 	bm = (struct bitmap *)talloc_zero_size(
 		mem_ctx,

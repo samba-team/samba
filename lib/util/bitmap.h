@@ -21,7 +21,7 @@
 
 struct bitmap;
 
-struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n);
+struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, unsigned n);
 int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src);
 bool bitmap_set(struct bitmap *bm, unsigned i);
 bool bitmap_clear(struct bitmap *bm, unsigned i);
