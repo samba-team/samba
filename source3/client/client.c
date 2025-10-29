@@ -6246,7 +6246,7 @@ static int process(TALLOC_CTX *mem_ctx, const char *base_directory)
 	struct cli_credentials *creds = samba_cmdline_get_creds();
 	struct smb_transports ts = smbsock_transports_from_port(port);
 
-	status = cli_cm_open(talloc_tos(), NULL,
+	status = cli_cm_open(mem_ctx, NULL,
 			     desthost,
 			     service,
 			     creds,
