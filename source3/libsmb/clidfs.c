@@ -181,9 +181,10 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	/*
 	 * The functions cli_resolve_path() and cli_cm_open() might not create a
 	 * new cli context, but might return an already existing one. This
-	 * forces us to have a long lived cli allocated on the NULL context.
+	 * requires that a long living context is used. It should be freed after
+	 * the client is done with its connection.
 	 */
-	status = cli_connect_nb(NULL,
+	status = cli_connect_nb(ctx,
 				server,
 				dest_ss,
 				transports,
@@ -425,10 +426,55 @@ static struct cli_state *cli_cm_find(struct cli_state *cli,
 	return NULL;
 }
 
-/****************************************************************************
- Open a client connection to a \\server\share.
-****************************************************************************/
-
+/**
+ * @brief Open a client connection to a \\server\share.
+ *
+ * This function attempts to establish a connection to a specified SMB server
+ * and share. It first checks for an existing connection in the referring_cli
+ * connection list to avoid creating duplicate connections. If no existing
+ * connection is found, it creates a new one.
+ *
+ * @param[in] ctx           The memory context. This context needs to be a
+ *                          long-living context, as cli_resolve_path() and
+ *                          cli_cm_open() might not create a new cli context,
+ *                          but might return an existing one.
+ *                          The context should be freed after the client is
+ *                          fully done with its connections.
+ *
+ * @param[in] referring_cli An existing cli_state to search for cached
+ *                          connections. This is used to find previously
+ *                          established connections to avoid creating duplicates.
+ *                          Can be NULL if no existing connections exist.
+ *
+ * @param[in] server        The server name to connect to. This is the NetBIOS
+ *                          name or hostname of the target server.
+ *
+ * @param[in] share         The share name to connect to (can also be "IPC$").
+ *
+ * @param[in] creds         Credentials for authentication. Must not be NULL.
+ *                          The function will return NT_STATUS_INVALID_PARAMETER
+ *                          if credentials are not provided.
+ *
+ * @param[in] dest_ss       Destination socket address. Can be NULL, in which
+ *                          case the address will be resolved from the server
+ *                          name using name resolution.
+ *
+ * @param[in] transports    SMB transport configuration specifying which SMB
+ *                          protocol versions to use (e.g., SMB1, SMB2, SMB3).
+ *
+ * @param[in] name_type     NetBIOS name type for name resolution. Common values
+ *                          include 0x00 (workstation), 0x20 (file server).
+ *                          This is used when resolving the server name via
+ *                          NetBIOS.
+ *
+ * @param[out] pcli         Pointer to receive the cli_state structure. On
+ *                          success, this will point to either a newly created
+ *                          connection or an existing cached connection.
+ *
+ * @return                  NT_STATUS_OK on success. NT_STATUS_INVALID_PARAMETER
+ *                          if credentials are NULL. Other NTSTATUS error codes
+ *                          on connection or authentication failures.
+ */
 NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 		     struct cli_state *referring_cli,
 		     const char *server,
