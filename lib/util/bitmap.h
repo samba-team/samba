@@ -25,5 +25,5 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, unsigned n);
 int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src);
 bool bitmap_set(struct bitmap *bm, unsigned i);
 bool bitmap_clear(struct bitmap *bm, unsigned i);
-bool bitmap_query(struct bitmap *bm, unsigned i);
-int bitmap_find(struct bitmap *bm, unsigned ofs);
+bool bitmap_query(const struct bitmap * const bm, unsigned i);
+int bitmap_find(const struct bitmap * const bm, unsigned ofs);

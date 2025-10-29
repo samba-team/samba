@@ -99,7 +99,7 @@ bool bitmap_clear(struct bitmap *bm, unsigned i)
 /****************************************************************************
 query a bit in a bitmap
 ****************************************************************************/
-bool bitmap_query(struct bitmap *bm, unsigned i)
+bool bitmap_query(const struct bitmap * const bm, unsigned i)
 {
 	if (i >= bm->n) return false;
 	if (bm->b[i/32] & (1U<<(i%32))) {
@@ -112,7 +112,7 @@ bool bitmap_query(struct bitmap *bm, unsigned i)
 find a zero bit in a bitmap starting at the specified offset, with
 wraparound
 ****************************************************************************/
-int bitmap_find(struct bitmap *bm, unsigned ofs)
+int bitmap_find(const struct bitmap * const bm, unsigned ofs)
 {
 	unsigned int i, j;
 
