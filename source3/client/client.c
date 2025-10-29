@@ -6404,7 +6404,7 @@ static int do_tar_op(const char *base_directory)
  Handle a message operation.
 ****************************************************************************/
 
-static int do_message_op(struct cli_credentials *creds)
+static int do_message_op(TALLOC_CTX *mem_ctx, struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	struct smb_transports ts =
@@ -6415,7 +6415,7 @@ static int do_message_op(struct cli_credentials *creds)
 		return 1;
 	}
 
-	status = cli_connect_nb(talloc_tos(),
+	status = cli_connect_nb(mem_ctx,
 				desthost, have_ip ? &dest_ss : NULL,
 				&ts,
 				name_type,
@@ -6804,7 +6804,7 @@ int main(int argc,char *argv[])
 
 		rc = do_host_query(frame, lp_ctx, qhost);
 	} else if (message) {
-		rc = do_message_op(creds);
+		rc = do_message_op(frame, creds);
 	} else if (process(frame, base_directory)) {
 		rc = 1;
 	}
