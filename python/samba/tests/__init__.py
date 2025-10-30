@@ -212,6 +212,22 @@ class TestCase(unittest.TestCase):
     def get_loadparm(cls, s3=False):
         return env_loadparm(s3=s3)
 
+    _server_lp = None
+
+    @classmethod
+    def get_server_param(cls, parameter, default=None):
+        """Get a parameter from the server configuration (which may
+        differ from the client config)."""
+        if cls._server_lp is None:
+            server_conf = env_get_var_value("SERVERCONFFILE")
+            cls._server_lp = param.LoadParm(filename_for_non_global_lp=server_conf)
+
+        p = cls._server_lp.get(parameter)
+        print(f"server param '{parameter}' is {p} ({type(p)})")
+        if p is None:
+            return default
+        return p
+
     def get_credentials(self):
         return cmdline_credentials
 
