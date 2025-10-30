@@ -1155,7 +1155,7 @@ static krb5_error_code samba_kdc_get_entry_principal(
 			 * and TGS-REQ.  We only change the principal in the
 			 * AS-REQ case.
 			 *
-			 * The SDB_F_FORCE_CANON if for new MIT KDC code that
+			 * The SDB_F_FORCE_CANON is for new MIT KDC code that
 			 * wants the canonical name in all lookups, and takes
 			 * care to canonicalize only when appropriate.
 			 */
