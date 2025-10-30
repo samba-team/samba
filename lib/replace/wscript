@@ -973,6 +973,11 @@ def build(bld):
                      deps='replace replace-test',
                      install=False)
 
+    bld.SAMBA_BINARY('test_memset_explicit',
+                     source='tests/test_memset_explicit.c',
+                     deps='cmocka replace',
+                     for_selftest=True)
+
     # build replacements for stdint.h and stdbool.h if needed
     bld.SAMBA_GENERATOR('replace_stdint_h',
                         rule='cp ${SRC} ${TGT}',

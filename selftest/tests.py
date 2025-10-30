@@ -543,6 +543,12 @@ plantestsuite("samba.unittests.smb1cli_session", "none",
 plantestsuite("samba.unittests.smb_util_translate", "none",
               [os.path.join(bindir(), "default/libcli/smb/test_util_translate")])
 
+plantestsuite(
+    "samba.unittests.memset_explicit",
+    "none",
+    [os.path.join(bindir(), "default/lib/replace/test_memset_explicit")],
+)
+
 plantestsuite("samba.unittests.talloc_keep_secret", "none",
               [os.path.join(bindir(), "default/lib/util/test_talloc_keep_secret")])
 
