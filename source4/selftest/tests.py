@@ -2077,6 +2077,10 @@ planpythontestsuite(
     "samba.tests.krb5.kdc_tgs_tests",
     environ=krb5_environ)
 planpythontestsuite(
+    "fl2008r2dc",
+    "samba.tests.krb5.kdc_tgs_tests",
+    environ=krb5_environ)
+planpythontestsuite(
     "ad_dc",
     "samba.tests.krb5.fast_tests",
     environ=krb5_environ)

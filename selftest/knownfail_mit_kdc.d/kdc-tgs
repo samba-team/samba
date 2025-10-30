@@ -1,41 +1,41 @@
 #
 # MIT currently returns an error code of 12 KRB5KDC_ERR_POLICY: KDC policy rejects request, to the
 # following tests
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_ldap_service_ticket\(ad_dc\)
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_get_ticket_for_host_service_of_machine_account\(ad_dc\)
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_ldap_service_ticket
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_get_ticket_for_host_service_of_machine_account
 #
 # KDC TGS tests
 #
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_kpasswd.ad_dc
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_kpasswd.ad_dc
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_kpasswd.ad_dc
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_kpasswd.ad_dc
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_kpasswd.ad_dc
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_kpasswd.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_kpasswd
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_renew_kpasswd
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_kpasswd
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_tgs_kpasswd
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_kpasswd
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_kpasswd
 #
 # KDC TGS PAC tests
 #
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_service_no_auth_data_required\(ad_dc\)
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac\(ad_dc\)
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_client_no_auth_data_required\(ad_dc\)
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_service_no_auth_data_required\(ad_dc\)
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_no_pac\(ad_dc\)
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_no_pac_service_no_auth_data_required
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_client_no_auth_data_required
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_remove_pac_service_no_auth_data_required
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_request_no_pac
 #
 # Extra PAC buffers tests
 #
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_tgs_req_from_rodc_extra_pac_buffers\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_tgs_req_from_rodc_extra_pac_buffers
 #
 # Unicode tests
 #
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_fast_unicode\(ad_dc\)$
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_renew_unicode\(ad_dc\)$
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_validate_unicode\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_fast_unicode
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_renew_unicode
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_validate_unicode
 #
 # Single‐component krbtgt principal tests
 #
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_as_req\(ad_dc\)$
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_tgs_req\(ad_dc\)$
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_service_ticket\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_as_req
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_tgs_req
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_service_ticket
 #
 # KDC TGT tests
 #
@@ -48,7 +48,7 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_pac_request_false
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_pac_request_none
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_pac_request_true
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rc4.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rc4
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_req
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_req_invalid
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_fast_rodc_allowed_denied
@@ -107,7 +107,7 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_no_sname
-^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rc4.ad_dc
+^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rc4
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_req_invalid
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rodc_allowed_denied
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rodc_denied
