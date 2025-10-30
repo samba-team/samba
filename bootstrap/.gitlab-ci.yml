@@ -102,7 +102,7 @@ debian11:
 debian12:
   extends: .build_image_template
 
-fedora42:
+fedora43:
   extends: .build_image_template
 
 debian11-32bit:
