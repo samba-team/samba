@@ -173,9 +173,18 @@ smbc_new_context(void)
                 return NULL;
         }
 
-	context->internal->lp_ctx = loadparm_init_s3(NULL,
+	context->internal->mem_ctx = talloc_new(NULL);
+	if (context->internal->mem_ctx == NULL) {
+		SAFE_FREE(context->internal);
+		SAFE_FREE(context);
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	context->internal->lp_ctx = loadparm_init_s3(context->internal->mem_ctx,
 						     loadparm_s3_helpers());
 	if (context->internal->lp_ctx == NULL) {
+		TALLOC_FREE(context->internal->mem_ctx);
 		SAFE_FREE(context->internal);
 		SAFE_FREE(context);
 		TALLOC_FREE(frame);
@@ -335,14 +344,11 @@ smbc_free_context(SMBCCTX *context,
         smbc_setNetbiosName(context, NULL);
         smbc_setUser(context, NULL);
 
-        DEBUG(3, ("Context %p successfully freed\n", context));
-
-	/* Free any DFS auth context. */
-	TALLOC_FREE(context->internal->creds);
-
-	TALLOC_FREE(context->internal->lp_ctx);
+	TALLOC_FREE(context->internal->mem_ctx);
 	SAFE_FREE(context->internal);
         SAFE_FREE(context);
+
+        DEBUG(3, ("Context %p successfully freed\n", context));
 
         /* Protect access to the count of contexts in use */
 	if (SMB_THREAD_LOCK(initialized_ctx_count_mutex) != 0) {
@@ -775,7 +781,7 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		password = "";
 	}
 
-	creds = cli_credentials_init(NULL);
+	creds = cli_credentials_init(context->internal->mem_ctx);
 	if (creds == NULL) {
 		DEBUG(0, ("smbc_set_credentials_with_fallback: allocation fail\n"));
 		return;
