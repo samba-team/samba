@@ -1320,6 +1320,7 @@ check_padata = int('SAMBA4_USES_HEIMDAL' in config_hash)
 expect_nt_status = int('SAMBA4_USES_HEIMDAL' in config_hash)
 as_req_logging_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 tgs_req_logging_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
+embedded_heimdal = int('USING_EMBEDDED_HEIMDAL' in config_hash)
 
 ca_dir = os.path.join('selftest', 'manage-ca', 'CA-samba.example.com')
 
@@ -1357,6 +1358,7 @@ krb5_environ = {
     'CA_CERT': ca_cert_path,
     'CA_PRIVATE_KEY': ca_private_key_path,
     'CA_PASS': ca_pass,
+    'USING_EMBEDDED_HEIMDAL' : embedded_heimdal,
 }
 planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
 planoldpythontestsuite("none", "samba.tests.krb5.claims_in_pac")

@@ -126,6 +126,7 @@ class FAST_Tests(KDCBaseTest):
             client_opts={'no_auth_data_required': True})
 
     def test_simple_as_req_self_pac_request_false(self):
+        expect_pac = self.always_include_pac
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
@@ -140,7 +141,7 @@ class FAST_Tests(KDCBaseTest):
                 'gen_padata_fn': self.generate_enc_timestamp_padata,
                 'as_req_self': True,
                 'pac_request': False,
-                'expect_pac': False
+                'expect_pac': expect_pac
             }
         ], client_account=self.AccountType.COMPUTER)
 

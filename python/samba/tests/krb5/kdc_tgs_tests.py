@@ -667,7 +667,10 @@ class KdcTgsTests(KdcTgsBaseTests):
                                         pac_request=False, expect_pac=False)
 
         pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        if not self.always_include_pac:
+            self.assertIsNone(pac)
+        else:
+            self.assertIsNotNone(pac)
 
     def test_request_enterprise_canon(self):
         upn = self.get_new_username()
@@ -2644,7 +2647,10 @@ class KdcTgsTests(KdcTgsBaseTests):
         ticket = self._run_tgs(tgt, creds, expected_error=0, expect_pac=False)
 
         pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        if not self.always_include_pac:
+            self.assertIsNone(pac)
+        else:
+            self.assertIsNotNone(pac)
 
     def test_tgs_pac_request_true(self):
         creds = self._get_creds()
@@ -2683,7 +2689,10 @@ class KdcTgsTests(KdcTgsBaseTests):
         ticket = self._run_tgs(tgt, creds, expected_error=0, expect_pac=False)
 
         pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        if not self.always_include_pac:
+            self.assertIsNone(pac)
+        else:
+            self.assertIsNotNone(pac)
 
     def test_renew_pac_request_true(self):
         creds = self._get_creds()
@@ -2773,7 +2782,10 @@ class KdcTgsTests(KdcTgsBaseTests):
         ticket = self._run_tgs(tgt, creds, expected_error=0, expect_pac=False)
 
         pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        if not self.always_include_pac:
+            self.assertIsNone(pac)
+        else:
+            self.assertIsNotNone(pac)
 
     def test_validate_pac_request_true(self):
         creds = self._get_creds()
@@ -2916,7 +2928,10 @@ class KdcTgsTests(KdcTgsBaseTests):
                                  expect_pac=False)
 
         pac = self.get_ticket_pac(ticket, expect_pac=False)
-        self.assertIsNone(pac)
+        if not self.always_include_pac:
+            self.assertIsNone(pac)
+        else:
+            self.assertIsNotNone(pac)
 
     def test_user2user_user_pac_request_true(self):
         creds = self._get_creds()

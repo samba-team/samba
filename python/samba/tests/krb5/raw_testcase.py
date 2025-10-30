@@ -52,15 +52,13 @@ from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, samr, security, krb5ccache
 from samba.gensec import FEATURE_SEAL
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.param import LoadParm
 from samba.dcerpc.misc import (
     SEC_CHAN_WKSTA,
     SEC_CHAN_BDC,
     SEC_CHAN_RODC,
     SEC_CHAN_DOMAIN,
     SEC_CHAN_DNS_DOMAIN,
-)
-from samba.dsdb import (
-    UF_SMARTCARD_REQUIRED
 )
 import samba.tests
 from samba.tests import TestCase
@@ -863,6 +861,28 @@ class RawKerberosTest(TestCase):
         if padata_checking is None:
             padata_checking = '1'
         cls.padata_checking = bool(int(padata_checking))
+
+        using_embedded_heimdal = samba.tests.env_get_var_value(
+            'USING_EMBEDDED_HEIMDAL',
+            allow_missing=True)
+        if using_embedded_heimdal is None:
+            using_embedded_heimdal = False
+        else:
+            using_embedded_heimdal = bool(int(using_embedded_heimdal))
+        cls.always_include_pac = False
+        # Always generating the PAC is currently only supported by
+        # the Embedded heimdal
+        if using_embedded_heimdal:
+            # get_loadparm loads the client smb.conf
+            # we need to load the server smb.conf to get the server
+            # settings.
+            server_conf = samba.tests.env_get_var_value('SERVERCONFFILE')
+            lp = LoadParm(filename_for_non_global_lp=server_conf)
+            always_include = lp.get("kdc always include pac")
+            if always_include is None:
+                always_include = "True"
+
+            cls.always_include_pac = bool(always_include)
 
         kadmin_is_tgs = samba.tests.env_get_var_value('KADMIN_IS_TGS',
                                                       allow_missing=True)
@@ -4304,7 +4324,7 @@ class RawKerberosTest(TestCase):
             pac_data = self.get_ticket_pac(ticket_creds, expect_pac=expect_pac)
             if expect_pac is True:
                 self.assertIsNotNone(pac_data)
-            elif expect_pac is False:
+            elif expect_pac is False and self.always_include_pac is False:
                 self.assertIsNone(pac_data)
 
             if pac_data is not None:
@@ -4820,8 +4840,9 @@ class RawKerberosTest(TestCase):
 
                 self.assertEqual(expect_pac_attrs_pac_request is True,
                                  requested_pac)
-                self.assertEqual(expect_pac_attrs_pac_request is None,
-                                 given_pac)
+                if not self.always_include_pac:
+                    self.assertEqual(expect_pac_attrs_pac_request is None,
+                                    given_pac)
 
             elif (pac_buffer.type == krb5pac.PAC_TYPE_REQUESTER_SID
                       and expect_requester_sid):
