@@ -872,7 +872,8 @@ cacl_get(SMBCCTX *context,
 		creds = context->internal->creds;
 
 		status = cli_resolve_path(
-			ctx, "",
+			context->internal->mem_ctx,
+			"",
 			creds,
 			cli, filename, &targetcli, &targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1559,7 +1560,8 @@ cacl_set(SMBCCTX *context,
 
 	creds = context->internal->creds;
 
-	status = cli_resolve_path(ctx, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  cli, filename, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {

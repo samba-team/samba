@@ -932,7 +932,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			creds = context->internal->creds;
 
 			status = cli_resolve_path(
-				frame, "",
+				context->internal->mem_ctx,
+				"",
 				creds,
 				srv->cli, path, &targetcli, &targetpath);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1593,7 +1594,8 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	creds = context->internal->creds;
 
 	/*d_printf(">>>mkdir: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1708,7 +1710,8 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	creds = context->internal->creds;
 
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2019,7 +2022,8 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	creds = context->internal->creds;
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2223,7 +2227,8 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	creds = context->internal->creds;
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2405,7 +2410,8 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
 	ocreds = ocontext->internal->creds;
 
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(ocontext->internal->mem_ctx,
+				  "",
 				  ocreds,
 				  srv->cli, path1, &targetcli1, &targetpath1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2425,7 +2431,8 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
 	ncreds = ncontext->internal->creds;
 
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(ncontext->internal->mem_ctx,
+				  "",
 				  ncreds,
 				  srv->cli, path2, &targetcli2, &targetpath2);
 	if (!NT_STATUS_IS_OK(status)) {

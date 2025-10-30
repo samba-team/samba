@@ -128,7 +128,8 @@ SMBC_open_ctx(SMBCCTX *context,
 	creds = context->internal->creds;
 	/*d_printf(">>>open: resolving %s\n", path);*/
 	status = cli_resolve_path(
-		frame, "",
+		context->internal->mem_ctx,
+		"",
 		creds,
 		srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -536,7 +537,8 @@ SMBC_getatr(SMBCCTX * context,
 
 	creds = context->internal->creds;
 
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  srv->cli, fixedpath,
 				  &targetcli, &targetpath);

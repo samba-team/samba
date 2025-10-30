@@ -258,7 +258,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	creds = context->internal->creds;
 
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "",
+	status = cli_resolve_path(context->internal->mem_ctx,
+				  "",
 				  creds,
 				  file->srv->cli, path,
 				  &targetcli, &targetpath);
