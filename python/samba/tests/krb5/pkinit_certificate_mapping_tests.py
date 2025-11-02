@@ -42,6 +42,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.x509.oid import NameOID
 
+from samba import asn1
 from samba.domain.models import User
 import samba.tests
 from samba.dcerpc import security
@@ -708,12 +709,12 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             encoded_sid = object_sid.encode("utf-8")
 
             # The OCTET STRING tag, followed by length and encoded SID…
-            security_ext = bytes([0x04]) + self.asn1_length(encoded_sid) + (encoded_sid)
+            security_ext = bytes([0x04]) + asn1.asn1_length(encoded_sid) + (encoded_sid)
 
             # …enclosed in a construct tagged with the application-specific value
             # 0…
             security_ext = (
-                bytes([0xA0]) + self.asn1_length(security_ext) + (security_ext)
+                bytes([0xA0]) + asn1.asn1_length(security_ext) + (security_ext)
             )
 
             # …preceded by the extension OID…
@@ -728,12 +729,12 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             # nesting going on.  So far I haven’t been able to replicate this with
             # pyasn1.)
             security_ext = (
-                bytes([0xA0]) + self.asn1_length(security_ext) + (security_ext)
+                bytes([0xA0]) + asn1.asn1_length(security_ext) + (security_ext)
             )
 
             # …all enclosed in a structure with a SEQUENCE tag.
             security_ext = (
-                bytes([0x30]) + self.asn1_length(security_ext) + (security_ext)
+                bytes([0x30]) + asn1.asn1_length(security_ext) + (security_ext)
             )
 
             # Add the security extension to the certificate.

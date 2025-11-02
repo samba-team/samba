@@ -37,7 +37,7 @@ from cryptography.x509.oid import NameOID
 
 import ldb
 import samba.tests
-from samba import credentials, generate_random_password, ntstatus
+from samba import asn1, credentials, generate_random_password, ntstatus
 from samba.nt_time import (nt_time_delta_from_timedelta,
                            nt_now, NtTime, string_from_nt_time)
 from samba.dcerpc import security, netlogon
@@ -1579,12 +1579,12 @@ class PkInitTests(KDCBaseTest):
         encoded_sid = creds.get_sid().encode('utf-8')
 
         # The OCTET STRING tag, followed by length and encoded SID…
-        security_ext = bytes([0x04]) + self.asn1_length(encoded_sid) + (
+        security_ext = bytes([0x04]) + asn1.asn1_length(encoded_sid) + (
             encoded_sid)
 
         # …enclosed in a construct tagged with the application-specific value
         # 0…
-        security_ext = bytes([0xa0]) + self.asn1_length(security_ext) + (
+        security_ext = bytes([0xa0]) + asn1.asn1_length(security_ext) + (
             security_ext)
 
         # …preceded by the extension OID…
@@ -1597,11 +1597,11 @@ class PkInitTests(KDCBaseTest):
         # the OID, but of the entire structure so far, as if there’s some
         # nesting going on.  So far I haven’t been able to replicate this with
         # pyasn1.)
-        security_ext = bytes([0xa0]) + self.asn1_length(security_ext) + (
+        security_ext = bytes([0xa0]) + asn1.asn1_length(security_ext) + (
             security_ext)
 
         # …all enclosed in a structure with a SEQUENCE tag.
-        security_ext = bytes([0x30]) + self.asn1_length(security_ext) + (
+        security_ext = bytes([0x30]) + asn1.asn1_length(security_ext) + (
             security_ext)
 
         # Add the security extension to the certificate.

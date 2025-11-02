@@ -46,7 +46,7 @@ import pyasn1.type.univ
 
 from pyasn1.error import PyAsn1Error
 
-from samba import unix2nttime
+from samba import asn1, unix2nttime
 from samba.common import get_string
 from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, samr, security, krb5ccache
@@ -2594,72 +2594,6 @@ class RawKerberosTest(TestCase):
 
         return domain_params_obj
 
-    def length_in_bytes(self, value):
-        """Return the length in bytes of an integer once it is encoded as
-        bytes."""
-
-        self.assertGreaterEqual(value, 0, 'value must be positive')
-        self.assertIsInstance(value, int)
-
-        length_in_bits = max(1, math.log2(value + 1))
-        length_in_bytes = math.ceil(length_in_bits / 8)
-        return length_in_bytes
-
-    def bytes_from_int(self, value, *, length=None):
-        """Return an integer encoded big-endian into bytes of an optionally
-        specified length.
-        """
-        if length is None:
-            length = self.length_in_bytes(value)
-        return value.to_bytes(length, 'big')
-
-    def int_from_bytes(self, data):
-        """Return an integer decoded from bytes in big-endian format."""
-        return int.from_bytes(data, 'big')
-
-    def int_from_bit_string(self, string):
-        """Return an integer decoded from a bitstring."""
-        return int(string, base=2)
-
-    def bit_string_from_int(self, value):
-        """Return a bitstring encoding of an integer."""
-
-        string = f'{value:b}'
-
-        # The bitstring must be padded to a multiple of 8 bits in length, or
-        # pyasn1 will interpret it incorrectly (as if the padding bits were
-        # present, but on the wrong end).
-        length = len(string)
-        padding_len = math.ceil(length / 8) * 8 - length
-        return '0' * padding_len + string
-
-    def bit_string_from_bytes(self, data):
-        """Return a bitstring encoding of bytes in big-endian format."""
-        value = self.int_from_bytes(data)
-        return self.bit_string_from_int(value)
-
-    def bytes_from_bit_string(self, string):
-        """Return big-endian format bytes encoded from a bitstring."""
-        value = self.int_from_bit_string(string)
-        length = math.ceil(len(string) / 8)
-        return value.to_bytes(length, 'big')
-
-    def asn1_length(self, data):
-        """Return the ASN.1 encoding of the length of some data."""
-
-        length = len(data)
-
-        self.assertGreater(length, 0)
-        if length < 0x80:
-            return bytes([length])
-
-        encoding_len = self.length_in_bytes(length)
-        self.assertLess(encoding_len, 0x80,
-                        'item is too long to be ASN.1 encoded')
-
-        data = self.bytes_from_int(length, length=encoding_len)
-        return bytes([0x80 | encoding_len]) + data
-
     @staticmethod
     def octetstring2key(x, enctype):
         """This implements the function defined in RFC4556 3.2.3.1 “Using
@@ -3783,7 +3717,7 @@ class RawKerberosTest(TestCase):
                     # Windows encodes the ASN.1 incorrectly, neglecting to add
                     # the SEQUENCE tag. We’ll have to prepend it ourselves in
                     # order for the decoding to work.
-                    encoded_len = self.asn1_length(decrypted_content)
+                    encoded_len = asn1.asn1_length(decrypted_content)
                     decrypted_content = bytes([0x30]) + encoded_len + (
                         decrypted_content)
 
@@ -3891,7 +3825,7 @@ class RawKerberosTest(TestCase):
                 self.assertElementEqual(dh_key_info, 'nonce',
                                         kdc_exchange_dict['pk_nonce'])
 
-                dh_public_key_data = self.bytes_from_bit_string(
+                dh_public_key_data = asn1.bytes_from_bit_string(
                     dh_key_info['subjectPublicKey'])
                 dh_public_key_decoded = self.der_decode(
                     dh_public_key_data, asn1Spec=krb5_asn1.DHPublicKey())
@@ -3906,7 +3840,7 @@ class RawKerberosTest(TestCase):
                 shared_secret = dh_private_key.exchange(dh_public_key)
 
                 # Pad the shared secret out to the length of ‘p’.
-                p_len = self.length_in_bytes(dh_numbers.p)
+                p_len = asn1.length_in_bytes(dh_numbers.p)
                 padding_len = p_len - len(shared_secret)
                 self.assertGreaterEqual(padding_len, 0)
                 padded_shared_secret = bytes(padding_len) + shared_secret
