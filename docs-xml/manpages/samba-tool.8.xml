@@ -384,6 +384,26 @@ The <constant>--verbose</constant> includes more, probably useless, information.
 </variablelist>
 </refsect3>
 
+<refsect3>
+	<title>computer generate-csr <replaceable>computername</replaceable>
+	<replaceable>subject_name</replaceable>
+	<replaceable>private_key_filename</replaceable>
+	<replaceable>output_filename</replaceable> [options]</title>
+	<para>Generate a PEM‐encoded Certificate Signing Request for a computer.</para>
+
+	<variablelist>
+	<!--Options-->
+	  <varlistentry>
+	    <term>--private-key-encoding</term>
+	    <listitem><para>Specify which encoding the private key uses. Default is 'auto'.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--private-key-pass</term>
+	    <listitem><para>Provide a password to decrypt the private key.</para></listitem>
+	  </varlistentry>
+	</variablelist>
+</refsect3>
+
 
 <refsect2>
 	<title>contact</title>
@@ -4480,6 +4500,26 @@ The <constant>--verbose</constant> includes more, probably useless, information.
 	    <listitem><para>Be verbose</para></listitem>
 	  </varlistentry>
 </variablelist>
+</refsect3>
+
+<refsect3>
+	<title>user generate-csr <replaceable>username</replaceable>
+	<replaceable>subject_name</replaceable>
+	<replaceable>private_key_filename</replaceable>
+	<replaceable>output_filename</replaceable> [options]</title>
+	<para>Generate a PEM‐encoded Certificate Signing Request for a user.</para>
+
+	<variablelist>
+	<!--Options-->
+	  <varlistentry>
+	    <term>--private-key-encoding</term>
+	    <listitem><para>Specify which encoding the private key uses. Default is 'auto'.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--private-key-pass</term>
+	    <listitem><para>Provide a password to decrypt the private key.</para></listitem>
+	  </varlistentry>
+	</variablelist>
 </refsect3>
 
 
