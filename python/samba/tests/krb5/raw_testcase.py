@@ -130,6 +130,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_REQ_ENC_PA_REP,
     PADATA_SUPPORTED_ETYPES,
     TD_CMS_DIGEST_ALGORITHMS,
+    errmap
 )
 import samba.tests.krb5.kcrypto as kcrypto
 
@@ -5080,7 +5081,9 @@ class RawKerberosTest(TestCase):
         self.assertElementEqual(rep, 'pvno', 5)
         self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
         error_code = self.getElementValue(rep, 'error-code')
-        self.assertIn(error_code, expected_error_mode)
+        self.assertIn(error_code, expected_error_mode,
+                      f"{errmap.get(error_code)} not in "
+                      f"{[errmap.get(e) for e in expected_error_mode]}")
         if self.strict_checking:
             self.assertElementMissing(rep, 'ctime')
             self.assertElementMissing(rep, 'cusec')
