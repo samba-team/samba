@@ -337,17 +337,24 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		ok = ads_pull_uint32(ads, msg, "sAMAccountType", &atype);
 		if (!ok) {
-			DBG_INFO("Object lacks sAMAccountType attribute\n");
+			char *dn = ads_get_dn(ads, talloc_tos(), msg);
+			DBG_INFO("Object %s lacks sAMAccountType attribute\n",
+				 dn == NULL ? "(null)" : dn);
+			TALLOC_FREE(dn);
 			continue;
 		}
 		if (ds_atype_map(atype) != SID_NAME_USER) {
-			DBG_INFO("Not a user account? atype=0x%x\n", atype);
+			char *dn = ads_get_dn(ads, talloc_tos(), msg);
+			DBG_INFO("Object %s not a user account? atype=0x%x\n",
+				 dn == NULL ? "(null)" : dn, atype);
+			TALLOC_FREE(dn);
 			continue;
 		}
 
 		if (!ads_pull_sid(ads, msg, "objectSid", &user_sid)) {
 			char *dn = ads_get_dn(ads, talloc_tos(), msg);
-			DBG_INFO("No sid for %s !?\n", dn);
+			DBG_INFO("No sid for %s !?\n",
+				 dn == NULL ? "(null)" : dn);
 			TALLOC_FREE(dn);
 			continue;
 		}
