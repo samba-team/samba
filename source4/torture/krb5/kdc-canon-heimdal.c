@@ -302,6 +302,10 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	krb5_data in_data, enc_ticket;
 	krb5_get_creds_opt opt;
 
+	bool implicit_dollar_requires_canonicalize = \
+		! lpcfg_kdc_name_match_implicit_dollar_without_canonicalization(
+			tctx->lp_ctx);
+
 	const char *spn = NULL;
 	const char *spn_real_realm = NULL;
 	const char *upn = torture_setting_string(tctx, "krb5-upn", "");
@@ -535,6 +539,20 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					 "Got wrong error_code from "
 					 "krb5_get_init_creds_password");
 		/* We can't proceed with more checks */
+		return true;
+	} else if (implicit_dollar_requires_canonicalize &&
+		   test_context->test_data->removedollar &&
+		   ! test_context->test_data->canonicalize) {
+		/*
+		 * We are trying to match "foo" to "foo$", but we the
+		 * server is configured to not make that match without
+		 * canonicalization.
+		 */
+		torture_assert_int_equal(tctx, k5ret,
+					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
+					 "Got wrong error_code from "
+					 "krb5_get_init_creds_password "
+					 "(with no implicit dollar config)");
 		return true;
 	} else {
 		assertion_message = talloc_asprintf(tctx,
