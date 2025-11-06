@@ -195,7 +195,7 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,
-				DATA_BLOB *session_key, 
+				DATA_BLOB *session_key,
 				uint32_t *keytype)
 {
 	OM_uint32 gss_min, gss_maj;
@@ -263,7 +263,7 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 			}
 #endif
 			gss_release_buffer_set(&gss_min, &set);
-	
+
 			return NT_STATUS_OK;
 
 		} else if (memcmp(set->elements[1].value,
