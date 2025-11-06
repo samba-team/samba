@@ -62,32 +62,32 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	 * This is used for NTLM pass-through authentication */
 	if (cred->nt_response.data || cred->lm_response.data) {
 		if (cred->nt_response.length != 0) {
-			nt_response = data_blob_dup_talloc(frame,
-							   cred->nt_response);
+			nt_response = data_blob_dup_talloc_s(frame,
+							     cred->nt_response);
 			if (nt_response.data == NULL) {
 				TALLOC_FREE(frame);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
 		if (cred->nt_session_key.length != 0) {
-			session_key = data_blob_dup_talloc(frame,
-							   cred->nt_session_key);
+			session_key = data_blob_dup_talloc_s(
+				frame, cred->nt_session_key);
 			if (session_key.data == NULL) {
 				TALLOC_FREE(frame);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
 		if (cred->lm_response.length != 0) {
-			lm_response = data_blob_dup_talloc(frame,
-							   cred->lm_response);
+			lm_response = data_blob_dup_talloc_s(frame,
+							     cred->lm_response);
 			if (lm_response.data == NULL) {
 				TALLOC_FREE(frame);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
 		if (cred->lm_session_key.length != 0) {
-			lm_session_key = data_blob_dup_talloc(frame,
-							      cred->lm_session_key);
+			lm_session_key = data_blob_dup_talloc_s(
+				frame, cred->lm_session_key);
 			if (lm_session_key.data == NULL) {
 				TALLOC_FREE(frame);
 				return NT_STATUS_NO_MEMORY;
@@ -128,12 +128,12 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		/* do nothing - blobs are zero length */
 
 		/* session key is all zeros */
-		session_key = data_blob_talloc_zero(frame, 16);
+		session_key = data_blob_talloc_zero_s(frame, 16);
 		if (session_key.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
-		lm_session_key = data_blob_talloc_zero(frame, 16);
+		lm_session_key = data_blob_talloc_zero_s(frame, 16);
 		if (lm_session_key.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -177,7 +177,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		uint8_t session_nonce_hash[16];
 		uint8_t user_session_key[16];
 
-		lm_response = data_blob_talloc_zero(frame, 24);
+		lm_response = data_blob_talloc_zero_s(frame, 24);
 		if (lm_response.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -199,7 +199,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		DEBUG(5, ("challenge is: \n"));
 		dump_data(5, session_nonce_hash, 8);
 
-		nt_response = data_blob_talloc_zero(frame, 24);
+		nt_response = data_blob_talloc_zero_s(frame, 24);
 		if (nt_response.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -214,7 +214,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 
 		ZERO_ARRAY(session_nonce_hash);
 
-		session_key = data_blob_talloc_zero(frame, 16);
+		session_key = data_blob_talloc_zero_s(frame, 16);
 		if (session_key.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -243,7 +243,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		uint8_t lm_hash[16];
 		bool do_lm = false;
 
-		nt_response = data_blob_talloc_zero(frame, 24);
+		nt_response = data_blob_talloc_zero_s(frame, 24);
 		if (nt_response.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -255,7 +255,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 			return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
 		}
 
-		session_key = data_blob_talloc_zero(frame, 16);
+		session_key = data_blob_talloc_zero_s(frame, 16);
 		if (session_key.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -271,7 +271,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		}
 
 		if (*flags & CLI_CRED_LANMAN_AUTH && do_lm) {
-			lm_response = data_blob_talloc_zero(frame, 24);
+			lm_response = data_blob_talloc_zero_s(frame, 24);
 			if (lm_response.data == NULL) {
 				ZERO_STRUCT(lm_hash);
 				TALLOC_FREE(frame);
@@ -288,7 +288,8 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 			}
 		} else {
 			/* just copy the nt_response */
-			lm_response = data_blob_dup_talloc(frame, nt_response);
+			lm_response = data_blob_dup_talloc_s(frame,
+							     nt_response);
 			if (lm_response.data == NULL) {
 				ZERO_STRUCT(lm_hash);
 				TALLOC_FREE(frame);
@@ -297,7 +298,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		}
 
 		if (do_lm) {
-			lm_session_key = data_blob_talloc_zero(frame, 16);
+			lm_session_key = data_blob_talloc_zero_s(frame, 16);
 			if (lm_session_key.data == NULL) {
 				ZERO_STRUCT(lm_hash);
 				TALLOC_FREE(frame);
@@ -316,26 +317,18 @@ done:
 	if (_lm_response != NULL) {
 		talloc_steal(mem_ctx, lm_response.data);
 		*_lm_response = lm_response;
-	} else {
-		data_blob_clear(&lm_response);
 	}
 	if (_nt_response != NULL) {
 		talloc_steal(mem_ctx, nt_response.data);
 		*_nt_response = nt_response;
-	} else {
-		data_blob_clear(&nt_response);
 	}
 	if (_lm_session_key != NULL) {
 		talloc_steal(mem_ctx, lm_session_key.data);
 		*_lm_session_key = lm_session_key;
-	} else {
-		data_blob_clear(&lm_session_key);
 	}
 	if (_session_key != NULL) {
 		talloc_steal(mem_ctx, session_key.data);
 		*_session_key = session_key;
-	} else {
-		data_blob_clear(&session_key);
 	}
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
@@ -372,6 +365,7 @@ _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 	if (nt_hash == NULL) {
 		return false;
 	}
+	talloc_keep_secret(nt_hash);
 
 	ok = convert_string_talloc(cred,
 				   CH_UTF16MUNGED, CH_UTF8,
@@ -384,6 +378,7 @@ _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 		return false;
 	}
 
+	talloc_keep_secret(password_talloc);
 	ok = cli_credentials_set_password(cred, password_talloc, obtained);
 	TALLOC_FREE(password_talloc);
 	if (!ok) {
@@ -419,6 +414,7 @@ _PUBLIC_ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cre
 	if (nt_hash == NULL) {
 		return false;
 	}
+	talloc_keep_secret(nt_hash);
 
 	ok = convert_string_talloc(cred,
 				   CH_UTF16MUNGED, CH_UTF8,
@@ -479,6 +475,7 @@ _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 		if (cred->nt_hash == NULL) {
 			return false;
 		}
+		talloc_keep_secret(cred->nt_hash);
 		*cred->nt_hash = *nt_hash;
 	} else {
 		cred->nt_hash = NULL;
@@ -495,6 +492,7 @@ _PUBLIC_ bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
 		if (cred->old_nt_hash == NULL) {
 			return false;
 		}
+		talloc_keep_secret(cred->old_nt_hash);
 		*cred->old_nt_hash = *nt_hash;
 	} else {
 		cred->old_nt_hash = NULL;
@@ -522,34 +520,32 @@ _PUBLIC_ bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
 	data_blob_clear_free(&cred->nt_session_key);
 
 	if (lm_response != NULL && lm_response->length != 0) {
-		cred->lm_response = data_blob_talloc(cred,
-						     lm_response->data,
-						     lm_response->length);
+		cred->lm_response = data_blob_talloc_s(cred,
+						       lm_response->data,
+						       lm_response->length);
 		if (cred->lm_response.data == NULL) {
 			return false;
 		}
 	}
 	if (lm_session_key != NULL && lm_session_key->length != 0) {
-		cred->lm_session_key = data_blob_talloc(cred,
-							lm_session_key->data,
-							lm_session_key->length);
+		cred->lm_session_key = data_blob_talloc_s(
+			cred, lm_session_key->data, lm_session_key->length);
 		if (cred->lm_session_key.data == NULL) {
 			return false;
 		}
 	}
 
 	if (nt_response != NULL && nt_response->length != 0) {
-		cred->nt_response = data_blob_talloc(cred,
-						     nt_response->data,
-						     nt_response->length);
+		cred->nt_response = data_blob_talloc_s(cred,
+						       nt_response->data,
+						       nt_response->length);
 		if (cred->nt_response.data == NULL) {
 			return false;
 		}
 	}
 	if (nt_session_key != NULL && nt_session_key->length != 0) {
-		cred->nt_session_key = data_blob_talloc(cred,
-							nt_session_key->data,
-							nt_session_key->length);
+		cred->nt_session_key = data_blob_talloc_s(
+			cred, nt_session_key->data, nt_session_key->length);
 		if (cred->nt_session_key.data == NULL) {
 			return false;
 		}
