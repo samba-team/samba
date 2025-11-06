@@ -38,13 +38,13 @@
 
 #define TEST_CANONICALIZE     0x0000001
 #define TEST_ENTERPRISE       0x0000002
-#define TEST_UPPER_USERNAME   0x0000008
-#define TEST_WIN2K            0x0000020
-#define TEST_UPN              0x0000040
-#define TEST_S4U2SELF         0x0000080
-#define TEST_REMOVEDOLLAR     0x0000100
-#define TEST_AS_REQ_SPN       0x0000200
-#define TEST_ALL              0x00003FF
+#define TEST_UPPER_USERNAME   0x0000004
+#define TEST_WIN2K            0x0000008
+#define TEST_UPN              0x0000010
+#define TEST_S4U2SELF         0x0000020
+#define TEST_REMOVEDOLLAR     0x0000040
+#define TEST_AS_REQ_SPN       0x0000080
+#define TEST_ALL              0x00000FF
 
 struct test_data {
 	const char *test_name;
