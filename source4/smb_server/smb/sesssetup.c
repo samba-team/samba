@@ -1,5 +1,5 @@
 
-/* 
+/*
    Unix SMB/CIFS implementation.
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell                      1998-2001
@@ -7,17 +7,17 @@
    Copyright (C) Jim McDonough                        2002
    Copyright (C) Luke Howard                          2003
    Copyright (C) Stefan Metzmacher                    2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -78,7 +78,7 @@ static void sesssetup_common_strings(struct smbsrv_request *req,
 {
 	(*os) = talloc_asprintf(req, "Unix");
 	(*lanman) = talloc_asprintf(req, "Samba %s", SAMBA_VERSION_STRING);
-	(*domain) = talloc_asprintf(req, "%s", 
+	(*domain) = talloc_asprintf(req, "%s",
 				    lpcfg_workgroup(req->smb_conn->lp_ctx));
 }
 
@@ -119,7 +119,7 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 	/* This references user_info_dc into session_info */
 	status = req->smb_conn->negotiate.auth_context->generate_session_info(req->smb_conn->negotiate.auth_context,
 									      req,
-									      user_info_dc, sess->old.in.user, 
+									      user_info_dc, sess->old.in.user,
 									      flags, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
@@ -161,7 +161,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	sess->old.out.vuid = 0;
 	sess->old.out.action = 0;
 
-	sesssetup_common_strings(req, 
+	sesssetup_common_strings(req,
 				 &sess->old.out.os,
 				 &sess->old.out.lanman,
 				 &sess->old.out.domain);
@@ -173,7 +173,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	if (req->smb_conn->negotiate.calling_name) {
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
-	
+
 	remote_address = socket_get_remote_addr(req->smb_conn->connection->socket, req);
 	if (!remote_address) goto nomem;
 
@@ -189,7 +189,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	if (!user_info) goto nomem;
 
 	user_info->service_description = "SMB";
-	
+
 	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->old.in.user;
@@ -198,7 +198,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 
 	user_info->remote_host = talloc_steal(user_info, remote_address);
 	user_info->local_host = talloc_steal(user_info, local_address);
-	
+
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = sess->old.in.password;
 	user_info->password.response.lanman.data = talloc_steal(user_info, sess->old.in.password.data);
@@ -313,7 +313,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	sess->nt1.out.vuid = 0;
 	sess->nt1.out.action = 0;
 
-	sesssetup_common_strings(req, 
+	sesssetup_common_strings(req,
 				 &sess->nt1.out.os,
 				 &sess->nt1.out.lanman,
 				 &sess->nt1.out.domain);
@@ -383,7 +383,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->workstation_name = remote_machine;
 	user_info->remote_host = talloc_steal(user_info, remote_address);
 	user_info->local_host = talloc_steal(user_info, local_address);
-	
+
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = sess->nt1.in.password1;
 	user_info->password.response.lanman.data = talloc_steal(user_info, sess->nt1.in.password1.data);
@@ -463,7 +463,7 @@ done:
 failed:
 	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
-	if (!NT_STATUS_IS_OK(status) && 
+	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		talloc_free(smb_sess);
 	}
@@ -484,7 +484,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	sess->spnego.out.vuid = 0;
 	sess->spnego.out.action = 0;
 
-	sesssetup_common_strings(req, 
+	sesssetup_common_strings(req,
 				 &sess->spnego.out.os,
 				 &sess->spnego.out.lanman,
 				 &sess->spnego.out.workgroup);
@@ -555,7 +555,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 
 		status = gensec_start_mech_by_oid(gensec_ctx, req->smb_conn->negotiate.oid);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC %s server code: %s\n", 
+			DEBUG(1, ("Failed to start GENSEC %s server code: %s\n",
 				  gensec_get_name_by_oid(gensec_ctx, req->smb_conn->negotiate.oid), nt_errstr(status)));
 			goto failed;
 		}
