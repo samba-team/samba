@@ -322,6 +322,17 @@ static struct ceph_mount_info *cephmount_mount_fs(
 		goto out;
 	}
 	/*
+	 * do explicit init. note that in proxy mode this is a no-op as
+	 * libcephfs' proxy uses only implicit init upon first mount to reduce
+	 * resource consumption.
+	 */
+	ret = config->ceph_init_fn(mnt);
+	if (ret < 0) {
+		DBG_DEBUG("[CEPH] ceph_init failed: ret=%d\n", ret);
+		goto out;
+	}
+
+	/*
 	 * select a cephfs file system to use:
 	 * In ceph, multiple file system support has been stable since
 	 * 'pacific'. Permit different shares to access different file systems.
