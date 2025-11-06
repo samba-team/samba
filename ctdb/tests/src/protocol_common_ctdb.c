@@ -608,6 +608,13 @@ void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 
 	case CTDB_CONTROL_START_IPREALLOCATE:
 		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
+		cd->data.push_record = talloc(mem_ctx,
+					      struct ctdb_push_record_data);
+		assert(cd->data.push_record != NULL);
+		fill_ctdb_push_record_data(mem_ctx, cd->data.push_record);
+		break;
 	}
 }
 
@@ -1008,7 +1015,13 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_START_IPREALLOCATE:
 		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
+		verify_ctdb_push_record_data(cd->data.push_record,
+					     cd2->data.push_record);
+		break;
 	}
+
 }
 
 void fill_ctdb_req_control(TALLOC_CTX *mem_ctx, struct ctdb_req_control *c,
@@ -1413,6 +1426,9 @@ void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 
 	case CTDB_CONTROL_START_IPREALLOCATE:
 		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
+		break;
 	}
 }
 
@@ -1758,6 +1774,9 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_START_IPREALLOCATE:
+		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
 		break;
 	}
 }

@@ -79,6 +79,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
 PROTOCOL_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
 PROTOCOL_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
 PROTOCOL_TYPE3_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
+PROTOCOL_TYPE3_TEST(struct ctdb_push_record_data, ctdb_push_record_data);
 
 PROTOCOL_TYPE1_TEST(struct sock_packet_header, sock_packet_header);
 
@@ -181,6 +182,7 @@ static void protocol_types_test(void)
 	TEST_FUNC(ctdb_server_id)();
 	TEST_FUNC(ctdb_g_lock)();
 	TEST_FUNC(ctdb_g_lock_list)();
+	TEST_FUNC(ctdb_push_record_data)();
 
 	TEST_FUNC(sock_packet_header)();
 

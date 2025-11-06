@@ -1246,6 +1246,26 @@ void verify_ctdb_g_lock_list(struct ctdb_g_lock_list *p1,
 	}
 }
 
+void fill_ctdb_push_record_data(TALLOC_CTX *mem_ctx,
+				struct ctdb_push_record_data *p)
+{
+	p->generation = rand32();
+	p->db_id = rand32();
+	fill_ctdb_ltdb_header(&p->hdr);
+	fill_tdb_data_nonnull(mem_ctx, &p->key);
+	fill_tdb_data_nonnull(mem_ctx, &p->value);
+}
+
+void verify_ctdb_push_record_data(struct ctdb_push_record_data *p1,
+				  struct ctdb_push_record_data *p2)
+{
+	assert(p1->generation == p2->generation);
+	assert(p1->db_id == p2->db_id);
+	verify_ctdb_ltdb_header(&p1->hdr, &p2->hdr);
+	verify_tdb_data(&p1->key, &p2->key);
+	verify_tdb_data(&p1->value, &p2->value);
+}
+
 void fill_sock_packet_header(struct sock_packet_header *p)
 {
 	p->length = rand32();
