@@ -59,7 +59,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	}
 
 	/* We may already have an NTLM response we prepared earlier.
-	 * This is used for NTLM pass-though authentication */
+	 * This is used for NTLM pass-through authentication */
 	if (cred->nt_response.data || cred->lm_response.data) {
 		if (cred->nt_response.length != 0) {
 			nt_response = data_blob_dup_talloc(frame,

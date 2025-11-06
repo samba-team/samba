@@ -532,7 +532,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
-	   - related to Win9X, legacy NAS pass-though authentication
+	   - related to Win9X, legacy NAS pass-through authentication
 	*/
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password with domain %s\n",
 		client_domain ? client_domain : "<NULL>"));
@@ -621,7 +621,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Apparently NT accepts NT responses in the LM field
-	   - I think this is related to Win9X pass-though authentication
+	   - I think this is related to Win9X pass-through authentication
 	*/
 	DEBUG(4,("ntlm_password_check: Checking NT MD4 password in LM field\n"));
 	if (ntlm_auth == NTLM_AUTH_ON) {

@@ -68,7 +68,7 @@ struct cli_credentials {
 	struct samr_Password *nt_hash;
 	struct samr_Password *old_nt_hash;
 
-	/* Allows NTLM pass-though authentication */
+	/* Allows NTLM pass-through authentication */
 	DATA_BLOB lm_response;
 	DATA_BLOB lm_session_key;
 	DATA_BLOB nt_response;
