@@ -138,6 +138,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_ENC_TIMESTAMP,
     PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ETYPE_INFO2,
+    errmap
 )
 
 global_asn1_print = False
@@ -3386,11 +3387,16 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             error-code specified.
         """
         self.assertIsNotNone(rep)
-        self.assertEqual(rep['msg-type'], KRB_ERROR, "rep = {%s}" % rep)
-        if isinstance(expected, collections.abc.Container):
-            self.assertIn(rep['error-code'], expected, "rep = {%s}" % rep)
-        else:
-            self.assertEqual(rep['error-code'], expected, "rep = {%s}" % rep)
+        self.assertEqual(rep['msg-type'], KRB_ERROR,
+                         f"rep {{{rep}}} is not KRB_ERROR")
+
+        if not isinstance(expected, collections.abc.Container):
+            expected = [expected]
+
+        ec = rep['error-code']
+        self.assertIn(ec, expected,
+                      f"rep {{{rep}}}: error {errmap.get(ec, ec)}, "
+                      f"expected {', '.join(errmap.get(x, x) for x in expected)}")
 
     def tgs_req(self, cname, sname, realm, ticket, key, etypes,
                 expected_error_mode=0, padata=None, kdc_options=0,
