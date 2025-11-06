@@ -57,7 +57,9 @@ NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
 	if (!ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-	*session_key = data_blob_talloc(mem_ctx, ntlmssp_state->session_key.data, ntlmssp_state->session_key.length);
+	*session_key = data_blob_talloc_s(mem_ctx,
+					  ntlmssp_state->session_key.data,
+					  ntlmssp_state->session_key.length);
 	if (!session_key->data) {
 		return NT_STATUS_NO_MEMORY;
 	}
