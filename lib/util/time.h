@@ -350,6 +350,7 @@ struct timespec timespec_current(void);
 struct timespec timespec_min(const struct timespec *ts1,
 			     const struct timespec *ts2);
 int timespec_compare(const struct timespec *ts1, const struct timespec *ts2);
+bool timespec_equal(const struct timespec *ts1, const struct timespec *ts2);
 void round_timespec_to_sec(struct timespec *ts);
 void round_timespec_to_usec(struct timespec *ts);
 void round_timespec_to_nttime(struct timespec *ts);

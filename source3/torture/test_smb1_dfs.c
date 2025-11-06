@@ -129,7 +129,7 @@ static bool smb1_crtime_matches(struct cli_state *cli,
 			nt_errstr(status));
 		return false;
 	}
-	equal = (timespec_compare(&test_crtime, &crtime_tomatch) == 0);
+	equal = timespec_equal(&test_crtime, &crtime_tomatch);
 	if (!equal) {
 		struct timeval_buf test_buf;
 		struct timeval_buf tomatch_buf;
@@ -1852,7 +1852,7 @@ bool run_smb1_dfs_paths(int dummy)
 	 * This checks we're actually correctly reading crtimes
 	 * from the filesystem.
 	 */
-	equal = (timespec_compare(&test_crtime, &root_crtime) == 0);
+	equal = timespec_equal(&test_crtime, &root_crtime);
 	if (equal) {
 		printf("%s:%d Error. crtime of %s must differ from "
 			"root_crtime\n",
@@ -3227,7 +3227,7 @@ static bool test_smb1_open(struct cli_state *cli)
 			nt_errstr(status));
 		goto err;
 	}
-	equal = (timespec_compare(&testfile_crtime, &open_crtime) == 0);
+	equal = timespec_equal(&testfile_crtime, &open_crtime);
 	if (!equal) {
 		printf("%s:%d crtime mismatch of test file %s\n",
 			__FILE__,

@@ -1732,10 +1732,9 @@ static int vfs_gluster_fntimes(struct vfs_handle_struct *handle,
 		times[1].tv_nsec = ft->mtime.tv_nsec;
 	}
 
-	if ((timespec_compare(&times[0],
-			      &fsp->fsp_name->st.st_ex_atime) == 0) &&
-	    (timespec_compare(&times[1],
-			      &fsp->fsp_name->st.st_ex_mtime) == 0)) {
+	if (timespec_equal(&times[0], &fsp->fsp_name->st.st_ex_atime) &&
+	    timespec_equal(&times[1], &fsp->fsp_name->st.st_ex_mtime))
+	{
 		END_PROFILE(syscall_fntimes);
 		return 0;
 	}

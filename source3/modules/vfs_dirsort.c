@@ -201,7 +201,7 @@ static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
 	}
 
 	/* throw away cache and re-read the directory if we've changed */
-	if (timespec_compare(&current_mtime, &data->mtime)) {
+	if (!timespec_equal(&current_mtime, &data->mtime)) {
 		SMB_VFS_NEXT_REWINDDIR(handle, data->source_directory);
 		open_and_sort_dir(handle, data);
 	}

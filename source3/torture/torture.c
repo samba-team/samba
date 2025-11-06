@@ -12770,7 +12770,7 @@ static bool run_dir_createtime(int dummy)
 		goto out;
 	}
 
-	if (timespec_compare(&create_time1, &create_time)) {
+	if (!timespec_equal(&create_time1, &create_time)) {
 		printf("run_dir_createtime: create time was updated (error)\n");
 	} else {
 		printf("run_dir_createtime: create time was not updated (correct)\n");

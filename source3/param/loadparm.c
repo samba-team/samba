@@ -2501,7 +2501,7 @@ bool lp_file_list_changed(void)
 			}
 
 			if (mod_time.tv_sec > 0 &&
-			    ((timespec_compare(&mod_time, &f->modtime) != 0) ||
+			    (!timespec_equal(&mod_time, &f->modtime) ||
 			     (f->subfname == NULL) ||
 			     (strcmp(n2, f->subfname) != 0)))
 			{
@@ -3547,8 +3547,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	if (iService != -1 &&
-	    timespec_compare(&ServicePtrs[iService]->usershare_last_mod,
-			     &lsbuf.st_ex_mtime) == 0) {
+	    timespec_equal(&ServicePtrs[iService]->usershare_last_mod,
+			   &lsbuf.st_ex_mtime))
+	{
 		/* Nothing changed - Mark valid and return. */
 		DEBUG(10,("process_usershare_file: service %s not changed.\n",
 			canon_name ));

@@ -313,7 +313,7 @@ static bool vfs_default_durable_reconnect_check_stat(
 				struct files_struct *fsp)
 {
 	SMB_STRUCT_STAT *fsp_st = &fsp->fsp_name->st;
-	int ret;
+	bool equal;
 
 	if (cookie_st->st_ex_mode != fsp_st->st_ex_mode) {
 		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
@@ -387,9 +387,8 @@ static bool vfs_default_durable_reconnect_check_stat(
 		return false;
 	}
 
-	ret = timespec_compare(&cookie_st->st_ex_atime,
-			       &fsp_st->st_ex_atime);
-	if (ret != 0) {
+	equal = timespec_equal(&cookie_st->st_ex_atime, &fsp_st->st_ex_atime);
+	if (!equal) {
 		struct timeval tc, ts;
 		tc = convert_timespec_to_timeval(cookie_st->st_ex_atime);
 		ts = convert_timespec_to_timeval(fsp_st->st_ex_atime);
@@ -405,9 +404,8 @@ static bool vfs_default_durable_reconnect_check_stat(
 		return false;
 	}
 
-	ret = timespec_compare(&cookie_st->st_ex_mtime,
-			       &fsp_st->st_ex_mtime);
-	if (ret != 0) {
+	equal = timespec_equal(&cookie_st->st_ex_mtime, &fsp_st->st_ex_mtime);
+	if (!equal) {
 		struct timeval tc, ts;
 		tc = convert_timespec_to_timeval(cookie_st->st_ex_mtime);
 		ts = convert_timespec_to_timeval(fsp_st->st_ex_mtime);
@@ -423,9 +421,8 @@ static bool vfs_default_durable_reconnect_check_stat(
 		return false;
 	}
 
-	ret = timespec_compare(&cookie_st->st_ex_ctime,
-			       &fsp_st->st_ex_ctime);
-	if (ret != 0) {
+	equal = timespec_equal(&cookie_st->st_ex_ctime, &fsp_st->st_ex_ctime);
+	if (!equal) {
 		struct timeval tc, ts;
 		tc = convert_timespec_to_timeval(cookie_st->st_ex_ctime);
 		ts = convert_timespec_to_timeval(fsp_st->st_ex_ctime);
@@ -441,9 +438,8 @@ static bool vfs_default_durable_reconnect_check_stat(
 		return false;
 	}
 
-	ret = timespec_compare(&cookie_st->st_ex_btime,
-			       &fsp_st->st_ex_btime);
-	if (ret != 0) {
+	equal = timespec_equal(&cookie_st->st_ex_btime, &fsp_st->st_ex_btime);
+	if (!equal) {
 		struct timeval tc, ts;
 		tc = convert_timespec_to_timeval(cookie_st->st_ex_btime);
 		ts = convert_timespec_to_timeval(fsp_st->st_ex_btime);

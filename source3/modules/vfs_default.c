@@ -2908,10 +2908,11 @@ static int vfswrap_fntimes(vfs_handle_struct *handle,
 					       ft->create_time);
 		}
 
-		if ((timespec_compare(&ft->atime,
-				      &fsp->fsp_name->st.st_ex_atime) == 0) &&
-		    (timespec_compare(&ft->mtime,
-				      &fsp->fsp_name->st.st_ex_mtime) == 0)) {
+		if (timespec_equal(&ft->atime,
+				   &fsp->fsp_name->st.st_ex_atime) &&
+		    timespec_equal(&ft->mtime,
+				   &fsp->fsp_name->st.st_ex_mtime))
+		{
 			result = 0;
 			goto out;
 		}

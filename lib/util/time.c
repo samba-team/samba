@@ -958,6 +958,12 @@ _PUBLIC_ int timespec_compare(const struct timespec *ts1, const struct timespec 
 	return 0;
 }
 
+_PUBLIC_ bool timespec_equal(const struct timespec *ts1, const struct timespec *ts2)
+{
+	return ((ts1->tv_sec == ts2->tv_sec) &&
+		(ts1->tv_nsec == ts2->tv_nsec));
+}
+
 /****************************************************************************
  Round up a timespec if nsec > 500000000, round down if lower,
  then zero nsec.
