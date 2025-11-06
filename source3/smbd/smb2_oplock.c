@@ -218,6 +218,9 @@ uint32_t get_lease_type(struct share_mode_entry *e, struct file_id id)
 	if (share_entry_stale_pid(e)) {
 		return SMB2_LEASE_NONE;
 	}
+	if (e->protect) {
+		return SMB2_LEASE_NONE;
+	}
 	DBG_ERR("leases_db_get for client_guid [%s] "
 		"lease_key [%"PRIx64"/%"PRIx64"] "
 		"file_id [%s] failed: %s\n",
