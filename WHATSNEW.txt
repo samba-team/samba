@@ -1,4 +1,56 @@
                    ==============================
+                   Release Notes for Samba 4.23.3
+                         November 07, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.2
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15926: Samba 4.22 breaks Time Machine.
+   * BUG 15927: Spotlight search restriction for shares incomplete and default
+     search searches in too many attributes.
+   * BUG 15930: Searching for numbers doesn't work with Spotlight.
+   * BUG 15931: rpcd_mdssvc may crash because name mangling is not initialized.
+   * BUG 15933: Only increment lease epoch if a lease was granted.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15940: vfs_recycle does not update mtime.
+   * BUG 15943: samba-log-parser fails with UnicodeDecodeError: 'utf-8' codec
+     can't decode byte.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15935: Crash in ctdbd on failed updateip.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.23.2
                           October 15, 2025
                    ==============================
@@ -44,8 +96,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.23.1
                          September 26, 2025
