@@ -62,7 +62,6 @@ struct dptr_struct {
 	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
 	bool did_stat; /* Optimisation for non-wcard searches. */
 	bool priv;     /* Directory handle opened with privilege. */
-	uint32_t counter;
 
 	char *last_name_sent;	/* for name-based trans2 resume */
 
