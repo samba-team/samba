@@ -3450,13 +3450,6 @@ static NTSTATUS vfswrap_get_real_filename_at(
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-static const char *vfswrap_connectpath(struct vfs_handle_struct *handle,
-				   const struct files_struct *dirfsp,
-				   const struct smb_filename *smb_fname)
-{
-	return handle->conn->connectpath;
-}
-
 static NTSTATUS vfswrap_brl_lock_windows(struct vfs_handle_struct *handle,
 					 struct byte_range_lock *br_lck,
 					 struct lock_struct *plock)
@@ -4105,7 +4098,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fs_file_id_fn = vfswrap_fs_file_id,
 	.fstreaminfo_fn = vfswrap_fstreaminfo,
 	.get_real_filename_at_fn = vfswrap_get_real_filename_at,
-	.connectpath_fn = vfswrap_connectpath,
 	.brl_lock_windows_fn = vfswrap_brl_lock_windows,
 	.brl_unlock_windows_fn = vfswrap_brl_unlock_windows,
 	.strict_lock_check_fn = vfswrap_strict_lock_check,

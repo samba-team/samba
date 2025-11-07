@@ -1427,14 +1427,6 @@ static NTSTATUS cephwrap_get_real_filename_at(
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-static const char *cephwrap_connectpath(
-	struct vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname)
-{
-	return handle->conn->connectpath;
-}
-
 static NTSTATUS cephwrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 					     struct files_struct *fsp,
 					     uint32_t *dosmode)
@@ -1836,7 +1828,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.realpath_fn = cephwrap_realpath,
 	.fchflags_fn = vfs_not_implemented_fchflags,
 	.get_real_filename_at_fn = cephwrap_get_real_filename_at,
-	.connectpath_fn = cephwrap_connectpath,
 	.fget_dos_attributes_fn = cephwrap_fget_dos_attributes,
 	.fset_dos_attributes_fn = cephwrap_fset_dos_attributes,
 

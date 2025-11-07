@@ -2194,14 +2194,6 @@ NTSTATUS smb_vfs_call_get_real_filename_at(struct vfs_handle_struct *handle,
 		handle, dirfsp, name, mem_ctx, found_name);
 }
 
-const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
-				 const struct files_struct *dirfsp,
-				 const struct smb_filename *smb_fname)
-{
-	VFS_FIND(connectpath);
-	return handle->fns->connectpath_fn(handle, dirfsp, smb_fname);
-}
-
 bool smb_vfs_call_strict_lock_check(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    struct lock_struct *plock)

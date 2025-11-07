@@ -394,6 +394,7 @@
  * Version 51 - Add ntcreatex_deny_[dos|fcb] and ntcreatex_stream_baseopen
  * Change to Version 52 - will ship with 4.24
  * Version 52 - Add rename_stream
+ * Version 52 - Remove connectpath
  */
 
 #define SMB_VFS_INTERFACE_VERSION 51
@@ -1221,10 +1222,6 @@ struct vfs_fn_pointers {
 					    TALLOC_CTX *mem_ctx,
 					    char **found_name);
 
-	const char *(*connectpath_fn)(struct vfs_handle_struct *handle,
-				      const struct files_struct *dirfsp,
-				      const struct smb_filename *smb_fname);
-
 	NTSTATUS (*brl_lock_windows_fn)(struct vfs_handle_struct *handle,
 					struct byte_range_lock *br_lck,
 					struct lock_struct *plock);
@@ -1705,9 +1702,6 @@ NTSTATUS smb_vfs_call_get_real_filename_at(struct vfs_handle_struct *handle,
 					   const char *name,
 					   TALLOC_CTX *mem_ctx,
 					   char **found_name);
-const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
-				 const struct files_struct *dirfsp,
-				 const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
 				       struct lock_struct *plock);
@@ -2183,10 +2177,6 @@ NTSTATUS vfs_not_implemented_get_real_filename_at(
 	const char *name,
 	TALLOC_CTX *mem_ctx,
 	char **found_name);
-const char *vfs_not_implemented_connectpath(
-	struct vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname);
 NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,
 					      struct byte_range_lock *br_lck,
 					      struct lock_struct *plock);

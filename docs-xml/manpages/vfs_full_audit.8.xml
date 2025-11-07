@@ -46,7 +46,6 @@
 	<member>close</member>
 	<member>closedir</member>
 	<member>connect</member>
-	<member>connectpath</member>
 	<member>create_dfs_pathat</member>
 	<member>create_file</member>
 	<member>disconnect</member>

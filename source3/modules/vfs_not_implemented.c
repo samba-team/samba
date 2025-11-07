@@ -732,16 +732,6 @@ NTSTATUS vfs_not_implemented_get_real_filename_at(
 }
 
 _PUBLIC_
-const char *vfs_not_implemented_connectpath(
-	struct vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname)
-{
-	errno = ENOSYS;
-	return NULL;
-}
-
-_PUBLIC_
 NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,
 					      struct byte_range_lock *br_lck,
 					      struct lock_struct *plock)
@@ -1147,7 +1137,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 
 	.fstreaminfo_fn = vfs_not_implemented_fstreaminfo,
 	.get_real_filename_at_fn = vfs_not_implemented_get_real_filename_at,
-	.connectpath_fn = vfs_not_implemented_connectpath,
 	.brl_lock_windows_fn = vfs_not_implemented_brl_lock_windows,
 	.brl_unlock_windows_fn = vfs_not_implemented_brl_unlock_windows,
 	.strict_lock_check_fn = vfs_not_implemented_strict_lock_check,

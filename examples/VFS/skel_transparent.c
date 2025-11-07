@@ -887,14 +887,6 @@ static NTSTATUS skel_get_real_filename_at(struct vfs_handle_struct *handle,
 		handle, dirfsp, name, mem_ctx, found_name);
 }
 
-static const char *skel_connectpath(
-	struct vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname)
-{
-	return SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname);
-}
-
 static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,
 				      struct byte_range_lock *br_lck,
 				      struct lock_struct *plock)
@@ -1363,7 +1355,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 
 	.fstreaminfo_fn = skel_fstreaminfo,
 	.get_real_filename_at_fn = skel_get_real_filename_at,
-	.connectpath_fn = skel_connectpath,
 	.brl_lock_windows_fn = skel_brl_lock_windows,
 	.brl_unlock_windows_fn = skel_brl_unlock_windows,
 	.strict_lock_check_fn = skel_strict_lock_check,

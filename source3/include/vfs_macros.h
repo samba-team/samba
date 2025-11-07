@@ -404,11 +404,6 @@
 		(mem_ctx), \
 		(found_name))
 
-#define SMB_VFS_CONNECTPATH(conn, dirfsp, smb_fname)			\
-	smb_vfs_call_connectpath((conn)->vfs_handles, (dirfsp), (smb_fname))
-#define SMB_VFS_NEXT_CONNECTPATH(conn, dirfsp, smb_fname)	\
-	smb_vfs_call_connectpath((conn)->next, (dirfsp), (smb_fname))
-
 #define SMB_VFS_BRL_LOCK_WINDOWS(conn, br_lck, plock) \
 	smb_vfs_call_brl_lock_windows((conn)->vfs_handles, (br_lck), (plock))
 #define SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock) \

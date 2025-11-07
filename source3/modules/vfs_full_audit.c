@@ -166,7 +166,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FSTREAMINFO,
 	SMB_VFS_OP_GET_REAL_FILENAME,
 	SMB_VFS_OP_GET_REAL_FILENAME_AT,
-	SMB_VFS_OP_CONNECTPATH,
 	SMB_VFS_OP_BRL_LOCK_WINDOWS,
 	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	SMB_VFS_OP_STRICT_LOCK_CHECK,
@@ -302,7 +301,6 @@ static struct {
 	{ SMB_VFS_OP_FSTREAMINFO,	"fstreaminfo" },
 	{ SMB_VFS_OP_GET_REAL_FILENAME, "get_real_filename" },
 	{ SMB_VFS_OP_GET_REAL_FILENAME_AT, "get_real_filename_at" },
-	{ SMB_VFS_OP_CONNECTPATH,	"connectpath" },
 	{ SMB_VFS_OP_BRL_LOCK_WINDOWS,  "brl_lock_windows" },
 	{ SMB_VFS_OP_BRL_UNLOCK_WINDOWS, "brl_unlock_windows" },
 	{ SMB_VFS_OP_STRICT_LOCK_CHECK, "strict_lock_check" },
@@ -2119,24 +2117,6 @@ static NTSTATUS smb_full_audit_get_real_filename_at(
 	return result;
 }
 
-static const char *smb_full_audit_connectpath(
-	vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname)
-{
-	const char *result;
-
-	result = SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname);
-
-	do_log(SMB_VFS_OP_CONNECTPATH,
-	       result != NULL,
-	       handle,
-	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
-}
-
 static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle,
 					        struct byte_range_lock *br_lck,
 					        struct lock_struct *plock)
@@ -3009,7 +2989,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.snap_delete_fn = smb_full_audit_snap_delete,
 	.fstreaminfo_fn = smb_full_audit_fstreaminfo,
 	.get_real_filename_at_fn = smb_full_audit_get_real_filename_at,
-	.connectpath_fn = smb_full_audit_connectpath,
 	.brl_lock_windows_fn = smb_full_audit_brl_lock_windows,
 	.brl_unlock_windows_fn = smb_full_audit_brl_unlock_windows,
 	.strict_lock_check_fn = smb_full_audit_strict_lock_check,

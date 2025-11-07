@@ -1736,28 +1736,6 @@ static NTSTATUS smb_time_audit_get_real_filename_at(
 	return result;
 }
 
-static const char *smb_time_audit_connectpath(
-	vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname)
-{
-	const char *result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("connectpath", timediff,
-			smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static NTSTATUS smb_time_audit_brl_lock_windows(struct vfs_handle_struct *handle,
 						struct byte_range_lock *br_lck,
 						struct lock_struct *plock)
@@ -2799,7 +2777,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.snap_delete_fn = smb_time_audit_snap_delete,
 	.fstreaminfo_fn = smb_time_audit_fstreaminfo,
 	.get_real_filename_at_fn = smb_time_audit_get_real_filename_at,
-	.connectpath_fn = smb_time_audit_connectpath,
 	.brl_lock_windows_fn = smb_time_audit_brl_lock_windows,
 	.brl_unlock_windows_fn = smb_time_audit_brl_unlock_windows,
 	.strict_lock_check_fn = smb_time_audit_strict_lock_check,

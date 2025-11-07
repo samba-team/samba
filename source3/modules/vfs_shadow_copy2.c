@@ -2527,116 +2527,6 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static const char *shadow_copy2_connectpath(
-	struct vfs_handle_struct *handle,
-	const struct files_struct *dirfsp,
-	const struct smb_filename *smb_fname_in)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	char *tmp = NULL;
-	const char *fname = smb_fname_in->base_name;
-	const struct smb_filename *full = NULL;
-	struct smb_filename smb_fname = {0};
-	struct smb_filename *result_fname = NULL;
-	char *result = NULL;
-	char *parent_dir = NULL;
-	int saved_errno = 0;
-	size_t rootpath_len = 0;
-	struct shadow_copy2_private *priv = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
-				return NULL);
-
-	DBG_DEBUG("Calc connect path for [%s]\n", fname);
-
-	if (priv->shadow_connectpath != NULL) {
-		DBG_DEBUG("cached connect path is [%s]\n",
-			priv->shadow_connectpath);
-		return priv->shadow_connectpath;
-	}
-
-	full = full_path_from_dirfsp_atname(
-		talloc_tos(), dirfsp, smb_fname_in);
-	if (full == NULL) {
-		return NULL;
-	}
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, full,
-					 &timestamp, &stripped)) {
-		goto done;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_CONNECTPATH(handle, dirfsp, smb_fname_in);
-	}
-
-	tmp = shadow_copy2_do_convert(talloc_tos(), handle, stripped, timestamp,
-				      &rootpath_len);
-	if (tmp == NULL) {
-		if (errno != ENOENT) {
-			goto done;
-		}
-
-		/*
-		 * If the converted path does not exist, and converting
-		 * the parent yields something that does exist, then
-		 * this path refers to something that has not been
-		 * created yet, relative to the parent path.
-		 * The snapshot finding is relative to the parent.
-		 * (usually snapshots are read/only but this is not
-		 * necessarily true).
-		 * This code also covers getting a wildcard in the
-		 * last component, because this function is called
-		 * prior to sanitizing the path, and in SMB1 we may
-		 * get wildcards in path names.
-		 */
-		if (!parent_dirname(talloc_tos(), stripped, &parent_dir,
-				    NULL)) {
-			errno = ENOMEM;
-			goto done;
-		}
-
-		tmp = shadow_copy2_do_convert(talloc_tos(), handle, parent_dir,
-					      timestamp, &rootpath_len);
-		if (tmp == NULL) {
-			goto done;
-		}
-	}
-
-	DBG_DEBUG("converted path is [%s] root path is [%.*s]\n", tmp,
-		  (int)rootpath_len, tmp);
-
-	tmp[rootpath_len] = '\0';
-	smb_fname = (struct smb_filename) { .base_name = tmp };
-
-	result_fname = SMB_VFS_NEXT_REALPATH(handle, priv, &smb_fname);
-	if (result_fname == NULL) {
-		goto done;
-	}
-
-	/*
-	 * SMB_VFS_NEXT_REALPATH returns a talloc'ed string.
-	 * Don't leak memory.
-	 */
-	TALLOC_FREE(priv->shadow_realpath);
-	priv->shadow_realpath = result_fname;
-	result = priv->shadow_realpath->base_name;
-
-	DBG_DEBUG("connect path is [%s]\n", result);
-
-done:
-	if (result == NULL) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(tmp);
-	TALLOC_FREE(stripped);
-	TALLOC_FREE(parent_dir);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return result;
-}
-
 static NTSTATUS shadow_copy2_parent_pathname(vfs_handle_struct *handle,
 					     TALLOC_CTX *ctx,
 					     const struct smb_filename *smb_fname_in,
@@ -3294,7 +3184,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.pwrite_fn = shadow_copy2_pwrite,
 	.pwrite_send_fn = shadow_copy2_pwrite_send,
 	.pwrite_recv_fn = shadow_copy2_pwrite_recv,
-	.connectpath_fn = shadow_copy2_connectpath,
 	.parent_pathname_fn = shadow_copy2_parent_pathname,
 };
 
