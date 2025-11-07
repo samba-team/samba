@@ -2218,7 +2218,7 @@ static NTSTATUS smb_full_audit_parent_pathname(struct vfs_handle_struct *handle,
 					      smb_fname_in,
 					      parent_dir_out,
 					      atname_out);
-	do_log(SMB_VFS_OP_CONNECTPATH,
+	do_log(SMB_VFS_OP_PARENT_PATHNAME,
 	       NT_STATUS_IS_OK(result),
 	       handle,
 	       "%s",
