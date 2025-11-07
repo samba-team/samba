@@ -64,11 +64,42 @@ class ModelTests(SambaToolCmdTest):
 
     def test_query_filter_enum(self):
         """Tests filtering by an EnumField."""
-        robots_vs_humans = User.query(self.samdb).count
-        robots = User.query(self.samdb,
-                            account_type=AccountType.WORKSTATION_TRUST).count
-        humans = User.query(self.samdb,
-                            account_type=AccountType.NORMAL_ACCOUNT).count
+        all_users = list(User.query(self.samdb))
+        robots_vs_humans = len(all_users)
+
+        robots_list = list(
+            User.query(self.samdb, account_type=AccountType.WORKSTATION_TRUST)
+        )
+        robots = len(robots_list)
+
+        humans_list = list(
+            User.query(self.samdb, account_type=AccountType.NORMAL_ACCOUNT)
+        )
+        humans = len(humans_list)
+
+        # Debug output
+        print("\n=== Debug Output for test_query_filter_enum ===")
+        print(f"Total users: {robots_vs_humans}")
+        print(f"Robots (WORKSTATION_TRUST): {robots}")
+        print(f"Humans (NORMAL_ACCOUNT): {humans}")
+        print(f"Sum (robots + humans): {robots + humans}")
+        print(f"Difference: {robots_vs_humans - (robots + humans)}")
+
+        # Find users that are neither robots nor humans
+        robots_dns = {str(user.dn) for user in robots_list}
+        humans_dns = {str(user.dn) for user in humans_list}
+        all_dns = {str(user.dn) for user in all_users}
+        other_dns = all_dns - robots_dns - humans_dns
+
+        if other_dns:
+            print(f"\nUsers that are neither WORKSTATION_TRUST nor NORMAL_ACCOUNT ({len(other_dns)}):")
+            for user in all_users:
+                if str(user.dn) in other_dns:
+                    account_type_value = user.account_type
+                    print(f"  - {user.account_name}: account_type={account_type_value}")
+
+        print("=== End Debug Output ===\n")
+
         self.assertNotEqual(robots, 0)
         self.assertNotEqual(humans, 0)
         self.assertEqual(robots + humans, robots_vs_humans)
