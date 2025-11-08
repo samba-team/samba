@@ -311,12 +311,7 @@ static bool recycle_create_dir(vfs_handle_struct *handle,
 
 			DEBUG(5, ("recycle: creating new dir %s\n", new_dir));
 
-			smb_fname = synthetic_smb_fname(talloc_tos(),
-						new_dir,
-						NULL,
-						NULL,
-						0,
-						0);
+			smb_fname = cp_smb_basename(talloc_tos(), new_dir);
 			if (smb_fname == NULL) {
 				goto done;
 			}

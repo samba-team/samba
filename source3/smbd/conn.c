@@ -114,12 +114,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	if (conn->cwd_fsp == NULL) {
 		goto nomem;
 	}
-	conn->cwd_fsp->fsp_name = synthetic_smb_fname(conn->cwd_fsp,
-						      ".",
-						      NULL,
-						      NULL,
-						      0,
-						      0);
+	conn->cwd_fsp->fsp_name = cp_smb_basename(conn->cwd_fsp, ".");
 	if (conn->cwd_fsp->fsp_name == NULL) {
 		goto nomem;
 	}

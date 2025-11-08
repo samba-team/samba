@@ -84,12 +84,7 @@ NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
-				".",
-				NULL,
-				NULL,
-				0,
-				0);
+	smb_fname_cwd = cp_smb_basename(talloc_tos(), ".");
 	if (smb_fname_cwd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

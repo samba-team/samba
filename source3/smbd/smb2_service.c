@@ -78,12 +78,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	 * start as conn->connectpath.
 	 */
 	TALLOC_FREE(conn->cwd_fsp->fsp_name);
-	conn->cwd_fsp->fsp_name = synthetic_smb_fname(conn,
-				conn->connectpath,
-				NULL,
-				NULL,
-				0,
-				0);
+	conn->cwd_fsp->fsp_name = cp_smb_basename(conn, conn->connectpath);
 	if (conn->cwd_fsp->fsp_name == NULL) {
 		return false;
 	}

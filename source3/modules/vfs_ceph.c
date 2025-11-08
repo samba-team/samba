@@ -1126,7 +1126,7 @@ static struct smb_filename *cephwrap_getwd(struct vfs_handle_struct *handle,
 {
 	const char *cwd = ceph_getcwd(handle->data);
 	DBG_DEBUG("[CEPH] getwd(%p) = %s\n", handle, cwd);
-	return synthetic_smb_fname(ctx, cwd, NULL, NULL, 0, 0);
+	return cp_smb_basename(ctx, cwd);
 }
 
 static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
@@ -1408,7 +1408,7 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("[CEPH] realpath(%p, %s) = %s\n", handle, path, result);
-	result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0, 0);
+	result_fname = cp_smb_basename(ctx, result);
 	TALLOC_FREE(result);
 	return result_fname;
 }

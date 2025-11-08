@@ -2840,12 +2840,7 @@ static struct smb_filename *vfswrap_getwd(vfs_handle_struct *handle,
 	if (result == NULL) {
 		return NULL;
 	}
-	smb_fname = synthetic_smb_fname(ctx,
-				result,
-				NULL,
-				NULL,
-				0,
-				0);
+	smb_fname = cp_smb_basename(ctx, result);
 	/*
 	 * sys_getwd() *always* returns malloced memory.
 	 * We must free here to avoid leaks:
@@ -3307,12 +3302,7 @@ static struct smb_filename *vfswrap_realpath(vfs_handle_struct *handle,
 	result = sys_realpath(smb_fname->base_name);
 	END_PROFILE_X(syscall_realpath);
 	if (result) {
-		result_fname = synthetic_smb_fname(ctx,
-						   result,
-						   NULL,
-						   NULL,
-						   0,
-						   0);
+		result_fname = cp_smb_basename(ctx, result);
 		SAFE_FREE(result);
 	}
 	return result_fname;

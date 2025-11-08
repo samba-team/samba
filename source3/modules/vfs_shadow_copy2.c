@@ -730,12 +730,7 @@ static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
 	dev_t dev;
 	char *p;
 
-	smb_fname_cpath = synthetic_smb_fname(mem_ctx,
-					      handle->conn->connectpath,
-					      NULL,
-					      NULL,
-					      0,
-					      0);
+	smb_fname_cpath = cp_smb_basename(mem_ctx, handle->conn->connectpath);
 	if (smb_fname_cpath == NULL) {
 		errno = ENOMEM;
 		return NULL;

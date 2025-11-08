@@ -228,12 +228,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 	}
 
 	path = argv[1];
-	smb_fname = synthetic_smb_fname(state.mem_ctx,
-					path,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(state.mem_ctx, path);
 	if (smb_fname == NULL) {
 		goto done;
 	}
@@ -333,12 +328,7 @@ static bool do_unfruit(const char *path)
 		}
 	}
 
-	smb_fname = synthetic_smb_fname(state.mem_ctx,
-					path,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(state.mem_ctx, path);
 	if (smb_fname == NULL) {
 		return false;
 	}

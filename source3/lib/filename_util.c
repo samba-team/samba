@@ -74,6 +74,11 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 	return cp_smb_filename(mem_ctx, &smb_fname_loc);
 }
 
+struct smb_filename *cp_smb_basename(TALLOC_CTX *mem_ctx, const char *fname)
+{
+	return synthetic_smb_fname(mem_ctx, fname, NULL, NULL, 0, 0);
+}
+
 /**
  * Utility function used by VFS calls that must *NOT* operate
  * on a stream filename, only the base_name.

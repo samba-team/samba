@@ -5151,12 +5151,7 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					plist,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(talloc_tos(), plist);
 	if (smb_fname == NULL) {
 		ok = false;
 		goto out;
@@ -5290,12 +5285,7 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 		return false;
 	}
 
-	bands_dir = synthetic_smb_fname(talloc_tos(),
-					path,
-					NULL,
-					NULL,
-					0,
-					0);
+	bands_dir = cp_smb_basename(talloc_tos(), path);
 	TALLOC_FREE(path);
 	if (bands_dir == NULL) {
 		return false;

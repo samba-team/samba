@@ -3436,7 +3436,7 @@ static struct smb_filename *vfs_ceph_getwd(struct vfs_handle_struct *handle,
 	cwd = config->ceph_getcwd_fn(config->mount);
 	DBG_DEBUG("[CEPH] getwd: handle=%p cwd=%s\n", handle, cwd);
 	END_PROFILE_X(syscall_getwd);
-	return synthetic_smb_fname(ctx, cwd, NULL, NULL, 0, 0);
+	return cp_smb_basename(ctx, cwd);
 }
 
 static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
@@ -3816,7 +3816,7 @@ static struct smb_filename *vfs_ceph_realpath(struct vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("[CEPH] realpath(%p, %s) = %s\n", handle, path, result);
-	result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0, 0);
+	result_fname = cp_smb_basename(ctx, result);
 	TALLOC_FREE(result);
 out:
 	END_PROFILE_X(syscall_realpath);

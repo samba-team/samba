@@ -1036,12 +1036,7 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto nocache;
 	}
 
-	smb_fname_dot = synthetic_smb_fname(ctx,
-					    ".",
-					    NULL,
-					    NULL,
-					    0,
-					    0);
+	smb_fname_dot = cp_smb_basename(ctx, ".");
 	if (smb_fname_dot == NULL) {
 		errno = ENOMEM;
 		goto out;
@@ -1296,7 +1291,7 @@ NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fsp->fsp_name = synthetic_smb_fname(fsp, ".", NULL, NULL, 0, 0);
+	fsp->fsp_name = cp_smb_basename(fsp, ".");
 	if (fsp->fsp_name == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
@@ -1326,12 +1321,7 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 	struct vfs_statvfs_struct statbuf = {};
 	int ret;
 
-	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
-					      conn->connectpath,
-					      NULL,
-					      NULL,
-					      0,
-					      0);
+	smb_fname_cpath = cp_smb_basename(talloc_tos(), conn->connectpath);
 	if (smb_fname_cpath == NULL) {
 		return caps;
 	}

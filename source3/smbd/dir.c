@@ -1215,12 +1215,7 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, char **ptalloced)
 			struct smb_filename *atname = NULL;
 			int ret;
 
-			atname = synthetic_smb_fname(talloc_tos(),
-						     n,
-						     NULL,
-						     NULL,
-						     0,
-						     0);
+			atname = cp_smb_basename(talloc_tos(), n);
 			if (atname == NULL) {
 				TALLOC_FREE(talloced);
 				continue;

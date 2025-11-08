@@ -710,6 +710,7 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 				     const struct smb_filename *in);
 struct smb_filename *cp_smb_filename_nostream(TALLOC_CTX *mem_ctx,
 				     const struct smb_filename *in);
+struct smb_filename *cp_smb_basename(TALLOC_CTX *mem_ctx, const char *fname);
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_named_stream(const struct smb_filename *smb_fname);

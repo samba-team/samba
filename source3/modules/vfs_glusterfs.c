@@ -1700,12 +1700,7 @@ static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
 	if (ret == NULL) {
 		return NULL;
 	}
-	smb_fname = synthetic_smb_fname(ctx,
-					ret,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(ctx, ret);
 	return smb_fname;
 }
 
@@ -1854,12 +1849,7 @@ static struct smb_filename *vfs_gluster_realpath(struct vfs_handle_struct *handl
 			smb_fname->base_name,
 			resolved_path);
 	if (result != NULL) {
-		result_fname = synthetic_smb_fname(ctx,
-						   result,
-						   NULL,
-						   NULL,
-						   0,
-						   0);
+		result_fname = cp_smb_basename(ctx, result);
 	}
 
 	SAFE_FREE(resolved_path);

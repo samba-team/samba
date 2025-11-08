@@ -1345,12 +1345,7 @@ bool create_msdfs_link(const struct junction_map *jucn,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(frame,
-				path,
-				NULL,
-				NULL,
-				0,
-				0);
+	smb_fname = cp_smb_basename(frame, path);
 	if (smb_fname == NULL) {
 		goto out;
 	}
@@ -1431,12 +1426,7 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 		return false;
 	}
 
-	smb_fname = synthetic_smb_fname(frame,
-					path,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(frame, path);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
@@ -1517,12 +1507,7 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(frame,
-					".",
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(frame, ".");
 	if (smb_fname == NULL) {
 		goto out;
 	}
@@ -1540,13 +1525,7 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &talloced)) != NULL) {
-		struct smb_filename *smb_dname =
-			synthetic_smb_fname(frame,
-					dname,
-					NULL,
-					NULL,
-					0,
-					0);
+		struct smb_filename *smb_dname = cp_smb_basename(frame, dname);
 		if (smb_dname == NULL) {
 			goto out;
 		}
@@ -1657,12 +1636,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(frame,
-					".",
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(frame, ".");
 	if (smb_fname == NULL) {
 		goto out;
 	}
@@ -1688,12 +1662,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 			TALLOC_FREE(talloced);
 			goto out;
 		}
-		smb_dname = synthetic_smb_fname(talloc_tos(),
-				dname,
-				NULL,
-				NULL,
-				0,
-				0);
+		smb_dname = cp_smb_basename(talloc_tos(), dname);
 		if (smb_dname == NULL) {
 			TALLOC_FREE(talloced);
 			goto out;

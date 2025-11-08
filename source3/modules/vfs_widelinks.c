@@ -236,12 +236,7 @@ static struct smb_filename *widelinks_getwd(vfs_handle_struct *handle,
 		/* getwd before chdir. See note 1b above. */
 		return SMB_VFS_NEXT_GETWD(handle, ctx);
 	}
-	return synthetic_smb_fname(ctx,
-				config->cwd,
-				NULL,
-				NULL,
-				0,
-				0);
+	return cp_smb_basename(ctx, config->cwd);
 }
 
 static struct smb_filename *widelinks_realpath(vfs_handle_struct *handle,
@@ -297,12 +292,7 @@ static struct smb_filename *widelinks_realpath(vfs_handle_struct *handle,
 			pathname,
 			resolved_pathname);
 
-	smb_fname = synthetic_smb_fname(ctx,
-				resolved_pathname,
-				NULL,
-				NULL,
-				0,
-				0);
+	smb_fname = cp_smb_basename(ctx, resolved_pathname);
 	TALLOC_FREE(pathname);
 	TALLOC_FREE(resolved_pathname);
 	return smb_fname;

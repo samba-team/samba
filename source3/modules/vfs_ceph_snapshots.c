@@ -151,12 +151,7 @@ static int ceph_snap_fill_label(struct vfs_handle_struct *handle,
 		return -EINVAL;
 	}
 
-	smb_fname = synthetic_smb_fname(tmp_ctx,
-					snap_path,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(tmp_ctx, snap_path);
 	if (smb_fname == NULL) {
 		return -ENOMEM;
 	}
@@ -605,12 +600,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 			goto err_out;
 		}
 
-		smb_fname = synthetic_smb_fname(tmp_ctx,
-						_converted_buf,
-						NULL,
-						NULL,
-						0,
-						0);
+		smb_fname = cp_smb_basename(tmp_ctx, _converted_buf);
 		if (smb_fname == NULL) {
 			ret = -ENOMEM;
 			goto err_out;

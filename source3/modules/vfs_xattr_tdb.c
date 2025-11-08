@@ -52,12 +52,7 @@ static int xattr_tdb_get_file_id(struct vfs_handle_struct *handle,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname;
 
-	smb_fname = synthetic_smb_fname(frame,
-					path,
-					NULL,
-					NULL,
-					0,
-					0);
+	smb_fname = cp_smb_basename(frame, path);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;

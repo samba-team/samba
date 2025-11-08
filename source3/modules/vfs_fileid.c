@@ -432,15 +432,11 @@ static int get_connectpath_ino(struct vfs_handle_struct *handle,
 		}
 	}
 
-	fname = synthetic_smb_fname(frame,
-				    fullpath,
-				    NULL,
-				    NULL,
-				    0,
-				    0);
+	fname = cp_smb_basename(frame, fullpath);
 	if (fname == NULL) {
-		DBG_ERR("synthetic_smb_fname(%s) failed - %s\n",
-			fullpath, strerror(errno));
+		DBG_ERR("cp_smb_basename(%s) failed - %s\n",
+			fullpath,
+			strerror(errno));
 		TALLOC_FREE(frame);
 		return -1;
 	}
