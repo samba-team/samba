@@ -85,6 +85,27 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	return true;
 }
 
+static char *utok_string(TALLOC_CTX *mem_ctx,
+			 const struct security_unix_token *tok)
+{
+	char *str;
+	uint32_t i;
+
+	str = talloc_asprintf(mem_ctx,
+			      "uid=%ju, gid=%ju, %" PRIu32 " groups:",
+			      (uintmax_t)(tok->uid),
+			      (uintmax_t)(tok->gid),
+			      tok->ngroups);
+
+	for (i = 0; i < tok->ngroups; i++) {
+		talloc_asprintf_addbuf(&str,
+				       " %ju",
+				       (uintmax_t)tok->groups[i]);
+	}
+
+	return str;
+}
+
 bool chdir_current_service(connection_struct *conn)
 {
 	const struct smb_filename connectpath_fname = {
