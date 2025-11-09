@@ -2485,20 +2485,6 @@ NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 					   psd);
 }
 
-NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
-				 struct smb_filename *file,
-				 struct security_acl *sacl,
-				 uint32_t access_requested,
-				 uint32_t access_denied)
-{
-	VFS_FIND(audit_file);
-	return handle->fns->audit_file_fn(handle, 
-					  file, 
-					  sacl, 
-					  access_requested, 
-					  access_denied);
-}
-
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      SMB_ACL_TYPE_T type,

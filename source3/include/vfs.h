@@ -395,6 +395,7 @@
  * Change to Version 52 - will ship with 4.24
  * Version 52 - Add rename_stream
  * Version 52 - Remove connectpath
+ * Version 52 - Remove audit_file
  */
 
 #define SMB_VFS_INTERFACE_VERSION 51
@@ -1289,12 +1290,6 @@ struct vfs_fn_pointers {
 				   uint32_t security_info_sent,
 				   const struct security_descriptor *psd);
 
-	NTSTATUS (*audit_file_fn)(struct vfs_handle_struct *handle,
-				  struct smb_filename *file,
-				  struct security_acl *sacl,
-				  uint32_t access_requested,
-				  uint32_t access_denied);
-
 	/* POSIX ACL operations. */
 
 	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle,
@@ -1812,11 +1807,6 @@ NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32_t security_info_sent,
 				  const struct security_descriptor *psd);
-NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
-				 struct smb_filename *file,
-				 struct security_acl *sacl,
-				 uint32_t access_requested,
-				 uint32_t access_denied);
 int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle,
 				const struct smb_filename *file,
 				mode_t mode);
@@ -2288,11 +2278,6 @@ int vfs_not_implemented_fsetxattr(vfs_handle_struct *handle, struct files_struct
 				  int flags);
 bool vfs_not_implemented_aio_force(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp);
-NTSTATUS vfs_not_implemented_audit_file(struct vfs_handle_struct *handle,
-					struct smb_filename *file,
-					struct security_acl *sacl,
-					uint32_t access_requested,
-					uint32_t access_denied);
 NTSTATUS vfs_not_implemented_durable_cookie(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    TALLOC_CTX *mem_ctx,

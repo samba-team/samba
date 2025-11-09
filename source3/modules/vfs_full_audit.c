@@ -192,7 +192,6 @@ typedef enum _vfs_op_type {
 
 	SMB_VFS_OP_FGET_NT_ACL,
 	SMB_VFS_OP_FSET_NT_ACL,
-	SMB_VFS_OP_AUDIT_FILE,
 
 	/* POSIX ACL operations. */
 
@@ -322,7 +321,6 @@ static struct {
 	{ SMB_VFS_OP_FSET_DOS_ATTRIBUTES, "fset_dos_attributes" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
-	{ SMB_VFS_OP_AUDIT_FILE,	"audit_file" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FD,	"sys_acl_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,	"sys_acl_blob_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
@@ -2562,27 +2560,6 @@ static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_stru
 	return result;
 }
 
-static NTSTATUS smb_full_audit_audit_file(struct vfs_handle_struct *handle,
-				struct smb_filename *file,
-				struct security_acl *sacl,
-				uint32_t access_requested,
-				uint32_t access_denied)
-{
-	NTSTATUS result;
-
-	result = SMB_VFS_NEXT_AUDIT_FILE(handle,
-					file,
-					sacl,
-					access_requested,
-					access_denied);
-
-	do_log(SMB_VFS_OP_AUDIT_FILE, NT_STATUS_IS_OK(result), handle,
-			"%s",
-			smb_fname_str_do_log(handle->conn, file));
-
-	return result;
-}
-
 static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 					       files_struct *fsp,
 					       SMB_ACL_TYPE_T type,
@@ -3001,7 +2978,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fset_dos_attributes_fn = smb_full_audit_fset_dos_attributes,
 	.fget_nt_acl_fn = smb_full_audit_fget_nt_acl,
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,
-	.audit_file_fn = smb_full_audit_audit_file,
 	.sys_acl_get_fd_fn = smb_full_audit_sys_acl_get_fd,
 	.sys_acl_blob_get_fd_fn = smb_full_audit_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,

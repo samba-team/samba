@@ -1015,16 +1015,6 @@ bool vfs_not_implemented_aio_force(struct vfs_handle_struct *handle,
 }
 
 _PUBLIC_
-NTSTATUS vfs_not_implemented_audit_file(struct vfs_handle_struct *handle,
-					struct smb_filename *file,
-					struct security_acl *sacl,
-					uint32_t access_requested,
-					uint32_t access_denied)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-_PUBLIC_
 NTSTATUS vfs_not_implemented_durable_cookie(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    TALLOC_CTX *mem_ctx,
@@ -1144,7 +1134,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.parent_pathname_fn = vfs_not_implemented_parent_pathname,
 	.fsctl_fn = vfs_not_implemented_fsctl,
 	.freaddir_attr_fn = vfs_not_implemented_freaddir_attr,
-	.audit_file_fn = vfs_not_implemented_audit_file,
 
 	/* DOS attributes. */
 	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,

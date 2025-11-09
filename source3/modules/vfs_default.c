@@ -3512,15 +3512,6 @@ static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp
 	return result;
 }
 
-static NTSTATUS vfswrap_audit_file(struct vfs_handle_struct *handle,
-				   struct smb_filename *file,
-				   struct security_acl *sacl,
-				   uint32_t access_requested,
-				   uint32_t access_denied)
-{
-	return NT_STATUS_OK; /* Nothing to do here ... */
-}
-
 static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,
 					files_struct *fsp,
 					SMB_ACL_TYPE_T type,
@@ -4119,7 +4110,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	.fget_nt_acl_fn = vfswrap_fget_nt_acl,
 	.fset_nt_acl_fn = vfswrap_fset_nt_acl,
-	.audit_file_fn = vfswrap_audit_file,
 
 	/* POSIX ACL operations. */
 

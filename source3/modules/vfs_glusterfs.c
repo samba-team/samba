@@ -2641,7 +2641,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	/* NT ACL Operations */
 	.fget_nt_acl_fn = NULL,
 	.fset_nt_acl_fn = NULL,
-	.audit_file_fn = NULL,
 
 	/* Posix ACL Operations */
 	.sys_acl_get_fd_fn = posixacl_xattr_acl_get_fd,

@@ -39,7 +39,6 @@
 
 	<simplelist>
 	<member>aio_force</member>
-	<member>audit_file</member>
 	<member>brl_lock_windows</member>
 	<member>brl_unlock_windows</member>
 	<member>chdir</member>
