@@ -26,59 +26,126 @@ from .silo_base import SiloTest
 
 
 class AuthPolicyCmdTestCase(SiloTest):
+
+    def setUp(self):
+        super().setUp()
+        # Create random test users
+        self.user1 = self.randomName()
+        self.user2 = self.randomName()
+        self.user3 = self.randomName()
+
+        # Create the users with random passwords
+        password = self.random_password()
+        self.runcmd("user", "add", self.user1, password)
+        self.runcmd("user", "add", self.user2, password)
+        self.runcmd("user", "add", self.user3, password)
+
+    def tearDown(self):
+        # Remove silo assignments before deleting users
+        # (ignore errors if no assignment exists)
+        self.runcmd("user", "auth", "silo", "remove", self.user1)
+        self.runcmd("user", "auth", "silo", "remove", self.user2)
+
+        # Delete the random test users
+        self.runcmd("user", "delete", self.user1)
+        self.runcmd("user", "delete", self.user2)
+        self.runcmd("user", "delete", self.user3)
+        super().tearDown()
+
     def test_assign(self):
         """Test assigning an authentication silo to a user."""
-        self.addCleanup(self.runcmd, "user", "auth", "silo", "remove", "alice")
-        result, out, err = self.runcmd("user", "auth", "silo", "assign",
-                                       "alice", "--silo", "Developers")
+        self.addCleanup(
+            self.runcmd, "user", "auth", "silo", "remove", self.user1
+        )
+        result, out, err = self.runcmd(
+            "user",
+            "auth",
+            "silo",
+            "assign",
+            self.user1,
+            "--silo",
+            "Developers",
+        )
         self.assertIsNone(result, msg=err)
 
         # Assigned silo should be 'Developers'
-        user = User.get(self.samdb, account_name="alice")
+        user = User.get(self.samdb, account_name=self.user1)
         silo = AuthenticationSilo.get(self.samdb, dn=user.assigned_silo)
         self.assertEqual(silo.name, "Developers")
 
     def test_assign__invalid_silo(self):
-        """Test assigning a non-existing authentication silo to a user."""
-        result, out, err = self.runcmd("user", "auth", "silo", "assign",
-                                       "alice", "--silo", "doesNotExist")
+        """Test assigning a non-existing authentication silo."""
+        result, out, err = self.runcmd(
+            "user",
+            "auth",
+            "silo",
+            "assign",
+            self.user1,
+            "--silo",
+            "doesNotExist",
+        )
         self.assertEqual(result, -1)
         self.assertIn("Authentication silo doesNotExist not found.", err)
 
     def test_remove(self):
-        """Test removing the assigned authentication silo from a user."""
+        """Test removing the assigned authentication silo."""
         # First assign a silo, so we can test removing it.
-        self.runcmd("user", "auth", "silo", "assign", "bob", "--silo", "QA")
+        self.runcmd(
+            "user",
+            "auth",
+            "silo",
+            "assign",
+            self.user2,
+            "--silo",
+            "QA",
+        )
 
         # Assigned silo should be set
-        user = User.get(self.samdb, account_name="bob")
+        user = User.get(self.samdb, account_name=self.user2)
         self.assertIsNotNone(user.assigned_silo)
 
         # Now try removing it
-        result, out, err = self.runcmd("user", "auth", "silo", "remove",
-                                       "bob")
+        result, out, err = self.runcmd(
+            "user", "auth", "silo", "remove", self.user2
+        )
         self.assertIsNone(result, msg=err)
 
         # Assigned silo should be None
-        user = User.get(self.samdb, account_name="bob")
+        user = User.get(self.samdb, account_name=self.user2)
         self.assertIsNone(user.assigned_silo)
 
     def test_view(self):
-        """Test viewing the current assigned authentication silo on a user."""
+        """Test viewing the assigned authentication silo."""
         # Assign a silo on one of the users.
-        self.addCleanup(self.runcmd, "user", "auth", "silo", "remove", "bob")
-        self.runcmd("user", "auth", "silo", "assign", "bob", "--silo", "QA")
+        self.addCleanup(
+            self.runcmd, "user", "auth", "silo", "remove", self.user2
+        )
+        self.runcmd(
+            "user",
+            "auth",
+            "silo",
+            "assign",
+            self.user2,
+            "--silo",
+            "QA",
+        )
 
         # Test user with a silo assigned.
-        result, out, err = self.runcmd("user", "auth", "silo", "view",
-                                       "bob")
+        result, out, err = self.runcmd(
+            "user", "auth", "silo", "view", self.user2
+        )
         self.assertIsNone(result, msg=err)
         self.assertEqual(
-            out, "User bob assigned to authentication silo QA (revoked)\n")
+            out,
+            f"User {self.user2} assigned to authentication silo "
+            f"QA (revoked)\n",
+        )
 
         # Test user without a silo assigned.
-        result, out, err = self.runcmd("user", "auth", "silo", "view",
-                                       "joe")
+        result, out, err = self.runcmd(
+            "user", "auth", "silo", "view", self.user3
+        )
         self.assertIsNone(result, msg=err)
         self.assertEqual(
-            out, "User joe has no assigned authentication silo.\n")
+            out, f"User {self.user3} has no assigned authentication silo.\n"
+        )
