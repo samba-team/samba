@@ -630,6 +630,10 @@ sub setup_clusteredmember
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
 	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
+
+	# Create lib directory for krb5.conf
+	mkdir("$prefix/lib", 0755);
+
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
