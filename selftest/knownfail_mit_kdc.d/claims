@@ -1,6 +1,11 @@
 #
 # Claims tests
 #
+
+# Device authentication is not implemented in MIT Kerberos
+^samba.tests.blackbox.claims.samba.tests.blackbox.claims.ClaimsSupportTests.test_device_silo_restrictions.ad_dc
+^samba.tests.blackbox.claims.samba.tests.blackbox.claims.ClaimsSupportTests.test_device_group_restrictions.ad_dc
+
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims_device_to_service_no_claims_support_in_pac_options.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims_device_to_service_no_claims_valid_sid.ad_dc
 ^samba.tests.krb5.claims_tests.samba.tests.krb5.claims_tests.ClaimsTests.test_device_claims_device_to_service_no_compound_id.ad_dc
