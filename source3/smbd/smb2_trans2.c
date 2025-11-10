@@ -2066,9 +2066,17 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			}
 			sectors_per_unit = bsize/bytes_per_sector;
 
-			DEBUG(5,("smbd_do_qfsinfo : SMB_INFO_ALLOCATION id=%x, bsize=%u, cSectorUnit=%u, \
-cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (unsigned int)bsize, (unsigned int)sectors_per_unit,
-				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
+			DBG_INFO("SMB_INFO_ALLOCATION id=%x, bsize=%" PRIu64
+				 ", cSectorUnit=%" PRIu64
+				 ", cBytesSector=%" PRIu64
+				 ", cUnitTotal=%" PRIu64
+				 ", cUnitAvail=%" PRIu64 "\n",
+				 (unsigned int)st.st_ex_dev,
+				 bsize,
+				 sectors_per_unit,
+				 bytes_per_sector,
+				 dsize,
+				 dfree);
 
 			/*
 			 * For large drives, return max values and not modulo.
@@ -2108,10 +2116,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			}
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
-			DEBUG(5,("smbd_do_qfsinfo : time = %jx, namelen = %u, "
-				 "name = %s serial = 0x%04"PRIx32"\n",
-				 (intmax_t)convert_timespec_to_time_t(st.st_ex_ctime),
-				 (unsigned)len, vname, serial));
+
+			DBG_INFO("time = %jx, namelen = %zu, "
+				 "name = %s serial = 0x%04" PRIx32 "\n",
+				 (intmax_t)convert_timespec_to_time_t(
+					 st.st_ex_ctime),
+				 len,
+				 vname,
+				 serial);
 			break;
 
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
@@ -2173,12 +2185,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			SIVAL(pdata,12,len);
 			data_len = 18+len;
 
-			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_VOLUME_INFO "
-				 "namelen = %d, vol=%s serv=%s "
-				 "serial=0x%04"PRIx32"\n",
-				 (int)strlen(vname),vname,
+			DBG_INFO("SMB_QUERY_FS_VOLUME_INFO namelen = %zu, "
+				 "vol=%s serv=%s "
+				 "serial=0x%04" PRIx32 "\n",
+				 strlen(vname),
+				 vname,
 				 lp_servicename(talloc_tos(), lp_sub, snum),
-				 serial));
+				 serial);
 			if (max_data_bytes >= 24 && data_len > max_data_bytes) {
 				/* the client only requested a portion of the
 				   volume label */
@@ -2212,9 +2225,17 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 				dfree *= factor;
 			}
 			sectors_per_unit = bsize/bytes_per_sector;
-			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_SIZE_INFO bsize=%u, cSectorUnit=%u, \
-cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
-				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
+
+			DBG_INFO("SMB_QUERY_FS_SIZE_INFO bsize=%" PRIu64
+				 ", cSectorUnit=%" PRIu64
+				 ", cBytesSector=%" PRIu64
+				 ", cUnitTotal=%" PRIu64
+				 ", cUnitAvail=%" PRIu64 "\n",
+				 bsize,
+				 sectors_per_unit,
+				 bytes_per_sector,
+				 dsize,
+				 dfree);
 			SBIG_UINT(pdata,0,dsize);
 			SBIG_UINT(pdata,8,dfree);
 			SIVAL(pdata,16,sectors_per_unit);
@@ -2246,9 +2267,17 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				dfree *= factor;
 			}
 			sectors_per_unit = bsize/bytes_per_sector;
-			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_FULL_SIZE_INFO bsize=%u, cSectorUnit=%u, \
-cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
-				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
+
+			DBG_INFO("SMB_QUERY_FS_FULL_SIZE_INFO bsize=%" PRIu64
+				 ", cSectorUnit=%" PRIu64
+				 ", cBytesSector=%" PRIu64
+				 ", cUnitTotal=%" PRIu64
+				 ", cUnitAvail=%" PRIu64 "\n",
+				 bsize,
+				 sectors_per_unit,
+				 bytes_per_sector,
+				 dsize,
+				 dfree);
 			SBIG_UINT(pdata,0,dsize); /* Total Allocation units. */
 			SBIG_UINT(pdata,8,dfree); /* Caller available allocation units. */
 			SBIG_UINT(pdata,16,dfree); /* Actual available allocation units. */
