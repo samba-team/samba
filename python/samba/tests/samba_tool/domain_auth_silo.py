@@ -503,6 +503,19 @@ class AuthSiloMemberCmdTestCase(SiloTest):
     def setUp(self):
         super().setUp()
 
+        # Create random test users
+        self.user1 = self.randomName()  # alice
+        self.user2 = self.randomName()  # bob
+        self.user3 = self.randomName()  # jane
+        self.user4 = self.randomName()  # joe
+
+        # Create the users with random passwords
+        password = self.random_password()
+        self.runcmd("user", "add", self.user1, password)
+        self.runcmd("user", "add", self.user2, password)
+        self.runcmd("user", "add", self.user3, password)
+        self.runcmd("user", "add", self.user4, password)
+
         # Create an organisational unit to test in.
         self.ou = self.samdb.get_default_basedn()
         self.ou.add_child("OU=Domain Auth Tests")
@@ -510,9 +523,22 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.addCleanup(self.samdb.delete, self.ou, ["tree_delete:1"])
 
         # Grant member access to silos
-        self.grant_silo_access("Developers", "bob")
-        self.grant_silo_access("Developers", "jane")
-        self.grant_silo_access("Managers", "alice")
+        self.grant_silo_access("Developers", self.user2)
+        self.grant_silo_access("Developers", self.user3)
+        self.grant_silo_access("Managers", self.user1)
+
+    def tearDown(self):
+        # Revoke silo access granted in setUp() before deleting users
+        self.revoke_silo_access("Developers", self.user2)
+        self.revoke_silo_access("Developers", self.user3)
+        self.revoke_silo_access("Managers", self.user1)
+
+        # Delete the random test users
+        self.runcmd("user", "delete", self.user1)
+        self.runcmd("user", "delete", self.user2)
+        self.runcmd("user", "delete", self.user3)
+        self.runcmd("user", "delete", self.user4)
+        super().tearDown()
 
     def create_computer(self, name):
         """Create a Computer and return the dn."""
@@ -530,7 +556,6 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.assertIn(
             f"User {member} granted access to the authentication silo {silo}",
             out)
-        self.addCleanup(self.revoke_silo_access, silo, member)
 
     def revoke_silo_access(self, silo, member):
         """Revoke a member from an authentication silo."""
@@ -542,24 +567,24 @@ class AuthSiloMemberCmdTestCase(SiloTest):
 
     def test_member_list(self):
         """Test listing authentication policy members in list format."""
-        alice = self.get_user("alice")
-        jane = self.get_user("jane")
-        bob = self.get_user("bob")
+        user1 = self.get_user(self.user1)
+        user3 = self.get_user(self.user3)
+        user2 = self.get_user(self.user2)
 
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "list",
                                        "--name", "Developers")
 
         self.assertIsNone(result, msg=err)
-        self.assertIn(str(bob.dn), out)
-        self.assertIn(str(jane.dn), out)
-        self.assertNotIn(str(alice.dn), out)
+        self.assertIn(str(user2.dn), out)
+        self.assertIn(str(user3.dn), out)
+        self.assertNotIn(str(user1.dn), out)
 
     def test_member_list___json(self):
         """Test listing authentication policy members list in json format."""
-        alice = self.get_user("alice")
-        jane = self.get_user("jane")
-        bob = self.get_user("bob")
+        user1 = self.get_user(self.user1)
+        user3 = self.get_user(self.user3)
+        user2 = self.get_user(self.user2)
 
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "list",
@@ -568,9 +593,9 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.assertIsNone(result, msg=err)
         members = json.loads(out)
         members_dn = [member["dn"] for member in members]
-        self.assertIn(str(bob.dn), members_dn)
-        self.assertIn(str(jane.dn), members_dn)
-        self.assertNotIn(str(alice.dn), members_dn)
+        self.assertIn(str(user2.dn), members_dn)
+        self.assertIn(str(user3.dn), members_dn)
+        self.assertNotIn(str(user1.dn), members_dn)
 
     def test_member_list__name_missing(self):
         """Test list authentication policy members without the name argument."""
@@ -582,13 +607,16 @@ class AuthSiloMemberCmdTestCase(SiloTest):
 
     def test_member_grant__user(self):
         """Test adding a user to an authentication silo."""
-        self.grant_silo_access("Developers", "joe")
+        self.grant_silo_access("Developers", self.user4)
 
         # Check if member is in silo
-        user = self.get_user("joe")
+        user = self.get_user(self.user4)
         silo = self.get_authentication_silo("Developers")
         members = [str(member) for member in silo["msDS-AuthNPolicySiloMembers"]]
         self.assertIn(str(user.dn), members)
+
+        # Clean up: revoke access before tearDown deletes the user
+        self.revoke_silo_access("Developers", self.user4)
 
     def test_member_grant__computer(self):
         """Test adding a computer to an authentication silo"""
