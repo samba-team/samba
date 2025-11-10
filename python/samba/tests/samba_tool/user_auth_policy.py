@@ -26,61 +26,126 @@ from .silo_base import SiloTest
 
 
 class AuthPolicyCmdTestCase(SiloTest):
+
+    def setUp(self):
+        super().setUp()
+        # Create random test users
+        self.user1 = self.randomName()
+        self.user2 = self.randomName()
+        self.user3 = self.randomName()
+
+        # Create the users with random passwords
+        password = self.random_password()
+        self.runcmd("user", "add", self.user1, password)
+        self.runcmd("user", "add", self.user2, password)
+        self.runcmd("user", "add", self.user3, password)
+
+    def tearDown(self):
+        # Remove policy assignments before deleting users
+        # (ignore errors if no assignment exists)
+        self.runcmd("user", "auth", "policy", "remove", self.user1)
+        self.runcmd("user", "auth", "policy", "remove", self.user2)
+
+        # Delete the random test users
+        self.runcmd("user", "delete", self.user1)
+        self.runcmd("user", "delete", self.user2)
+        self.runcmd("user", "delete", self.user3)
+        super().tearDown()
+
     def test_assign(self):
         """Test assigning an authentication policy to a user."""
-        self.addCleanup(self.runcmd, "user", "auth", "policy", "remove", "alice")
-        result, out, err = self.runcmd("user", "auth", "policy", "assign",
-                                       "alice", "--policy", "User Policy")
+        self.addCleanup(
+            self.runcmd, "user", "auth", "policy", "remove", self.user1
+        )
+        result, out, err = self.runcmd(
+            "user",
+            "auth",
+            "policy",
+            "assign",
+            self.user1,
+            "--policy",
+            "User Policy",
+        )
         self.assertIsNone(result, msg=err)
 
-        # Assigned policy should be 'Developers'
-        user = User.get(self.samdb, account_name="alice")
+        # Assigned policy should be 'User Policy'
+        user = User.get(self.samdb, account_name=self.user1)
         policy = AuthenticationPolicy.get(self.samdb, dn=user.assigned_policy)
         self.assertEqual(policy.name, "User Policy")
 
     def test_assign__invalid_policy(self):
-        """Test assigning a non-existing authentication policy to a user."""
-        result, out, err = self.runcmd("user", "auth", "policy", "assign",
-                                       "alice", "--policy", "doesNotExist")
+        """Test assigning a non-existing authentication policy."""
+        result, out, err = self.runcmd(
+            "user",
+            "auth",
+            "policy",
+            "assign",
+            self.user1,
+            "--policy",
+            "doesNotExist",
+        )
         self.assertEqual(result, -1)
         self.assertIn("Authentication policy doesNotExist not found.", err)
 
     def test_remove(self):
-        """Test removing the assigned authentication policy from a user."""
+        """Test removing the assigned authentication policy."""
         # First assign a policy, so we can test removing it.
-        self.runcmd("user", "auth", "policy", "assign", "bob", "--policy",
-                    "User Policy")
+        self.runcmd(
+            "user",
+            "auth",
+            "policy",
+            "assign",
+            self.user2,
+            "--policy",
+            "User Policy",
+        )
 
         # Assigned policy should be set
-        user = User.get(self.samdb, account_name="bob")
+        user = User.get(self.samdb, account_name=self.user2)
         self.assertIsNotNone(user.assigned_policy)
 
         # Now try removing it
-        result, out, err = self.runcmd("user", "auth", "policy", "remove",
-                                       "bob")
+        result, out, err = self.runcmd(
+            "user", "auth", "policy", "remove", self.user2
+        )
         self.assertIsNone(result, msg=err)
 
         # Assigned policy should be None
-        user = User.get(self.samdb, account_name="bob")
+        user = User.get(self.samdb, account_name=self.user2)
         self.assertIsNone(user.assigned_policy)
 
     def test_view(self):
-        """Test viewing the current assigned authentication policy on a user."""
+        """Test viewing the assigned authentication policy."""
         # Assign a policy on one of the users.
-        self.addCleanup(self.runcmd, "user", "auth", "policy", "remove", "bob")
-        self.runcmd("user", "auth", "policy", "assign", "bob", "--policy",
-                    "User Policy")
+        self.addCleanup(
+            self.runcmd, "user", "auth", "policy", "remove", self.user2
+        )
+        self.runcmd(
+            "user",
+            "auth",
+            "policy",
+            "assign",
+            self.user2,
+            "--policy",
+            "User Policy",
+        )
 
         # Test user with a policy assigned.
-        result, out, err = self.runcmd("user", "auth", "policy", "view",
-                                       "bob")
+        result, out, err = self.runcmd(
+            "user", "auth", "policy", "view", self.user2
+        )
         self.assertIsNone(result, msg=err)
         self.assertEqual(
-            out, "User bob assigned to authentication policy User Policy\n")
+            out,
+            f"User {self.user2} assigned to authentication policy "
+            f"User Policy\n",
+        )
 
         # Test user without a policy assigned.
-        result, out, err = self.runcmd("user", "auth", "policy", "view",
-                                       "joe")
+        result, out, err = self.runcmd(
+            "user", "auth", "policy", "view", self.user3
+        )
         self.assertIsNone(result, msg=err)
         self.assertEqual(
-            out, "User joe has no assigned authentication policy.\n")
+            out, f"User {self.user3} has no assigned authentication policy.\n"
+        )
