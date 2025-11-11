@@ -14,9 +14,6 @@
    quite large. */
 #define MAX_DIRECTORY_HANDLES 2048
 
-/* maximum number of file caches per smbd */
-#define MAX_WRITE_CACHES 10
-
 /*
  * Fudgefactor required for open tdb's, etc.
  */
@@ -60,25 +57,9 @@
 /* this is where browse lists are kept in the lock dir */
 #define SERVER_LIST "browse.dat"
 
-/* shall filenames with illegal chars in them get mangled in long
-   filename listings? */
-#define MANGLE_LONG_FILENAMES 
-
-/* define this if you want to stop spoofing with .. and soft links
-   NOTE: This also slows down the server considerably */
-#define REDUCE_PATHS
-
-/* the size of the directory cache */
-#define DIRCACHESIZE 20
-
 /* what default type of filesystem do we want this to show up as in a
    NT file manager window? */
 #define FSTYPE_STRING "NTFS"
-
-/* user to test password server with as invalid in security=server mode. */
-#ifndef INVALID_USER_PREFIX
-#define INVALID_USER_PREFIX "sambatest"
-#endif
 
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
@@ -112,18 +93,12 @@
    accessible to root */
 #define DUMP_CORE 1
 
-/* shall we support browse requests via a FIFO to nmbd? */
-#define ENABLE_FIFO 1
-
 /* how long (in milliseconds) to wait for a socket connect to happen */
 #define LONG_CONNECT_TIMEOUT 30000
 #define SHORT_CONNECT_TIMEOUT 5000
 
 /* the default netbios keepalive timeout */
 #define DEFAULT_KEEPALIVE 300
-
-/* the directory to sit in when idle */
-/* #define IDLE_DIR "/" */
 
 /* Timeout (in seconds) to wait for an oplock break
    message to return from the client. */
@@ -135,18 +110,11 @@
 
 #define OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR 2
 
-/* the read preciction code has been disabled until some problems with
-   it are worked out */
-#define USE_READ_PREDICTION 0
-
 /* Minimum length of allowed password when changing UNIX password. */
 #define MINPASSWDLENGTH 5
 
 /* the maximum age in seconds of a password. Should be a lp_ parameter */
 #define MAX_PASSWORD_AGE (21*24*60*60)
-
-/* shall we deny oplocks to clients that get timeouts? */
-#define FASCIST_OPLOCK_BACKOFF 1
 
 /* this enables the "rabbit pellet" fix for SMBwritebraw */
 #define RABBIT_PELLET_FIX 1
