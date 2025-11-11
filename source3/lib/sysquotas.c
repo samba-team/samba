@@ -380,16 +380,20 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 			TALLOC_FREE(lines);
 			lines = NULL;
 
-			DEBUG (3, ("Parsed output of get_quota, ...\n"));
-
-			DEBUGADD (5,(
-				"qflags:%"PRIu32" curblocks:%"PRIu64" softlimit:%"PRIu64" hardlimit:%"PRIu64"\n"
-				"curinodes:%"PRIu64" isoftlimit:%"PRIu64" ihardlimit:%"PRIu64" bsize:%"PRIu64"\n",
-				dp->qflags,dp->curblocks,
-				dp->softlimit,dp->hardlimit,
-				dp->curinodes,
-				dp->isoftlimit,dp->ihardlimit,
-				dp->bsize));
+			DBG_INFO("Parsed output of get_quota, ...\n"
+				 "qflags:%" PRIu32 " curblocks:%" PRIu64
+				 " softlimit:%" PRIu64 " hardlimit:%" PRIu64
+				 "\n"
+				 "curinodes:%" PRIu64 " isoftlimit:%" PRIu64
+				 " ihardlimit:%" PRIu64 " bsize:%" PRIu64 "\n",
+				 dp->qflags,
+				 dp->curblocks,
+				 dp->softlimit,
+				 dp->hardlimit,
+				 dp->curinodes,
+				 dp->isoftlimit,
+				 dp->ihardlimit,
+				 dp->bsize);
 			return 0;
 		}
 

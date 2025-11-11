@@ -98,7 +98,7 @@ static uint64_t sys_disk_free(connection_struct *conn,
 		if (lines != NULL) {
 			char *line = lines[0];
 
-			DEBUG (3, ("Read input from dfree, \"%s\"\n", line));
+			DBG_NOTICE("Read input from dfree, \"%s\"\n", line);
 
 			*dsize = STR_TO_SMB_BIG_UINT(line, &p);
 			while (p && *p && isspace(*p))
@@ -112,8 +112,10 @@ static uint64_t sys_disk_free(connection_struct *conn,
 			else
 				*bsize = 1024;
 			TALLOC_FREE(lines);
-			DEBUG (3, ("Parsed output of dfree, dsize=%u, dfree=%u, bsize=%u\n",
-				(unsigned int)*dsize, (unsigned int)*dfree, (unsigned int)*bsize));
+
+			DBG_NOTICE("Parsed output of dfree, dsize=%"PRIu64", "
+				   "dfree=%"PRIu64", bsize=%"PRIu64"\n",
+				   *dsize, *dfree, *bsize);
 
 			if (!*dsize)
 				*dsize = 2048;
@@ -149,7 +151,9 @@ static uint64_t sys_disk_free(connection_struct *conn,
 
 	/* FIXME : Any reason for this assumption ? */
 	if (*bsize < 256) {
-		DEBUG(5,("disk_free:Warning: bsize == %d < 256 . Changing to assumed correct bsize = 512\n",(int)*bsize));
+		DBG_INFO("Warning: bsize == %"PRIu64" < 256 . "
+			 "Changing to assumed correct bsize = 512\n",
+			 *bsize);
 		*bsize = 512;
 	}
 
