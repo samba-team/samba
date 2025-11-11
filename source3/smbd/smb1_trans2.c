@@ -1649,14 +1649,14 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	info_level = SVAL(params,0);
 
-	if (ENCRYPTION_REQUIRED(conn) && !req->encrypted) {
-		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
-			DBG_WARNING("encryption required "
-				    "and info level 0x%" PRIx16 " sent.\n",
-				    info_level);
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
+	if (ENCRYPTION_REQUIRED(conn) && !req->encrypted &&
+	    (info_level != SMB_QUERY_CIFS_UNIX_INFO))
+	{
+		DBG_WARNING("encryption required and info level 0x%" PRIx16
+			    " sent.\n",
+			    info_level);
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
 	}
 
 	DBG_NOTICE("level = %" PRIu16 "\n", info_level);
@@ -1680,8 +1680,6 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	DBG_NOTICE("%s info_level = %" PRIu16 "\n",
 		   smb_fn_name(req->cmd),
 		   info_level);
-
-	return;
 }
 
 /****************************************************************************
