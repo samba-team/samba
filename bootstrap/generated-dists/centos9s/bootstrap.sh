@@ -117,7 +117,6 @@ dnf install -y \
     sudo \
     systemd-devel \
     tar \
-    tracker-devel \
     tree \
     utf8proc-devel \
     wget \

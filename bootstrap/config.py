@@ -176,9 +176,6 @@ PKGS = [
     ('glusterfs-common', 'glusterfs-devel'),
     ('libcephfs-dev', 'libcephfs-devel'),
 
-    # spotlight
-    ('libtracker-sparql-2.0-dev', 'tracker-devel'),
-
     # systemd userdb
     ('', 'libvarlink-devel'),
     ('', 'python3-varlink'),
@@ -479,7 +476,6 @@ DEB_DISTS = {
         'vagrant_box': 'debian/bookworm64',
         'replace': {
             'language-pack-en': '',   # included in locales
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
             'cargo': '', # included cargo is broken
             'landscape-common': '',
         }
@@ -489,7 +485,6 @@ DEB_DISTS = {
         'vagrant_box': 'debian/bookworm32',
         'replace': {
             'language-pack-en': '',   # included in locales
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
             'cargo': '', # included cargo is broken
             'landscape-common': '',
         }
@@ -507,14 +502,12 @@ DEB_DISTS = {
         'docker_image': 'ubuntu:22.04',
         'vagrant_box': 'ubuntu/jammy64',
         'replace': {
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         },
     },
     'ubuntu2404': {
         'docker_image': 'ubuntu:24.04',
         'vagrant_box': 'ubuntu/noble64',
         'replace': {
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         },
     },
 }
@@ -569,7 +562,6 @@ RPM_DISTS = {
             'lsb-release': 'redhat-lsb',
             'perl-FindBin': '',
             'python3-iso8601': 'python3-dateutil',
-            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         }
     },
     'opensuse155': {

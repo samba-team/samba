@@ -109,7 +109,6 @@ zypper --non-interactive install \
     sudo \
     systemd-devel \
     tar \
-    tracker-devel \
     tree \
     utf8proc-devel \
     wget \
