@@ -30,9 +30,6 @@
 #include "libcli/security/security.h"
 #include "mdssvc.h"
 #include "mdssvc_noindex.h"
-#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
-#include "mdssvc_tracker.h"
-#endif
 #ifdef HAVE_SPOTLIGHT_BACKEND_ES
 #include "mdssvc_es.h"
 #endif
@@ -1566,15 +1563,6 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 	}
 #endif
 
-#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
-	ok = mdsscv_backend_tracker.init(mdssvc_ctx);
-	if (!ok) {
-		DBG_ERR("backend init failed\n");
-		TALLOC_FREE(mdssvc_ctx);
-		return NULL;
-	}
-#endif
-
 	return mdssvc_ctx;
 }
 
@@ -1604,13 +1592,6 @@ bool mds_shutdown(void)
 
 #ifdef HAVE_SPOTLIGHT_BACKEND_ES
 	ok = mdsscv_backend_es.shutdown(mdssvc_ctx);
-	if (!ok) {
-		goto fail;
-	}
-#endif
-
-#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
-	ok = mdsscv_backend_tracker.shutdown(mdssvc_ctx);
 	if (!ok) {
 		goto fail;
 	}
@@ -1701,11 +1682,6 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		break;
 #endif
 
-#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
-	case SPOTLIGHT_BACKEND_TRACKER:
-		mds_ctx->backend = &mdsscv_backend_tracker;
-		break;
-#endif
 	default:
 		DBG_ERR("Unknown backend %d\n", backend);
 		TALLOC_FREE(mdssvc_ctx);

@@ -249,15 +249,6 @@ rpc_mdssvc_sources = '''
                      '''
 rpc_mdssvc_deps = 'mdssvc samba-util smbd_base '
 
-if bld.env.spotlight_backend_tracker:
-    rpc_mdssvc_sources += '''
-                          mdssvc/mdssvc_tracker.c
-                          mdssvc/sparql_mapping.c
-                          mdssvc/sparql_parser.y
-                          mdssvc/sparql_lexer.l
-                          '''
-    rpc_mdssvc_deps += 'tevent-glib-glue ' + bld.env['libtracker']
-
 if bld.env.spotlight_backend_es:
     rpc_mdssvc_sources += '''
                           mdssvc/mdssvc_es.c

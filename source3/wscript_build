@@ -1112,12 +1112,6 @@ bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
 bld.SAMBA3_SUBSYSTEM('LIBLSA',
                      source='lib/lsa.c')
 
-bld.SAMBA3_SUBSYSTEM('tevent-glib-glue',
-                    source='lib/tevent_glib_glue.c',
-                    deps='glib-2.0',
-                    enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
-)
-
 bld.SAMBA3_SUBSYSTEM('ADOUBLE',
                     source='lib/adouble.c',
                     deps='STRING_REPLACE')
@@ -1268,16 +1262,6 @@ bld.SAMBA3_PYTHON('pys3smbconf',
                   deps='smbconf',
                   realname='samba/samba3/smbconf.so')
 
-bld.SAMBA3_BINARY('spotlight2sparql',
-                 source='''
-                 rpc_server/mdssvc/sparql_parser_test.c
-                 rpc_server/mdssvc/sparql_parser.y
-                 rpc_server/mdssvc/sparql_lexer.l
-                 rpc_server/mdssvc/sparql_mapping.c''',
-                 deps='samba3-util talloc ' + bld.env['libtracker'],
-                 enabled=bld.env.spotlight_backend_tracker,
-                 install=False)
-
 bld.SAMBA3_BINARY('spotlight2es',
                  source='''
                  rpc_server/mdssvc/es_parser_test.c
@@ -1286,25 +1270,6 @@ bld.SAMBA3_BINARY('spotlight2es',
                  rpc_server/mdssvc/es_mapping.c''',
                  deps='samba3-util talloc jansson smbconf',
                  enabled=bld.env.spotlight_backend_es,
-                 install=False)
-
-bld.SAMBA3_BINARY('tevent_glib_glue_test',
-                 source='lib/tevent_glib_glue_tests.c',
-                 deps='''
-                 talloc
-                 libsmb
-                 tevent-glib-glue''',
-                 enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
-                 for_selftest=True)
-
-bld.SAMBA3_BINARY('tevent_glib_tracker',
-                 source='utils/async-tracker.c',
-                 deps='''
-                 talloc
-                 libsmb
-                 CMDLINE_S3
-                 tevent-glib-glue ''' + bld.env['libtracker'],
-                 enabled=bld.CONFIG_SET('HAVE_TRACKER') and bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
                  install=False)
 
 ########################## INCLUDES #################################

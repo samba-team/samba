@@ -1774,37 +1774,6 @@ int main(void) {
         else:
             conf.fatal('AFS headers not available, but --with-fake-kaserver was specified')
 
-    if conf.CHECK_CFG(package='glib-2.0',
-                      args='--cflags --libs',
-                      msg='Checking for glib-2.0',
-                      uselib_store="GLIB-2.0"):
-        if (conf.CHECK_HEADERS('glib.h', lib='glib-2.0') and conf.CHECK_LIB('glib-2.0', shlib=True)):
-            conf.DEFINE('HAVE_GLIB', 1)
-
-    if conf.CONFIG_SET('HAVE_GLIB'):
-        conf.DEFINE('WITH_TEVENT_GLIB_GLUE', '1')
-
-    conf.env['libtracker']=''
-    tracker_versions = ['2.0', '1.0', '0.16', '0.14']
-
-    for version in tracker_versions:
-        testlib = 'tracker-sparql-' + version
-        if conf.CHECK_CFG(package=testlib,
-                          args='--cflags --libs',
-                          mandatory=False):
-            conf.SET_TARGET_TYPE(testlib, 'SYSLIB')
-            conf.env['libtracker'] = testlib
-            conf.DEFINE('HAVE_TRACKER', '1')
-            break
-
-    with_spotlight_tracker_backend = (
-        conf.CONFIG_SET('HAVE_TRACKER')
-        and conf.CONFIG_SET('HAVE_GLIB')
-        and conf.env['BISON']
-        and conf.env['FLEX']
-        and conf.CONFIG_GET('HAVE_UTF8_NORMALISATION')
-    )
-
     with_spotlight_es_backend = (
         conf.CONFIG_SET('HAVE_JSON_OBJECT')
         and conf.env['BISON']
@@ -1831,17 +1800,8 @@ int main(void) {
         if not conf.CONFIG_GET('HAVE_UTF8_NORMALISATION'):
             Logs.warn("Missing support for Unicode normalisation. "
                       "Try installing icu-dev or libicu-devel.")
-        if not conf.CONFIG_SET('HAVE_TRACKER'):
-            Logs.warn('Missing libtracker-sparql development files for Spotlight backend "tracker"')
-        if not conf.CONFIG_SET('HAVE_GLIB'):
-            Logs.warn('Missing glib-2.0 development files for Spotlight backend "tracker"')
         if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
             Logs.warn('Missing libjansson development files for Spotlight backend "elasticsearch"')
-
-        if with_spotlight_tracker_backend:
-            conf.env.spotlight_backend_tracker = True
-            backends.append('tracker')
-            conf.DEFINE('HAVE_SPOTLIGHT_BACKEND_TRACKER', '1')
 
         if with_spotlight_es_backend:
             conf.env.spotlight_backend_es = True
@@ -1849,7 +1809,6 @@ int main(void) {
             conf.DEFINE('HAVE_SPOTLIGHT_BACKEND_ES', '1')
 
         if (Options.options.with_spotlight is True
-            and not conf.env.spotlight_backend_tracker
             and not conf.env.spotlight_backend_es):
             conf.fatal("Unmet dependencies for Spotlight backends")
 
