@@ -89,6 +89,7 @@ def options(opt):
 
     opt.samba_add_onoff_option('glusterfs', with_name="enable", without_name="disable", default=True)
     opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=None)
+    opt.samba_add_onoff_option('cephrgw', with_name="enable", without_name="disable", default=None)
 
     opt.add_option('--enable-vxfs',
                   help=("enable support for VxFS (default=no)"),
@@ -1686,6 +1687,16 @@ int main(void) {
             Logs.warn("acl support disabled or ceph_statx/ceph_openat not "
                        "available, not building ceph vfs modules")
 
+    if (Options.options.with_cephrgw is not False and
+        conf.CHECK_HEADERS('rados/rgw_file.h', lib='rgw') and
+        conf.CHECK_LIB('rgw', shlib=True)):
+            conf.DEFINE('HAVE_CEPHRGW', '1')
+            Logs.info("building ceph rgw vfs modules")
+    elif (Options.options.with_cephrgw is True and
+        not conf.CONFIG_SET('HAVE_CEPHRGW')):
+            Logs.error("librgw not present, cannot build ceph rgw module")
+            conf.fatal("librgw not present, but --enable-cephrgw was specified")
+
     if Options.options.with_glusterfs:
         conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
                        msg='Checking for glusterfs-api >= 4', uselib_store="GFAPI")
@@ -1915,6 +1926,9 @@ int main(void) {
         # if we're building with libcephfs for now.
         default_shared_modules.extend(['vfs_ceph_snapshots'])
         default_shared_modules.extend(['vfs_ceph_new'])
+
+    if conf.CONFIG_SET("HAVE_CEPHRGW"):
+        default_shared_modules.extend(['vfs_ceph_rgw'])
 
     if conf.CONFIG_SET('HAVE_GLUSTERFS'):
         default_shared_modules.extend(['vfs_glusterfs'])
