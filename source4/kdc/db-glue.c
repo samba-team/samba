@@ -3422,6 +3422,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		/* we will try again with a '$' appended */
+		krb5_principal temp_principal = NULL;
 		krb5_principal fallback_principal = NULL;
 		unsigned int num_comp;
 		char *fallback_realm = NULL;
@@ -3432,22 +3433,22 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		size_t len;
 
 		ret = krb5_parse_name(context, principal_string,
-				      &fallback_principal);
+				      &temp_principal);
 		TALLOC_FREE(principal_string);
 		if (ret != 0) {
 			return ret;
 		}
 
-		num_comp = krb5_princ_size(context, fallback_principal);
+		num_comp = krb5_princ_size(context, temp_principal);
 		if (num_comp != 1) {
-			krb5_free_principal(context, fallback_principal);
+			krb5_free_principal(context, temp_principal);
 			return SDB_ERR_NOENTRY;
 		}
 
 		ret = smb_krb5_principal_get_comp_string(mem_ctx,
-							 context, fallback_principal, 0, &fallback_account);
+							 context, temp_principal, 0, &fallback_account);
 		if (ret != 0) {
-			krb5_free_principal(context, fallback_principal);
+			krb5_free_principal(context, temp_principal);
 			return ret;
 		}
 
@@ -3492,7 +3493,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 				DBG_ERR("NOT falling back to %s$\n",
 					fallback_account);
 				TALLOC_FREE(fallback_account);
-				krb5_free_principal(context, fallback_principal);
+				krb5_free_principal(context, temp_principal);
 				return SDB_ERR_NOENTRY;
 			}
 		}
@@ -3501,19 +3502,19 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		if (len == 0 || fallback_account[len - 1] == '$') {
 			/* there is already a $, so no fallback */
 			TALLOC_FREE(fallback_account);
-			krb5_free_principal(context, fallback_principal);
+			krb5_free_principal(context, temp_principal);
 			return SDB_ERR_NOENTRY;
 		}
 
 		fallback_realm = smb_krb5_principal_get_realm(
-			mem_ctx, context, fallback_principal);
+			mem_ctx, context, temp_principal);
 		if (fallback_realm == NULL) {
 			TALLOC_FREE(fallback_account);
-			krb5_free_principal(context, fallback_principal);
+			krb5_free_principal(context, temp_principal);
 			return ENOMEM;
 		}
-		krb5_free_principal(context, fallback_principal);
-		fallback_principal = NULL;
+		krb5_free_principal(context, temp_principal);
+		temp_principal = NULL;
 
 		with_dollar = talloc_asprintf(mem_ctx, "%s$",
 					      fallback_account);
