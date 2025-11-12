@@ -25,7 +25,7 @@ from samba.domain.models import AuthenticationSilo, User
 from .silo_base import SiloTest
 
 
-class AuthPolicyCmdTestCase(SiloTest):
+class AuthSiloCmdTestCase(SiloTest):
 
     def setUp(self):
         super().setUp()
