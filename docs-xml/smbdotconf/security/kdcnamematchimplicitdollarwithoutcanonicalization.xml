@@ -1,0 +1,39 @@
+<samba:parameter name="kdc name match implicit dollar without canonicalization"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      This option only affect clients that do not request name
+      canonicalization in an AS request, which generally means
+      traditional unix Kerberos clients and not Windows clients.
+    </para>
+
+    <para>
+      The KDC may match the name in an AS request inexactly, for
+      example using a case-insensitive comparison or converting it to
+      a User Principal Name, but the client is not informed of the
+      principal it actually matched unless it set the 'canonicalize'
+      option flag.
+    </para>
+    <para>
+      In Active Directory domains, the default behaviour of the KDC is
+      to append a '$' character if the supplied name does not have one
+      and does not already match. That allows 'foo' to match the
+      machine account 'foo$'. An attacker who is able to create
+      arbitrary machine accounts (which can be a low-privilege
+      operation) is sometimes able to get tickets for unix users by
+      mimicking their names. This is known as the 'dollar ticket
+      attack'.
+    </para>
+    <para>
+      With this option set to 'no', the KDC will not try to match
+      using the appended '$' unless the canonicalize flag is set. This
+      will allow AD-aware clients as usual to connect with
+      canonicalization, but not expose traditional unix clients to the
+      dollar ticket attack.
+    </para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
