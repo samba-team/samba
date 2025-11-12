@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include "system/filesys.h"
+#include "system/threads.h"
 #include "pthreadpool_tevent.h"
 #include "pthreadpool.h"
 #include "lib/util/tevent_unix.h"
@@ -57,6 +58,10 @@ struct pthreadpool_tevent_glue_ev_link {
 struct pthreadpool_tevent {
 	struct pthreadpool *pool;
 	struct pthreadpool_tevent_glue *glue_list;
+	/*
+	 * Control access to the glue_list
+	 */
+	pthread_mutex_t glue_mutex;
 
 	struct pthreadpool_tevent_job_state *jobs;
 };
@@ -92,6 +97,12 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 
 	ret = pthreadpool_init(max_threads, &pool->pool,
 			       pthreadpool_tevent_job_signal, pool);
+	if (ret != 0) {
+		TALLOC_FREE(pool);
+		return ret;
+	}
+
+	ret = pthread_mutex_init(&pool->glue_mutex, NULL);
 	if (ret != 0) {
 		TALLOC_FREE(pool);
 		return ret;
@@ -138,6 +149,11 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 		state->pool = NULL;
 	}
 
+	ret = pthread_mutex_lock(&pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
+	}
+
 	/*
 	 * Delete all the registered
 	 * tevent_context/tevent_threaded_context
@@ -147,6 +163,10 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 		/* The glue destructor removes it from the list */
 		TALLOC_FREE(glue);
 	}
+
+	pthread_mutex_unlock(&pool->glue_mutex);
+	pthread_mutex_destroy(&pool->glue_mutex);
+
 	pool->glue_list = NULL;
 
 	ret = pthreadpool_destroy(pool->pool);
@@ -158,6 +178,16 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 	return 0;
 }
 
+/*
+ * glue destruction is only called with
+ * glue_mutex already locked either from
+ *   a) pthreadpool_tevent_destructor or
+ *   b) pthreadpool_tevent_glue_link_destructor
+ * pthreadpool_tevent_destructor accesses
+ * the glue_list while calling pthreadpool_tevent_glue_destructor
+ * which modifies the glue_list so it needs the lock held while
+ * doing that.
+ */
 static int pthreadpool_tevent_glue_destructor(
 	struct pthreadpool_tevent_glue *glue)
 {
@@ -190,7 +220,21 @@ static int pthreadpool_tevent_glue_destructor(
 static int pthreadpool_tevent_glue_link_destructor(
 	struct pthreadpool_tevent_glue_ev_link *ev_link)
 {
-	TALLOC_FREE(ev_link->glue);
+	if (ev_link->glue) {
+		int ret;
+		/* save the mutex */
+		pthread_mutex_t *glue_mutex =
+			&ev_link->glue->pool->glue_mutex;
+		ret = pthread_mutex_lock(glue_mutex);
+		if (ret != 0) {
+			return ret;
+		}
+		TALLOC_FREE(ev_link->glue);
+		ret = pthread_mutex_unlock(glue_mutex);
+		if (ret != 0) {
+			return ret;
+		}
+	}
 	return 0;
 }
 
@@ -199,7 +243,12 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 {
 	struct pthreadpool_tevent_glue *glue = NULL;
 	struct pthreadpool_tevent_glue_ev_link *ev_link = NULL;
+	int ret;
 
+	ret = pthread_mutex_lock(&pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
+	}
 	/*
 	 * See if this tevent_context was already registered by
 	 * searching the glue object list. If so we have nothing
@@ -208,10 +257,18 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	 */
 	for (glue = pool->glue_list; glue != NULL; glue = glue->next) {
 		if (glue->ev == ev) {
+			ret = pthread_mutex_unlock(&pool->glue_mutex);
+			if (ret != 0) {
+				return ret;
+			}
 			return 0;
 		}
 	}
 
+	ret = pthread_mutex_unlock(&pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
+	}
 	/*
 	 * Event context not yet registered - create a new glue
 	 * object containing a tevent_context/tevent_threaded_context
@@ -254,7 +311,17 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	}
 #endif
 
+	ret = pthread_mutex_lock(&pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
+	}
+
 	DLIST_ADD(pool->glue_list, glue);
+
+	ret = pthread_mutex_unlock(&pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
+	}
 	return 0;
 }
 
@@ -359,6 +426,7 @@ static int pthreadpool_tevent_job_signal(int jobid,
 		job_private_data, struct pthreadpool_tevent_job_state);
 	struct tevent_threaded_context *tctx = NULL;
 	struct pthreadpool_tevent_glue *g = NULL;
+	int ret;
 
 	if (state->pool == NULL) {
 		/* The pthreadpool_tevent is already gone */
@@ -366,11 +434,21 @@ static int pthreadpool_tevent_job_signal(int jobid,
 	}
 
 #ifdef HAVE_PTHREAD
+	ret = pthread_mutex_lock(&state->pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
+	}
+
 	for (g = state->pool->glue_list; g != NULL; g = g->next) {
 		if (g->ev == state->ev) {
 			tctx = g->tctx;
 			break;
 		}
+	}
+
+	ret = pthread_mutex_unlock(&state->pool->glue_mutex);
+	if (ret != 0) {
+		return ret;
 	}
 
 	if (tctx == NULL) {
