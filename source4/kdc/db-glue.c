@@ -3459,7 +3459,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		}
 
 		len = strlen(fallback_account);
-		if (len >= 2 && fallback_account[len - 1] == '$') {
+		if (len == 0 || fallback_account[len - 1] == '$') {
 			/* there is already a $, so no fallback */
 			TALLOC_FREE(fallback_account);
 			TALLOC_FREE(fallback_realm);
