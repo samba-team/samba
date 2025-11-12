@@ -3464,11 +3464,11 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 
 			with_dollar = talloc_asprintf(mem_ctx, "%s$",
 						     fallback_account);
+			TALLOC_FREE(fallback_account);
 			if (with_dollar == NULL) {
 				TALLOC_FREE(fallback_realm);
 				return ENOMEM;
 			}
-			TALLOC_FREE(fallback_account);
 
 			ret = smb_krb5_make_principal(context,
 						      &fallback_principal,
