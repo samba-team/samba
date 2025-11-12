@@ -3443,18 +3443,10 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 			return SDB_ERR_NOENTRY;
 		}
 
-		fallback_realm = smb_krb5_principal_get_realm(
-			mem_ctx, context, fallback_principal);
-		if (fallback_realm == NULL) {
-			krb5_free_principal(context, fallback_principal);
-			return ENOMEM;
-		}
-
 		ret = smb_krb5_principal_get_comp_string(mem_ctx,
 							 context, fallback_principal, 0, &fallback_account);
 		if (ret != 0) {
 			krb5_free_principal(context, fallback_principal);
-			TALLOC_FREE(fallback_realm);
 			return ret;
 		}
 
@@ -3462,11 +3454,17 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		if (len == 0 || fallback_account[len - 1] == '$') {
 			/* there is already a $, so no fallback */
 			TALLOC_FREE(fallback_account);
-			TALLOC_FREE(fallback_realm);
 			krb5_free_principal(context, fallback_principal);
 			return SDB_ERR_NOENTRY;
 		}
 
+		fallback_realm = smb_krb5_principal_get_realm(
+			mem_ctx, context, fallback_principal);
+		if (fallback_realm == NULL) {
+			TALLOC_FREE(fallback_account);
+			krb5_free_principal(context, fallback_principal);
+			return ENOMEM;
+		}
 		krb5_free_principal(context, fallback_principal);
 		fallback_principal = NULL;
 
