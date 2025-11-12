@@ -1646,6 +1646,7 @@ sub provision_ad_dc_ntvfs($$$)
 	# override the new SMB2 only default
 	client min protocol = CORE
 	server min protocol = LANMAN1
+	kdc name match implicit dollar without canonicalization = no
 
 	server support krb5 netlogon = yes
 	CVE_2020_1472:warn_about_unused_debug_level = 3

@@ -2063,6 +2063,29 @@ for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
                                                             '--option=torture:expect_machine_account=true'] + extra_options,
                              "samba4.krb5.kdc with machine account")
 
+
+plansmbtorture4testsuite('krb5.kdc', "ad_dc_ntvfs:local",
+                         ['ncacn_np:$SERVER_IP', "-k", "yes", '-P',
+                          '--workgroup=$DOMAIN', '--realm=$REALM',
+                          '--option=torture:krb5-hostname=$SERVER',
+                          '--option=torture:run_removedollar_test=true',
+                          '--option=torture:expect_machine_account=true'] + extra_options,
+                         "samba4.krb5.kdc with machine account no dollar extension")
+
+planpythontestsuite(
+    "ad_dc_ntvfs",
+    "samba.tests.krb5.ms_kile_client_principal_lookup_tests",
+    environ=krb5_environ)
+planpythontestsuite(
+    "ad_dc_ntvfs",
+    "samba.tests.krb5.spn_tests",
+    environ=krb5_environ)
+planpythontestsuite(
+    "ad_dc_ntvfs",
+    "samba.tests.krb5.alias_tests",
+    environ=krb5_environ)
+
+
 planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests",
                     environ=krb5_environ)
 for env, fast_support in [("ad_dc", True),
