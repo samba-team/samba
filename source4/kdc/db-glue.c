@@ -3386,7 +3386,8 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 						const char **attrs,
 						const uint32_t dsdb_flags,
 						struct ldb_dn **realm_dn,
-						struct ldb_message **msg)
+						struct ldb_message **msg,
+						unsigned sdb_flags)
 {
 	NTSTATUS nt_status;
 	char *principal_string = NULL;
@@ -3448,6 +3449,52 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		if (ret != 0) {
 			krb5_free_principal(context, fallback_principal);
 			return ret;
+		}
+
+		if (! (sdb_flags & SDB_F_CANON)) {
+			/*
+			 * The client has not requested canonicalisation,
+			 * and the principal has not been found.
+			 *
+			 * At this point the only thing we are going
+			 * to do is search for the account with a
+			 * trailing '$', which we don't want to do if
+			 * smb.conf has
+			 *
+			 *  kdc name match implicit dollar without canonicalization = no
+			 *
+			 * in which case we can just return early.
+			 *
+			 * Note, you might have expected a check
+			 * against
+			 *
+			 *   sdb_flags & (SDB_F_CANON|SDB_F_FORCE_CANON)
+			 *
+			 * but that is incorrect here. The
+			 * SDB_F_FORCE_CANON is telling us to
+			 * canonicalise as we choose for the MIT kdc;
+			 * that server will decide whether to use the
+			 * canonicalized name or the original. All we
+			 * are doing here is ruling out appending '$'
+			 * as a matching strategy when the client has
+			 * not requested canonicalization.
+			 *
+			 * If the MIT server wants to indicate the
+			 * client has requested canonicalization, it
+			 * sets the KRB5_KDB_FLAG_REFERRAL_OK flag,
+			 * which we have converted into SDB_F_CANON
+			 * (in mit_samba.c).
+			 */
+			bool implicit_dollar_fallback = \
+				lpcfg_kdc_name_match_implicit_dollar_without_canonicalization(
+					kdc_db_ctx->lp_ctx);
+			if (! implicit_dollar_fallback) {
+				DBG_ERR("NOT falling back to %s$\n",
+					fallback_account);
+				TALLOC_FREE(fallback_account);
+				krb5_free_principal(context, fallback_principal);
+				return SDB_ERR_NOENTRY;
+			}
 		}
 
 		len = strlen(fallback_account);
@@ -3618,7 +3665,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 		 */
 		ret = samba_kdc_lookup_client(context, kdc_db_ctx,
 					      mem_ctx, principal, user_attrs, DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
-					      &realm_dn, &msg);
+					      &realm_dn, &msg, flags);
 		if (ret != 0) {
 			return ret;
 		}
@@ -3972,7 +4019,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		 */
 		return samba_kdc_lookup_client(context, kdc_db_ctx,
 					       mem_ctx, principal, server_attrs, DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
-					       realm_dn, msg);
+					       realm_dn, msg, flags);
 	} else {
 		/*
 		 * This case is for:
@@ -4705,7 +4752,8 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 
 	ret = samba_kdc_lookup_client(context, kdc_db_ctx,
 				      mem_ctx, certificate_principal,
-				      ms_upn_check_attrs, 0, &realm_dn, &msg);
+				      ms_upn_check_attrs, 0, &realm_dn, &msg,
+				      SDB_F_CANON);
 
 	if (ret != 0) {
 		talloc_free(mem_ctx);
