@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_ceph_rgw.8">
+
+<refmeta>
+	<refentrytitle>vfs_ceph_rgw</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_ceph_rgw</refname>
+	<refpurpose>
+		Use smb over object store provided by ceph librgw.
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = ceph_rgw</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		The <command>vfs_ceph_rgw</command> VFS module exposes
+		ceph-rgw hosted s3 bucket to users.
+	</para>
+
+	<para>
+		Ceph is a distributed network file system designed to provide
+		excellent performance, reliability, and scalability.
+		librgw is a shared library allowing applications to access an
+		object store i.e. s3 bucket via a posix-like interface.
+	</para>
+
+	<para>
+		This module can not be combined with other modules.
+
+		librgw does not support renaming directories. Therefore the module
+		internally ensures:
+		<smbconfoption name="vfs mkdir use tmp name">no</smbconfoption>
+		for Samba to not use temporary names while creating directory
+		and rename it to give name.
+
+		librgw does not support random writes, therefore we do not implement
+		async io write methods. Therefore, the module internally ensures:
+		<smbconfoption name="aio write size">0</smbconfoption>
+		for samba to always use sync write method.
+
+	</para>
+
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+		<command>vfs_ceph_rgw</command> requires that the underlying
+		share path is a s3 bucket name.
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">ceph_rgw</smbconfoption>
+		<smbconfoption name="path">/</smbconfoption>
+	</programlisting>
+
+	<para>
+		Since <command>vfs_ceph_rgw</command> does not require a
+		filesystem mount, the share <command>/</command> is treated
+		as root of the bucket and must be set to '/'. Any other path
+		is ignored.
+		In a ctdb cluster environment where ctdb manages Samba,
+		<command>CTDB_SAMBA_SKIP_SHARE_CHECK=yes</command> must be
+		configured to disable local share path checks, otherwise ctdb
+		will not reach a healthy state.
+	</para>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>ceph_rgw:config_file = path</term>
+		<listitem>
+		<para>
+			Allows one to define a ceph configuration to use.
+			(Required)
+			Default:
+			/etc/ceph/ceph.conf
+		</para>
+		<para>
+			Example: ceph_rgw:config_file =
+			/etc/ceph/ceph.conf
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:keyring_file = path</term>
+		<listitem>
+		<para>
+			Allows one to define a ceph keyring file to use.
+			(Required)
+			Default:
+			/etc/ceph/ceph.client.admin.keyring
+		</para>
+		<para>
+			Example: ceph_rgw:keyring_file =
+			/etc/ceph/ceph.client.admin.keyring
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:user_id = name</term>
+		<listitem>
+		<para>
+			User id of bucket owner
+			(Required)
+		</para>
+		<para>
+			Example: ceph_rgw:user_id = samba
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:access_key = key</term>
+		<listitem>
+		<para>
+			Access key for bucket owner specified by user_id option.
+			(Required)
+		</para>
+		<para>
+			Example: ceph_rgw:access_key = samba-key
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:secret_access_key = key</term>
+		<listitem>
+		<para>
+			Secret access key for bucket owner specified by user_id option.
+			(Required)
+		</para>
+		<para>
+			Example: ceph_rgw:secret_access_key = samba-secret-key
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:bucket = bucket name</term>
+		<listitem>
+		<para>
+			Bucket name to be exported as share.
+			(Required)
+		</para>
+		<para>
+			Example: ceph_rgw:bucket = video4k
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:debug = boolean</term>
+		<listitem>
+		<para>
+			Control debug logs for librgw
+			(Optional)
+			Default: off
+		</para>
+		<para>
+			Example: ceph_rgw:debug = on
+		</para>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>Sample configuration</title>
+
+	<para>
+		One needs access to working ceph cluster to configure samba to use
+		this module. Following sample provides working samba configuration
+		for an already existing ceph rgw object store and has pre-existing
+		user, bucket and objects within bucket.
+
+		<orderedlist continuation="restarts" inheritnum="ignore" numeration="arabic">
+		<listitem><para>
+			Install librgw-devel package
+		</para></listitem>
+		<listitem><para>
+			clone samba sources
+		</para></listitem>
+		<listitem><para>
+			configure samba as compile with option "--enable-cephrgw" along with
+			usual configuration options. Compile and install.
+		</para></listitem>
+		<listitem>
+		<para>
+			Edit smb.conf to include following share definition
+			Note: path must be set to '/', any other path is ignored.
+		</para>
+		<para>
+			<programlisting>
+			<smbconfsection name="[share]"/>
+			<smbconfoption name="comment">rgw bucket</smbconfoption>
+			<smbconfoption name="path">/</smbconfoption>
+			<smbconfoption name="read only">no</smbconfoption>
+			<smbconfoption name="inherit permissions">yes</smbconfoption>
+			<smbconfoption name="vfs objects">ceph_rgw</smbconfoption>
+			<smbconfoption name="ceph_rgw:bucket">my-bucket</smbconfoption>
+			<smbconfoption name="ceph_rgw:user_id">user1</smbconfoption>
+			<smbconfoption name="ceph_rgw:access_key">user1passwd</smbconfoption>
+			<smbconfoption name="ceph_rgw:secret_access_key">user1passwd</smbconfoption>
+			<smbconfoption name="ceph_rgw:config_file">/etc/ceph/ceph.conf</smbconfoption>
+			<smbconfoption name="ceph_rgw:keyring_file">/etc/ceph/ceph.client.admin.keyring</smbconfoption>
+			<smbconfoption name="ceph_rgw:debug">off</smbconfoption>
+			</programlisting>
+		</para>
+		</listitem>
+		<listitem><para>
+			Start samba server
+		</para></listitem>
+		</orderedlist>
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
