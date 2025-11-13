@@ -1,7 +1,7 @@
 #
 # Alias tests
 #
-^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_delete
-^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_rename
-^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_delete
-^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_rename
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_delete(?!.ad_dc_ntvfs.)
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_create_alias_rename(?!.ad_dc_ntvfs.)
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_delete(?!.ad_dc_ntvfs.)
+^samba.tests.krb5.alias_tests.samba.tests.krb5.alias_tests.AliasTests.test_dc_alias_rename(?!.ad_dc_ntvfs.)
