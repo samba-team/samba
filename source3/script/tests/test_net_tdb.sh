@@ -54,12 +54,20 @@ testit "Looking for record key of open file" \
 # The assumption here is that only one file is open, so only one
 # record can exist in the database.
 
+echo "=== Debug Output for 'tdbtool locking.tdb hexkeys' =="
+$samba_tdbtool "$LOCKDIR/locking.tdb" hexkeys
+echo "=== End Debug Output ==="
+
 # Output of 'tdbtool hexkeys' is in this format:
 #[000] 01 FD 00 00 00 00 00 00  56 02 5C 00 00 00 00 00  ....... V.\....
 #[010] 00 00 00 00 00 00 00 00                           .......
 # Select only the hex data, remove space and join every thing together
 key=0x$("$samba_tdbtool" "$LOCKDIR/locking.tdb" hexkeys |
 	grep '\[' | cut -c 7-56 | sed -e 's/ //g' | tr -d '\n')
+
+echo "=== Debug Output for key =="
+echo "${key}"
+echo "=== End Debug Output ==="
 
 testit "Looking for open file in locking.tdb" \
 	"$BINDIR/net" "$CONFIGURATION" tdb locking "$key" ||
