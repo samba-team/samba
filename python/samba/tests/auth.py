@@ -21,7 +21,8 @@ Note that this just tests the bindings work. It does not intend to test
 the functionality, that's already done in other tests.
 """
 
-from samba import auth
+from samba import auth, ntstatus, NTSTATUSError
+from samba.samdb import SamDB
 import samba.tests
 
 
@@ -100,3 +101,46 @@ class AuthAdminSessionTests(samba.tests.TestCase):
                          self.lp.get('workgroup').upper() +
                          self.lp.get('winbind separator') + 'Administrator')
         self.assertIsNotNone(self.admin_session.unix_token)
+
+    def test_user_session_principals(self):
+        session = auth.system_session()
+        realm = session.credentials.get_realm()
+        samdb = SamDB(lp=self.lp, session_info=session)
+        samdb.newuser('$$', 'password123!')
+        self.addCleanup(samdb.deleteuser, '$$')
+        for p, expected, upnc in [
+                ('', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                ('Administrator', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'Administrator@{realm.split(".", 2)[-1]}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'Administrator\n@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'Administrator@localdc.{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'Administrator@{realm.lower()}', 0, True),
+                (f'administrator @ {realm}', 0, True),
+                (f'JOE@{realm.lower()}', 0, False),
+                (f'joe @{realm}', 0, False),
+                (f'joe@ {realm.title()}', 0, False),
+                (f'  joe      @  {realm} ', 0, False),
+                (f'joe$@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'@$@{realm} ', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'$$@{realm}', 0, False),
+                (f'$@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'localdc@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'localdc$@{realm}', 0, True),
+                (f'localdc.{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'LOCALDC$@{realm}', 0, True),
+                (f'missing$@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                ('localdc$', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+        ]:
+            with self.subTest(p=p):
+                try:
+                    session = auth.user_session(samdb, lp_ctx=self.lp, principal=p)
+                except NTSTATUSError as e:
+                    result = e.args[0]
+                else:
+                    # no failure
+                    self.assertEqual(session.info.user_principal_constructed, upnc, p)
+                    result = 0
+
+                self.assertEqual(result, expected, p)
