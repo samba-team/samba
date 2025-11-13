@@ -251,23 +251,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					ret = 0;
 				}
 			} else {
-#if 0
-			/* Switch on XFS_QUOTA_UDQ_ACCT didn't work!
-			 * only swittching off XFS_QUOTA_UDQ_ACCT work
-			 */
-				if (F.qs_flags & XFS_QUOTA_UDQ_ENFD)
-					q_off |= XFS_QUOTA_UDQ_ENFD;
-				if (F.qs_flags & XFS_QUOTA_UDQ_ACCT)
-					q_off |= XFS_QUOTA_UDQ_ACCT;
-
-				if (q_off !=0) {
-					ret = quotactl(QCMD(Q_XQUOTAOFF,USRQUOTA),bdev, -1, (caddr_t)&q_off);
-				} else {
-					ret = 0;
-				}
-#else
 				ret = -1;
-#endif
 			}
 
 			break;
@@ -309,23 +293,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					ret = 0;
 				}
 			} else {
-#if 0
-			/* Switch on XFS_QUOTA_UDQ_ACCT didn't work!
-			 * only swittching off XFS_QUOTA_UDQ_ACCT work
-			 */
-				if (F.qs_flags & XFS_QUOTA_GDQ_ENFD)
-					q_off |= XFS_QUOTA_GDQ_ENFD;
-				if (F.qs_flags & XFS_QUOTA_GDQ_ACCT)
-					q_off |= XFS_QUOTA_GDQ_ACCT;
-
-				if (q_off !=0) {
-					ret = quotactl(QCMD(Q_XQUOTAOFF,GRPQUOTA),bdev, -1, (caddr_t)&q_off);
-				} else {
-					ret = 0;
-				}
-#else
 				ret = -1;
-#endif
 			}
 
 			break;
