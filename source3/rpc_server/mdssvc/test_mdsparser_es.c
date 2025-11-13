@@ -54,6 +54,20 @@ static struct {
 		"kMDItemFSContentChangeDate==$time.iso(2018-10-01T10:00:00Z)",
 		"file.last_modified:2018\\\\-10\\\\-01T10\\\\:00\\\\:00Z"
 	}, {
+		"kMDItemFSContentChangeDate==$time.iso(1960-10-01T10:00:00Z)",
+		"file.last_modified:1960\\\\-10\\\\-01T10\\\\:00\\\\:00Z"
+#ifdef __LP64__
+	}, {
+		"kMDItemFSContentChangeDate==$time.iso(1000-10-01T10:00:00Z)",
+		"file.last_modified:1000\\\\-10\\\\-01T10\\\\:00\\\\:00Z"
+	}, {
+		"kMDItemFSContentChangeDate==$time.iso(0000-10-01T10:00:00Z)",
+		"file.last_modified:0000\\\\-10\\\\-01T10\\\\:00\\\\:00Z"
+	}, {
+		"kMDItemFSContentChangeDate==$time.iso(9999-10-01T10:00:00Z)",
+		"file.last_modified:9999\\\\-10\\\\-01T10\\\\:00\\\\:00Z"
+#endif
+	}, {
 		"kMDItemFSContentChangeDate==\"1\"",
 		"file.last_modified:2001\\\\-01\\\\-01T00\\\\:00\\\\:01Z"
 	}, {
