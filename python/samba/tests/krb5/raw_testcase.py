@@ -878,16 +878,9 @@ class RawKerberosTest(TestCase):
         # Always generating the PAC is currently only supported by
         # the Embedded heimdal
         if using_embedded_heimdal:
-            # get_loadparm loads the client smb.conf
-            # we need to load the server smb.conf to get the server
-            # settings.
-            server_conf = samba.tests.env_get_var_value('SERVERCONFFILE')
-            lp = LoadParm(filename_for_non_global_lp=server_conf)
-            always_include = lp.get("kdc always include pac")
-            if always_include is None:
-                always_include = "True"
-
-            cls.always_include_pac = bool(always_include)
+            cls.always_include_pac = cls.get_server_param(
+                "kdc always include pac",
+                True)
 
         kadmin_is_tgs = samba.tests.env_get_var_value('KADMIN_IS_TGS',
                                                       allow_missing=True)
