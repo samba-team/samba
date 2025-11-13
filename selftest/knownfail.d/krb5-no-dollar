@@ -1,2 +1,6 @@
 ^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_enterprise_principal_step_5\(ad_dc_ntvfs\)
 ^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_principal_step_2\(ad_dc_ntvfs\)
+^samba\.tests\.krb5\.alias_tests\.samba\.tests\.krb5\.alias_tests\.AliasTests\.test_create_alias_delete\(ad_dc_ntvfs\)
+^samba\.tests\.krb5\.alias_tests\.samba\.tests\.krb5\.alias_tests\.AliasTests\.test_create_alias_rename\(ad_dc_ntvfs\)
+^samba\.tests\.krb5\.alias_tests\.samba\.tests\.krb5\.alias_tests\.AliasTests\.test_dc_alias_delete\(ad_dc_ntvfs\)
+^samba\.tests\.krb5\.alias_tests\.samba\.tests\.krb5\.alias_tests\.AliasTests\.test_dc_alias_rename\(ad_dc_ntvfs\)
