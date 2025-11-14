@@ -2830,7 +2830,7 @@ enum {
 			}
 		}
 		fprintf(stderr, "unknown helper protocol [%s]\n\n"
-			"Valid helper protools:\n\n", helper_protocol);
+			"Valid helper protocols:\n\n", helper_protocol);
 
 		for (i=0; i<NUM_HELPER_MODES; i++) {
 			fprintf(stderr, "%s\n",
