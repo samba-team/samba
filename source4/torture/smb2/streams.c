@@ -929,10 +929,9 @@ static bool test_stream_names(struct torture_context *tctx,
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
-	ret &= check_stream_list(tree, tctx, fname, 4, four,
-				 io.smb2.out.file.handle);
+	h1 = io.smb2.out.file.handle;
+	ret &= check_stream_list(tree, tctx, fname, 4, four, h1);
 	CHECK_VALUE(ret, true);
-	smb2_util_close(tree, h1);
 	smb2_util_close(tree, h2);
 	smb2_util_close(tree, h3);
 
@@ -941,13 +940,13 @@ static bool test_stream_names(struct torture_context *tctx,
 	}
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
-	finfo.generic.in.file.handle = io.smb2.out.file.handle;
+	finfo.generic.in.file.handle = h1;
 	status = smb2_getinfo_file(tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	ret &= check_stream_list(tree, tctx, fname, 4, four,
-				 io.smb2.out.file.handle);
-
+	ret &= check_stream_list(tree, tctx, fname, 4, four, h1);
+	smb2_util_close(tree, h1);
 	CHECK_VALUE(ret, true);
+
 	for (i=0; i < 4; i++) {
 		NTTIME write_time;
 		uint64_t stream_size;
@@ -1058,10 +1057,11 @@ static bool test_stream_names(struct torture_context *tctx,
 		io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
 		status = smb2_create(tree, mem_ctx, &(io.smb2));
 		CHECK_STATUS(status, NT_STATUS_OK);
-		ret &= check_stream_list(tree, tctx, fname, 4, four,
-					 io.smb2.out.file.handle);
+		h3 = io.smb2.out.file.handle;
+		ret &= check_stream_list(tree, tctx, fname, 4, four, h3);
 
 		smb2_util_close(tree, h1);
+		smb2_util_close(tree, h3);
 		talloc_free(path);
 	}
 
