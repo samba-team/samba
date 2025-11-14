@@ -58,12 +58,20 @@ echo "=== Debug Output for 'tdbtool locking.tdb hexkeys' =="
 $samba_tdbtool "$LOCKDIR/locking.tdb" hexkeys
 echo "=== End Debug Output ==="
 
-# Output of 'tdbtool hexkeys' is in this format:
-#[000] 01 FD 00 00 00 00 00 00  56 02 5C 00 00 00 00 00  ....... V.\....
-#[010] 00 00 00 00 00 00 00 00                           .......
-# Select only the hex data, remove space and join every thing together
-key=0x$("$samba_tdbtool" "$LOCKDIR/locking.tdb" hexkeys |
-	grep '\[' | cut -c 7-56 | sed -e 's/ //g' | tr -d '\n')
+# The above code produces the following output:
+#
+# === Debug Output for 'tdbtool locking.tdb hexkeys' ==
+# key 24 bytes
+# [000] 2B 00 00 00 00 00 00 00  24 40 17 03 00 00 00 00  +...... $@.....
+# [010] 00 00 00 00 00 00 00 00                           .......
+#
+# === End Debug Output ===
+#
+# Select only valid hex byte values and join them together
+key="0x$("$samba_tdbtool" "$LOCKDIR/locking.tdb" hexkeys |
+      awk '/^key/ && seen { exit }
+           /^key/ { seen=1; next }
+           /^\[/ { for(i=2; i<=NF; i++) if($i ~ /^[0-9A-Fa-f][0-9A-Fa-f]$/) printf "%s", $i }')"
 
 echo "=== Debug Output for key =="
 echo "${key}"
