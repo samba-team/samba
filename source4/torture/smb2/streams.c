@@ -1586,9 +1586,9 @@ static bool create_file_with_stream(struct torture_context *tctx,
 
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, io.smb2.out.file.handle);
 
  done:
-	smb2_util_close(tree, io.smb2.out.file.handle);
 	return ret;
 }
 
