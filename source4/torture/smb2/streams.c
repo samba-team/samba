@@ -452,11 +452,11 @@ static bool test_stream_io(struct torture_context *tctx,
 		io.smb2.in.fname = sname1;
 		status = smb2_create(tree, mem_ctx, &(io.smb2));
 		CHECK_STATUS(status, NT_STATUS_OK);
-		smb2_util_close(tree, io.ntcreatex.out.file.handle);
+		smb2_util_close(tree, io.smb2.out.file.handle);
 		io.smb2.in.fname = sname2;
 		status = smb2_create(tree, mem_ctx, &(io.smb2));
 		CHECK_STATUS(status, NT_STATUS_OK);
-		smb2_util_close(tree, io.ntcreatex.out.file.handle);
+		smb2_util_close(tree, io.smb2.out.file.handle);
 		torture_comment(tctx, "(%s) deleting file\n", __location__);
 		status = smb2_util_unlink(tree, fname);
 		CHECK_STATUS(status, NT_STATUS_OK);
