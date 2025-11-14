@@ -1051,12 +1051,18 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 
 static void print_cache_flush(const char *sharename)
 {
+	int rc = 0;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 
 	if (!pdb)
 		return;
 
-	update_share_cache_time(CACHE_LAST_SCAN_TIME, sharename, pdb->tdb, -1);
+	rc = update_share_cache_time(CACHE_LAST_SCAN_TIME,
+				    sharename, pdb->tdb, -1);
+	if (rc != 0) {
+		DBG_ERR("Unable to reset last scan time for share:%s. rc=%d\n",
+			sharename, rc);
+	}
 	release_print_db(pdb);
 }
 
