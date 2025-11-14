@@ -864,6 +864,9 @@ class RawKerberosTest(TestCase):
             padata_checking = '1'
         cls.padata_checking = bool(int(padata_checking))
 
+        cls.uncanonicalized_implicit_dollar = cls.get_server_param(
+            "kdc name match implicit dollar without canonicalization", True)
+
         using_embedded_heimdal = samba.tests.env_get_var_value(
             'USING_EMBEDDED_HEIMDAL',
             allow_missing=True)
