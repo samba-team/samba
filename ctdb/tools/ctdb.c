@@ -2786,6 +2786,12 @@ static void dump_ltdb_header(struct ctdb_ltdb_header *header)
 	if (header->flags & CTDB_REC_RO_REVOKE_COMPLETE) {
 		fprintf(stdout, " RO_REVOKE_COMPLETE");
 	}
+	if (header->flags & CTDB_REC_FLAG_PERSISTENT) {
+		fprintf(stdout, " PERSISTENT");
+	}
+	if (header->flags & CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS) {
+		fprintf(stdout, " PERSISTENT_IN_PROGRESS");
+	}
 	fprintf(stdout, "\n");
 }
 
