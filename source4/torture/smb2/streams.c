@@ -443,6 +443,7 @@ static bool test_stream_io(struct torture_context *tctx,
 	io.smb2.in.fname = fname;
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
 	h2 = io.smb2.out.file.handle;
 	check_stream_list(tree,tctx, fname, 1, one, h2);
 	smb2_util_close(tree, h2);
