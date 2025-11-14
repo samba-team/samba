@@ -1,6 +1,2 @@
-^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_enterprise_principal_step_6_a\(ad_dc_ntvfs\)
-^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_enterprise_principal_step_6_b\(ad_dc_ntvfs\)
-^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_principal_step_4_a\(ad_dc_ntvfs\)
-^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_principal_step_4_b\(ad_dc_ntvfs\)
-^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_principal_step_4_c\(ad_dc_ntvfs\)
-^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_principal_step_6_c\(ad_dc_ntvfs\)
+^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_enterprise_principal_step_5\(ad_dc_ntvfs\)
+^samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.samba\.tests\.krb5\.ms_kile_client_principal_lookup_tests\.MS_Kile_Client_Principal_Lookup_Tests\.test_nt_principal_step_2\(ad_dc_ntvfs\)
