@@ -1399,7 +1399,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	if (fsp_is_alternate_stream(fsp)) {
 		if (newname[0] != ':') {
-			return NT_STATUS_INVALID_PARAMETER;
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
 		}
 
 		smb_fname_dst = synthetic_smb_fname(ctx,
