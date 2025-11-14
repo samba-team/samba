@@ -69,6 +69,7 @@ static bool check_stream(struct torture_context *tctx,
 	struct smb2_read r;
 	NTSTATUS status;
 	const char *full_name;
+	bool ret = true;
 
 	full_name = talloc_asprintf(mem_ctx, "%s:%s", fname, sname);
 
@@ -91,6 +92,7 @@ static bool check_stream(struct torture_context *tctx,
 
 	handle = create.out.file.handle;
 	if (value == NULL) {
+		smb2_util_close(tree, handle);
 		return true;
 	}
 
@@ -105,16 +107,19 @@ static bool check_stream(struct torture_context *tctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "(%s) Failed to read %lu bytes from "
 		    "stream '%s'\n", location, (long)strlen(value), full_name);
-		return false;
+		ret = false;
+		goto done;
 	}
 
 	if (memcmp(r.out.data.data, value, strlen(value)) != 0) {
 		torture_comment(tctx, "(%s) Bad data in stream\n", location);
-		return false;
+		ret = false;
+		goto done;
 	}
 
+done:
 	smb2_util_close(tree, handle);
-	return true;
+	return ret;
 }
 
 static bool check_stream_list(struct smb2_tree *tree,
