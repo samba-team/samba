@@ -1652,11 +1652,12 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!check_stream_list(tree, tctx, fname, 2, stream_list,
-			       io.smb2.out.file.handle)) {
+	ret = check_stream_list(tree, tctx, fname, 2, stream_list,
+				io.smb2.out.file.handle);
+	smb2_util_close(tree, io.smb2.out.file.handle);
+	if (!ret) {
 		goto done;
 	}
-	smb2_util_close(tree, io.smb2.out.file.handle);
 
 	/*
 	 * check create overwrite
@@ -1666,11 +1667,12 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OVERWRITE;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!check_stream_list(tree, tctx, fname, 1, &default_stream_name,
-			       io.smb2.out.file.handle)) {
+	ret = check_stream_list(tree, tctx, fname, 1, &default_stream_name,
+				io.smb2.out.file.handle);
+	smb2_util_close(tree, io.smb2.out.file.handle);
+	if (!ret) {
 		goto done;
 	}
-	smb2_util_close(tree, io.smb2.out.file.handle);
 
 	/*
 	 * check create overwrite_if
@@ -1684,11 +1686,12 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!check_stream_list(tree, tctx, fname, 1, &default_stream_name,
-			       io.smb2.out.file.handle)) {
+	ret = check_stream_list(tree, tctx, fname, 1, &default_stream_name,
+				io.smb2.out.file.handle);
+	smb2_util_close(tree, io.smb2.out.file.handle);
+	if (!ret) {
 		goto done;
 	}
-	smb2_util_close(tree, io.smb2.out.file.handle);
 
 	/*
 	 * check create supersede
@@ -1704,11 +1707,12 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	io.smb2.in.create_disposition = NTCREATEX_DISP_SUPERSEDE;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!check_stream_list(tree, tctx, fname, 1, &default_stream_name,
-			       io.smb2.out.file.handle)) {
+	ret = check_stream_list(tree, tctx, fname, 1, &default_stream_name,
+				io.smb2.out.file.handle);
+	smb2_util_close(tree, io.smb2.out.file.handle);
+	if (!ret) {
 		goto done;
 	}
-	smb2_util_close(tree, io.smb2.out.file.handle);
 
 	/*
 	 * check create overwrite_if on a stream.
@@ -1725,11 +1729,12 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	io.smb2.in.fname = fname_stream;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!check_stream_list(tree, tctx, fname, 2, stream_list,
-			       io.smb2.out.file.handle)) {
+	ret = check_stream_list(tree, tctx, fname, 2, stream_list,
+				io.smb2.out.file.handle);
+	smb2_util_close(tree, io.smb2.out.file.handle);
+	if (!ret) {
 		goto done;
 	}
-	smb2_util_close(tree, io.smb2.out.file.handle);
  done:
 	smb2_util_close(tree, h);
 	smb2_util_close(tree, h1);
