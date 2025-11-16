@@ -548,7 +548,7 @@ static struct tevent_req *run_event_run_script(struct tevent_req *req);
 static void run_event_next_script(struct tevent_req *subreq);
 static void run_event_fail(struct tevent_req *req,
 			   struct run_event_script *script,
-			   id_t pid);
+			   pid_t pid);
 static void run_event_debug(struct tevent_req *req, pid_t pid);
 static void run_event_debug_done(struct tevent_req *subreq);
 
@@ -791,7 +791,7 @@ static void run_event_next_script(struct tevent_req *subreq)
 
 static void run_event_fail(struct tevent_req *req,
 			   struct run_event_script *script,
-			   id_t pid)
+			   pid_t pid)
 {
 	struct run_event_state *state = tevent_req_data(
 		req, struct run_event_state);
