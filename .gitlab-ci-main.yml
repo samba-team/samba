@@ -486,7 +486,7 @@ samba-fileserver:
   extends: .needs_samba-h5l-build-ext4
 
 samba-fileserver-without-smb1:
-  extends: .needs_samba-without-smb1-build-5_15
+  extends: .needs_samba-without-smb1-build
 
 # This is a full build without the AD DC so we test the build with MIT
 # Kerberos from the default system (Ubuntu 22.04 at this stage).
