@@ -250,7 +250,6 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	glue->tctx = tevent_threaded_context_create(glue, ev);
 	if (glue->tctx == NULL) {
 		TALLOC_FREE(ev_link);
-		TALLOC_FREE(glue);
 		return ENOMEM;
 	}
 #endif
