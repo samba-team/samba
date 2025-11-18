@@ -124,11 +124,11 @@ def options(opt):
                   action="store_false", dest='enable_relro')
 
     opt.add_option('--with-kernel-keyring',
-                  help=('Enable kernely keyring support for credential storage ' +
+                  help=('Enable kernel keyring support for credential storage ' +
                         '(default if keyutils libraries are available)'),
                   action='store_true', dest='enable_keyring')
     opt.add_option('--without-kernel-keyring',
-                  help=('Disable kernely keyring support for credential storage'),
+                  help=('Disable kernel keyring support for credential storage'),
                   action='store_false', dest='enable_keyring')
 
     opt.samba_add_onoff_option('ldap')
