@@ -977,6 +977,8 @@ static void start_recovery_reclock_callback(struct ctdb_context *ctdb,
 		       local == NULL ? "NULL" : local));
 		talloc_free(state);
 		ctdb_shutdown_sequence(ctdb, 1);
+		/* In case above returns due to duplicate shutdown */
+		return;
 	}
 	DEBUG(DEBUG_INFO,
 	      ("Recovery lock consistency check successful\n"));
