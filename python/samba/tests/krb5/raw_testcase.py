@@ -2521,6 +2521,14 @@ class RawKerberosTest(TestCase):
 
         return self.der_encode(pk_as_req_obj, asn1Spec=asn1_spec())
 
+    def Attribute_create(self,
+                         attr_type,
+                         attr_values):
+        return {
+            'type': attr_type,
+            'values': attr_values,
+        }
+
     def SignerInfo_create(self,
                           signer_id,
                           digest_algorithm,

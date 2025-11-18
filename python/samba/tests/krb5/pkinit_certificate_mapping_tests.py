@@ -770,6 +770,7 @@ class PkInitCertificateMappingTests(KDCBaseTest):
         pk_nonce=None,
         supported_cms_types=None,
         signature_algorithm=None,
+        digest_algorithm=None,
         certificate_signature=None,
         freshness_token=None,
         win2k_variant=False,
@@ -784,6 +785,11 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             signature_algorithm = krb5_asn1.sha1WithRSAEncryption
 
         signature_algorithm_id = self.AlgorithmIdentifier_create(signature_algorithm)
+
+        if digest_algorithm is None:
+            digest_algorithm = krb5_asn1.id_sha1
+
+        digest_algorithm_id = self.AlgorithmIdentifier_create(digest_algorithm)
 
         if certificate is None:
             ca_cert, ca_private_key = self.get_ca_cert_and_private_key()
@@ -916,11 +922,11 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             auth_pack = self.der_encode(auth_pack_obj, asn1Spec=asn1_spec())
 
             signature_hash = self.hash_from_algorithm(signature_algorithm)
+            digest_hash = self.hash_from_algorithm(digest_algorithm)
 
-            pad = padding.PKCS1v15()
-            signed = private_key.sign(
-                auth_pack, padding=pad, algorithm=signature_hash()
-            )
+            digest = hashes.Hash(digest_hash(), default_backend())
+            digest.update(auth_pack)
+            digest = digest.finalize()
 
             encap_content_info_obj = self.EncapsulatedContentInfo_create(
                 krb5_asn1.id_pkinit_authData, auth_pack
@@ -933,16 +939,36 @@ class PkInitCertificateMappingTests(KDCBaseTest):
                 subject_key_id=subject_key_id.value.digest
             )
 
+            auth_data_attr = self.Attribute_create(
+                krb5_asn1.id_pkinit_authData, [auth_pack]
+            )
+
+            message_digest = self.der_encode(digest, asn1Spec=krb5_asn1.MessageDigest())
+
+            message_digest_attr = self.Attribute_create(
+                krb5_asn1.id_messageDigest, [message_digest]
+            )
+
+            signed_attrs = [
+                # Note: these attributes are optional.
+                auth_data_attr,
+                message_digest_attr,
+            ]
+            encoded_signed_attrs = self.der_encode(
+                signed_attrs, asn1Spec=krb5_asn1.CMSAttributes()
+            )
+
+            pad = padding.PKCS1v15()
+            signed = private_key.sign(
+                encoded_signed_attrs, padding=pad, algorithm=signature_hash()
+            )
+
             signer_info = self.SignerInfo_create(
                 signer_identifier,
-                signature_algorithm_id,
+                digest_algorithm_id,
                 signature_algorithm_id,
                 signed,
-                signed_attrs=[
-                    # Note: these attributes are optional.
-                    krb5_asn1.id_pkinit_authData,
-                    krb5_asn1.id_messageDigest,
-                ],
+                signed_attrs=signed_attrs,
             )
 
             encoded_cert = certificate.public_bytes(serialization.Encoding.DER)
@@ -951,7 +977,7 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             )
 
             signed_auth_pack = self.SignedData_create(
-                [signature_algorithm_id],
+                [digest_algorithm_id],
                 encap_content_info_obj,
                 signer_infos=[signer_info],
                 certificates=[decoded_cert],
