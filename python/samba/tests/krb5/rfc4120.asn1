@@ -1505,6 +1505,15 @@ ReplyKeyPack-Win2k ::= SEQUENCE {
    ...
 }
 
+-- (from RFC 8636)
+
+TD-CMS-DIGEST-ALGORITHMS-DATA ::= SEQUENCE OF
+    AlgorithmIdentifier
+        -- Contains the list of CMS algorithm [RFC5652]
+        -- identifiers indicating the digest algorithms
+        -- acceptable to the KDC for signing CMS data in
+        -- decreasing order of preference.
+
 --
 
 id-pkinit-ms-san OBJECT IDENTIFIER ::= {

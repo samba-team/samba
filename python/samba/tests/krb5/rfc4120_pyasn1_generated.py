@@ -2456,6 +2456,13 @@ class SubjectAltName(GeneralNames):
     pass
 
 
+class TD_CMS_DIGEST_ALGORITHMS_DATA(univ.SequenceOf):
+    pass
+
+
+TD_CMS_DIGEST_ALGORITHMS_DATA.componentType = AlgorithmIdentifier()
+
+
 class TD_DH_PARAMETERS(univ.SequenceOf):
     pass
 

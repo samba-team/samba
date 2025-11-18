@@ -129,6 +129,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PW_SALT,
     PADATA_REQ_ENC_PA_REP,
     PADATA_SUPPORTED_ETYPES,
+    TD_CMS_DIGEST_ALGORITHMS,
 )
 import samba.tests.krb5.kcrypto as kcrypto
 
@@ -5378,7 +5379,6 @@ class RawKerberosTest(TestCase):
                 require_strict.add(PADATA_ENCRYPTED_CHALLENGE)
 
             got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
-            TD_CMS_DIGEST_ALGORITHMS = 111
             self.assertSequenceElementsEqual(expected_patypes, got_patypes,
                                              require_strict=require_strict,
                                              unchecked={PADATA_PW_SALT,TD_CMS_DIGEST_ALGORITHMS})
