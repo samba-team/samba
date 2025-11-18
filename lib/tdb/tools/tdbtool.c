@@ -363,13 +363,13 @@ static int store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 
 static bool parse_hex(const char *src, size_t srclen, uint8_t *dst)
 {
-	size_t i=0;
+	const char *end = src + srclen;
 
 	if ((srclen % 2) != 0) {
 		return false;
 	}
 
-	while (i<srclen) {
+	while (src < end) {
 		bool ok = hex_byte(src, dst);
 		if (!ok) {
 			return false;
