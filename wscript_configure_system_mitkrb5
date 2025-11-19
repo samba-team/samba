@@ -93,7 +93,7 @@ if conf.env.KRB5_CONFIG:
     else:
         Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
 
-    conf.define('USING_SYSTEM_MITKRB5', '"%s"' % krb5_version)
+    conf.define('USING_SYSTEM_MITKRB5', '%s' % krb5_version)
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
 conf.CHECK_HEADERS('krb5.h krb5/localauth_plugin.h', lib='krb5')
