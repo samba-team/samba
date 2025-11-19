@@ -2539,6 +2539,13 @@ out:
 	return status_code(ret);
 }
 
+static int vfs_ceph_fstatvfs(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     struct vfs_statvfs_struct *statbuf)
+{
+	return vfs_ceph_statvfs(handle, fsp->fsp_name, statbuf);
+}
+
 static uint32_t vfs_ceph_fs_capabilities(
 	struct vfs_handle_struct *handle,
 	enum timestamp_set_resolution *p_ts_res)
@@ -4616,6 +4623,7 @@ static struct vfs_fn_pointers ceph_new_fns = {
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
 	.statvfs_fn = vfs_ceph_statvfs,
+	.fstatvfs_fn = vfs_ceph_fstatvfs,
 	.fs_capabilities_fn = vfs_ceph_fs_capabilities,
 
 	/* Directory operations */

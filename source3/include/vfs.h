@@ -399,6 +399,7 @@
  * Version 52 - Add VFS_OPEN_HOW_RESOLVE_NO_XDEV for SMB_VFS_OPENAT()
  * Change to Version 53 - will ship with 4.25
  * Version 53 - Change DISK_FREE to take a fsp instead of a name
+ * Version 53 - Add fstatvfs
  */
 
 #define SMB_VFS_INTERFACE_VERSION 53
@@ -999,6 +1000,9 @@ struct vfs_fn_pointers {
 	int (*statvfs_fn)(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				struct vfs_statvfs_struct *statbuf);
+	int (*fstatvfs_fn)(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp,
+			   struct vfs_statvfs_struct *statbuf);
 	uint32_t (*fs_capabilities_fn)(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res);
 
 	/*
@@ -1459,6 +1463,9 @@ int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 int smb_vfs_call_statvfs(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			struct vfs_statvfs_struct *statbuf);
+int smb_vfs_call_fstatvfs(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp,
+			  struct vfs_statvfs_struct *statbuf);
 uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 				      enum timestamp_set_resolution *p_ts_res);
 /*
@@ -1892,6 +1899,9 @@ int vfs_not_implemented_get_shadow_copy_data(vfs_handle_struct *handle,
 int vfs_not_implemented_statvfs(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				struct vfs_statvfs_struct *statbuf);
+int vfs_not_implemented_fstatvfs(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 struct vfs_statvfs_struct *statbuf);
 uint32_t vfs_not_implemented_fs_capabilities(struct vfs_handle_struct *handle,
 				enum timestamp_set_resolution *p_ts_res);
 NTSTATUS vfs_not_implemented_get_dfs_referrals(struct vfs_handle_struct *handle,

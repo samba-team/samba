@@ -284,6 +284,28 @@ static int smb_time_audit_statvfs(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_fstatvfs(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   struct vfs_statvfs_struct *statbuf)
+{
+	int result;
+	struct timespec ts1, ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FSTATVFS(handle, fsp, statbuf);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fname("fstatvfs",
+					 timediff,
+					 fsp_str_dbg(fsp));
+	}
+
+	return result;
+}
+
 static uint32_t smb_time_audit_fs_capabilities(struct vfs_handle_struct *handle,
 					       enum timestamp_set_resolution *p_ts_res)
 {
@@ -2686,6 +2708,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.set_quota_fn = smb_time_audit_set_quota,
 	.get_shadow_copy_data_fn = smb_time_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_time_audit_statvfs,
+	.fstatvfs_fn = smb_time_audit_fstatvfs,
 	.fs_capabilities_fn = smb_time_audit_fs_capabilities,
 	.get_dfs_referrals_fn = smb_time_audit_get_dfs_referrals,
 	.create_dfs_pathat_fn = smb_time_audit_create_dfs_pathat,

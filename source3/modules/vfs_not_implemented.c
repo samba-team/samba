@@ -93,6 +93,15 @@ int vfs_not_implemented_statvfs(struct vfs_handle_struct *handle,
 }
 
 _PUBLIC_
+int vfs_not_implemented_fstatvfs(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 struct vfs_statvfs_struct *statbuf)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+_PUBLIC_
 uint32_t vfs_not_implemented_fs_capabilities(struct vfs_handle_struct *handle,
 				enum timestamp_set_resolution *p_ts_res)
 {
@@ -1057,6 +1066,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.set_quota_fn = vfs_not_implemented_set_quota,
 	.get_shadow_copy_data_fn = vfs_not_implemented_get_shadow_copy_data,
 	.statvfs_fn = vfs_not_implemented_statvfs,
+	.fstatvfs_fn = vfs_not_implemented_fstatvfs,
 	.fs_capabilities_fn = vfs_not_implemented_fs_capabilities,
 	.get_dfs_referrals_fn = vfs_not_implemented_get_dfs_referrals,
 	.create_dfs_pathat_fn = vfs_not_implemented_create_dfs_pathat,

@@ -378,6 +378,13 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int cephwrap_fstatvfs(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     struct vfs_statvfs_struct *statbuf)
+{
+	return cephwrap_statvfs(handle, fsp->fsp_name, statbuf);
+}
+
 static uint32_t cephwrap_fs_capabilities(
 	struct vfs_handle_struct *handle,
 	enum timestamp_set_resolution *p_ts_res)
@@ -1779,6 +1786,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
 	.statvfs_fn = cephwrap_statvfs,
+	.fstatvfs_fn = cephwrap_fstatvfs,
 	.fs_capabilities_fn = cephwrap_fs_capabilities,
 
 	/* Directory operations */

@@ -101,6 +101,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SET_QUOTA,
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
+	SMB_VFS_OP_FSTATVFS,
 	SMB_VFS_OP_FS_CAPABILITIES,
 	SMB_VFS_OP_GET_DFS_REFERRALS,
 	SMB_VFS_OP_CREATE_DFS_PATHAT,
@@ -241,6 +242,7 @@ static struct {
 	{ SMB_VFS_OP_SET_QUOTA,	"set_quota" },
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
+	{ SMB_VFS_OP_FSTATVFS,	"fstatvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
 	{ SMB_VFS_OP_GET_DFS_REFERRALS,	"get_dfs_referrals" },
 	{ SMB_VFS_OP_CREATE_DFS_PATHAT,	"create_dfs_pathat" },
@@ -889,6 +891,19 @@ static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf);
 
 	do_log(SMB_VFS_OP_STATVFS, errmsg_unix(result), handle, "");
+
+	return result;
+}
+
+static int smb_full_audit_fstatvfs(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   struct vfs_statvfs_struct *statbuf)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_FSTATVFS(handle, fsp, statbuf);
+
+	do_log(SMB_VFS_OP_FSTATVFS, errmsg_unix(result), handle, "");
 
 	return result;
 }
@@ -3147,6 +3162,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.set_quota_fn = smb_full_audit_set_quota,
 	.get_shadow_copy_data_fn = smb_full_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_full_audit_statvfs,
+	.fstatvfs_fn = smb_full_audit_fstatvfs,
 	.fs_capabilities_fn = smb_full_audit_fs_capabilities,
 	.get_dfs_referrals_fn = smb_full_audit_get_dfs_referrals,
 	.create_dfs_pathat_fn = smb_full_audit_create_dfs_pathat,

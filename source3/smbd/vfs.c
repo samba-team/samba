@@ -1477,6 +1477,14 @@ int smb_vfs_call_statvfs(struct vfs_handle_struct *handle,
 	return handle->fns->statvfs_fn(handle, smb_fname, statbuf);
 }
 
+int smb_vfs_call_fstatvfs(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp,
+			  struct vfs_statvfs_struct *statbuf)
+{
+	VFS_FIND(fstatvfs);
+	return handle->fns->fstatvfs_fn(handle, fsp, statbuf);
+}
+
 uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 			enum timestamp_set_resolution *p_ts_res)
 {

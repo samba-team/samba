@@ -169,6 +169,18 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,
 	return sys_statvfs(smb_fname->base_name, statbuf);
 }
 
+static int vfswrap_fstatvfs(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp,
+			    struct vfs_statvfs_struct *statbuf)
+{
+	int ret, fd;
+
+	fd = fsp_get_pathref_fd(fsp);
+
+	ret = sys_fstatvfs(fd, statbuf);
+	return ret;
+}
+
 static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		enum timestamp_set_resolution *p_ts_res)
 {
@@ -4045,6 +4057,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.set_quota_fn = vfswrap_set_quota,
 	.get_shadow_copy_data_fn = vfswrap_get_shadow_copy_data,
 	.statvfs_fn = vfswrap_statvfs,
+	.fstatvfs_fn = vfswrap_fstatvfs,
 	.fs_capabilities_fn = vfswrap_fs_capabilities,
 	.get_dfs_referrals_fn = vfswrap_get_dfs_referrals,
 	.create_dfs_pathat_fn = vfswrap_create_dfs_pathat,

@@ -66,6 +66,11 @@
 #define SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf) \
 	smb_vfs_call_statvfs((handle)->next, (smb_fname), (statbuf))
 
+#define SMB_VFS_FSTATVFS(conn, fsp, statbuf) \
+	smb_vfs_call_fstatvfs((conn)->vfs_handles, (fsp), (statbuf))
+#define SMB_VFS_NEXT_FSTATVFS(handle, fsp, statbuf) \
+	smb_vfs_call_fstatvfs((handle)->next, (fsp), (statbuf))
+
 #define SMB_VFS_FS_CAPABILITIES(conn, p_ts_res) \
 	smb_vfs_call_fs_capabilities((conn)->vfs_handles, (p_ts_res))
 #define SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) \

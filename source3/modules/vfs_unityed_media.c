@@ -558,6 +558,63 @@ err:
 	return status;
 }
 
+/*
+ * Success: return 0
+ * Failure: set errno, return -1
+ */
+static int um_fstatvfs(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp,
+		       struct vfs_statvfs_struct *statbuf)
+{
+	struct smb_filename *smb_fname = fsp->fsp_name;
+	char *clientPath = NULL;
+	struct smb_filename *clientFname = NULL;
+	NTSTATUS status;
+	int ret;
+
+	DBG_DEBUG("Entering with path '%s'\n", fsp_str_dbg(fsp));
+
+	if (!is_in_media_files(smb_fname->base_name)) {
+		ret = SMB_VFS_NEXT_FSTATVFS(handle, fsp, statbuf);
+		return ret;
+	}
+
+	ret = alloc_get_client_path(handle,
+				    talloc_tos(),
+				    smb_fname->base_name,
+				    &clientPath);
+	if (ret != 0) {
+		goto err;
+	}
+
+	status = synthetic_pathref(talloc_tos(),
+				   handle->conn->cwd_fsp,
+				   clientPath,
+				   smb_fname->stream_name,
+				   NULL,
+				   smb_fname->twrp,
+				   smb_fname->flags,
+				   &clientFname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		ret = -1;
+		goto err;
+	}
+
+	ret = SMB_VFS_NEXT_FSTATVFS(handle, clientFname->fsp, statbuf);
+
+err:
+	{
+		int err = errno;
+		TALLOC_FREE(clientFname);
+
+		DBG_DEBUG("Leaving with path '%s'\n", fsp_str_dbg(fsp));
+		errno = err;
+	}
+
+	return ret;
+}
+
 static DIR *um_fdopendir(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 const char *mask,
@@ -1492,6 +1549,7 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	/* Disk operations */
 
 	.statvfs_fn = um_statvfs,
+	.fstatvfs_fn = um_fstatvfs,
 
 	/* Directory operations */
 

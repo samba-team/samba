@@ -593,6 +593,13 @@ static int vfs_gluster_statvfs(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gluster_fstatvfs(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				struct vfs_statvfs_struct *vfs_statvfs)
+{
+	return vfs_gluster_statvfs(handle, fsp->fsp_name, vfs_statvfs);
+}
+
 static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 					    enum timestamp_set_resolution *p_ts_res)
 {
@@ -2563,6 +2570,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.get_quota_fn = vfs_gluster_get_quota,
 	.set_quota_fn = vfs_gluster_set_quota,
 	.statvfs_fn = vfs_gluster_statvfs,
+	.fstatvfs_fn = vfs_gluster_fstatvfs,
 	.fs_capabilities_fn = vfs_gluster_fs_capabilities,
 
 	.get_dfs_referrals_fn = NULL,
