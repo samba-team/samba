@@ -1,4 +1,14 @@
+# We expect some Kerberos name matching tests to fail in the
+# ad_dc_ntvfs environment, because it has
+#
+#  kdc name match implicit dollar without canonicalization = no
+#
+# set, meaning tests that assert 'foo' matches 'foo$' in principal
+# lookups will fail.
+
 ^samba4\.krb5\.kdc\ with\ machine\ account\ no\ dollar\ extension\.canon\.canon\.enterprise\.lc\-user\.no\-win2k\.removedollar\.s4u2self\.canon\.enterprise\.lc\-user\.no\-win2k\.removedollar\.s4u2self\(ad_dc_ntvfs:local\)
 ^samba4\.krb5\.kdc\ with\ machine\ account\ no\ dollar\ extension\.canon\.canon\.enterprise\.uc\-user\.no\-win2k\.removedollar\.s4u2self\.canon\.enterprise\.uc\-user\.no\-win2k\.removedollar\.s4u2self\(ad_dc_ntvfs:local\)
+
+
 ^samba4\.krb5\.kdc\ with\ machine\ account\ no\ dollar\ extension\.canon\.canon\.enterprise\.lc\-user\.win2k\.removedollar\.s4u2self\.canon\.enterprise\.lc\-user\.win2k\.removedollar\.s4u2self\(ad_dc_ntvfs:local\)
 ^samba4\.krb5\.kdc\ with\ machine\ account\ no\ dollar\ extension\.canon\.canon\.enterprise\.uc\-user\.win2k\.removedollar\.s4u2self\.canon\.enterprise\.uc\-user\.win2k\.removedollar\.s4u2self\(ad_dc_ntvfs:local\)
