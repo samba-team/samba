@@ -1380,6 +1380,15 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	char *enctypes = NULL;
 	const char *include_system_krb5 = "";
 	mode_t mask;
+	/*
+	 * The default will be 15 seconds, it can be changed in the smb.conf:
+	 * [global]
+	 *   krb5:request_timeout = 30
+	 */
+	int timeout_sec = lp_parm_int(-1,
+				      "krb5",
+				      "request_timeout",
+				      15 /* default */);
 
 	if (!lp_create_krb5_conf()) {
 		return false;
@@ -1449,6 +1458,11 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	file_contents =
 	    talloc_asprintf(fname,
 			    "[libdefaults]\n"
+#ifdef SAMBA4_USES_HEIMDAL
+			    "\tkdc_timeout = %d\n"
+#else
+			    "\trequest_timeout = %ds\n"
+#endif
 			    "\tdefault_realm = %s\n"
 			    "%s"
 			    "\tdns_lookup_realm = false\n"
@@ -1458,6 +1472,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			    "\t%s = {\n"
 			    "%s\t}\n"
 			    "%s\n",
+			    timeout_sec,
 			    realm_upper,
 			    enctypes,
 			    realm_upper,
