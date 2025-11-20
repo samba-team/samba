@@ -875,13 +875,14 @@ static int vfs_ceph_ll_statfs(const struct vfs_handle_struct *handle,
 			      struct statvfs *stbuf)
 {
 	struct vfs_ceph_config *config = NULL;
+	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
 				return -ENOMEM);
 
-	DBG_DEBUG("[CEPH] ceph_ll_statfs: ino=%" PRIu64 "\n", iref->ino);
-
-	return config->ceph_ll_statfs_fn(config->mount, iref->inode, stbuf);
+	ret = config->ceph_ll_statfs_fn(config->mount, iref->inode, stbuf);
+	DBG_DEBUG("[CEPH] ceph_ll_statfs: ino=%" PRIu64 " ret=%d\n", iref->ino, ret);
+	return ret;
 }
 
 static int vfs_ceph_ll_getattr2(const struct vfs_handle_struct *handle,
@@ -2037,25 +2038,21 @@ static uint64_t vfs_ceph_disk_free(struct vfs_handle_struct *handle,
 				uint64_t *dsize)
 {
 	struct statvfs statvfs_buf = { 0 };
-	struct Inode *inode = NULL;
 	int ret;
 	struct vfs_ceph_config *config = NULL;
+	struct vfs_ceph_iref iref = {0};
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
 				return -ENOMEM);
 
-	ret = config->ceph_ll_lookup_root_fn(config->mount, &inode);
+	ret = vfs_ceph_iget(handle, smb_fname->base_name, 0, &iref);
 	if (ret != 0) {
-		DBG_DEBUG("[CEPH] disk_free: ceph_ll_lookup_root returned ret=%d\n",
-			  ret);
 		errno = -ret;
 		return (uint64_t)(-1);
 	}
-	ret = config->ceph_ll_statfs_fn(config->mount, inode, &statvfs_buf);
-	config->ceph_ll_put_fn(config->mount, inode);
+	ret = vfs_ceph_ll_statfs(handle, &iref, &statvfs_buf);
+	vfs_ceph_iput(handle, &iref);
 	if (ret != 0) {
-		DBG_DEBUG("[CEPH] disk_free: ceph_ll_statfs returned ino=%p"
-			  " ret=%d\n", inode, ret);
 		errno = -ret;
 		return (uint64_t)(-1);
 	}
