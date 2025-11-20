@@ -64,6 +64,11 @@ struct pthreadpool_tevent {
 	pthread_mutex_t glue_mutex;
 
 	struct pthreadpool_tevent_job_state *jobs;
+	/*
+	 * Control access to the jobs
+	 */
+	pthread_mutex_t jobs_mutex;
+
 };
 
 struct pthreadpool_tevent_job_state {
@@ -108,6 +113,13 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 		return ret;
 	}
 
+	ret = pthread_mutex_init(&pool->jobs_mutex, NULL);
+	if (ret != 0) {
+		pthread_mutex_destroy(&pool->glue_mutex);
+		TALLOC_FREE(pool);
+		return ret;
+	}
+
 	talloc_set_destructor(pool, pthreadpool_tevent_destructor);
 
 	*presult = pool;
@@ -143,10 +155,19 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 		return ret;
 	}
 
+	ret = pthread_mutex_lock(&pool->jobs_mutex);
+	if (ret != 0 ) {
+		return ret;
+	}
 	for (state = pool->jobs; state != NULL; state = next) {
 		next = state->next;
 		DLIST_REMOVE(pool->jobs, state);
 		state->pool = NULL;
+	}
+
+	ret = pthread_mutex_unlock(&pool->jobs_mutex);
+	if (ret != 0 ) {
+		return ret;
 	}
 
 	ret = pthread_mutex_lock(&pool->glue_mutex);
@@ -165,6 +186,7 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 	}
 
 	pthread_mutex_unlock(&pool->glue_mutex);
+	pthread_mutex_destroy(&pool->jobs_mutex);
 	pthread_mutex_destroy(&pool->glue_mutex);
 
 	pool->glue_list = NULL;
@@ -405,7 +427,16 @@ struct tevent_req *pthreadpool_tevent_job_send(
 	 */
 	talloc_set_destructor(state, pthreadpool_tevent_job_state_destructor);
 
+	ret = pthread_mutex_lock(&pool->jobs_mutex);
+	if (tevent_req_error(req, ret)) {
+		return tevent_req_post(req, ev);
+	}
 	DLIST_ADD_END(pool->jobs, state);
+
+	ret = pthread_mutex_unlock(&pool->jobs_mutex);
+	if (tevent_req_error(req, ret)) {
+		return tevent_req_post(req, ev);
+	}
 
 	return req;
 }
@@ -479,8 +510,17 @@ static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 		private_data, struct pthreadpool_tevent_job_state);
 
 	if (state->pool != NULL) {
+		int ret;
+		ret = pthread_mutex_lock(&state->pool->jobs_mutex);
+		if (tevent_req_error(state->req, ret)) {
+			return;
+		}
 		DLIST_REMOVE(state->pool->jobs, state);
+		ret = pthread_mutex_unlock(&state->pool->jobs_mutex);
 		state->pool = NULL;
+		if (tevent_req_error(state->req, ret)) {
+			return;
+		}
 	}
 
 	if (state->req == NULL) {
