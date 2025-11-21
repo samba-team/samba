@@ -45,11 +45,6 @@
 #include "libcli/ldap/ldap_proto.h"
 
 /*
- * declare the internal cmocka cm_print so we can output messages in
- * sub unit format
- */
-void cm_print_error(const char * const format, ...);
-/*
  * helper function and macro to compare an ldap error code constant with the
  * corresponding nt_status code
  */
