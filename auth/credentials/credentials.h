@@ -289,9 +289,6 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 				     char **error_string);
  int cli_credentials_get_kvno(struct cli_credentials *cred);
 
-bool cli_credentials_set_username_callback(struct cli_credentials *cred,
-				  const char *(*username_cb) (struct cli_credentials *));
-
 enum credentials_obtained cli_credentials_get_principal_obtained(struct cli_credentials *cred);
 
 /**
@@ -301,11 +298,6 @@ enum credentials_obtained cli_credentials_get_principal_obtained(struct cli_cred
  * @note Return value will never be NULL except by programmer error.
  */
 char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained);
-bool cli_credentials_set_principal(struct cli_credentials *cred,
-				   const char *val,
-				   enum credentials_obtained obtained);
-bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
-				  const char *(*principal_cb) (struct cli_credentials *));
 
 /**
  * Obtain the 'old' password for this credentials context (used for join accounts).
