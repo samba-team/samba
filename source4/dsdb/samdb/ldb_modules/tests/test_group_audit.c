@@ -104,11 +104,6 @@ void audit_message_send(
 
 #define check_group_change_message(m, u, a, e)                                 \
 	_check_group_change_message(m, u, a, e, __FILE__, __LINE__);
-/*
- * declare the internal cmocka cm_print_error so that we can output messages
- * in sub unit format
- */
-void cm_print_error(const char * const format, ...);
 
 /*
  * Validate a group change JSON audit message
