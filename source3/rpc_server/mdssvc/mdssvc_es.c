@@ -108,10 +108,12 @@ static bool mdssvc_es_init(struct mdssvc_ctx *mdssvc_ctx)
 	}
 	TALLOC_FREE(default_path);
 
-	mdssvc_es_ctx->default_fields = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-							     "elasticsearch",
-							     "default_fields",
-							     default_fields);
+	default_fields = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					      "elasticsearch",
+					      "default_fields",
+					      default_fields);
+	mdssvc_es_ctx->default_fields = talloc_strdup(mdssvc_es_ctx,
+						      default_fields);
 	if (mdssvc_es_ctx->default_fields == NULL) {
 		TALLOC_FREE(mdssvc_es_ctx);
 		return false;
