@@ -1315,26 +1315,30 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 	struct db_ctdb_parse_record_state *state =
 		(struct db_ctdb_parse_record_state *)private_data;
 
-	if (db_ctdb_can_use_local_hdr(header, state->my_vnn, true)) {
-		/*
-		 * A record consisting only of the ctdb header can be
-		 * a validly created empty record or a tombstone
-		 * record of a deleted record (not vacuumed yet). Mark
-		 * it accordingly.
-		 */
-		state->empty_record = (data.dsize == 0);
-		if (!state->empty_record) {
-			state->parser(key, data, state->private_data);
-		}
-		state->done = true;
-	} else {
+	if (!db_ctdb_can_use_local_hdr(header,
+				       state->my_vnn,
+				       true))
+	{
 		/*
 		 * We found something in the db, so it seems that this record,
 		 * while not usable locally right now, is popular. Ask for a
 		 * R/O copy.
 		 */
 		state->ask_for_readonly_copy = true;
+		return;
 	}
+
+	/*
+	 * A record consisting only of the ctdb header can be
+	 * a validly created empty record or a tombstone
+	 * record of a deleted record (not vacuumed yet). Mark
+	 * it accordingly.
+	 */
+	state->empty_record = (data.dsize == 0);
+	if (!state->empty_record) {
+		state->parser(key, data, state->private_data);
+	}
+	state->done = true;
 }
 
 static NTSTATUS db_ctdb_try_parse_local_record(struct db_ctdb_ctx *ctx,
