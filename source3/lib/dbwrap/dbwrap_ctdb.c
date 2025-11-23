@@ -1391,8 +1391,12 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return status;
 	}
 
-	ret = ctdbd_parse(messaging_ctdb_connection(), ctx->db_id, key,
-			  state.ask_for_readonly_copy, parser, private_data);
+	ret = ctdbd_parse(messaging_ctdb_connection(),
+			  ctx->db_id,
+			  key,
+			  state.ask_for_readonly_copy,
+			  db_ctdb_parse_record_parser_nonpersistent,
+			  &state);
 	if (ret != 0) {
 		if (ret == ENOENT) {
 			/*
@@ -1461,7 +1465,7 @@ static struct tevent_req *db_ctdb_parse_record_send(
 				  ctx->db_id,
 				  key,
 				  state->ask_for_readonly_copy,
-				  parser,
+				  db_ctdb_parse_record_parser_nonpersistent,
 				  private_data,
 				  req_state);
 	if (tevent_req_nomem(subreq, req)) {

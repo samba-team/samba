@@ -1033,13 +1033,16 @@ int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
  */
 int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		TDB_DATA key, bool local_copy,
-		void (*parser)(TDB_DATA key, TDB_DATA data,
+		void (*parser)(TDB_DATA key,
+			       struct ctdb_ltdb_header *header,
+			       TDB_DATA data,
 			       void *private_data),
 		void *private_data)
 {
 	struct ctdb_req_call_old req;
 	struct ctdb_req_header *hdr = NULL;
 	struct ctdb_reply_call_old *reply;
+	TDB_DATA data;
 	struct iovec iov[2];
 	ssize_t nwritten;
 	uint32_t flags;
@@ -1066,7 +1069,7 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 	req.hdr.operation    = CTDB_REQ_CALL;
 	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.flags            = flags;
-	req.callid           = CTDB_FETCH_FUNC;
+	req.callid           = CTDB_FETCH_WITH_HEADER_FUNC;
 	req.db_id            = db_id;
 	req.keylen           = key.dsize;
 
@@ -1094,7 +1097,9 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 	}
 	reply = (struct ctdb_reply_call_old *)hdr;
 
-	if (reply->datalen == 0) {
+	SMB_ASSERT(reply->datalen >= sizeof(struct ctdb_ltdb_header));
+
+	if (reply->datalen == sizeof(struct ctdb_ltdb_header)) {
 		/*
 		 * Treat an empty record as non-existing
 		 */
@@ -1102,7 +1107,12 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		goto fail;
 	}
 
-	parser(key, make_tdb_data(&reply->data[0], reply->datalen),
+	data = make_tdb_data(reply->data + sizeof(struct ctdb_ltdb_header),
+			     reply->datalen - sizeof(struct ctdb_ltdb_header));
+
+	parser(key,
+	       (struct ctdb_ltdb_header *)reply->data,
+	       data,
 	       private_data);
 
 	ret = 0;
@@ -2252,6 +2262,7 @@ struct ctdbd_parse_state {
 	struct ctdb_req_call_old ctdb_req;
 	struct iovec iov[2];
 	void (*parser)(TDB_DATA key,
+		       struct ctdb_ltdb_header *header,
 		       TDB_DATA data,
 		       void *private_data);
 	void *private_data;
@@ -2266,6 +2277,7 @@ struct tevent_req *ctdbd_parse_send(TALLOC_CTX *mem_ctx,
 				    TDB_DATA key,
 				    bool local_copy,
 				    void (*parser)(TDB_DATA key,
+						   struct ctdb_ltdb_header *header,
 						   TDB_DATA data,
 						   void *private_data),
 				    void *private_data,
@@ -2321,7 +2333,7 @@ struct tevent_req *ctdbd_parse_send(TALLOC_CTX *mem_ctx,
 	state->ctdb_req.hdr.operation    = CTDB_REQ_CALL;
 	state->ctdb_req.hdr.reqid        = state->reqid;
 	state->ctdb_req.flags            = flags;
-	state->ctdb_req.callid           = CTDB_FETCH_FUNC;
+	state->ctdb_req.callid           = CTDB_FETCH_WITH_HEADER_FUNC;
 	state->ctdb_req.db_id            = db_id;
 	state->ctdb_req.keylen           = state->key.dsize;
 
@@ -2347,8 +2359,10 @@ static void ctdbd_parse_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct ctdbd_parse_state *state = tevent_req_data(
 		req, struct ctdbd_parse_state);
+	uint8_t *reply_data = NULL;
 	struct ctdb_req_header *hdr = NULL;
 	struct ctdb_reply_call_old *reply = NULL;
+	struct ctdb_ltdb_header ltdb_header;
 	int ret;
 
 	ret = ctdbd_req_recv(subreq, state, &hdr);
@@ -2368,6 +2382,12 @@ static void ctdbd_parse_done(struct tevent_req *subreq)
 
 	reply = (struct ctdb_reply_call_old *)hdr;
 
+	SMB_ASSERT(reply->datalen >= sizeof(struct ctdb_ltdb_header));
+
+	memcpy(&ltdb_header, reply->data, sizeof(struct ctdb_ltdb_header));
+	reply_data = reply->data + sizeof(struct ctdb_ltdb_header);
+	reply->datalen -= sizeof(struct ctdb_ltdb_header);
+
 	if (reply->datalen == 0) {
 		/*
 		 * Treat an empty record as non-existing
@@ -2377,7 +2397,8 @@ static void ctdbd_parse_done(struct tevent_req *subreq)
 	}
 
 	state->parser(state->key,
-		      make_tdb_data(&reply->data[0], reply->datalen),
+		      &ltdb_header,
+		      make_tdb_data(reply_data, reply->datalen),
 		      state->private_data);
 
 	tevent_req_done(req);

@@ -65,9 +65,12 @@ int ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
 
 int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key);
 
+struct ctdb_ltdb_header;
 int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		TDB_DATA key, bool local_copy,
-		void (*parser)(TDB_DATA key, TDB_DATA data,
+		void (*parser)(TDB_DATA key,
+			       struct ctdb_ltdb_header *header,
+			       TDB_DATA data,
 			       void *private_data),
 		void *private_data);
 
@@ -194,6 +197,7 @@ struct tevent_req *ctdbd_parse_send(TALLOC_CTX *mem_ctx,
 				    TDB_DATA key,
 				    bool local_copy,
 				    void (*parser)(TDB_DATA key,
+						   struct ctdb_ltdb_header *header,
 						   TDB_DATA data,
 						   void *private_data),
 				    void *private_data,
