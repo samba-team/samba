@@ -41,9 +41,10 @@ static int darwin_fs_capabilities(const char * path)
 	( ((vinfo)->valid[VOL_CAPABILITIES_INTERFACES] & (cap)) && \
 	   ((vinfo)->capabilities[VOL_CAPABILITIES_INTERFACES] & (cap)) )
 
-	ZERO_STRUCT(attrlist);
-	attrlist.bitmapcount = ATTR_BIT_MAP_COUNT;
-	attrlist.volattr = ATTR_VOL_CAPABILITIES;
+	attrlist = (struct attrlist) {
+		.bitmapcount = ATTR_BIT_MAP_COUNT,
+		.volattr = ATTR_VOL_CAPABILITIES,
+	};
 
 	if (getattrlist(path, &attrlist, attrbuf, sizeof(attrbuf), 0) != 0) {
 		DEBUG(0, ("getattrlist for %s capabilities failed: %s\n",
