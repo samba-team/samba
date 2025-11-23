@@ -328,6 +328,7 @@ bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
 	if (!plaintext_password_string) {
 		return false;
 	}
+	talloc_keep_secret(plaintext_password_string);
 
 	ret = make_user_info(mem_ctx,
 		user_info, smb_name, smb_name, client_domain, client_domain,
@@ -341,10 +342,7 @@ bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
 		plaintext_password_string,
 		AUTH_PASSWORD_PLAIN);
 
-	if (plaintext_password_string) {
-		memset(plaintext_password_string, '\0', strlen(plaintext_password_string));
-		talloc_free(plaintext_password_string);
-	}
+	TALLOC_FREE(plaintext_password_string);
 
 	data_blob_free(&local_lm_blob);
 	return NT_STATUS_IS_OK(ret) ? true : false;
@@ -983,8 +981,8 @@ static NTSTATUS auth3_session_info_create(
 	 * key from the auth subsystem
 	 */
 	if (user_info_dc->user_session_key.length != 0) {
-		session_info->session_key = data_blob_dup_talloc(session_info,
-						user_info_dc->user_session_key);
+		session_info->session_key = data_blob_dup_talloc_s(
+			session_info, user_info_dc->user_session_key);
 		if (session_info->session_key.data == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -2191,8 +2189,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	if (all_zero(info3->base.key.key, sizeof(info3->base.key.key))) {
 		result->session_key = data_blob_null;
 	} else {
-		result->session_key = data_blob_talloc(
-			result, info3->base.key.key,
+		result->session_key = data_blob_talloc_s(
+			result,
+			info3->base.key.key,
 			sizeof(info3->base.key.key));
 	}
 
@@ -2200,8 +2199,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		     sizeof(info3->base.LMSessKey.key))) {
 		result->lm_session_key = data_blob_null;
 	} else {
-		result->lm_session_key = data_blob_talloc(
-			result, info3->base.LMSessKey.key,
+		result->lm_session_key = data_blob_talloc_s(
+			result,
+			info3->base.LMSessKey.key,
 			sizeof(info3->base.LMSessKey.key));
 	}
 
