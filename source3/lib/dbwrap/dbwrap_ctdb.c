@@ -1175,7 +1175,9 @@ static int db_ctdb_record_destr(struct db_record* data)
  * either for reading or for writing.
  */
 static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
-				      uint32_t my_vnn, bool read_only)
+				      TDB_DATA data,
+				      uint32_t my_vnn,
+				      bool read_only)
 {
 	if (hdr->dmaster != my_vnn) {
 		/* If we're not dmaster, it must be r/o copy. */
@@ -1191,6 +1193,8 @@ static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, uint32_t my_vnn,
 				       bool read_only)
 {
+	TDB_DATA data;
+
 	if (ctdb_data.dptr == NULL) {
 		return false;
 	}
@@ -1199,8 +1203,16 @@ static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, uint32_t my_vnn,
 		return false;
 	}
 
+	data = (TDB_DATA) {
+		.dptr = ctdb_data.dptr + sizeof(struct ctdb_ltdb_header),
+		.dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header)
+	};
+
 	return db_ctdb_can_use_local_hdr(
-		(struct ctdb_ltdb_header *)ctdb_data.dptr, my_vnn, read_only);
+		(struct ctdb_ltdb_header *)ctdb_data.dptr,
+		data,
+		my_vnn,
+		read_only);
 }
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
@@ -1316,6 +1328,7 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 		(struct db_ctdb_parse_record_state *)private_data;
 
 	if (!db_ctdb_can_use_local_hdr(header,
+				       data,
 				       state->my_vnn,
 				       true))
 	{
