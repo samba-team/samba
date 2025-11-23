@@ -772,6 +772,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	int32_t status;
 	struct db_ctdb_transaction_handle *h = ctx->transaction;
 	uint64_t old_seqnum, new_seqnum;
+	useconds_t sleep_time = 10000; /* Start with 10ms */
 	int ret;
 
 	if (h == NULL) {
@@ -851,7 +852,15 @@ again:
 		}
 
 		if (new_seqnum == old_seqnum) {
-			/* Recovery prevented all our changes: retry. */
+			/*
+			 * Recovery prevented all our changes: retry. Do an
+			 * exponential backoff, starting with 10 ms up to one
+			 * second.
+			 */
+			usleep(sleep_time);
+			if (sleep_time < 1000000) {
+				sleep_time *= 2;
+			}
 			goto again;
 		}
 		if (new_seqnum != (old_seqnum + 1)) {
