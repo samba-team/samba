@@ -916,6 +916,121 @@ static int db_ctdb_transaction_cancel(struct db_context *db)
 	return 0;
 }
 
+static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data,
+				       uint32_t my_vnn,
+				       bool read_only);
+
+static int db_ctdb_migrate_locked(struct db_ctdb_rec *crec,
+				  TDB_DATA key,
+				  TDB_DATA *_data)
+{
+	struct db_ctdb_ctx *ctx = crec->ctdb_ctx;
+	struct timeval migrate_start;
+	struct timeval chainlock_start;
+	struct timeval ctdb_start_time;
+	double chainlock_time = 0;
+	double ctdb_time = 0;
+	int migrate_attempts;
+	double duration;
+	int duration_msecs;
+	TDB_DATA data;
+	int ret;
+
+	migrate_attempts = 0;
+	GetTimeOfDay(&migrate_start);
+
+again:
+	if (DEBUGLEVEL >= 10) {
+		char *keystr = hex_encode_talloc(talloc_tos(),
+						 key.dptr,
+						 key.dsize);
+		DBG_DEBUG(DEBUGLEVEL > 10
+			   ? "Locking db %u key %s\n"
+			   : "Locking db %u key %.20s\n",
+			   (int)ctx->db_id, keystr);
+		TALLOC_FREE(keystr);
+	}
+
+	GetTimeOfDay(&chainlock_start);
+
+	ret = tdb_chainlock(ctx->wtdb->tdb, key);
+	if (ret != 0) {
+		DBG_ERR("tdb_chainlock failed\n");
+		return -1;
+	}
+
+	chainlock_time += timeval_elapsed(&chainlock_start);
+
+	data = tdb_fetch(ctx->wtdb->tdb, key);
+
+	if (!db_ctdb_can_use_local_copy(data,
+					get_my_vnn(),
+					false))
+	{
+		tdb_chainunlock(ctx->wtdb->tdb, key);
+
+		migrate_attempts++;
+		GetTimeOfDay(&ctdb_start_time);
+
+		DBG_DEBUG("data.dptr = %p, dmaster = %"PRIu32" "
+			  "(%"PRIu32") %"PRIu32"\n",
+			  data.dptr, data.dptr ?
+			  ((struct ctdb_ltdb_header *)data.dptr)->dmaster :
+			   UINT32_MAX,
+			   get_my_vnn(),
+			  data.dptr ?
+			  ((struct ctdb_ltdb_header *)data.dptr)->flags : 0);
+
+		SAFE_FREE(data.dptr);
+
+		ret = ctdbd_migrate(messaging_ctdb_connection(),
+				    ctx->db_id,
+				    key);
+		ctdb_time += timeval_elapsed(&ctdb_start_time);
+		if (ret != 0) {
+			DBG_ERR("ctdbd_migrate failed: %s\n", strerror(ret));
+			return -1;
+		}
+
+		goto again;
+	}
+
+	duration = timeval_elapsed(&migrate_start);
+	duration_msecs = duration * 1000;
+
+	if ((migrate_attempts > ctx->warn_migrate_attempts) ||
+	    (duration_msecs > ctx->warn_migrate_msecs))
+	{
+		int chain = 0;
+
+		if (tdb_get_flags(ctx->wtdb->tdb) & TDB_INCOMPATIBLE_HASH) {
+			chain = tdb_jenkins_hash(&key) %
+				tdb_hash_size(ctx->wtdb->tdb);
+		}
+
+		DBG_ERR("db %s key %s, chain %d "
+			"needed %d attempts, %d milliseconds, "
+			"chainlock: %f ms, CTDB %f ms\n",
+			tdb_name(ctx->wtdb->tdb),
+			hex_encode_talloc(talloc_tos(),
+					  (unsigned char *)key.dptr,
+					  key.dsize),
+			chain,
+			migrate_attempts,
+			duration_msecs,
+			chainlock_time * 1000.0,
+			ctdb_time * 1000.0);
+	}
+
+	memcpy(&crec->header, data.dptr, sizeof(crec->header));
+	memmove(data.dptr,
+		data.dptr + sizeof(struct ctdb_ltdb_header),
+		data.dsize - sizeof(struct ctdb_ltdb_header));
+	data.dsize -= sizeof(struct ctdb_ltdb_header);
+
+	*_data = data;
+	return 0;
+}
 
 static NTSTATUS db_ctdb_storev(struct db_record *rec,
 			       const TDB_DATA *dbufs, int num_dbufs, int flag)
@@ -1095,14 +1210,6 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	struct db_record *result;
 	struct db_ctdb_rec *crec;
 	TDB_DATA ctdb_data;
-	int migrate_attempts;
-	struct timeval migrate_start;
-	struct timeval chainlock_start;
-	struct timeval ctdb_start_time;
-	double chainlock_time = 0;
-	double ctdb_time = 0;
-	int duration_msecs;
-	int lockret;
 	int ret;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
@@ -1119,7 +1226,22 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	result->flags = (struct db_record_flags) {};
 	result->db = ctx->db;
 	result->private_data = (void *)crec;
+	result->storev = db_ctdb_storev;
+	result->delete_rec = db_ctdb_delete;
 	crec->ctdb_ctx = ctx;
+
+	/*
+	 * Do a blocking lock on the record
+	 */
+	ret = db_ctdb_migrate_locked(crec, key, &ctdb_data);
+	if (ret != 0) {
+		DBG_ERR("db_ctdb_migrate_locked failed\n");
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	GetTimeOfDay(&crec->lock_time);
+	talloc_set_destructor(result, db_ctdb_record_destr);
 
 	result->key.dsize = key.dsize;
 	result->key.dptr = (uint8_t *)talloc_memdup(result, key.dptr,
@@ -1130,119 +1252,12 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 		return NULL;
 	}
 
-	migrate_attempts = 0;
-	GetTimeOfDay(&migrate_start);
-
-	/*
-	 * Do a blocking lock on the record
-	 */
-again:
-
-	if (DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode_talloc(result, key.dptr, key.dsize);
-		DEBUG(10, (DEBUGLEVEL > 10
-			   ? "Locking db %u key %s\n"
-			   : "Locking db %u key %.20s\n",
-			   (int)crec->ctdb_ctx->db_id, keystr));
-		TALLOC_FREE(keystr);
-	}
-
-	GetTimeOfDay(&chainlock_start);
-	lockret = tdb_chainlock(ctx->wtdb->tdb, key);
-	chainlock_time += timeval_elapsed(&chainlock_start);
-
-	if (lockret != 0) {
-		DEBUG(3, ("tdb_chainlock failed\n"));
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	result->storev = db_ctdb_storev;
-	result->delete_rec = db_ctdb_delete;
-	talloc_set_destructor(result, db_ctdb_record_destr);
-
-	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
-
-	/*
-	 * See if we have a valid record and we are the dmaster. If so, we can
-	 * take the shortcut and just return it.
-	 */
-
-	if (!db_ctdb_can_use_local_copy(ctdb_data, get_my_vnn(), false)) {
-		SAFE_FREE(ctdb_data.dptr);
-		tdb_chainunlock(ctx->wtdb->tdb, key);
-		talloc_set_destructor(result, NULL);
-
-		migrate_attempts += 1;
-
-		DEBUG(10, ("ctdb_data.dptr = %p, dmaster = %"PRIu32" "
-			   "(%"PRIu32") %"PRIu32"\n",
-			   ctdb_data.dptr, ctdb_data.dptr ?
-			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster :
-			   UINT32_MAX,
-			   get_my_vnn(),
-			   ctdb_data.dptr ?
-			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
-
-		GetTimeOfDay(&ctdb_start_time);
-		ret = ctdbd_migrate(messaging_ctdb_connection(), ctx->db_id,
-				    key);
-		ctdb_time += timeval_elapsed(&ctdb_start_time);
-
-		if (ret != 0) {
-			DEBUG(5, ("ctdbd_migrate failed: %s\n",
-				  strerror(ret)));
-			TALLOC_FREE(result);
-			return NULL;
-		}
-		/* now its migrated, try again */
-		goto again;
-	}
-
-	{
-		double duration;
-		duration = timeval_elapsed(&migrate_start);
-
-		/*
-		 * Convert the duration to milliseconds to avoid a
-		 * floating-point division of
-		 * lp_parm_int("migrate_duration") by 1000.
-		 */
-		duration_msecs = duration * 1000;
-	}
-
-	if ((migrate_attempts > ctx->warn_migrate_attempts) ||
-	    (duration_msecs > ctx->warn_migrate_msecs)) {
-		int chain = 0;
-
-		if (tdb_get_flags(ctx->wtdb->tdb) & TDB_INCOMPATIBLE_HASH) {
-			chain = tdb_jenkins_hash(&key) %
-				tdb_hash_size(ctx->wtdb->tdb);
-		}
-
-		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s, chain %d "
-			  "needed %d attempts, %d milliseconds, "
-			  "chainlock: %f ms, CTDB %f ms\n",
-			  tdb_name(ctx->wtdb->tdb),
-			  hex_encode_talloc(talloc_tos(),
-					    (unsigned char *)key.dptr,
-					    key.dsize),
-			  chain,
-			  migrate_attempts, duration_msecs,
-			  chainlock_time * 1000.0,
-			  ctdb_time * 1000.0));
-	}
-
-	GetTimeOfDay(&crec->lock_time);
-
-	memcpy(&crec->header, ctdb_data.dptr, sizeof(crec->header));
-
-	result->value.dsize = ctdb_data.dsize - sizeof(crec->header);
+	result->value.dsize = ctdb_data.dsize;
 	result->value.dptr = NULL;
 
 	if (result->value.dsize != 0) {
 		result->value.dptr = talloc_memdup(
-			result, ctdb_data.dptr + sizeof(crec->header),
+			result, ctdb_data.dptr,
 			result->value.dsize);
 		if (result->value.dptr == NULL) {
 			DBG_ERR("talloc failed\n");
