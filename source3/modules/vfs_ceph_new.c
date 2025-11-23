@@ -32,6 +32,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "smbd/statvfs.h"
 #include "system/filesys.h"
 #include <dirent.h>
 #include <sys/statvfs.h>

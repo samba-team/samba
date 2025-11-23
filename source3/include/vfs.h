@@ -1371,36 +1371,6 @@ typedef struct vfs_handle_struct {
 	void (*free_data)(void **data);
 } vfs_handle_struct;
 
-
-struct vfs_statvfs_struct {
-	/* For undefined recommended transfer size return -1 in that field */
-	uint32_t OptimalTransferSize;  /* bsize on some os, iosize on other os */
-	uint32_t BlockSize;
-
-	/*
-	 The next three fields are in terms of the block size.
-	 (above). If block size is unknown, 4096 would be a
-	 reasonable block size for a server to report.
-	 Note that returning the blocks/blocksavail removes need
-	 to make a second call (to QFSInfo level 0x103 to get this info.
-	 UserBlockAvail is typically less than or equal to BlocksAvail,
-	 if no distinction is made return the same value in each.
-	*/
-
-	uint64_t TotalBlocks;
-	uint64_t BlocksAvail;       /* bfree */
-	uint64_t UserBlocksAvail;   /* bavail */
-
-	/* For undefined Node fields or FSID return -1 */
-	uint64_t TotalFileNodes;
-	uint64_t FreeFileNodes;
-	uint64_t FsIdentifier;   /* fsid */
-	/* NB Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call */
-	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
-
-	int FsCapabilities;
-};
-
 /* Add a new FSP extension of the given type. Returns a pointer to the
  * extension data.
  */

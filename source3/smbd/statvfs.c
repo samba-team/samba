@@ -19,9 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "smbd/smbd.h"
+#include "libcli/smb/smb_constants.h"
+#include "statvfs.h"
 
 #if defined(DARWINOS)
 #include <sys/attr.h>

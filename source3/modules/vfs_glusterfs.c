@@ -37,6 +37,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "smbd/statvfs.h"
 #include <stdio.h>
 #include <glusterfs/api/glfs.h>
 #include "lib/util/dlinklist.h"
