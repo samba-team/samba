@@ -1049,6 +1049,7 @@ NTSTATUS srvstr_push_fn(const char *base_ptr, uint16_t smb_flags2, void *dest,
 /* The following definitions come from smbd/statvfs.c  */
 
 int sys_statvfs(const char *path, struct vfs_statvfs_struct *statbuf);
+int sys_fstatvfs(int fd, struct vfs_statvfs_struct *statbuf);
 
 /* The following definitions come from smbd/trans2.c  */
 

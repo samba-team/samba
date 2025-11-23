@@ -127,6 +127,22 @@ static int bsd_statvfs(const char *path, struct vfs_statvfs_struct *statbuf)
 
 	return 0;
 }
+
+static int bsd_fstatvfs(int fd, struct vfs_statvfs_struct *statbuf)
+{
+	struct statfs sbuf;
+	int ret;
+
+	ret = fstatfs(fd, &sbuf);
+	if (ret != 0) {
+		return ret;
+	}
+
+	bsd_init_statvfs(&sbuf, statbuf);
+
+	return 0;
+}
+
 #elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
 
 static void posix_init_statvfs(const struct statvfs *src,
@@ -181,6 +197,23 @@ static int posix_statvfs(const char *path, struct vfs_statvfs_struct *statbuf)
 
 	return 0;
 }
+
+static int posix_fstatvfs(int fd, struct vfs_statvfs_struct *statbuf)
+{
+	struct statvfs statvfs_buf;
+	int ret;
+
+	ret = fstatvfs(fd, &statvfs_buf);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	posix_init_statvfs(&statvfs_buf, statbuf);
+
+	return 0;
+}
+
 #endif
 
 /*
@@ -204,4 +237,20 @@ int sys_statvfs(const char *path, struct vfs_statvfs_struct *statbuf)
 #endif /* EOPNOTSUPP */
 #endif /* LINUX */
 
+}
+
+int sys_fstatvfs(int fd, struct vfs_statvfs_struct *statbuf)
+{
+#if defined(BSD_STYLE_STATVFS)
+	return bsd_fstatvfs(fd, statbuf);
+#elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
+	return posix_fstatvfs(fd, statbuf);
+#else
+	/* BB change this to return invalid level */
+#ifdef EOPNOTSUPP
+	return EOPNOTSUPP;
+#else
+	return -1;
+#endif /* EOPNOTSUPP */
+#endif /* LINUX */
 }
