@@ -1208,14 +1208,6 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 			return 0;
 		}
 
-		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
-			DEBUG(0, ("Got invalid ltdb header length %d\n",
-				  (int)data.dsize));
-			return EIO;
-		}
-		data.dsize -= sizeof(struct ctdb_ltdb_header);
-		data.dptr += sizeof(struct ctdb_ltdb_header);
-
 		if (fn != NULL) {
 			fn(key, data, private_data);
 		}

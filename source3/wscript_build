@@ -339,6 +339,7 @@ if bld.env.with_ctdb:
                      talloc
                      tevent
                      tdb
+                     ctdb-protocol
                    '''
 else:
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
