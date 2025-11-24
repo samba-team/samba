@@ -286,6 +286,8 @@ static int wipedbs_traverse_open_replay(struct db_record *db_rec,
 	}
 	ret = 0;
 
+	state->open_db = dbwrap_record_get_db(db_rec);
+
 done:
 	return ret;
 }
