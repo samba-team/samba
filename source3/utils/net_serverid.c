@@ -30,6 +30,8 @@
 #include "util_tdb.h"
 #include "librpc/gen_ndr/ndr_open_files.h"
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
+#include "source3/locking/share_mode_lock.h"
+#include "source3/smbd/scavenger.h"
 
 struct wipedbs_record_marker {
 	struct wipedbs_record_marker *prev, *next;
@@ -561,6 +563,35 @@ static void wipedbs_delete_fn(
 	state->num += 1;
 }
 
+static void wipedbs_delete_locking_record(
+	struct wipedbs_delete_state *delete_state)
+{
+	struct wipedbs_record_marker *cur = delete_state->cur;
+	struct smbXsrv_open_global0 *global = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	/* Deleting open records, also remove associated locking.tdb record */
+
+	status = smbXsrv_open_global_parse_record(cur,
+						  cur->key,
+						  cur->val,
+						  &global);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smbXsrv_open_global_parse_record() failed\n");
+		return;
+	}
+
+	ok = share_mode_cleanup_disconnected(global->file_id,
+					     global->open_global_id,
+					     global->name_hash);
+	TALLOC_FREE(global);
+	if (!ok) {
+		DBG_ERR("locking.tdb record cleanup failed\n");
+		return;
+	}
+}
+
 static void wipedbs_delete_replay_record(
 	struct wipedbs_delete_state *delete_state)
 {
@@ -636,6 +667,7 @@ static int wipedbs_delete_records(struct wipedbs_state *state,
 		if (state->open_db != db) {
 			continue;
 		}
+		wipedbs_delete_locking_record(&delete_state);
 		wipedbs_delete_replay_record(&delete_state);
 	}
 
@@ -740,6 +772,7 @@ int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 	NTSTATUS status;
+	bool ok;
 	struct wipedbs_state *state = talloc_zero(talloc_tos(),
 						  struct wipedbs_state);
 
@@ -756,6 +789,12 @@ int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 	state->now = timeval_current();
 	state->testmode = c->opt_testmode;
 	state->verbose = c->opt_verbose;
+
+	ok = locking_init();
+	if (!ok) {
+		DBG_ERR("Failed to open locking.tdb\n");
+		goto done;
+	}
 
 	state->id2server_data = db_open_rbt(state);
 	if (state->id2server_data == NULL) {
