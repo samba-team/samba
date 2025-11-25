@@ -635,25 +635,62 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	const struct smbXsrv_open_global0 *global = NULL;
 	struct timeval until;
 	struct file_id_buf idbuf;
-	struct timeval disconnect_time;
+	NTTIME disconnect_time = 0;
+	uint32_t durable_timeout_msec = 0;
+	struct timeval disconnect_timeval;
 	uint64_t timeout_usec;
 	NTSTATUS status;
 
 	status = smbXsrv_open_global_lookup(frame,
 					    (uint32_t)msg->open_persistent_id,
 					    &global);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		DBG_DEBUG("global open [%" PRIx64 "] already gone\n",
+			  msg->open_persistent_id);
+	} else if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("smbXsrv_open_global_lookup [%" PRIx64 "] failed: %s\n",
 			    msg->open_persistent_id,
 			    nt_errstr(status));
 		goto done;
 	}
 
-	SMB_ASSERT(server_id_is_disconnected(&global->server_id));
-
-	nttime_to_timeval(&disconnect_time, global->disconnect_time);
-	timeout_usec = UINT64_C(1000) * global->durable_timeout_msec;
-	until = timeval_add(&disconnect_time,
+	if (global != NULL) {
+		if (!global->persistent) {
+			if (!server_id_is_disconnected(&global->server_id)) {
+				DBG_ERR("Open [0x%"PRIx64"] fileid [%s] is "
+					"not marked disconnected\n",
+					msg->open_persistent_id,
+					file_id_str_buf(msg->file_id, &idbuf));
+				goto done;
+			}
+			if (global->disconnect_time == 0) {
+				DBG_ERR("Open [0x%"PRIx64"] fileid [%s] without "
+					"disconnect_time\n",
+					msg->open_persistent_id,
+					file_id_str_buf(msg->file_id, &idbuf));
+			}
+		} else {
+			if (serverid_exists(&global->server_id)) {
+				struct server_id_buf sidbuf;
+				DBG_ERR("Open [0x%"PRIx64"] fileid [%s] pid [%s] "
+					"still around\n",
+					msg->open_persistent_id,
+					file_id_str_buf(msg->file_id, &idbuf),
+					server_id_str_buf(global->server_id,
+							  &sidbuf));
+				goto done;
+			}
+		}
+		disconnect_time = global->disconnect_time;
+		durable_timeout_msec = global->durable_timeout_msec;
+	}
+	if (disconnect_time != 0) {
+		nttime_to_timeval(&disconnect_timeval, disconnect_time);
+	} else {
+		GetTimeOfDay(&disconnect_timeval);
+	}
+	timeout_usec = UINT64_C(1000) * durable_timeout_msec;
+	until = timeval_add(&disconnect_timeval,
 			    timeout_usec / 1000000,
 			    timeout_usec % 1000000);
 
