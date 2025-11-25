@@ -586,7 +586,7 @@ static bool share_mode_cleanup_disconnected(
 			DBG_PREFIX(dbg_level,
 				   ("Failed to clean up lease associated "
 				    "with file (file-id='%s', servicepath='%s', "
-				    "name='%s', open_persistent_id=%" PRIu64
+				    "name='%s', open_persistent_id=%" PRIu64 ", "
 				    "client_guid=%s, "
 				    "lease_key=%"PRIx64"/%"PRIx64"): %s\n",
 				    file_id_str_buf(fid, &idbuf),
