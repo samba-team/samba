@@ -510,7 +510,7 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 	return true;
 }
 
-static bool share_mode_cleanup_disconnected(
+bool share_mode_cleanup_disconnected(
 	struct file_id fid, uint64_t open_persistent_id, uint32_t name_hash)
 {
 	struct cleanup_disconnected_state state = {

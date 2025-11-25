@@ -31,4 +31,8 @@ void scavenger_schedule_disconnected(struct messaging_context *msg_ctx,
 				     struct file_id *file_id,
 				     uint32_t name_hash);
 
+bool share_mode_cleanup_disconnected(struct file_id fid,
+				     uint64_t open_persistent_id,
+				     uint32_t name_hash);
+
 #endif
