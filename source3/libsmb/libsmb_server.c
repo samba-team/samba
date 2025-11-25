@@ -547,6 +547,10 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		signing_state = SMB_SIGNING_REQUIRED;
 	}
 
+	if (context->internal->posix_extensions) {
+		flags |= CLI_FULL_CONNECTION_REQUEST_POSIX;
+	}
+
 	if (nts.num_transports != 0 && ots.num_transports != 0) {
 	        if (share == NULL || *share == '\0' || is_ipc) {
 			/*
@@ -554,15 +558,15 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 			 */
 			ts = &ots;
 
-			status = cli_connect_nb(NULL,
-						server_n,
-						NULL,
-						&nts,
-						0x20,
-						smbc_getNetbiosName(context),
-						signing_state,
-						flags,
-						&c);
+			status = cli_start_connection(
+				context->internal->mem_ctx,
+				&c,
+				smbc_getNetbiosName(context),
+				server_n,
+				NULL, /* dest_ss */
+				&nts, /* transports */
+				signing_state,
+				flags);
 		}
 	}
 
@@ -570,15 +574,14 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		/*
 		 * No IPC$ or 139 did not work
 		 */
-		status = cli_connect_nb(NULL,
-					server_n,
-					NULL,
-					ts,
-					0x20,
-					smbc_getNetbiosName(context),
-					signing_state,
-					flags,
-					&c);
+		status = cli_start_connection(context->internal->mem_ctx,
+					      &c,
+					      smbc_getNetbiosName(context),
+					      server_n,
+					      NULL, /* dest_ss */
+					      ts, /* transports */
+					      signing_state,
+					      flags);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -591,24 +594,6 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	}
 
 	cli_set_timeout(c, smbc_getTimeout(context));
-
-	status = smbXcli_negprot(c->conn,
-				 c->timeout,
-				 lp_client_min_protocol(),
-				 lp_client_max_protocol(),
-				 NULL,
-				 NULL,
-				 NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_shutdown(c);
-		errno = map_errno_from_nt_status(status);
-		return NULL;
-	}
-
-	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
-		/* Ensure we ask for some initial credits. */
-		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
-	}
 
 	username_used = *pp_username;
 	password_used = *pp_password;
