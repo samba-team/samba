@@ -1321,6 +1321,13 @@ static struct functable net_func[] = {
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &c->opt_witness_forced_response,
 		},
+		/* Options for wipedbs */
+		{
+			.longName   = "persistent",
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &c->opt_persistent,
+			.descrip    = "Wipe persistent backup databases",
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS

@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
 #include "source3/locking/share_mode_lock.h"
 #include "source3/smbd/scavenger.h"
+#include "source3/locking/proto.h"
 
 struct wipedbs_record_marker {
 	struct wipedbs_record_marker *prev, *next;
@@ -75,6 +76,7 @@ struct wipedbs_state {
 	struct timeval now;
 	bool testmode;
 	bool verbose;
+	bool wipe_persistent;
 };
 
 static struct wipedbs_server_data *get_server_data(struct wipedbs_state *state,
@@ -768,6 +770,33 @@ static int wipedbs_traverse_replay_records(struct db_record *rec,
 	return 0;
 }
 
+static int net_serverid_wipedbs_persistent(struct wipedbs_state *state)
+{
+	struct dbwrap_wipe_flags flags = {.wipe_persistent_backup_db=true};
+	NTSTATUS status;
+
+	status = smbXsrv_open_global_wipe(flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "smbXsrv_open_global_wipe_persistent failed\n");
+		return -1;
+	}
+
+	status = locking_wipe(flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "locking_wipe failed\n");
+		return -1;
+	}
+
+	status = brlock_wipe(flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "brlock_wipe failed\n");
+		return -1;
+	}
+
+	printf("Wiped persistent file state backup databases\n");
+	return 0;
+}
+
 int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
@@ -779,7 +808,7 @@ int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 	if (c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net serverid wipedbs [--test] [--verbose]\n"));
+			 _("net serverid wipedbs [--test] [--verbose] [--persistent]\n"));
 		d_printf("%s\n%s",
 			 _("Example:"),
 			 _("net serverid wipedbs -v\n"));
@@ -789,6 +818,7 @@ int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 	state->now = timeval_current();
 	state->testmode = c->opt_testmode;
 	state->verbose = c->opt_verbose;
+	state->wipe_persistent = c->opt_persistent;
 
 	ok = locking_init();
 	if (!ok) {
@@ -885,6 +915,14 @@ int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 		 state->stat.replay.total - state->stat.replay.todelete,
 		 state->stat.replay.todelete,
 		 state->stat.replay.failure);
+
+	if (state->wipe_persistent) {
+		ret = net_serverid_wipedbs_persistent(state);
+		if (ret != 0) {
+			fprintf(stderr, "Wiping persistent dbs failed\n");
+			goto done;
+		}
+	}
 
 	ret = 0;
 done:
