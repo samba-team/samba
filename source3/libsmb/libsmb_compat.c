@@ -482,9 +482,8 @@ smbc_fgetxattr(int fd,
 		errno = EBADF;
 		return -1;
 	}
-        return smbc_getFunctionGetxattr(statcont)(statcont,
-                                                  file->fname, name,
-                                                  value, size);
+	return smbc_getFunctionFGetxattr(statcont)
+		(statcont, file, name, value, size);
 }
 
 int
