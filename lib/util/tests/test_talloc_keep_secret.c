@@ -24,7 +24,6 @@ static void test_talloc_keep_secret(void ** state)
 	TALLOC_CTX *pool = NULL;
 	char *ptr1 = NULL;
 	char *ptr2 = NULL;
-	const char *ptr1_talloc_name = NULL;
 	size_t ptr1_size;
 	size_t i;
 
@@ -36,9 +35,6 @@ static void test_talloc_keep_secret(void ** state)
 	assert_string_equal(ptr1, "secret");
 
 	talloc_keep_secret(ptr1);
-
-	ptr1_talloc_name = talloc_get_name(ptr1);
-	assert_string_equal(ptr1_talloc_name, "ptr1");
 
 	ptr1_size = talloc_get_size(ptr1);
 	assert_int_equal(ptr1_size, strlen(ptr1) + 1);

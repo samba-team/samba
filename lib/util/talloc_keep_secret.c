@@ -49,6 +49,5 @@ void _talloc_keep_secret(void *ptr, const char *name)
 		return;
 	}
 
-	talloc_set_name_const(ptr, name);
 	talloc_set_destructor(ptr, talloc_keep_secret_destructor);
 }
