@@ -1,0 +1,36 @@
+<samba:parameter name="kdc require canonicalization"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Require that Kerberos clients use the canonicalization flag.
+    </para>
+
+    <para>
+      Clients that do not use the Kerberos canonicalization flag (see
+      RFC 6806) will get a TGT for the name they requested, which may
+      not exactly match the name in the Samba database. For example, a
+      client may request a ticket for 'root', and if there is a
+      computer called 'ROOT$' in the database, the KDC will issue a
+      ticket for 'root', using the standard matching rules for AD
+      Kerberos. A member server that is Kerberos-aware but not
+      AD-aware might accept this ticket as valid for the local root
+      user. This option avoids the problem by refusing to honour
+      requests without the canonicalization flag.
+    </para>
+    <para>
+      This is a reasonable option if all expected clients request
+      canonicalization (as Windows clients do), and there are member
+      servers that might be confused by this issue. Typically that
+      means unix servers expecting to be in an MIT Kerberos domain.
+    </para>
+    <para>
+      See also the "kdc name match implicit dollar without
+      canonicalization" option, which is more useful if you expect
+      Kerberos clients that will not use the canonicalize flag.
+    </para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

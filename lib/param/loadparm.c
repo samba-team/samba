@@ -2962,6 +2962,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "kdc always include pac", "True");
 	lpcfg_do_global_parameter(lp_ctx, "kdc name match implicit dollar without canonicalization",
 				  "yes");
+	lpcfg_do_global_parameter(lp_ctx, "kdc require canonicalization", "no");
 	lpcfg_do_global_parameter(lp_ctx, "krb5 acceptor report canonical client name", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "nt status support", "True");

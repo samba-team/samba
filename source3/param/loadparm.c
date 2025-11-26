@@ -967,6 +967,7 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.krb5_acceptor_report_canonical_client_name = true;
 
 	Globals.kdc_name_match_implicit_dollar_without_canonicalization = true;
+	Globals.kdc_require_canonicalization = false;
 
 	Globals.winbind_debug_traceid = true;
 
