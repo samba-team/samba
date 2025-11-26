@@ -1472,7 +1472,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 				   new_password.length,
 				   pp_new_pwrd,
 				   new_pw_len);
-	data_blob_free(&new_password);
+	data_blob_clear_free(&new_password);
 	if (!ok) {
 		DBG_ERR("Failed to convert incoming password\n");
 		return false;
