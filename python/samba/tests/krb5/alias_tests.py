@@ -169,14 +169,7 @@ class AliasTests(KDCBaseTest):
                                              ctype=None)
             return [padata], req_body
 
-        if self.uncanonicalized_implicit_dollar:
-            expected_error_mode = KDC_ERR_TGT_REVOKED
-        else:
-            # These are machine accounts, but we aren't explicitly
-            # adding the '$', so the ntvfs test will not find the
-            # principal.
-            expected_error_mode = KDC_ERR_C_PRINCIPAL_UNKNOWN
-
+        expected_error_mode = KDC_ERR_TGT_REVOKED
 
         # Make a request using S4U2Self. The request should fail.
         kdc_exchange_dict = self.tgs_exchange_dict(

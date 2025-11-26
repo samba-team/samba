@@ -3452,7 +3452,9 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 			return ret;
 		}
 
-		if (! (sdb_flags & SDB_F_CANON)) {
+		if ((sdb_flags & SDB_F_GET_CLIENT) &&
+		    (sdb_flags & SDB_F_FOR_AS_REQ) &&
+		    ! (sdb_flags & SDB_F_CANON)) {
 			/*
 			 * The client has not requested canonicalisation,
 			 * and the principal has not been found.
