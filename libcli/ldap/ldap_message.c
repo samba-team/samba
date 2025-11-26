@@ -1217,6 +1217,12 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 				}
 				*r->creds.SASL.secblob = data_blob_talloc(r->creds.SASL.secblob,
 									  tmp_blob.data, tmp_blob.length);
+				if ((tmp_blob.length != 0) &&
+				    (r->creds.SASL.secblob->data == NULL)) {
+					data_blob_free(&tmp_blob);
+					return NT_STATUS_LDAP(
+						LDAP_OPERATIONS_ERROR);
+				}
 				data_blob_free(&tmp_blob);
 			} else {
 				r->creds.SASL.secblob = NULL;
@@ -1245,6 +1251,11 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 			}
 			*r->SASL.secblob = data_blob_talloc(r->SASL.secblob,
 							    tmp_blob.data, tmp_blob.length);
+			if ((tmp_blob.length != 0) &&
+			    (r->SASL.secblob->data == NULL)) {
+				data_blob_free(&tmp_blob);
+				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
+			}
 			data_blob_free(&tmp_blob);
 		} else {
 			r->SASL.secblob = NULL;
