@@ -1212,6 +1212,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 				if (!asn1_read_OctetString(data, msg, &tmp_blob)) goto prot_err;
 				r->creds.SASL.secblob = talloc(msg, DATA_BLOB);
 				if (!r->creds.SASL.secblob) {
+					data_blob_free(&tmp_blob);
 					return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 				}
 				*r->creds.SASL.secblob = data_blob_talloc(r->creds.SASL.secblob,
@@ -1239,6 +1240,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 			if (!asn1_read_ContextSimple(data, msg, 7, &tmp_blob)) goto prot_err;
 			r->SASL.secblob = talloc(msg, DATA_BLOB);
 			if (!r->SASL.secblob) {
+				data_blob_free(&tmp_blob);
 				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 			}
 			*r->SASL.secblob = data_blob_talloc(r->SASL.secblob,
