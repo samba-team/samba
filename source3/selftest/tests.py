@@ -1038,6 +1038,8 @@ if with_pthreadpool and have_ldwrap:
                   [os.path.join(bindir(), "pthreadpooltest_cmocka")])
     plantestsuite("samba3.pthreadpool_unit_test_cmocka", "none",
                   [os.path.join(bindir(), "pthreadpool_unit_test_cmocka")])
+    plantestsuite("samba3.pthreadpool_tevent_cmocka_unit_test", "none",
+                  [os.path.join(bindir(), "pthreadpool_tevent_cmocka_unit_test")])
 
 if with_pthreadpool:
     plantestsuite("samba3.libwbclient_threads",
