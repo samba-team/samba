@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    raw dcerpc operations
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Andrew Tridgell 2003-2005
    Copyright (C) Jelmer Vernooij 2004-2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -62,7 +62,7 @@ struct rpc_request {
 
 	/* this is used to distinguish bind and alter_context requests
 	   from normal requests */
-	void (*recv_handler)(struct rpc_request *conn, 
+	void (*recv_handler)(struct rpc_request *conn,
 			     DATA_BLOB *blob, struct ncacn_packet *pkt);
 
 	const struct GUID *object;
@@ -125,10 +125,10 @@ static int dcerpc_connection_destructor(struct dcecli_connection *conn)
 }
 
 
-/* initialise a dcerpc connection. 
+/* initialise a dcerpc connection.
    the event context is optional
 */
-static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
+static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev)
 {
 	struct dcecli_connection *c;
@@ -775,7 +775,7 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 }
 
 
-/* 
+/*
    choose the next call id to use
 */
 static uint32_t next_call_id(struct dcecli_connection *c)
@@ -790,7 +790,7 @@ static uint32_t next_call_id(struct dcecli_connection *c)
 /**
   setup for a ndr pull, also setting up any flags from the binding string
 */
-static struct ndr_pull *ndr_pull_init_flags(struct dcecli_connection *c, 
+static struct ndr_pull *ndr_pull_init_flags(struct dcecli_connection *c,
 					    DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);
@@ -812,7 +812,7 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcecli_connection *c,
 	return ndr;
 }
 
-/* 
+/*
    parse the authentication information on a dcerpc response packet
 */
 static NTSTATUS ncacn_pull_pkt_auth(struct dcecli_connection *c,
@@ -854,11 +854,11 @@ static NTSTATUS ncacn_pull_pkt_auth(struct dcecli_connection *c,
 }
 
 
-/* 
+/*
    push a dcerpc request packet into a blob, possibly signing it.
 */
-static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c, 
-					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
+					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 					 size_t sig_size,
 					 struct ncacn_packet *pkt)
 {
@@ -889,8 +889,8 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 }
 
 
-/* 
-   fill in the fixed values in a dcerpc header 
+/*
+   fill in the fixed values in a dcerpc header
 */
 static void init_ncacn_hdr(struct dcecli_connection *c, struct ncacn_packet *pkt)
 {
@@ -991,7 +991,7 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
 		if (req->async.callback) {
 			req->async.callback(req);
 		}
-	}	
+	}
 
 	/* all requests, which are not shipped */
 	while (conn->request_queue) {
@@ -1014,7 +1014,7 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
   forward declarations of the recv_data handlers for the types of
   packets we need to handle
 */
-static void dcerpc_request_recv_data(struct dcecli_connection *c, 
+static void dcerpc_request_recv_data(struct dcecli_connection *c,
 				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt);
 
 /*
@@ -1056,7 +1056,7 @@ static void dcerpc_recv_data(struct dcecli_connection *conn, DATA_BLOB *blob, NT
 /*
   handle timeouts of individual dcerpc requests
 */
-static void dcerpc_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
+static void dcerpc_timeout_handler(struct tevent_context *ev, struct tevent_timer *te,
 				   struct timeval t, void *private_data)
 {
 	struct rpc_request *req = talloc_get_type(private_data, struct rpc_request);
@@ -1381,7 +1381,7 @@ NTSTATUS dcerpc_bind_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-/* 
+/*
    perform a continued bind (and auth3)
 */
 NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
@@ -1421,7 +1421,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	return NT_STATUS_OK;	
+	return NT_STATUS_OK;
 }
 
 
@@ -1429,9 +1429,9 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
   process a fragment received from the transport layer during a
   request
 
-  This function frees the data 
+  This function frees the data
 */
-static void dcerpc_request_recv_data(struct dcecli_connection *c, 
+static void dcerpc_request_recv_data(struct dcecli_connection *c,
 				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt)
 {
 	struct rpc_request *req;
@@ -1514,7 +1514,7 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 
 	if (pkt->ptype != DCERPC_PKT_RESPONSE) {
 		DEBUG(2,("Unexpected packet type %d in dcerpc response\n",
-			 (int)pkt->ptype)); 
+			 (int)pkt->ptype));
 		dcerpc_connection_dead(c, NT_STATUS_RPC_PROTOCOL_ERROR);
 		return;
 	}
@@ -1537,15 +1537,15 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	}
 
 	if (length > 0) {
-		req->payload.data = talloc_realloc(req, 
-						   req->payload.data, 
+		req->payload.data = talloc_realloc(req,
+						   req->payload.data,
 						   uint8_t,
 						   req->payload.length + length);
 		if (!req->payload.data) {
 			req->status = NT_STATUS_NO_MEMORY;
 			goto req_done;
 		}
-		memcpy(req->payload.data+req->payload.length, 
+		memcpy(req->payload.data+req->payload.length,
 		       pkt->u.response.stub_and_verifier.data, length);
 		req->payload.length += length;
 	}
@@ -1635,7 +1635,7 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 
 	if (p->request_timeout) {
 		tevent_add_timer(p->conn->event_ctx, req,
-				timeval_current_ofs(p->request_timeout, 0), 
+				timeval_current_ofs(p->request_timeout, 0),
 				dcerpc_timeout_handler, req);
 	}
 
@@ -1853,7 +1853,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 		}
 
 		pkt.u.request.alloc_hint = remaining;
-		pkt.u.request.stub_and_verifier.data = stub_data->data + 
+		pkt.u.request.stub_and_verifier.data = stub_data->data +
 			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk;
 
@@ -1873,7 +1873,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
 			return;
-		}		
+		}
 
 		if (last_frag && !do_trans) {
 			req->status = dcerpc_send_read(p->conn);
@@ -1962,7 +1962,7 @@ static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
   for that to the NDR we initially generated. If they don't match then we know
   we must have a bug in either the pull or push side of our code
 */
-static NTSTATUS dcerpc_ndr_validate_in(struct dcecli_connection *c, 
+static NTSTATUS dcerpc_ndr_validate_in(struct dcecli_connection *c,
 				       TALLOC_CTX *mem_ctx,
 				       DATA_BLOB blob,
 				       size_t struct_size,
@@ -2006,7 +2006,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcecli_connection *c,
 	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
-	}	
+	}
 
 	if (c->flags & DCERPC_PUSH_BIGENDIAN) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
@@ -2072,7 +2072,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcecli_connection *c,
 	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
-	}	
+	}
 
 	ndr_err = ndr_push(push, NDR_OUT, struct_ptr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2103,7 +2103,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcecli_connection *c,
 	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
-	}	
+	}
 
 	ndr_err = ndr_push(push, NDR_OUT, st);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2128,9 +2128,9 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcecli_connection *c,
 
 	/* this checks the printed forms of the two structures, which effectively
 	   tests all of the value() attributes */
-	s1 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE", 
+	s1 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE",
 				       NDR_OUT, struct_ptr);
-	s2 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE", 
+	s2 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE",
 				       NDR_OUT, st);
 	if (strcmp(s1, s2) != 0) {
 #if 1
@@ -2162,7 +2162,7 @@ _PUBLIC_ const char *dcerpc_server_name(struct dcerpc_pipe *p)
 /*
   get the dcerpc auth_level for a open connection
 */
-uint32_t dcerpc_auth_level(struct dcecli_connection *c) 
+uint32_t dcerpc_auth_level(struct dcecli_connection *c)
 {
 	uint8_t auth_level;
 
@@ -2417,10 +2417,10 @@ NTSTATUS dcerpc_alter_context_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-/* 
+/*
    send a dcerpc alter_context request
 */
-_PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p, 
+_PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 			      TALLOC_CTX *mem_ctx,
 			      const struct ndr_syntax_id *syntax,
 			      const struct ndr_syntax_id *transfer_syntax)
