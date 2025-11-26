@@ -33,3 +33,9 @@ bld.SAMBA_BINARY('pthreadpooltest_cmocka',
                   ldflags='-Wl,--wrap=pthread_create',
                   enabled=bld.env.WITH_PTHREADPOOL and bld.env['HAVE_LDWRAP'],
                   for_selftest=True)
+
+bld.SAMBA_BINARY('pthreadpool_unit_test_cmocka',
+                  source='test_pthreadpool.c',
+                  deps='PTHREADPOOL cmocka',
+                  enabled=bld.env.WITH_PTHREADPOOL,
+                  for_selftest=True)
