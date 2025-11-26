@@ -4429,7 +4429,28 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct sdb_entry *entry)
 {
 	krb5_error_code ret = SDB_ERR_NOENTRY;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
+
+	if ((flags & SDB_F_CANON) == 0 &&
+	    (flags & SDB_F_FOR_AS_REQ) &&
+	    (flags & SDB_F_GET_CLIENT)) {
+		/*
+		 * If smb.conf has
+		 *
+		 *    kdc require canonicalization = yes
+		 *
+		 * we refuse any AS REQ cname look-up if the client
+		 * has not set the canonicalize flag.
+		 *
+		 * This will end up as KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN
+		 * in the reply.
+		 */
+		bool require_canon = lpcfg_kdc_require_canonicalization(
+			kdc_db_ctx->lp_ctx);
+		if (require_canon) {
+			return EINVAL;
+		}
+	}
 
 	mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_fetch context");
 	if (!mem_ctx) {
