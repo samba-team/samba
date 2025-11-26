@@ -5147,14 +5147,14 @@ krb5_error_code dsdb_extract_aes_256_key(krb5_context context,
 	}
 
 	if (aes_256_key != NULL) {
-		*aes_256_key = data_blob_talloc(mem_ctx,
-						KRB5_KEY_DATA(&sentry.keys.val[0].key),
-						KRB5_KEY_LENGTH(&sentry.keys.val[0].key));
+		*aes_256_key = data_blob_talloc_s(
+			mem_ctx,
+			KRB5_KEY_DATA(&sentry.keys.val[0].key),
+			KRB5_KEY_LENGTH(&sentry.keys.val[0].key));
 		if (aes_256_key->data == NULL) {
 			sdb_entry_free(&sentry);
 			return ENOMEM;
 		}
-		talloc_keep_secret(aes_256_key->data);
 	}
 
 	if (salt != NULL) {

@@ -1071,7 +1071,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		return ENOMEM;
 	}
 
-	arc4_b = data_blob_talloc(keys,
+	arc4_b = data_blob_talloc_s(keys,
 				  p->nt_hash.hash,
 				  sizeof(p->nt_hash.hash));
 	if (arc4_b.data == NULL) {
@@ -1079,7 +1079,6 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(keys);
 		return ENOMEM;
 	}
-	talloc_keep_secret(arc4_b.data);
 
 #ifdef HAVE_ADS
 	if (salt_principal == NULL) {
@@ -1143,7 +1142,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(salt_data);
 		return krb5_ret;
 	}
-	aes_256_b = data_blob_talloc(keys,
+	aes_256_b = data_blob_talloc_s(keys,
 				     KRB5_KEY_DATA(&key),
 				     KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(krb5_ctx, &key);
@@ -1154,7 +1153,6 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(salt_data);
 		return ENOMEM;
 	}
-	talloc_keep_secret(aes_256_b.data);
 
 	krb5_ret = smb_krb5_create_key_from_string(krb5_ctx,
 						   NULL,
@@ -1170,7 +1168,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(salt_data);
 		return krb5_ret;
 	}
-	aes_128_b = data_blob_talloc(keys,
+	aes_128_b = data_blob_talloc_s(keys,
 				     KRB5_KEY_DATA(&key),
 				     KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(krb5_ctx, &key);
@@ -1181,7 +1179,6 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		TALLOC_FREE(salt_data);
 		return ENOMEM;
 	}
-	talloc_keep_secret(aes_128_b.data);
 
 	krb5_free_context(krb5_ctx);
 no_kerberos:

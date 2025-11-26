@@ -413,12 +413,11 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	x->global->channels[0].encryption_cipher = x->global->encryption_cipher;
 
 	data_blob_clear_free(&session_info->session_key);
-	session_info->session_key = data_blob_dup_talloc(session_info,
-						x->global->application_key_blob);
+	session_info->session_key = data_blob_dup_talloc_s(
+		session_info, x->global->application_key_blob);
 	if (session_info->session_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_keep_secret(session_info->session_key.data);
 
 	smb2req->sconn->num_users++;
 
@@ -495,12 +494,11 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	*_auth = NULL;
 
 	data_blob_clear_free(&session_info->session_key);
-	session_info->session_key = data_blob_dup_talloc(session_info,
-						x->global->application_key_blob);
+	session_info->session_key = data_blob_dup_talloc_s(
+		session_info, x->global->application_key_blob);
 	if (session_info->session_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_keep_secret(session_info->session_key.data);
 
 	session->homes_snum =
 			register_homes_share(session_info->unix_info->unix_name);

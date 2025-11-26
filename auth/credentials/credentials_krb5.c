@@ -1695,7 +1695,7 @@ _PUBLIC_ int cli_credentials_get_kerberos_key(struct cli_credentials *cred,
 		TALLOC_FREE(frame);
 		return EINVAL;
 	}
-	*key_blob = data_blob_talloc(mem_ctx,
+	*key_blob = data_blob_talloc_s(mem_ctx,
 				    KRB5_KEY_DATA(&key),
 				    KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &key);
@@ -1703,7 +1703,6 @@ _PUBLIC_ int cli_credentials_get_kerberos_key(struct cli_credentials *cred,
 		TALLOC_FREE(frame);
 		return ENOMEM;
 	}
-	talloc_keep_secret(key_blob->data);
 
 	TALLOC_FREE(frame);
 	return 0;

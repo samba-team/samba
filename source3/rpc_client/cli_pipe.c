@@ -2512,11 +2512,10 @@ static NTSTATUS rpccli_bh_transport_session_key(struct dcerpc_binding_handle *h,
 	sk = hs->rpc_cli->conn->transport_session_key;
 	sk.length = MIN(sk.length, 16);
 
-	*session_key = data_blob_dup_talloc(mem_ctx, sk);
+	*session_key = data_blob_dup_talloc_s(mem_ctx, sk);
 	if (session_key->length != sk.length) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_keep_secret(session_key->data);
 	return NT_STATUS_OK;
 }
 

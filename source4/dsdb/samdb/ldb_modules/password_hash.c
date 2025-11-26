@@ -915,15 +915,13 @@ static int setup_kerberos_key_hash(struct setup_password_fields_io *io,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	g->aes_256 = data_blob_talloc(io->ac,
-				      KRB5_KEY_DATA(&key),
-				      KRB5_KEY_LENGTH(&key));
+	g->aes_256 = data_blob_talloc_s(io->ac,
+					KRB5_KEY_DATA(&key),
+					KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 	if (g->aes_256.data == NULL) {
 		return ldb_oom(ldb);
 	}
-
-	talloc_keep_secret(g->aes_256.data);
 
 	return LDB_SUCCESS;
 }

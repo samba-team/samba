@@ -1044,10 +1044,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		memcpy(session_key, session->global->signing_key_blob.data,
 		       MIN(session->global->signing_key_blob.length,
 			   sizeof(session_key)));
-		session->global->application_key_blob =
-			data_blob_talloc(session->global,
-					 session_key,
-					 sizeof(session_key));
+		session->global->application_key_blob = data_blob_talloc_s(
+			session->global, session_key, sizeof(session_key));
 		ZERO_STRUCT(session_key);
 		if (session->global->application_key_blob.data == NULL) {
 			TALLOC_FREE(session);
@@ -1056,14 +1054,13 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
-		talloc_keep_secret(session->global->application_key_blob.data);
 
 		/*
 		 * Place the application key into the session_info
 		 */
 		data_blob_clear_free(&session_info->session_key);
-		session_info->session_key = data_blob_dup_talloc(session_info,
-						session->global->application_key_blob);
+		session_info->session_key = data_blob_dup_talloc_s(
+			session_info, session->global->application_key_blob);
 		if (session_info->session_key.data == NULL) {
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -1071,7 +1068,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
-		talloc_keep_secret(session_info->session_key.data);
 	}
 
 	sconn->num_users++;

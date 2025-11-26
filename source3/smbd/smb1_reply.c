@@ -406,16 +406,14 @@ void reply_tcon_and_X(struct smb_request *req)
 		/*
 		 * The application key is truncated/padded to 16 bytes
 		 */
-		x->global->application_key_blob = data_blob_talloc(x->global,
-							     session_key,
-							     sizeof(session_key));
+		x->global->application_key_blob = data_blob_talloc_s(
+			x->global, session_key, sizeof(session_key));
 		ZERO_STRUCT(session_key);
 		if (x->global->application_key_blob.data == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtconX);
 			return;
 		}
-		talloc_keep_secret(x->global->application_key_blob.data);
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_SIGNATURES) {
 			NTSTATUS status;
@@ -436,15 +434,14 @@ void reply_tcon_and_X(struct smb_request *req)
 		 * Place the application key into the session_info
 		 */
 		data_blob_clear_free(&session_info->session_key);
-		session_info->session_key = data_blob_dup_talloc(session_info,
-						x->global->application_key_blob);
+		session_info->session_key = data_blob_dup_talloc_s(
+			session_info, x->global->application_key_blob);
 		if (session_info->session_key.data == NULL) {
 			data_blob_clear_free(&x->global->application_key_blob);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtconX);
 			return;
 		}
-		talloc_keep_secret(session_info->session_key.data);
 		session_key_updated = true;
 	}
 

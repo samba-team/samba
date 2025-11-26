@@ -120,12 +120,11 @@ NTSTATUS smb2_signing_key_copy(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	dst->blob = data_blob_talloc_zero(dst, src->blob.length);
+	dst->blob = data_blob_talloc_zero_s(dst, src->blob.length);
 	if (dst->blob.length == 0) {
 		TALLOC_FREE(dst);
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_keep_secret(dst->blob.data);
 	memcpy(dst->blob.data, src->blob.data, dst->blob.length);
 
 	*_dst = dst;
@@ -243,12 +242,11 @@ static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	key->blob = data_blob_talloc_zero(key, out_key_length);
+	key->blob = data_blob_talloc_zero_s(key, out_key_length);
 	if (key->blob.length == 0) {
 		TALLOC_FREE(key);
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_keep_secret(key->blob.data);
 	memcpy(key->blob.data,
 	       master_key->data,
 	       MIN(key->blob.length, master_key->length));
