@@ -1462,6 +1462,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			    "\tkdc_timeout = %d\n"
 #else
 			    "\trequest_timeout = %ds\n"
+			    "\tudp_preference_limit = 0\n"
 #endif
 			    "\tdefault_realm = %s\n"
 			    "%s"
