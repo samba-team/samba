@@ -2881,6 +2881,14 @@ sub provision($$)
 	##
 	symlink "$widelinks_shrdir", "$widelinks_shrdir/dot";
 
+	##
+	## Create test file with hardlinks for posix extensions testing with
+	## [smb3_posix_share]
+	##
+	create_file_chmod("$shrdir/posix_test_original.txt", 0644) or return undef;
+	link "$shrdir/posix_test_original.txt", "$shrdir/posix_test_hardlink1.txt";
+	link "$shrdir/posix_test_original.txt", "$shrdir/posix_test_hardlink2.txt";
+
 	my $conffile="$libdir/server.conf";
 	my $dfqconffile="$libdir/dfq.conf";
 	my $errorinjectconf="$libdir/error_inject.conf";
