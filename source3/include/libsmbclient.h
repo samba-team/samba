@@ -2477,6 +2477,31 @@ int smbc_lgetxattr(const char *url,
  *                  to names.  Without the plus sign, SIDs are not mapped;
  *                  rather they are simply converted to a string format.
  *
+ *                  When POSIX extensions are enabled (via
+ *                  smbc_setOptionPosixExtensions()), the following additional
+ *                  attribute names are available:
+ *
+ *                     posix.attr.enabled
+ *                        Returns "1" if POSIX extensions are active on the
+ *                        server connection, "0" otherwise. The value buffer
+ *                        must be at least 2 bytes to include the null
+ *                        terminator. The returned size is 1 (excluding the
+ *                        null terminator).
+ *                        This is only a check on internal structures, it
+ *                        doesn't produce any network traffic.
+ *
+ *                     smb311_posix.statinfo
+ *                        Returns POSIX stat information via a network call to
+ *                        the server. The value buffer must be at least
+ *                        sizeof(struct stat) + 4 bytes. The buffer contains a
+ *                        struct stat followed by 4 bytes of DOS attributes.
+ *                        The returned size is sizeof(struct stat), which
+ *                        should be used as the offset to read the DOS
+ *                        attributes from the buffer. This provides e.g the
+ *                        correct uid/gid on the server and hardlink counts
+ *                        (st_nlink) and other POSIX metadata not available
+ *                        through standard stat calls.
+ *
  * @param value     A pointer to a buffer in which the value of the specified
  *                  attribute will be placed (unless size is zero).
  *
@@ -2485,7 +2510,8 @@ int smbc_lgetxattr(const char *url,
  *                  required to hold the attribute value will be returned,
  *                  but nothing will be placed into the value buffer.
  *
- * @return          0 on success, < 0 on error with errno set:
+ * @return          On success, the number of bytes of the extended attribute
+ *                  returned. On error, -1 is returned with errno set:
  *                  - EINVAL  The client library is not properly initialized
  *                            or one of the parameters is not of a correct
  *                            form
