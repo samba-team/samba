@@ -2238,24 +2238,6 @@ for env in ["ktest", "ad_member", "ad_dc_no_ntlm"]:
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
                            name="samba.tests.ntlmdisabled.python(%s)" % env)
 
-# Demote the vampire DC, it must be the last test each DC, before the dbcheck
-for env in ['vampire_dc', 'promoted_dc', 'rodc']:
-    planoldpythontestsuite(env, "samba.tests.samba_tool.demote",
-                           name="samba.tests.samba_tool.demote",
-                           environ={
-                               'CONFIGFILE': '$PREFIX/%s/etc/smb.conf' % env
-                           },
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           extra_path=[os.path.join(srcdir(), "samba/python")]
-                           )
-# TODO: Verifying the databases really should be a part of the
-# environment teardown.
-# check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
-for env in ["ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
-            'vampire_dc', 'promoted_dc', 'backupfromdc', 'restoredc',
-            'renamedc', 'offlinebackupdc', 'labdc']:
-    plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local", ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
-
 #
 # Tests to verify bug 13653 https://bugzilla.samba.org/show_bug.cgi?id=13653
 # ad_dc has an lmdb backend, ad_dc_ntvfs has a tdb backend.
@@ -2352,3 +2334,72 @@ if 'WITH_SYSTEMD_USERDB' in config_hash:
     planpythontestsuite("ad_dc:local", "samba.tests.varlink.getuserrecord")
     planpythontestsuite("ad_dc:local", "samba.tests.varlink.getgrouprecord")
     planpythontestsuite("ad_dc:local", "samba.tests.varlink.getmemberships")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#                     this space intentionally left blank.
+#                     the tests below want to be last, but
+#                     we keep forgetting.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Demote the vampire DC, it must be the last test each DC, before the dbcheck
+for env in ['vampire_dc', 'promoted_dc', 'rodc']:
+    planoldpythontestsuite(env, "samba.tests.samba_tool.demote",
+                           name="samba.tests.samba_tool.demote",
+                           environ={
+                               'CONFIGFILE': '$PREFIX/%s/etc/smb.conf' % env
+                           },
+                           extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           extra_path=[os.path.join(srcdir(), "samba/python")]
+                           )
+# TODO: Verifying the databases really should be a part of the
+# environment teardown.
+# check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
+for env in ["ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
+            'vampire_dc', 'promoted_dc', 'backupfromdc', 'restoredc',
+            'renamedc', 'offlinebackupdc', 'labdc']:
+    plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local",
+                  ["PYTHON=%s" % python,
+                   os.path.join(bbdir, "dbcheck.sh"),
+                   '$PREFIX/provision',
+                   configuration])
+
+
+#  DO NOT ADD TESTS HERE.
+# The previous tests are meant to run last.
