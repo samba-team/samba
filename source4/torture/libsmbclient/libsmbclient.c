@@ -1578,6 +1578,208 @@ static bool torture_libsmbclient_getxattr(struct torture_context *tctx)
 	return ok;
 }
 
+static bool torture_libsmbclient_init_posix_context(struct torture_context *tctx,
+						     SMBCCTX **ctx_p)
+{
+	SMBCCTX *ctx = NULL;
+	SMBCCTX *p = NULL;
+	bool ok = true;
+
+	ctx = smbc_new_context();
+	torture_assert_not_null_goto(
+		tctx, ctx, ok, out, "Failed to create new context");
+
+	torture_comment(tctx, "Enabling POSIX extensions\n");
+	smbc_setOptionPosixExtensions(ctx, true);
+
+	p = smbc_init_context(ctx);
+	torture_assert_not_null_goto(tctx,
+				     p,
+				     ok,
+				     out,
+				     "Failed to initialize context");
+
+	smbc_setFunctionAuthData(ctx, auth_callback);
+	smbc_set_context(ctx);
+
+	*ctx_p = ctx;
+
+out:
+	if (!ok) {
+		smbc_free_context(ctx, true);
+	}
+
+	return ok;
+}
+
+static bool torture_libsmbclient_posix_extensions(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	int fhandle = -1;
+	SMBCCTX *ctx = NULL;
+	char *posix_name = NULL;
+	char buf[2] = {'\0'};
+	bool ok = false;
+	int ret = -1;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	torture_assert_goto(tctx,
+			    torture_libsmbclient_init_posix_context(tctx, &ctx),
+			    ok,
+			    done,
+			    "Failed to init POSIX context");
+
+	posix_name = talloc_asprintf(tctx,
+				     "%s/posix_test_original.txt",
+				     smburl);
+	torture_assert_not_null_goto(tctx,
+				     posix_name,
+				     ok,
+				     done,
+				     "talloc_asprintf failed\n");
+
+	/* Open the test file */
+	fhandle = smbc_open(posix_name, O_RDONLY, 0);
+	torture_assert_goto(tctx,
+			    fhandle >= 0,
+			    ok,
+			    done,
+			    talloc_asprintf(tctx,
+					    "failed to open file '%s': %s",
+					    posix_name,
+					    strerror(errno)));
+
+	/*
+	 * Check if we got POSIX extensions by reading the
+	 * "posix.attr.enabled" extended attribute.
+	 * This should return "1" if POSIX extensions are active.
+	 */
+	torture_comment(tctx, "Checking for POSIX extensions\n");
+	ret = smbc_fgetxattr(fhandle, "posix.attr.enabled", buf, sizeof(buf));
+
+	torture_assert_int_equal_goto(
+		tctx,
+		ret,
+		1,
+		ok,
+		done,
+		"smbc_fgetxattr(posix.attr.enabled) failed");
+
+	torture_assert_str_equal_goto(
+		tctx, buf, "1", ok, done, "POSIX extensions not enabled.");
+	torture_comment(tctx, "POSIX extensions are enabled!\n");
+
+	ok = true;
+
+done:
+	if (fhandle >= 0) {
+		smbc_close(fhandle);
+	}
+	if (ctx != NULL) {
+		smbc_free_context(ctx, 1);
+	}
+
+	return ok;
+}
+
+static bool torture_libsmbclient_posix_hardlinks(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	int fhandle = -1;
+	SMBCCTX *ctx = NULL;
+	char *posix_name = NULL;
+	char buf[sizeof(struct stat) + 4]; /* +4 bytes for DOS attributes */
+	struct stat st_posix;
+	bool ok = false;
+	int ret = -1;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	torture_assert_goto(tctx,
+			    torture_libsmbclient_init_posix_context(tctx, &ctx),
+			    ok,
+			    done,
+			    "Failed to init POSIX context");
+
+	posix_name = talloc_asprintf(tctx,
+				     "%s/posix_test_original.txt",
+				     smburl);
+	torture_assert_not_null_goto(tctx,
+				     posix_name,
+				     ok,
+				     done,
+				     "talloc_asprintf failed\n");
+
+	/* Open the file with hardlinks */
+	fhandle = smbc_open(posix_name, O_RDONLY, 0);
+	torture_assert_goto(tctx,
+			    fhandle >= 0,
+			    ok,
+			    done,
+			    talloc_asprintf(tctx,
+					    "failed to open file '%s': %s",
+					    posix_name,
+					    strerror(errno)));
+
+	/*
+	 * Get POSIX stat information including hardlink count
+	 */
+	torture_comment(tctx, "Getting POSIX stat info for hardlink test\n");
+	ret = smbc_fgetxattr(fhandle,
+			     "smb311_posix.statinfo",
+			     buf,
+			     sizeof(buf));
+
+	torture_assert_int_equal_goto(
+		tctx,
+		ret,
+		sizeof(struct stat),
+		ok,
+		done,
+		talloc_asprintf(tctx,
+				"smbc_fgetxattr(smb311_posix.statinfo) "
+				"returned %d, expected %zu",
+				ret,
+				sizeof(struct stat)));
+
+	memcpy(&st_posix, buf, sizeof(struct stat));
+
+	torture_comment(tctx,
+			"File has %lu hardlinks\n",
+			(unsigned long)st_posix.st_nlink);
+
+	torture_assert_int_equal_goto(
+		tctx,
+		st_posix.st_nlink,
+		3,
+		ok,
+		done,
+		talloc_asprintf(tctx,
+				"Expected 3 hardlinks, got %lu",
+				(unsigned long)st_posix.st_nlink));
+
+	ok = true;
+
+done:
+	if (fhandle >= 0) {
+		smbc_close(fhandle);
+	}
+	if (ctx != NULL) {
+		smbc_free_context(ctx, 1);
+	}
+
+	return ok;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -1608,6 +1810,10 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 		torture_libsmbclient_getatr);
 	torture_suite_add_simple_test(suite, "getxattr",
 		torture_libsmbclient_getxattr);
+	torture_suite_add_simple_test(suite, "posix_extensions",
+		torture_libsmbclient_posix_extensions);
+	torture_suite_add_simple_test(suite, "posix_hardlinks",
+		torture_libsmbclient_posix_hardlinks);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 

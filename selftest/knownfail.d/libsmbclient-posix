@@ -1,0 +1,4 @@
+^samba4.libsmbclient.posix_extensions.NT1
+^samba4.libsmbclient.posix_extensions.SMB3
+^samba4.libsmbclient.posix_hardlinks.NT1
+^samba4.libsmbclient.posix_hardlinks.SMB3

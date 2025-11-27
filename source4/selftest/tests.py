@@ -449,6 +449,8 @@ for t in libsmbclient:
         url = "smb://$USERNAME:$PASSWORD@$SERVER"
     if t == "libsmbclient.utimes":
         url += "/utimes.txt"
+    if t == "libsmbclient.posix_extensions" or t == "libsmbclient.posix_hardlinks":
+        url = "smb://$USERNAME:$PASSWORD@$SERVER/smb3_posix_share"
 
     libsmbclient_testargs = [
         '//$SERVER/tmp',
