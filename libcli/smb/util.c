@@ -783,3 +783,25 @@ struct smb_transports smb_transports_parse(const char *param_name,
 
 	return ts;
 }
+
+uint32_t smb2_util_lease_state(const char *ls)
+{
+	uint32_t val = 0;
+	int i;
+
+	for (i = 0; ls[i] != '\0'; i++) {
+		switch (ls[i]) {
+		case 'R':
+			val |= SMB2_LEASE_READ;
+			break;
+		case 'H':
+			val |= SMB2_LEASE_HANDLE;
+			break;
+		case 'W':
+			val |= SMB2_LEASE_WRITE;
+			break;
+		}
+	}
+
+	return val;
+}

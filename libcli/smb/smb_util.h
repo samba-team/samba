@@ -78,4 +78,6 @@ struct smb_transports {
 struct smb_transports smb_transports_parse(const char *param_name,
 					   const char * const *transports);
 
+uint32_t smb2_util_lease_state(const char *ls);
+
 #endif /* _SMB_UTIL_H */
