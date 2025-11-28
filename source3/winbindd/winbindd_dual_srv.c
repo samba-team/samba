@@ -2096,4 +2096,10 @@ NTSTATUS _wbint_NormalizeNameUnmap(struct pipes_struct *p,
 	return status;
 }
 
+NTSTATUS _wbint_KerberosImpersonationToken(struct pipes_struct *p,
+					   struct wbint_KerberosImpersonationToken *r)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 #include "librpc/gen_ndr/ndr_winbind_scompat.c"

@@ -282,6 +282,16 @@ interface winbind
         [out,string,charset(UTF8)] char **unmapped_name
     );
 
+    typedef [public] struct {
+        uint16 level;
+        [switch_is(level)] netr_Validation *validation;
+    } wbint_KerberosImpersonationTokenValidation;
+
+    NTSTATUS wbint_KerberosImpersonationToken(
+        [in,string,charset(UTF8)] char *impersonate_principal,
+        [out,ref] wbint_KerberosImpersonationTokenValidation *validation
+    );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;
