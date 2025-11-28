@@ -2691,3 +2691,14 @@ const char *find_dns_domain_name(const char *domain_name)
 
 	return wbdom->name;
 }
+
+bool winbind_s4u2self_krb5_api_support(void)
+{
+#ifdef HAVE_KRB5_GET_CREDS_OPT_SET_IMPERSONATE /* Heimdal */
+	return true;
+#elif defined(HAVE_KRB5_GET_CREDENTIALS_FOR_USER) /* MIT */
+	return true;
+#else
+	return false;
+#endif
+}

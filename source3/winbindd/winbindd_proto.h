@@ -622,6 +622,7 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
 		   struct unixid **pxids, uint32_t *pnum_xids);
 const char *find_dns_domain_name(const char *domain_name);
+bool winbind_s4u2self_krb5_api_support(void);
 
 /* The following definitions come from winbindd/winbindd_wins.c  */
 

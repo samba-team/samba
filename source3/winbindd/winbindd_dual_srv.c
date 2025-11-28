@@ -40,6 +40,9 @@
 #include "libsmb/dsgetdcname.h"
 #include "lib/global_contexts.h"
 #include "libcli/lsarpc/util_lsarpc.h"
+#include "libads/kerberos_proto.h"
+#include "librpc/gen_ndr/krb5pac.h"
+#include "./auth/kerberos/pac_utils.h"
 
 NTSTATUS _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
@@ -2099,7 +2102,120 @@ NTSTATUS _wbint_NormalizeNameUnmap(struct pipes_struct *p,
 NTSTATUS _wbint_KerberosImpersonationToken(struct pipes_struct *p,
 					   struct wbint_KerberosImpersonationToken *r)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct winbindd_domain *domain = wb_child_domain();
+	struct PAC_DATA_CTR *pac_data_ctr = NULL;
+	struct PAC_DATA *pac_data = NULL;
+	struct cli_credentials *machine_creds = NULL;
+	const char *machine_principal = NULL;
+	const char *machine_password = NULL;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	if (domain == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+	if (!domain->primary) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+	if (!domain->active_directory) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	if (r->in.impersonate_principal == NULL ||
+	    r->in.impersonate_principal[0] == '\0')
+	{
+		DBG_ERR("No impersonation principal provided\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	ok = winbind_s4u2self_krb5_api_support();
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_S4U_PROT_SUPPORT;
+	}
+
+	status = winbindd_get_trust_credentials(
+		domain, frame, false, false, &machine_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	machine_principal = cli_credentials_get_principal(machine_creds,
+							  frame);
+	if (machine_principal == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	machine_password = cli_credentials_get_password(machine_creds);
+	if (machine_password == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DBG_DEBUG("Trying S4U2Self for %s\n", r->in.impersonate_principal);
+	status = kerberos_return_pac(frame,
+				     machine_principal,
+				     machine_password,
+				     0,     /* time_offset */
+				     NULL,  /* *expire_time */
+				     NULL,  /* *renew_till_time */
+				     NULL,  /* cache_name */
+				     true,  /* request_pac */
+				     false, /* add_netbios_addr */
+				     0,     /* renew_time */
+				     r->in.impersonate_principal,
+				     /* local_service */
+				     machine_principal,
+				     NULL,	/* canon_principal */
+				     NULL,	/* canon_realm */
+				     &pac_data_ctr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("Failed to retrieve PAC for: %s as %s: %s\n",
+			 r->in.impersonate_principal,
+			 machine_principal,
+			 nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	if (pac_data_ctr == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_IMPERSONATION_TOKEN;
+	}
+
+	pac_data = pac_data_ctr->pac_data;
+	if (pac_data == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_IMPERSONATION_TOKEN;
+	}
+
+	status = winbindd_pam_auth_pac_validate(p->mem_ctx,
+						pac_data,
+						true, /* is_trusted */
+						&validation_level,
+						&validation);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("winbindd_pam_auth_pac_validate(%s) - %s\n",
+			r->in.impersonate_principal,
+			nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	r->out.validation->validation = validation;
+	r->out.validation->level = validation_level;
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 #include "librpc/gen_ndr/ndr_winbind_scompat.c"
