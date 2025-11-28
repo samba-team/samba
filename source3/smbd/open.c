@@ -2683,6 +2683,17 @@ grant:
 		 * ignores the SMB2_LEASE_WRITE bit.
 		 */
 		granted &= ~SMB2_LEASE_WRITE;
+		if (fsp->conn->tcon->capabilities &
+		    SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)
+		{
+			/*
+			 * Windows doesn't grant "pure" R leases in SO mode on
+			 * directories, we apply this restriction in CA mode. As
+			 * we also don't grant H leases in CA mode, set granted
+			 * to 0.
+			 */
+			granted = 0;
+		}
 	}
 
 	if (oplock_request == LEASE_OPLOCK) {
