@@ -53,6 +53,7 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 	struct smbXsrv_tcon *tcon;
 	NTSTATUS status;
 	struct connection_struct *conn;
+	const char *lease_mask = NULL;
 
 	session_global_id = req->session->global->session_global_id;
 	share_name = lp_servicename(talloc_tos(), lp_sub, snum);
@@ -110,8 +111,14 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 		return NULL;
 	}
 
+	lease_mask = lp_parm_const_string(SNUM(tcon->compat),
+					  "smb1",
+					  "max lease mask",
+					  "RWH");
+
 	tcon->compat = talloc_move(tcon, &conn);
 	tcon->status = NT_STATUS_OK;
+	tcon->smb_max_lease_mask = smb2_util_lease_state(lease_mask);
 
 	*pstatus = NT_STATUS_OK;
 

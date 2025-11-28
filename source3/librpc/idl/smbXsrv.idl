@@ -403,6 +403,7 @@ interface smbXsrv
 		uint8					share_type;
 		uint32					share_flags;
 		uint32					capabilities;
+		uint32					smb_max_lease_mask;
 		[ignore] connection_struct		*compat;
 	} smbXsrv_tcon;
 

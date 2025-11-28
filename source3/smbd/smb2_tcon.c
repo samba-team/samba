@@ -222,6 +222,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	uint32_t session_global_id;
 	char *share_name = NULL;
 	uint8_t encryption_flags = 0;
+	const char *lease_mask = NULL;
 
 	*disconnect = false;
 
@@ -507,6 +508,12 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 			tcon->capabilities |= SMB2_SHARE_CAP_ASYMMETRIC;
 		}
 	}
+
+	lease_mask = lp_parm_const_string(SNUM(tcon->compat),
+					  "smb2",
+					  "max lease mask",
+					  "RWH");
+	tcon->smb_max_lease_mask = smb2_util_lease_state(lease_mask);
 
 	*out_share_type = tcon->share_type;
 	*out_share_flags = tcon->share_flags;
