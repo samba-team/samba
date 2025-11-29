@@ -446,6 +446,41 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 	return true;
 }
 
+/*
+  open a smb2 connection
+*/
+bool torture_smb2_connection_share_ext(struct torture_context *tctx,
+				       const char *share,
+				       uint64_t previous_session_id,
+				       const struct smbcli_options *options,
+				       struct smb2_tree **tree)
+{
+	NTSTATUS status;
+	const char *host = torture_setting_string(tctx, "host", NULL);
+
+	status = smb2_connect_ext(tctx,
+				  host,
+				  share,
+				  tctx->lp_ctx,
+				  lpcfg_resolve_context(tctx->lp_ctx),
+				  samba_cmdline_get_creds(),
+				  NULL, /* existing_conn */
+				  previous_session_id,
+				  tree,
+				  tctx->ev,
+				  options,
+				  lpcfg_socket_options(tctx->lp_ctx),
+				  lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+				  );
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
+		       host, share, nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
 bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tree)
 {
 	bool ret;
