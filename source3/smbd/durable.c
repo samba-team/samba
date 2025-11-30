@@ -92,7 +92,6 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	}
 
 	ZERO_STRUCT(cookie);
-	cookie.allow_reconnect = false;
 	cookie.id = fsp->file_id;
 	cookie.servicepath = conn->connectpath;
 	cookie.base_name = fsp->fsp_name->base_name;
