@@ -166,6 +166,7 @@ bool run_dbwrap_watch2(int dummy);
 bool run_dbwrap_watch3(int dummy);
 bool run_dbwrap_watch4(int dummy);
 bool run_dbwrap_do_locked1(int dummy);
+bool run_dbwrap_per_rec_persistency(int dummy);
 bool run_idmap_tdb_common_test(int dummy);
 bool run_local_dbwrap_ctdb1(int dummy);
 bool run_qpathinfo_bufsize(int dummy);

@@ -43,6 +43,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         ../lib/tevent_barrier.c
                         test_dbwrap_watch.c
                         test_dbwrap_do_locked.c
+                        test_dbwrap_per_rec_persistency.c
                         test_idmap_tdb_common.c
                         test_dbwrap_ctdb.c
                         test_buffersize.c

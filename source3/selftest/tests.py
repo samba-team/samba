@@ -592,6 +592,7 @@ local_tests = [
     "LOCAL-IDMAP-CACHE1",
     "LOCAL-TDB-VALIDATE",
     "LOCAL-hex_encode_buf",
+    "LOCAL-DBWRAP-PER-REC-PERSISTENCY",
     "LOCAL-remove_duplicate_addrs2"]
 
 for t in local_tests:
@@ -2032,7 +2033,8 @@ if have_cluster_support:
 
     CLUSTERED_LOCAL_TESTS = [
         "ctdbd-conn1",
-        "local-dbwrap-ctdb1"
+        "local-dbwrap-ctdb1",
+        "LOCAL-DBWRAP-PER-REC-PERSISTENCY"
     ]
 
     for t in CLUSTERED_LOCAL_TESTS:

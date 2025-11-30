@@ -16264,6 +16264,10 @@ static struct {
 		.fn    = run_dbwrap_do_locked1,
 	},
 	{
+		.name  = "LOCAL-DBWRAP-PER-REC-PERSISTENCY",
+		.fn    = run_dbwrap_per_rec_persistency,
+	},
+	{
 		.name  = "LOCAL-MESSAGING-READ1",
 		.fn    = run_messaging_read1,
 	},
