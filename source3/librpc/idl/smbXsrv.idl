@@ -39,7 +39,7 @@ interface smbXsrv
 	 * or use different indexing keys.
 	 *
 	 */
-	typedef [v1_enum] enum {
+	typedef [public, v1_enum] enum {
 		/*
 		 * NOTE: Version 0 is designed to be unstable and the format
 		 * may change during development.
