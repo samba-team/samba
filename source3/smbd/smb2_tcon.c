@@ -513,6 +513,33 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 					  "smb2",
 					  "max lease mask",
 					  "RWH");
+	/*
+	 * Windows will at most grant R-leases on Scale-out (SO) servers. Samba
+	 * has a history of granting RWH-leases in Scale-out mode which for
+	 * Samba means clustering with ctdb, and it should continue to do so,
+	 * diverging in behaviour from Windows. We will restrict leases to R on
+	 * Continuously Available (CA) shares, not the SO, as CA allows clients
+	 * to request Persistent Handles (PH) basically implementing the
+	 * restrictions from the data model: we currently don't implement a
+	 * persistent leases.tdb (for performance reasons) and hence we can't
+	 * grant more than R leases (R lease is reaquired when reconnecting a
+	 * Persistent Handle if leases.tdb record was lost due to a node failure
+	 * (SO scenario), or wiped with clear-if-first semantics (non-SO,
+	 * failover scenario).
+	 */
+	if (tcon->capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY) {
+		const char *lease_mask_option = NULL;
+
+		if (tcon->capabilities & SMB2_SHARE_CAP_SCALEOUT) {
+			lease_mask_option = "smb3 ca so";
+		} else {
+			lease_mask_option = "smb3 ca";
+		}
+		lease_mask = lp_parm_const_string(SNUM(tcon->compat),
+						  lease_mask_option,
+						  "max lease mask",
+						  "R");
+	}
 	tcon->smb_max_lease_mask = smb2_util_lease_state(lease_mask);
 
 	*out_share_type = tcon->share_type;
