@@ -799,8 +799,8 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 	return true;
 }
 
-void reset_delete_on_close_lck(files_struct *fsp,
-			       struct share_mode_lock *lck)
+void reset_delete_on_close_lck(struct share_mode_lock *lck,
+			       uint32_t name_hash)
 {
 	struct share_mode_data *d = NULL;
 	NTSTATUS status;
@@ -809,8 +809,8 @@ void reset_delete_on_close_lck(files_struct *fsp,
 	status = share_mode_lock_access_private_data(lck, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Any error recovery possible here ? */
-		DBG_ERR("share_mode_lock_access_private_data() failed for "
-			"%s - %s\n", fsp_str_dbg(fsp), nt_errstr(status));
+		DBG_ERR("share_mode_lock_access_private_data() failed: %s\n",
+			nt_errstr(status));
 		smb_panic(__location__);
 		return;
 	}
@@ -818,7 +818,7 @@ void reset_delete_on_close_lck(files_struct *fsp,
 	for (i=0; i<d->num_delete_tokens; i++) {
 		struct delete_token *dt = &d->delete_tokens[i];
 
-		if (dt->name_hash == fsp->name_hash) {
+		if (dt->name_hash == name_hash) {
 			d->modified = true;
 
 			/* Delete this entry. */
@@ -969,7 +969,7 @@ static void set_delete_on_close_locked(struct share_mode_lock *lck,
 					state->nt_tok,
 					state->tok);
 	} else {
-		reset_delete_on_close_lck(state->fsp, lck);
+		reset_delete_on_close_lck(lck, state->fsp->name_hash);
 	}
 
 	state->fsp->fsp_flags.delete_on_close = state->delete_on_close;

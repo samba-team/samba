@@ -449,7 +449,7 @@ static void close_share_mode_lock_cleanup(struct share_mode_lock *lck,
 	bool ok;
 
 	if (state->reset_delete_on_close) {
-		reset_delete_on_close_lck(fsp, lck);
+		reset_delete_on_close_lck(lck, fsp->name_hash);
 	}
 
 	ok = del_share_mode(lck, fsp);
