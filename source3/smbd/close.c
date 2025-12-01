@@ -907,7 +907,11 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		DEBUG(10, ("%s disconnected durable handle for file %s\n",
 			   conn->session_info->unix_info->unix_name,
 			   fsp_str_dbg(fsp)));
-		scavenger_schedule_disconnected(fsp);
+		scavenger_schedule_disconnected(
+			fsp->conn->sconn->msg_ctx,
+			fsp->op->global->open_persistent_id,
+			&fsp->file_id,
+			fsp->name_hash);
 		return NT_STATUS_OK;
 	}
 

@@ -50,7 +50,6 @@ struct scavenger_message {
 	struct file_id file_id;
 	uint64_t open_persistent_id;
 	uint32_t name_hash;
-	NTTIME until;
 };
 
 static int smbd_scavenger_main(struct smbd_scavenger_state *state)
@@ -411,41 +410,27 @@ fail:
 	return false;
 }
 
-void scavenger_schedule_disconnected(struct files_struct *fsp)
+void scavenger_schedule_disconnected(struct messaging_context *msg_ctx,
+				     uint64_t open_persistent_id,
+				     struct file_id *file_id,
+				     uint32_t name_hash)
 {
 	NTSTATUS status;
-	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
-	struct timeval disconnect_time, until;
-	uint64_t timeout_usec;
+	struct server_id self = messaging_server_id(msg_ctx);
 	struct scavenger_message msg;
 	DATA_BLOB msg_blob;
 	struct server_id_buf tmp;
 	struct file_id_buf idbuf;
 
-	if (fsp->op == NULL) {
-		return;
-	}
-	nttime_to_timeval(&disconnect_time, fsp->op->global->disconnect_time);
-	timeout_usec = UINT64_C(1000) * fsp->op->global->durable_timeout_msec;
-	until = timeval_add(&disconnect_time,
-			    timeout_usec / 1000000,
-			    timeout_usec % 1000000);
-
 	ZERO_STRUCT(msg);
-	msg.file_id = fsp->file_id;
-	msg.open_persistent_id = fsp->op->global->open_persistent_id;
-	msg.name_hash = fsp->name_hash;
-	msg.until = timeval_to_nttime(&until);
+	msg.file_id = *file_id;
+	msg.open_persistent_id = open_persistent_id;
+	msg.name_hash = name_hash;
 
-	DEBUG(10, ("smbd: %s mark file %s as disconnected at %s with timeout "
-		   "at %s in %fs\n",
-		   server_id_str_buf(self, &tmp),
-		   file_id_str_buf(fsp->file_id, &idbuf),
-		   timeval_string(talloc_tos(), &disconnect_time, true),
-		   timeval_string(talloc_tos(), &until, true),
-		   fsp->op->global->durable_timeout_msec/1000.0));
+	DBG_DEBUG("smbd: %s mark file %s as disconnected\n",
+		  server_id_str_buf(self, &tmp),
+		  file_id_str_buf(*file_id, &idbuf));
 
-	SMB_ASSERT(server_id_is_disconnected(&fsp->op->global->server_id));
 	SMB_ASSERT(!server_id_equal(&self, &smbd_scavenger_state->parent_id));
 	SMB_ASSERT(!smbd_scavenger_state->am_scavenger);
 
@@ -644,12 +629,33 @@ static void scavenger_timer(struct tevent_context *ev,
 static void scavenger_add_timer(struct smbd_scavenger_state *state,
 				struct scavenger_message *msg)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_timer *te;
 	struct scavenger_timer_context *ctx;
+	const struct smbXsrv_open_global0 *global = NULL;
 	struct timeval until;
 	struct file_id_buf idbuf;
+	struct timeval disconnect_time;
+	uint64_t timeout_usec;
+	NTSTATUS status;
 
-	nttime_to_timeval(&until, msg->until);
+	status = smbXsrv_open_global_lookup(frame,
+					    (uint32_t)msg->open_persistent_id,
+					    &global);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("smbXsrv_open_global_lookup [%" PRIx64 "] failed: %s\n",
+			    msg->open_persistent_id,
+			    nt_errstr(status));
+		goto done;
+	}
+
+	SMB_ASSERT(server_id_is_disconnected(&global->server_id));
+
+	nttime_to_timeval(&disconnect_time, global->disconnect_time);
+	timeout_usec = UINT64_C(1000) * global->durable_timeout_msec;
+	until = timeval_add(&disconnect_time,
+			    timeout_usec / 1000000,
+			    timeout_usec % 1000000);
 
 	DBG_DEBUG("schedule file %s for cleanup at %s\n",
 		  file_id_str_buf(msg->file_id, &idbuf),
@@ -658,7 +664,7 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	ctx = talloc_zero(state, struct scavenger_timer_context);
 	if (ctx == NULL) {
 		DEBUG(2, ("Failed to talloc_zero(scavenger_timer_context)\n"));
-		return;
+		goto done;
 	}
 
 	ctx->state = state;
@@ -672,9 +678,12 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	if (te == NULL) {
 		DEBUG(2, ("Failed to add scavenger_timer event\n"));
 		talloc_free(ctx);
-		return;
+		goto done;
 	}
 
 	/* delete context after handler was running */
 	talloc_steal(te, ctx);
+
+done:
+	TALLOC_FREE(frame);
 }
