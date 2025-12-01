@@ -496,6 +496,10 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 		return false;
 	}
 
+	reset_delete_on_close_lck_open_id(state->lck,
+					  state->name_hash,
+					  state->open_persistent_id);
+
 	/*
 	 * Setting e->stale = true is
 	 * the indication to delete the entry.
