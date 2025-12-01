@@ -1113,11 +1113,8 @@ bool is_myname_or_ipaddr(const char *s)
 
 int poll_one_fd(int fd, int events, int timeout, int *revents)
 {
-	struct pollfd pfd;
+	struct pollfd pfd = {.fd = fd, .events = events};
 	int ret;
-
-	pfd.fd = fd;
-	pfd.events = events;
 
 	ret = poll(&pfd, 1, timeout);
 
@@ -1131,11 +1128,8 @@ int poll_one_fd(int fd, int events, int timeout, int *revents)
 
 int poll_intr_one_fd(int fd, int events, int timeout, int *revents)
 {
-	struct pollfd pfd;
+	struct pollfd pfd = {.fd = fd, .events = events};
 	int ret;
-
-	pfd.fd = fd;
-	pfd.events = events;
 
 	ret = sys_poll_intr(&pfd, 1, timeout);
 	if (ret <= 0) {
