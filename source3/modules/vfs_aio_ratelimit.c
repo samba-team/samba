@@ -31,14 +31,16 @@
   vfs objects = aio_ratelimit ...
   aio_ratelimit: read_iops_limit = 2000
   aio_ratelimit: read_bw_limit = 2000000
+  aio_ratelimit: read_burst_mult = 15      # == 1.5x burst
   aio_ratelimit: write_iops_limit = 0
   aio_ratelimit: write_bw_limit = 1000000
+  aio_ratelimit: write_burst_mult = 15     # == 1.5x burst
   ...
 
   Upon successful completion of async I/O request, tokens are produced based on
   the time which elapsed from previous requests, and tokens are consumed based
   on actual I/O size. When current tokens value is negative, a delay is
-  calculated end injected to in-flight request. The delay value (microseconds)
+  calculated and injected to in-flight request. The delay value (microseconds)
   is calculated based on the current tokens deficit.
  */
 
@@ -49,35 +51,35 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-/* Default and maximal delay values, in seconds */
-#define DELAY_SEC_DEF (30L)
-#define DELAY_SEC_MAX (300L)
-
+#define DELAY_SEC_MAX (100L)
+/* Default burst multiplier (1.5x) */
+#define BURST_MULT_DEF (15)
 /* Maximal value for iops_limit */
 #define IOPS_LIMIT_MAX (1000000L)
-
 /* Maximal value for bw_limit */
 #define BYTES_LIMIT_MAX (1L << 40)
-
 /* Module type-name in smb.conf & debug logging */
 #define MODULE_NAME "aio_ratelimit"
 
-/* Token-based rate-limiter control state */
+/* Token-based rate-limiter control state using a token-bucket. */
 struct ratelimiter {
 	const char *oper;
-	struct timespec ts_base;
-	struct timespec ts_last;
-	int64_t iops_limit;
-	int64_t iops_total;
+	uint64_t last_us;
 	float iops_tokens;
-	float iops_tokens_max;
-	float iops_tokens_min;
-	int64_t bw_limit;
-	int64_t bytes_total;
 	float bytes_tokens;
-	float bytes_tokens_max;
-	float bytes_tokens_min;
-	int64_t delay_sec_max;
+	int64_t iops_total;
+	int64_t bytes_total;
+	int64_t iops_limit;
+	int64_t bw_limit;
+	float iops_capacity;
+	float bytes_capacity;
+	/*
+	 * burst_mult is kept as configuration policy.
+	 * It allows capacity to be recalculated if limits
+	 * are reconfigured in the future (e.g. reload, per-client limits).
+	 */
+	float burst_mult;
+
 	int snum;
 };
 
@@ -87,28 +89,17 @@ struct vfs_aio_ratelimit_config {
 	struct ratelimiter wr_ratelimiter;
 };
 
-static float maxf(float x, float y)
-{
-	return MAX(x, y);
-}
-
 static float minf(float x, float y)
 {
 	return MIN(x, y);
 }
 
-static struct timespec time_now(void)
+static uint64_t time_now_us(void)
 {
 	struct timespec ts;
 
 	clock_gettime_mono(&ts);
-	return ts;
-}
-
-static int64_t time_diff(const struct timespec *now,
-			 const struct timespec *prev)
-{
-	return nsec_time_diff(now, prev) / 1000; /* usec */
+	return (uint64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
 
 static void ratelimiter_init(struct ratelimiter *rl,
@@ -116,220 +107,156 @@ static void ratelimiter_init(struct ratelimiter *rl,
 			     const char *oper_name,
 			     int64_t iops_limit,
 			     int64_t bw_limit,
-			     int64_t delay_sec_max)
+			     float burst_mult)
 {
 	ZERO_STRUCTP(rl);
+
 	rl->oper = oper_name;
-	rl->iops_total = 0;
-	rl->iops_limit = iops_limit;
-	rl->iops_tokens = 0.0;
-	rl->iops_tokens_max = (float)rl->iops_limit;
-	rl->iops_tokens_min = -rl->iops_tokens_max;
-	rl->bytes_total = 0;
-	rl->bw_limit = bw_limit;
-	rl->bytes_tokens = 0.0;
-	rl->bytes_tokens_max = (float)rl->bw_limit;
-	rl->bytes_tokens_min = -rl->bytes_tokens_max;
-	rl->delay_sec_max = delay_sec_max;
 	rl->snum = snum;
+
+	rl->iops_limit = iops_limit;
+	rl->bw_limit = bw_limit;
+	rl->burst_mult = burst_mult;
+
+	rl->iops_total = 0;
+	rl->bytes_total = 0;
+
+	rl->iops_capacity = (float)iops_limit * burst_mult;
+	rl->bytes_capacity = (float)bw_limit * burst_mult;
+
+	rl->last_us = 0;
+	rl->iops_tokens = rl->iops_capacity;
+	rl->bytes_tokens = rl->bytes_capacity;
 
 	DBG_DEBUG("[%s snum:%d %s] init ratelimiter:"
 		  " iops_limit=%" PRId64 " bw_limit=%" PRId64
-		  " delay_sec_max=%" PRId64 "\n",
+		  " burst_mult=%.2f\n",
 		  MODULE_NAME,
 		  rl->snum,
 		  rl->oper,
 		  rl->iops_limit,
 		  rl->bw_limit,
-		  rl->delay_sec_max);
+		  rl->burst_mult);
 }
 
 static bool ratelimiter_enabled(const struct ratelimiter *rl)
 {
-	return (rl->delay_sec_max > 0) &&
-	       ((rl->iops_limit > 0) || (rl->bw_limit > 0));
+	return (rl->iops_limit > 0) || (rl->bw_limit > 0);
 }
 
-static void ratelimiter_renew_tokens(struct ratelimiter *rl)
+static float ratelimiter_calc_refill(uint64_t elapsed,
+				     float capacity,
+				     int64_t rate)
 {
-	if (rl->iops_limit > 0) {
-		rl->iops_tokens = rl->iops_tokens_max;
+	float refill;
+	uint64_t max_refill_us;
+
+	/* If idle long enough to fill entire bucket, return full capacity */
+	max_refill_us = (uint64_t)((capacity * 1e6f) / (float)rate);
+	if (elapsed >= max_refill_us) {
+		return capacity;
 	}
-	if (rl->bw_limit > 0) {
-		rl->bytes_tokens = rl->bytes_tokens_max;
-	}
+
+	/* Otherwise, refill based on actual elapsed time */
+	refill = ((float)elapsed * (float)rate) / 1e6f;
+	return refill;
 }
 
-static void ratelimiter_take_tokens(struct ratelimiter *rl, int64_t nbytes)
+static void ratelimiter_refill(struct ratelimiter *rl)
 {
-	if (rl->iops_limit > 0) {
-		rl->iops_tokens = maxf(rl->iops_tokens - 1.0,
-				       rl->iops_tokens_min);
-	}
-	if (rl->bw_limit > 0) {
-		rl->bytes_tokens = maxf(rl->bytes_tokens - (float)nbytes,
-					rl->bytes_tokens_min);
-	}
-}
+	uint64_t now = time_now_us();
+	uint64_t elapsed = now - rl->last_us;
 
-static void ratelimiter_give_bw_tokens(struct ratelimiter *rl, int64_t nbytes)
-{
-	if (rl->bw_limit > 0) {
-		rl->bytes_tokens = minf(rl->bytes_tokens + (float)nbytes,
-					rl->bytes_tokens_max);
+	if (rl->last_us == 0) {
+		rl->last_us = now;
+		return;
 	}
-}
-
-static float calc_fill_tokens(float tokens_max, int64_t dif_usec)
-{
-	return ((float)(dif_usec)*tokens_max) / 1000000.0f;
-}
-
-static void ratelimiter_fill_tokens(struct ratelimiter *rl, int64_t dif_usec)
-{
-	float fill;
 
 	if (rl->iops_limit > 0) {
-		fill = calc_fill_tokens(rl->iops_tokens_max, dif_usec);
-		rl->iops_tokens = minf(rl->iops_tokens + fill,
-				       rl->iops_tokens_max);
+		float refill;
+
+		refill = ratelimiter_calc_refill(elapsed,
+						 rl->iops_capacity,
+						 rl->iops_limit);
+
+		rl->iops_tokens = minf(rl->iops_tokens + refill,
+				       rl->iops_capacity);
 	}
+
 	if (rl->bw_limit > 0) {
-		fill = calc_fill_tokens(rl->bytes_tokens_max, dif_usec);
-		rl->bytes_tokens = minf(rl->bytes_tokens + fill,
-					rl->bytes_tokens_max);
+		float refill;
+
+		refill = ratelimiter_calc_refill(elapsed,
+						 rl->bytes_capacity,
+						 rl->bw_limit);
+
+		rl->bytes_tokens = minf(rl->bytes_tokens + refill,
+					rl->bytes_capacity);
 	}
+
+	rl->last_us = now;
 }
 
-static float calc_delay_usec(float tokens, float tokens_min)
+/* Convert token deficit into a bounded delay in microseconds */
+static uint32_t ratelimiter_deficit_to_delay(float deficit, int64_t rate)
 {
-	return (tokens * 1000000.0f) / tokens_min;
-}
+	uint32_t delay;
 
-static uint32_t ratelimiter_calc_delay(const struct ratelimiter *rl)
-{
-	float iops_delay_usec = 0.0;
-	float bytes_delay_usec = 0.0;
-	int64_t delay_usec = 0;
+	if (deficit <= 0.0f || rate <= 0) {
+		return 0;
+	}
 
-	/* Calculate delay for 1-second window */
-	if ((rl->iops_limit > 0) && (rl->iops_tokens < 0.0)) {
-		iops_delay_usec = calc_delay_usec(rl->iops_tokens,
-						  rl->iops_tokens_min);
-	}
-	if ((rl->bw_limit > 0) && (rl->bytes_tokens < 0.0)) {
-		bytes_delay_usec = calc_delay_usec(rl->bytes_tokens,
-						   rl->bytes_tokens_min);
-	}
-	/* Normalize delay within valid span */
-	delay_usec = (int64_t)maxf(iops_delay_usec, bytes_delay_usec);
-	return (uint32_t)(delay_usec * rl->delay_sec_max);
-}
-
-static bool ratelimiter_need_renew(const struct ratelimiter *rl,
-				   const struct timespec *now)
-{
-	time_t sec_dif = 0;
-
-	if (rl->ts_base.tv_sec == 0) {
-		/* First time */
-		DBG_DEBUG("[%s snum:%d %s] init\n",
-			  MODULE_NAME,
-			  rl->snum,
-			  rl->oper);
-		return true;
-	}
-	sec_dif = (now->tv_sec - rl->ts_last.tv_sec);
-	if (sec_dif >= 60) {
-		/* Force renew after 1-minutes idle */
-		DBG_DEBUG("[%s snum:%d %s] idle sec_dif=%ld\n",
-			  MODULE_NAME,
-			  rl->snum,
-			  rl->oper,
-			  (long)sec_dif);
-		return true;
-	}
-	sec_dif = (now->tv_sec - rl->ts_base.tv_sec);
-	if (sec_dif >= 1200) {
-		/* Force renew every 20-minutes to avoid skew */
-		DBG_DEBUG("[%s snum:%d %s] renew sec_dif=%ld\n",
-			  MODULE_NAME,
-			  rl->snum,
-			  rl->oper,
-			  (long)sec_dif);
-		return true;
-	}
-	return false;
-}
-
-static void ratelimiter_dbg(const struct ratelimiter *rl,
-			    int64_t nbytes,
-			    int64_t tdiff_usec,
-			    uint32_t delay_usec)
-{
-	if (rl->iops_limit > 0) {
-		DBG_DEBUG("[%s snum:%d %s]"
-			  " iops_total=%" PRId64 " iops_limit=%" PRId64
-			  " iops_tokens_max=%.2f iops_tokens=%.2f"
-			  " tdiff_usec=%" PRId64 " delay_usec=%" PRIu32 " \n",
-			  MODULE_NAME,
-			  rl->snum,
-			  rl->oper,
-			  rl->iops_total,
-			  rl->iops_limit,
-			  rl->iops_tokens_max,
-			  rl->iops_tokens,
-			  tdiff_usec,
-			  delay_usec);
-	}
-	if (rl->bw_limit > 0) {
-		DBG_DEBUG("[%s snum:%d %s]"
-			  " bytes_total=%" PRId64 " bw_limit=%" PRId64
-			  " bytes_tokens_max=%.2f bytes_tokens=%.2f"
-			  " nbytes=%" PRId64 " tdiff_usec=%" PRId64
-			  " delay_usec=%" PRIu32 " \n",
-			  MODULE_NAME,
-			  rl->snum,
-			  rl->oper,
-			  rl->bytes_total,
-			  rl->bw_limit,
-			  rl->bytes_tokens_max,
-			  rl->bytes_tokens,
-			  nbytes,
-			  tdiff_usec,
-			  delay_usec);
-	}
+	delay = (uint32_t)((deficit * 1e6f) / (float)rate);
+	return MIN(delay, DELAY_SEC_MAX * 1000000L);
 }
 
 static uint32_t ratelimiter_pre_io(struct ratelimiter *rl, int64_t nbytes)
 {
-	const struct timespec now = time_now();
-	int64_t tdiff_usec = 0;
+	float iops_deficit = 0.0f;
+	float bw_deficit = 0.0f;
 	uint32_t delay_usec = 0;
+	uint32_t bw_delay = 0;
 
-	if (ratelimiter_need_renew(rl, &now)) {
-		/* Renew state */
-		ratelimiter_renew_tokens(rl);
-		rl->ts_base = rl->ts_last = now;
-	} else {
-		/* Produce tokens based on elapsed time */
-		tdiff_usec = time_diff(&now, &rl->ts_last);
-		if (tdiff_usec > 0) {
-			ratelimiter_fill_tokens(rl, tdiff_usec);
-			rl->ts_last = now;
+	if (!ratelimiter_enabled(rl)) {
+		return 0;
+	}
+
+	/* Refill tokens based on elapsed time */
+	ratelimiter_refill(rl);
+
+	/* Consume tokens for this operation */
+	if (rl->iops_limit > 0) {
+		rl->iops_tokens -= 1.0f;
+		if (rl->iops_tokens < 0.0f) {
+			iops_deficit = -rl->iops_tokens;
 		}
 	}
 
-	/* Consume tokens based on expected I/O size */
-	ratelimiter_take_tokens(rl, nbytes);
+	if (rl->bw_limit > 0) {
+		rl->bytes_tokens -= (float)nbytes;
+		if (rl->bytes_tokens < 0.0f) {
+			bw_deficit = -rl->bytes_tokens;
+		}
+	}
 
-	/* Calculate delay based on current tokens deficit */
-	delay_usec = ratelimiter_calc_delay(rl);
+	delay_usec = ratelimiter_deficit_to_delay(iops_deficit, rl->iops_limit);
+	bw_delay = ratelimiter_deficit_to_delay(bw_deficit, rl->bw_limit);
 
-	/* Update global counters (debug only) */
+	if (bw_delay > delay_usec) {
+		delay_usec = bw_delay;
+	}
+
 	rl->iops_total += 1;
 	rl->bytes_total += nbytes;
-	ratelimiter_dbg(rl, nbytes, tdiff_usec, delay_usec);
+
+	DBG_DEBUG("[%s snum:%d %s] delay_usec=%" PRIu32
+		  " iops_tokens=%.2f bytes_tokens=%.2f\n",
+		  MODULE_NAME,
+		  rl->snum,
+		  rl->oper,
+		  delay_usec,
+		  rl->iops_tokens,
+		  rl->bytes_tokens);
 
 	return delay_usec;
 }
@@ -338,14 +265,11 @@ static void ratelimiter_post_io(struct ratelimiter *rl,
 				int64_t nbytes_want,
 				int64_t nbytes_done)
 {
+	if (rl->bw_limit > 0 && nbytes_done < nbytes_want) {
+		int64_t unused = nbytes_want - MAX(nbytes_done, (int64_t)0);
 
-	/* Return bytes-tokens based on actual I/O size */
-	if (nbytes_done < 0) {
-		/* I/O error */
-		ratelimiter_give_bw_tokens(rl, nbytes_want);
-	} else if (nbytes_done < nbytes_want) {
-		/* Partial I/O */
-		ratelimiter_give_bw_tokens(rl, nbytes_want - nbytes_done);
+		rl->bytes_tokens = minf(rl->bytes_tokens + (float)unused,
+					rl->bytes_capacity);
 	}
 }
 
@@ -383,8 +307,10 @@ static int64_t vfs_aio_ratelimit_lp_parm(int snum,
 static void vfs_aio_ratelimit_setup(struct vfs_aio_ratelimit_config *config,
 				    int snum)
 {
-	int64_t iops_limit, bw_limit, delay_max;
+	int64_t iops_limit, bw_limit;
+	float burst_mult;
 
+	/* --- Read limiter --- */
 	iops_limit = vfs_aio_ratelimit_lp_parm(snum,
 					       "read_iops_limit",
 					       0,
@@ -393,17 +319,19 @@ static void vfs_aio_ratelimit_setup(struct vfs_aio_ratelimit_config *config,
 					     "read_bw_limit",
 					     0,
 					     BYTES_LIMIT_MAX);
-	delay_max = vfs_aio_ratelimit_lp_parm(snum,
-					      "read_delay_max",
-					      DELAY_SEC_DEF,
-					      DELAY_SEC_MAX);
+	burst_mult = (float)vfs_aio_ratelimit_lp_parm(snum,
+						      "read_burst_mult",
+						      BURST_MULT_DEF,
+						      100) / 10.0f;
+
 	ratelimiter_init(&config->rd_ratelimiter,
 			 snum,
 			 "read",
 			 iops_limit,
 			 bw_limit,
-			 (int32_t)delay_max);
+			 burst_mult);
 
+	/* --- Write limiter --- */
 	iops_limit = vfs_aio_ratelimit_lp_parm(snum,
 					       "write_iops_limit",
 					       0,
@@ -412,16 +340,17 @@ static void vfs_aio_ratelimit_setup(struct vfs_aio_ratelimit_config *config,
 					     "write_bw_limit",
 					     0,
 					     BYTES_LIMIT_MAX);
-	delay_max = vfs_aio_ratelimit_lp_parm(snum,
-					      "write_delay_max",
-					      DELAY_SEC_DEF,
-					      DELAY_SEC_MAX);
+	burst_mult = (float)vfs_aio_ratelimit_lp_parm(snum,
+						      "write_burst_mult",
+						      BURST_MULT_DEF,
+						      100) / 10.0f;
+
 	ratelimiter_init(&config->wr_ratelimiter,
 			 snum,
 			 "write",
 			 iops_limit,
 			 bw_limit,
-			 (int32_t)delay_max);
+			 burst_mult);
 }
 
 static void vfs_aio_ratelimit_free_config(void **ptr)
@@ -548,7 +477,7 @@ static struct tevent_req *vfs_aio_ratelimit_pread_send(
 	};
 
 	if (state->rl != NULL) {
-		state->delay = ratelimiter_pre_io(state->rl, n);
+		state->delay = ratelimiter_pre_io(state->rl, (int64_t)n);
 	}
 	if (state->delay == 0) {
 		subreq = SMB_VFS_NEXT_PREAD_SEND(
@@ -663,7 +592,7 @@ static struct tevent_req *vfs_aio_ratelimit_pwrite_send(
 	};
 
 	if (state->rl != NULL) {
-		state->delay = ratelimiter_pre_io(state->rl, n);
+		state->delay = ratelimiter_pre_io(state->rl, (int64_t)n);
 	}
 	if (state->delay == 0) {
 		subreq = SMB_VFS_NEXT_PWRITE_SEND(
