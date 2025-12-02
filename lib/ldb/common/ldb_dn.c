@@ -232,10 +232,15 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 		case '\0': {
 			/* any others get \XX form */
 			unsigned char v;
+			/*
+			 * Do not use libreplace for this. We don't want to have
+			 * a hard requirement for it.
+			 */
+			const char *hexbytes = "0123456789ABCDEF";
 			v = (const unsigned char)c;
 			*d++ = '\\';
-			*d++ = hexchars_upper[v>>4];
-			*d++ = hexchars_upper[v&0xF];
+			*d++ = hexbytes[v>>4];
+			*d++ = hexbytes[v&0xF];
 			break;
 		}
 		default:
@@ -2100,7 +2105,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 	unsigned int i;
 	struct ldb_val v2;
 	const struct ldb_dn_extended_syntax *ext_syntax;
-	
+
 	if ( ! ldb_dn_validate(dn)) {
 		return LDB_ERR_OTHER;
 	}
