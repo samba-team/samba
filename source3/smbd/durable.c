@@ -105,6 +105,10 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.initial_allocation_size = fsp->initial_allocation_size;
 	cookie.position_information = fh_get_position_information(fsp->fh);
 	cookie.write_time_forced = fsp->fsp_flags.write_time_forced;
+	if (fsp->op->global->persistent) {
+		cookie.initial_delete_on_close =
+			fsp->fsp_flags.initial_delete_on_close;
+	}
 
 	cookie.stat_info.st_ex_dev = fsp->fsp_name->st.st_ex_dev;
 	cookie.stat_info.st_ex_ino = fsp->fsp_name->st.st_ex_ino;
@@ -669,6 +673,12 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	fsp->initial_allocation_size = state->cookie.initial_allocation_size;
 	fh_set_position_information(fsp->fh, state->cookie.position_information);
 	fsp->fsp_flags.write_time_forced = state->cookie.write_time_forced;
+	if (state->op->global->persistent) {
+		fsp->fsp_flags.initial_delete_on_close =
+			state->cookie.initial_delete_on_close;
+		fsp->fsp_flags.delete_on_close = is_delete_on_close_set(
+			lck, fsp->name_hash);
+	}
 
 	state->op->compat = fsp;
 	fsp->op = state->op;
