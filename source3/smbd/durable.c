@@ -593,6 +593,7 @@ struct vfs_default_durable_reconnect_state {
 	TALLOC_CTX *mem_ctx;
 	struct smb_request *smb1req;
 	struct smbXsrv_open *op;
+	const struct smb2_lease *lease;
 	struct vfs_default_durable_cookie cookie;
 	struct files_struct *fsp;
 	struct files_struct *dirfsp;
@@ -862,6 +863,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		.mem_ctx = mem_ctx,
 		.smb1req = smb1req,
 		.op = op,
+		.lease = lease,
 	};
 
 	/*
