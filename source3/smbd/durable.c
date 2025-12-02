@@ -127,6 +127,10 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.stat_info.st_ex_blocks = fsp->fsp_name->st.st_ex_blocks;
 	cookie.stat_info.st_ex_flags = fsp->fsp_name->st.st_ex_flags;
 
+	if (fsp->op->global->persistent) {
+		cookie.allow_reconnect = true;
+	}
+
 	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
 		DBG_DEBUG("Fresh cookie\n");
 		NDR_PRINT_DEBUG(vfs_default_durable_cookie, &cookie);
