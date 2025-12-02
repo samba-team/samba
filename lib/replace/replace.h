@@ -468,6 +468,14 @@ int rep_dlclose(void *handle);
 #endif
 #endif
 
+#ifndef PACKED_STRUCT
+#if __has_attribute(packed) || (__GNUC__ >= 3)
+#define PACKED_STRUCT __attribute__((packed))
+#else
+#define PACKED_STRUCT
+#endif
+#endif
+
 #if !defined(HAVE_VDPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define vdprintf rep_vdprintf
 int rep_vdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
