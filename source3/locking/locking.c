@@ -800,8 +800,10 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 	return true;
 }
 
-void reset_delete_on_close_lck(struct share_mode_lock *lck,
-			       uint32_t name_hash)
+static void reset_delete_on_close_lck_internal(struct share_mode_lock *lck,
+					       uint32_t name_hash,
+					       bool check_open_id,
+					       uint64_t open_persistent_id)
 {
 	struct share_mode_data *d = NULL;
 	NTSTATUS status;
@@ -820,6 +822,11 @@ void reset_delete_on_close_lck(struct share_mode_lock *lck,
 		struct delete_token *dt = &d->delete_tokens[i];
 
 		if (dt->name_hash == name_hash) {
+			if (check_open_id &&
+			    (dt->open_persistent_id != open_persistent_id))
+			{
+				continue;
+			}
 			d->modified = true;
 
 			/* Delete this entry. */
@@ -829,6 +836,22 @@ void reset_delete_on_close_lck(struct share_mode_lock *lck,
 			d->num_delete_tokens -= 1;
 		}
 	}
+}
+
+void reset_delete_on_close_lck(struct share_mode_lock *lck,
+			       uint32_t name_hash)
+{
+	reset_delete_on_close_lck_internal(lck, name_hash, false, 0);
+}
+
+void reset_delete_on_close_lck_open_id(struct share_mode_lock *lck,
+				       uint32_t name_hash,
+				       uint64_t open_persistent_id)
+{
+	reset_delete_on_close_lck_internal(lck,
+					   name_hash,
+					   true,
+					   open_persistent_id);
 }
 
 struct set_delete_on_close_state {
