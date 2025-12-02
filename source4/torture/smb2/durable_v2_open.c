@@ -9303,6 +9303,159 @@ static bool test_persistent_deleteonclose_expire(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * Verifies cleanup of stale delete-on-close token. This only works against
+ * Samba where we have to implement DoC token expiration instead of fully
+ * deleting the file (and the token).
+ *
+ * 1. Open file with PH an handle-timeout of 1s
+ * 2. Open file a second time with PH an handle-timeout of 10s
+ * 3. Set Doc on handle from (1)
+ * 4. Set Doc on handle from (2)
+ * 5. Disconnect
+ * 6. Sleep 2s, handle from (1) should expire, scavenger should not
+ *    cleanup DoC token as that is from (3)
+ * 7. Reconnect session and handle from (3)
+ * 8. Close file, should now get removed as Doc should still be set
+ * 9. Verify file is gone
+ */
+static bool test_persistent_deleteonclose_twice(struct torture_context *tctx,
+						struct smb2_tree *tree)
+{
+	struct smbcli_options options = tree->session->transport->options;
+	struct smb2_create c = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_handle ph = {};
+	union smb_setfileinfo sfinfo = {};
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	char *fname = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	options.client_guid = GUID_random();
+
+	fname = talloc_asprintf(tctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	/*
+	 * 1. Get persistent open
+	 */
+	c.in.fname = fname;
+	c.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	c.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	c.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	c.in.durable_open_v2 = true;
+	c.in.persistent_open = true;
+	c.in.create_guid = create_guid1;
+	c.in.timeout = 1000;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+	torture_assert_goto(tctx, c.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+	torture_assert_int_equal_goto(tctx, c.out.timeout, 1000,
+				      ret, done, "bad timeout\n");
+
+	/* 2. Second open with timeout=10s */
+	c.in.timeout = 10000;
+	c.in.create_guid = create_guid2;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+	torture_assert_goto(tctx, c.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+	torture_assert_int_equal_goto(tctx, c.out.timeout, 10000,
+				      ret, done, "bad timeout\n");
+
+	/* 3. Set delete_on_close */
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.in.file.handle = h1;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Set DELETE_ON_CLOSE disposition "
+					"returned un expected status.\n");
+
+	/* 4. Set delete_on_close */
+	sfinfo.generic.in.file.handle = h2;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Set DELETE_ON_CLOSE disposition "
+					"returned un expected status.\n");
+
+	/* 5. */
+	TALLOC_FREE(tree);
+	ph = h2;
+	ZERO_STRUCT(h1);
+	ZERO_STRUCT(h2);
+
+	/* 6. */
+	sleep(2);
+
+	/* 7. Reconnect */
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	c.in.durable_handle_v2 = &ph;
+	c.in.durable_open_v2 = false;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"reconnect failed\n");
+	h1 = c.out.file.handle;
+
+	/* 8. */
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	ZERO_STRUCT(h1);
+
+	/*
+	 * 9. The close should have deleted the file, verify it is gone
+	 */
+
+	c.in.create_disposition = NTCREATEX_DISP_OPEN;
+	c.in.durable_handle_v2 = NULL;
+	c.in.create_options = 0;
+	c.in.durable_open_v2 = false;
+	c.in.persistent_open = false;
+
+	status = smb2_create(tree, tree, &c);
+	if (NT_STATUS_IS_OK(status)) {
+		h1 = c.out.file.handle;
+	}
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "file still there?\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (fname != NULL && tree != NULL) {
+		smb2_util_unlink(tree, fname);
+		TALLOC_FREE(fname);
+	}
+
+	TALLOC_FREE(tree);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -9331,6 +9484,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "directory-disconnect", test_directory_disconnect);
 	torture_suite_add_1smb2_test(suite, "deleteonclose-reconnect", test_persistent_deleteonclose_reconnect);
 	torture_suite_add_1smb2_test(suite, "deleteonclose-expire", test_persistent_deleteonclose_expire);
+	torture_suite_add_1smb2_test(suite, "deleteonclose-twice", test_persistent_deleteonclose_twice);
 
 	return suite;
 }
