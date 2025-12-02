@@ -218,6 +218,14 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (fsp->op->global->persistent) {
+		new_cookie_blob = data_blob_dup_talloc(mem_ctx, old_cookie);
+		if (new_cookie_blob.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		goto do_close;
+	}
+
 	if ((fsp_lease_type(fsp) & SMB2_LEASE_HANDLE) == 0) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
@@ -308,6 +316,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		NDR_PRINT_DEBUG(vfs_default_durable_cookie, &cookie);
 	}
 
+do_close:
 	status = fd_close(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&new_cookie_blob);
