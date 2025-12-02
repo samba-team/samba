@@ -613,6 +613,7 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	struct durable_reconnect_state rstate = { .op = state->op, .e = &e, };
 	struct vfs_open_how how = { .flags = 0, };
 	struct file_id file_id;
+	struct server_id old_pid;
 	bool have_share_mode_entry = false;
 	uint32_t dosmode;
 	int ret;
@@ -709,11 +710,14 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	state->op->compat = fsp;
 	fsp->op = state->op;
 
+	old_pid = e.pid;
+	e.pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
+
 	ok = reset_share_mode_entry(
 		lck,
-		e.pid,
+		old_pid,
 		e.share_file_id,
-		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		e.pid,
 		state->smb1req->mid);
 	if (!ok) {
 		DBG_DEBUG("Could not set new share_mode_entry values\n");
