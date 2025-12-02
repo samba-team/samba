@@ -632,24 +632,6 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 		goto fail;
 	}
 
-	if (!server_id_is_disconnected(&e.pid)) {
-		DEBUG(5, ("vfs_default_durable_reconnect: denying durable "
-			  "reconnect for handle that was not marked "
-			  "disconnected (e.g. smbd or cluster node died)\n"));
-		state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		goto fail;
-	}
-
-	if (e.share_file_id != state->op->global->open_persistent_id) {
-		DBG_INFO("denying durable "
-			 "share_file_id changed %"PRIu64" != %"PRIu64" "
-			 "(e.g. another client had opened the file)\n",
-			 e.share_file_id,
-			 state->op->global->open_persistent_id);
-		state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		goto fail;
-	}
-
 	if ((e.access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) &&
 	    !CAN_WRITE(fsp->conn))
 	{
