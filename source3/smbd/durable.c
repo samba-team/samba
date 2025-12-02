@@ -339,6 +339,10 @@ static bool vfs_default_durable_reconnect_check_stat(
 	SMB_STRUCT_STAT *fsp_st = &fsp->fsp_name->st;
 	bool equal;
 
+	if (fsp->op->global->persistent) {
+		return true;
+	}
+
 	if (cookie_st->st_ex_mode != fsp_st->st_ex_mode) {
 		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
 			  "stat_ex.%s differs: "
