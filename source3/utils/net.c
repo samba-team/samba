@@ -1396,7 +1396,7 @@ static struct functable net_func[] = {
 			cli_credentials_get_principal_obtained(c->creds);
 		enum credentials_obtained password_obtained =
 			cli_credentials_get_password_obtained(c->creds);
-		char *krb5ccname = NULL;
+		const char *krb5ccname = NULL;
 
 		if (principal_obtained == CRED_SPECIFIED) {
 			c->explicit_credentials = true;
@@ -1415,15 +1415,20 @@ static struct functable net_func[] = {
 		}
 
 		/* cli_credentials_get_ccache_name_obtained() would not work
-		 * here, we also cannot get the content of --use-krb5-ccache= so
-		 * for now at least honour the KRB5CCNAME environment variable
-		 * to get 'net ads kerberos' functions to work at all - gd */
+		 * here but we can now access the content of the
+		 * --use-krb5-ccache option via cli credentials. Fallback to
+		 * KRB5CCNAME environment variable to get 'net ads kerberos'
+		 * functions to work at all - gd */
 
-		krb5ccname = getenv("KRB5CCNAME");
-		if (krb5ccname == NULL) {
+		krb5ccname = cli_credentials_get_out_ccache_name(c->creds);
+		if (krb5ccname == NULL || krb5ccname[0] == '\0') {
+			krb5ccname = getenv("KRB5CCNAME");
+		}
+		if (krb5ccname == NULL || krb5ccname[0] == '\0') {
 			krb5ccname = talloc_strdup(c, "MEMORY:net");
 		}
 		if (krb5ccname == NULL) {
+			DBG_ERR("Not able to setup krb5 ccache");
 			exit(1);
 		}
 		c->opt_krb5_ccache = krb5ccname;
