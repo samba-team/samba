@@ -30,6 +30,7 @@ KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 ## Test "net ads kerberos kinit" variants
 #################################################
 
+#simply uses in memory ccache
 testit "net_ads_kerberos_kinit" \
 	"$VALGRIND" "$BINDIR"/net ads kerberos kinit \
 	-U"$USERNAME"%"$PASSWORD" "$ADDARGS" \
@@ -50,6 +51,7 @@ rm -f "$KRB5CCNAME_PATH"
 #	--use-krb5-ccache=${KRB5CCNAME} \
 #	|| failed=$((failed + 1))
 
+#simply uses in memory ccache
 testit "net_ads_kerberos_kinit (-P)" \
 	"$VALGRIND" "$BINDIR"/net ads kerberos kinit \
 	-P "$ADDARGS" \
