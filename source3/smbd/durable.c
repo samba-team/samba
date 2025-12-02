@@ -545,9 +545,38 @@ static bool share_mode_entry_durable_reconnect_cb(
 	void *private_data)
 {
 	struct durable_reconnect_state *state = private_data;
-	uint64_t id = state->op->global->open_persistent_id;
+	struct smbXsrv_open_global0 *global = state->op->global;
+	uint64_t id = global->open_persistent_id;
 
 	if (e->share_file_id != id) {
+		return false; /* Look at potential other entries */
+	}
+	if (state->e->share_file_id == id) {
+		DBG_INFO("Found more than one entry, invalidating previous\n");
+		*state->e = (struct share_mode_entry) { .pid = { .pid = 0, }};
+		return true;	/* end the loop through share mode entries */
+	}
+
+	if (global->persistent) {
+		if (!(e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN)) {
+			DBG_WARNING("Persistent not set on sharemode entry\n");
+			return false;
+		}
+		if (serverid_exists(&e->pid)) {
+			return false; /* Look at potential other entries */
+		}
+		if (!GUID_equal(&e->create_guid, &global->create_guid)) {
+			return false; /* Look at potential other entries */
+		}
+		if (GUID_equal(&state->e->create_guid, &global->create_guid)) {
+			DBG_INFO("Found more than one entry, "
+				 "invalidating previous\n");
+			*state->e = (struct share_mode_entry) {
+				.pid = { .pid = 0, },
+			};
+			return true; /* end the loop */
+		}
+		*state->e = *e;
 		return false; /* Look at potential other entries */
 	}
 
@@ -555,11 +584,6 @@ static bool share_mode_entry_durable_reconnect_cb(
 		return false; /* Look at potential other entries */
 	}
 
-	if (state->e->share_file_id == id) {
-		DBG_INFO("Found more than one entry, invalidating previous\n");
-		*state->e = (struct share_mode_entry) { .pid = { .pid = 0, }};
-		return true;	/* end the loop through share mode entries */
-	}
 	*state->e = *e;
 	return false;		/* Look at potential other entries */
 }
