@@ -601,6 +601,53 @@ struct vfs_default_durable_reconnect_state {
 	DATA_BLOB new_cookie_blob;
 };
 
+static NTSTATUS vfs_default_durable_reconnect_lease(
+	struct vfs_default_durable_reconnect_state *state,
+	struct share_mode_lock *lck,
+	struct share_mode_entry *e)
+{
+	struct files_struct *fsp = state->fsp;
+	uint32_t current_state;
+	uint16_t lease_version, epoch;
+	NTSTATUS status;
+
+	if (fsp->oplock_type != LEASE_OPLOCK) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Ensure the existing client guid matches the
+	 * stored one in the share_mode_entry.
+	 */
+	if (!GUID_equal(fsp_client_guid(fsp), &e->client_guid)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	status = leases_db_get(&e->client_guid,
+			       &e->lease_key,
+			       &fsp->file_id,
+			       &current_state, /* current_state */
+			       NULL, /* breaking */
+			       NULL, /* breaking_to_requested */
+			       NULL, /* breaking_to_required */
+			       &lease_version, /* lease_version */
+			       &epoch); /* epoch */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp->lease = find_fsp_lease(fsp,
+				    &e->lease_key,
+				    current_state,
+				    lease_version,
+				    epoch);
+	if (fsp->lease == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 					     struct byte_range_lock *br_lck,
 					     void *private_data)
@@ -657,46 +704,6 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 
 	fsp->oplock_type = e.op_type;
 
-	if (fsp->oplock_type == LEASE_OPLOCK) {
-		uint32_t current_state;
-		uint16_t lease_version, epoch;
-
-		/*
-		 * Ensure the existing client guid matches the
-		 * stored one in the share_mode_entry.
-		 */
-		if (!GUID_equal(fsp_client_guid(fsp),
-				&e.client_guid)) {
-			state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			goto fail;
-		}
-
-		state->status = leases_db_get(
-			&e.client_guid,
-			&e.lease_key,
-			&fsp->file_id,
-			&current_state, /* current_state */
-			NULL, /* breaking */
-			NULL, /* breaking_to_requested */
-			NULL, /* breaking_to_required */
-			&lease_version, /* lease_version */
-			&epoch); /* epoch */
-		if (!NT_STATUS_IS_OK(state->status)) {
-			goto fail;
-		}
-
-		fsp->lease = find_fsp_lease(
-			fsp,
-			&e.lease_key,
-			current_state,
-			lease_version,
-			epoch);
-		if (fsp->lease == NULL) {
-			state->status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-	}
-
 	fsp->initial_allocation_size = state->cookie.initial_allocation_size;
 	fh_set_position_information(fsp->fh, state->cookie.position_information);
 	fsp->fsp_flags.write_time_forced = state->cookie.write_time_forced;
@@ -725,6 +732,12 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 		goto fail;
 	}
 	have_share_mode_entry = true;
+
+	state->status = vfs_default_durable_reconnect_lease(state, lck, &e);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_WARNING("vfs_default_durable_reconnect_lease failed\n");
+		goto fail;
+	}
 
 	if (br_lck != NULL) {
 		ok = brl_reconnect_disconnected(fsp, br_lck);
