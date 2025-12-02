@@ -53,12 +53,15 @@ testit "klist env $KRB5CCNAME" \
 unset KRB5CCNAME
 rm -f "$KRB5CCNAME_PATH"
 
-# --use-krb5-ccache is not working
-#testit "net_ads_kerberos_kinit (with --use-krb5-ccache)" \
-#	$VALGRIND $BINDIR/net ads kerberos kinit \
-#	-U$USERNAME%$PASSWORD $ADDARGS \
-#	--use-krb5-ccache=${KRB5CCNAME} \
-#	|| failed=$((failed + 1))
+testit "net_ads_kerberos_kinit (with --use-krb5-ccache)" \
+	"$VALGRIND" "$BINDIR"/net ads kerberos kinit \
+	-U"$USERNAME"%"$PASSWORD" "$ADDARGS" \
+	--use-krb5-ccache="${KRB5CCNAME_PATH}" \
+	|| failed=$((failed + 1))
+testit "klist --use-krb5-ccache $KRB5CCNAME_PATH" \
+	"$KLIST" "$KRB5CCNAME_PATH" \
+	|| failed=$((failed +1))
+rm -f "$KRB5CCNAME_PATH"
 
 #simply uses in memory ccache
 testit "net_ads_kerberos_kinit (-P)" \
@@ -77,12 +80,15 @@ testit "klist env $KRB5CCNAME" \
 unset KRB5CCNAME
 rm -f "$KRB5CCNAME_PATH"
 
-# --use-krb5-ccache is not working
-#testit "net_ads_kerberos_kinit (-P with --use-krb5-ccache)" \
-#	$VALGRIND $BINDIR/net ads kerberos kinit \
-#	-P $ADDARGS \
-#	--use-krb5-ccache=${KRB5CCNAME} \
-#	|| failed=$((failed + 1))
+testit "net_ads_kerberos_kinit (-P with --use-krb5-ccache)" \
+	"$VALGRIND" "$BINDIR"/net ads kerberos kinit \
+	-P "$ADDARGS" \
+	--use-krb5-ccache="${KRB5CCNAME_PATH}" \
+	|| failed=$((failed + 1))
+testit "klist --use-krb5-ccache $KRB5CCNAME_PATH" \
+	"$KLIST" "$KRB5CCNAME_PATH" \
+	|| failed=$((failed +1))
+rm -f "$KRB5CCNAME_PATH"
 
 
 #################################################
