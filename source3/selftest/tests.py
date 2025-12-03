@@ -28,9 +28,9 @@ from selftesthelpers import bindir, srcdir, scriptdir, binpath
 from selftesthelpers import plantestsuite, samba3srcdir
 from selftesthelpers import planpythontestsuite
 from selftesthelpers import smbtorture3, configuration, smbclient3, smbtorture4
-from selftesthelpers import net, wbinfo, dbwrap_tool, rpcclient, python
-from selftesthelpers import smbget, smbcacls, smbcquotas, ntlm_auth3
-from selftesthelpers import valgrindify, smbtorture4_testsuites
+from selftesthelpers import net, wbinfo, dbwrap_tool, rpcclient
+from selftesthelpers import smbget, smbcacls, smbcquotas
+from selftesthelpers import smbtorture4_testsuites
 from selftesthelpers import smbtorture4_options
 from selftesthelpers import smbcontrol
 from selftesthelpers import smbstatus
