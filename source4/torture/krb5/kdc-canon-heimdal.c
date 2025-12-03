@@ -570,7 +570,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * Assert that the reply was with the correct type of
 	 * principal, depending on the flags we set
 	 */
-	if (test_data->canonicalize == false && test_data->as_req_spn) {
+	if (!test_data->canonicalize && test_data->as_req_spn) {
 		torture_assert_int_equal(tctx,
 					 krb5_principal_get_type(k5_context,
 								 my_creds.client),
@@ -754,7 +754,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		if (torture_setting_bool(tctx, "expect_machine_account", false)
 		    && (test_data->enterprise
 			|| test_data->spn_is_upn
-			|| test_data->upn == false)) {
+			|| !test_data->upn)) {
 			torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 			torture_assert_int_equal(tctx, krb5_cc_store_cred(k5_context,
 									  ccache, server_creds),
@@ -813,13 +813,13 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	    && (test_data->enterprise ||
 		(test_context->test_data->as_req_spn 
 		 || test_context->test_data->spn_is_upn)
-		|| test_data->upn == false)) {
+		|| !test_data->upn)) {
 		DATA_BLOB client_to_server;
 		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 		client_to_server = data_blob_const(enc_ticket.data, enc_ticket.length);
 
 		/* This is very weird */
-		if (test_data->canonicalize == false
+		if (!test_data->canonicalize
 		    && test_context->test_data->as_req_spn
 		    && test_context->test_data->spn_is_upn
 		    && test_context->test_data->s4u2self) {
@@ -830,7 +830,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 							  spn_real_realm,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
-		} else if (test_data->canonicalize == true
+		} else if (test_data->canonicalize
 		    && test_context->test_data->as_req_spn
 		    && test_context->test_data->spn_is_upn
 		    && test_context->test_data->s4u2self) {
@@ -841,8 +841,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 							  expected_principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
-		} else if (test_data->canonicalize == true
-			   && test_data->enterprise == false
+		} else if (test_data->canonicalize
+			   && !test_data->enterprise
 			   && test_context->test_data->upn
 			   && test_context->test_data->spn_is_upn
 			   && test_context->test_data->s4u2self) {
@@ -853,7 +853,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 							  expected_principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
-		} else if (test_data->canonicalize == false
+		} else if (!test_data->canonicalize
 			   && test_context->test_data->upn
 			   && test_context->test_data->spn_is_upn
 			   && test_context->test_data->s4u2self) {
@@ -924,7 +924,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 
 			torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 
-			if (test_data->spn_is_upn == false) {
+			if (!test_data->spn_is_upn) {
 				/*
 				 * Only in these cases would the above
 				 * code have needed to send packets to
