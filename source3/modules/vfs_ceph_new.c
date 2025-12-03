@@ -3408,16 +3408,18 @@ out:
 static int vfs_ceph_chdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
-	int result = -1;
+	int result = -ENOMEM;
 	struct vfs_ceph_config *config = NULL;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_chdir);
+
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
-				return -ENOMEM);
+				goto out);
 
 	DBG_DEBUG("[CEPH] chdir: handle=%p name=%s\n", handle, smb_fname->base_name);
 	result = config->ceph_chdir_fn(config->mount, smb_fname->base_name);
 	DBG_DEBUG("[CEPH] chdir: name=%s result=%d\n", smb_fname->base_name, result);
+out:
 	END_PROFILE_X(syscall_chdir);
 	return status_code(result);
 }
@@ -3427,15 +3429,18 @@ static struct smb_filename *vfs_ceph_getwd(struct vfs_handle_struct *handle,
 {
 	const char *cwd = NULL;
 	struct vfs_ceph_config *config = NULL;
+	struct smb_filename *result = NULL;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_getwd);
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
-				return NULL);
+				goto out);
 
 	cwd = config->ceph_getcwd_fn(config->mount);
 	DBG_DEBUG("[CEPH] getwd: handle=%p cwd=%s\n", handle, cwd);
+	result = cp_smb_basename(ctx, cwd);
+out:
 	END_PROFILE_X(syscall_getwd);
-	return cp_smb_basename(ctx, cwd);
+	return result;
 }
 
 static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
