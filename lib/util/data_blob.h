@@ -33,6 +33,7 @@
 #include <talloc.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "lib/util/talloc_keep_secret.h"
 
 /**
  * @defgroup data_blob The data_blob API
@@ -121,6 +122,41 @@ DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t size);
 	_data_blob_talloc_zero((ctx), (size), "DATA_BLOB: " __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Construct a data blob using supplied TALLOC_CTX.
+ *        Data is initialized with zeros and zeroed out when freed.
+ */
+DATA_BLOB data_blob_talloc_zero_s(TALLOC_CTX *mem_ctx, size_t size);
+#else
+#define data_blob_talloc_zero_s(ctx, size) \
+	_data_blob_talloc_zero_s((ctx), (size), "DATA_BLOB: " __location__)
+#endif
+
+#ifdef DOXYGEN
+/**
+ * @brief Construct a data blob using supplied TALLOC_CTX.
+ *        You can pass NULL for ptr and get a blank data blob.
+ *        Data is zeroed out when freed.
+ */
+DATA_BLOB data_blob_talloc_s(TALLOC_CTX *mem_ctx, const void *ptr, size_t size);
+#else
+#define data_blob_talloc_s(ctx, ptr, size) \
+	_data_blob_talloc_s((ctx), (ptr), (size), "DATA_BLOB: " __location__)
+#endif
+
+#ifdef DOXYGEN
+/**
+ * @brief Construct a data blob using supplied TALLOC_CTX.
+ *        Data is initialized using provided blob.
+ *        Data is zeroed out when freed.
+ */
+DATA_BLOB data_blob_dup_talloc_s(TALLOC_CTX *mem_ctx, DATA_BLOB blob);
+#else
+#define data_blob_dup_talloc_s(ctx, blob) \
+	_data_blob_dup_talloc_s((ctx), (blob), "DATA_BLOB: " __location__)
+#endif
+
 /**
 free a data blob
 **/
@@ -143,6 +179,41 @@ static inline DATA_BLOB _data_blob_talloc_zero(TALLOC_CTX *ctx,
 	DATA_BLOB b = data_blob_talloc_named(ctx, 0, size, name);
 	if (b.data != NULL) {
 		data_blob_clear(&b);
+	}
+	return b;
+}
+
+static inline DATA_BLOB _data_blob_talloc_s(TALLOC_CTX *ctx,
+					    const void *p,
+					    size_t size,
+					    const char *name)
+{
+	DATA_BLOB b = data_blob_talloc_named(ctx, p, size, name);
+	if (b.data != NULL) {
+		talloc_keep_secret(b.data);
+	}
+	return b;
+}
+
+static inline DATA_BLOB _data_blob_talloc_zero_s(TALLOC_CTX *ctx,
+						 size_t size,
+						 const char *name)
+{
+	DATA_BLOB b = data_blob_talloc_named(ctx, 0, size, name);
+	if (b.data != NULL) {
+		data_blob_clear(&b);
+		talloc_keep_secret(b.data);
+	}
+	return b;
+}
+
+static inline DATA_BLOB _data_blob_dup_talloc_s(TALLOC_CTX *ctx,
+						DATA_BLOB blob,
+						const char *name)
+{
+	DATA_BLOB b = data_blob_talloc_named(ctx, blob.data, blob.length, name);
+	if (b.data != NULL) {
+		talloc_keep_secret(b.data);
 	}
 	return b;
 }
