@@ -28,7 +28,7 @@ from selftesthelpers import planpythontestsuite, planperltestsuite
 from selftesthelpers import plantestsuite_loadlist
 from selftesthelpers import skiptestsuite, source4dir, valgrindify
 from selftesthelpers import smbtorture4_options, smbtorture4_testsuites
-from selftesthelpers import smbtorture4, samba3srcdir
+from selftesthelpers import smbtorture4, samba3srcdir, read_config_h
 
 
 print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
@@ -99,22 +99,7 @@ for auth_type in ['', '-k no', '-k yes']:
         options = creds + ' ' + auth_type + ' ' + auth_level
         plantestsuite("samba4.ldb.ldap with options %r(ad_dc_default)" % options, "ad_dc_default", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
 
-# see if we support ADS on the Samba3 side
-try:
-    config_h = os.environ["CONFIG_H"]
-except KeyError:
-    config_h = os.path.join(samba4bindir, "default/include/config.h")
-
-# check available features
-config_hash = dict()
-f = open(config_h, 'r')
-try:
-    lines = f.readlines()
-    config_hash = dict((x[0], ' '.join(x[1:]))
-                       for x in map(lambda line: line.strip().split(' ')[1:],
-                                    list(filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines))))
-finally:
-    f.close()
+config_hash = read_config_h()
 
 have_heimdal_support = ("SAMBA4_USES_HEIMDAL" in config_hash)
 have_gnutls_fips_mode_support = ("HAVE_GNUTLS_FIPS_MODE_SUPPORTED" in config_hash)

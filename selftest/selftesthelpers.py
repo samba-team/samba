@@ -45,6 +45,27 @@ def binpath(name):
     return os.path.join(bindir(), name)
 
 
+def read_config_h():
+    try:
+        config_h = os.environ["CONFIG_H"]
+    except KeyError:
+        config_h = binpath("default/include/config.h")
+
+    config = {}
+    with open(config_h) as f:
+        for line in f:
+            if line[:8] != '#define ':
+                continue
+            line = line[8:].rstrip()
+            if ' ' not in line:
+                k, v = (line, '')
+            else:
+                k, v = line.split(' ', 1)
+            config[k] = v
+
+    return config
+
+
 # Split perl variable to allow $PERL to be set to e.g. "perl -W"
 perl = os.getenv("PERL", "perl").split()
 

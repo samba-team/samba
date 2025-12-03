@@ -23,24 +23,12 @@ from selftesthelpers import bindir, srcdir, python
 from selftesthelpers import planpythontestsuite, samba4srcdir
 from selftesthelpers import plantestsuite, bbdir
 from selftesthelpers import configuration, valgrindify
-from selftesthelpers import skiptestsuite
+from selftesthelpers import skiptestsuite, read_config_h
 
 samba4bindir = bindir()
-try:
-    config_h = os.environ["CONFIG_H"]
-except KeyError:
-    config_h = os.path.join(samba4bindir, "default/include/config.h")
 
 # check available features
-config_hash = dict()
-f = open(config_h, 'r')
-try:
-    lines = f.readlines()
-    config_hash = dict((x[0], ' '.join(x[1:]))
-                       for x in map(lambda line: line.strip().split(' ')[1:],
-                                    list(filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines))))
-finally:
-    f.close()
+config_hash = read_config_h()
 
 have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
 with_pam = ("WITH_PAM" in config_hash)
