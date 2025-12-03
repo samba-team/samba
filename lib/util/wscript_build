@@ -92,6 +92,7 @@ bld.SAMBA_SUBSYSTEM('smb-panic',
 bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''
                     data_blob.c
+                    talloc_keep_secret.c
                     util_file.c
                     sys_popen.c
                     time.c
@@ -198,7 +199,6 @@ else:
                          server_id.c
                          smb_threads.c
                          system.c
-                         talloc_keep_secret.c
                          talloc_stack.c
                          tevent_debug.c
                          tfork.c
@@ -235,6 +235,7 @@ else:
                                  fault.h
                                  genrand.h
                                  tfork.h
+                                 talloc_keep_secret.h
                                  ''',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,
