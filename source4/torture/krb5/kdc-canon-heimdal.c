@@ -280,11 +280,14 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	struct test_data *test_data = talloc_get_type_abort(tcase_data, struct test_data);
 	krb5_principal principal;
 	krb5_principal krbtgt_other;
+	krb5_principal canonical_principal;
 	krb5_principal expected_principal;
 	const char *principal_string = NULL;
 	char *krbtgt_other_string;
 	int principal_flags;
+	const char *canonical_principal_string = NULL;
 	const char *expected_principal_string = NULL;
+	char *canonical_unparse_principal_string;
 	char *expected_unparse_principal_string;
 	int expected_principal_flags;
 	char *got_principal_string;
@@ -305,6 +308,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	bool implicit_dollar_requires_canonicalize = \
 		! lpcfg_kdc_name_match_implicit_dollar_without_canonicalization(
 			tctx->lp_ctx);
+	bool krb5_acceptor_report_canonical_client_name =
+		lpcfg_krb5_acceptor_report_canonical_client_name(tctx->lp_ctx);
 
 	const char *spn = NULL;
 	const char *spn_real_realm = NULL;
@@ -424,6 +429,16 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	test_data->spn_is_upn
 		= (strcasecmp(upn, spn) == 0);
 				
+	if (test_data->as_req_spn && !test_data->spn_is_upn) {
+		canonical_principal_string = spn;
+	} else {
+		canonical_principal_string = talloc_asprintf(
+			test_data,
+			"%s@%s",
+			test_data->real_username,
+			test_data->real_realm);
+	}
+
 	/*
 	 * If we are set to canonicalize, we get back the fixed UPPER
 	 * case realm, and the real username (ie matching LDAP
@@ -474,6 +489,12 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					 0, "krb5_parse_name_flags failed");
 	torture_assert_int_equal(tctx,
 				 krb5_parse_name_flags(k5_context,
+						       canonical_principal_string,
+						       expected_principal_flags,
+						       &canonical_principal),
+				 0, "krb5_parse_name_flags failed");
+	torture_assert_int_equal(tctx,
+				 krb5_parse_name_flags(k5_context,
 						       expected_principal_string,
 						       expected_principal_flags,
 						       &expected_principal),
@@ -485,6 +506,9 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 						principal,
 						KRB5_NT_PRINCIPAL);
 			krb5_principal_set_type(k5_context,
+						canonical_principal,
+						KRB5_NT_PRINCIPAL);
+			krb5_principal_set_type(k5_context,
 						expected_principal,
 						KRB5_NT_PRINCIPAL);
 		} else {
@@ -492,11 +516,19 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 						principal,
 						KRB5_NT_SRV_HST);
 			krb5_principal_set_type(k5_context,
+						canonical_principal,
+						KRB5_NT_SRV_HST);
+			krb5_principal_set_type(k5_context,
 						expected_principal,
 						KRB5_NT_SRV_HST);
 		}
 	}
 	
+	torture_assert_int_equal(tctx,
+				 krb5_unparse_name(k5_context,
+						   canonical_principal,
+						   &canonical_unparse_principal_string),
+				 0, "krb5_unparse_name failed");
 	torture_assert_int_equal(tctx,
 				 krb5_unparse_name(k5_context,
 						   expected_principal,
@@ -818,8 +850,15 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 		client_to_server = data_blob_const(enc_ticket.data, enc_ticket.length);
 
+		if (krb5_acceptor_report_canonical_client_name) {
+			torture_assert(tctx,
+				       test_accept_ticket(tctx,
+							  samba_cmdline_get_creds(),
+							  canonical_unparse_principal_string,
+							  client_to_server),
+				       "test_accept_ticket failed - failed to accept the ticket we just created");
 		/* This is very weird */
-		if (!test_data->canonicalize
+		} else if (!test_data->canonicalize
 		    && test_context->test_data->as_req_spn
 		    && test_context->test_data->spn_is_upn
 		    && test_context->test_data->s4u2self) {

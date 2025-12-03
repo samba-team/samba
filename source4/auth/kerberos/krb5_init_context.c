@@ -827,6 +827,10 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	if (lpcfg_kdc_always_include_pac(lp_ctx)) {
 		kctx->flags |= KRB5_CTX_F_ALWAYS_INCLUDE_PAC;
 	}
+	if (lpcfg_krb5_acceptor_report_canonical_client_name(lp_ctx)) {
+		/* Tell Heimdal to provide the canonical client name. */
+		kctx->flags |= KRB5_CTX_F_REPORT_CANONICAL_CLIENT_NAME;
+	}
 #endif
 
 	talloc_steal(parent_ctx, *smb_krb5_context);
