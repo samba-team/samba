@@ -607,8 +607,12 @@ static NTSTATUS vfs_default_durable_reconnect_lease(
 	struct share_mode_entry *e)
 {
 	struct files_struct *fsp = state->fsp;
-	uint32_t current_state;
-	uint16_t lease_version, epoch;
+	struct smb2_lease lease;
+	uint32_t current_state = 0;
+	uint32_t breaking_to_requested = 0;
+	uint32_t breaking_to_required = 0;
+	uint16_t lease_version = 0, epoch = 0;
+	bool breaking = false;
 	NTSTATUS status;
 
 	if (fsp->oplock_type != LEASE_OPLOCK) {
@@ -626,16 +630,131 @@ static NTSTATUS vfs_default_durable_reconnect_lease(
 	status = leases_db_get(&e->client_guid,
 			       &e->lease_key,
 			       &fsp->file_id,
-			       &current_state, /* current_state */
-			       NULL, /* breaking */
-			       NULL, /* breaking_to_requested */
-			       NULL, /* breaking_to_required */
-			       &lease_version, /* lease_version */
-			       &epoch); /* epoch */
+			       &current_state,
+			       &breaking,
+			       &breaking_to_requested,
+			       &breaking_to_required,
+			       &lease_version,
+			       &epoch);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
+	{
+		return status;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		/*
+		 * The lease was lost due to a node failure, we have to recreate
+		 * it.
+		 */
+		if (!state->op->global->persistent) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		lease = *state->lease;
+		lease.lease_state &= fsp->conn->tcon->smb_max_lease_mask;
+
+		if (!(lease.lease_state & SMB2_LEASE_WRITE) &&
+		    !(fsp->conn->tcon->capabilities & SMB2_SHARE_CAP_SCALEOUT) &&
+		    file_has_brlocks(fsp))
+		{
+			/*
+			 * Shared leases (R and RH) are discarded when
+			 * reconnecting on a failover cluster
+			 * (SMB2_SHARE_CAP_SCALEOUT not set) if the file
+			 * has byterange locks.
+			 */
+			lease.lease_state = 0;
+		}
+
+		if (lease.lease_state == SMB2_LEASE_READ) {
+			/*
+			 * A pure R-lease is always "reacquired" and hence the
+			 * epoch is incremented. Other leases are "protected"
+			 * and the epoch must be taken unchanged from the client
+			 * lease request.
+			 */
+			lease.lease_epoch++;
+		}
+		return grant_new_fsp_lease(fsp,
+					   lck,
+					   fsp_client_guid(fsp),
+					   &lease,
+					   lease.lease_state,
+					   false);
+	}
+
+	if (!state->op->global->persistent) {
+		goto fsp_lease;
+	}
+
+	if (breaking) {
+		/*
+		 * Assert only a persistent open can trigger this "stored" lease
+		 * break codepath.
+		 */
+		SMB_ASSERT(state->op->global->persistent);
+
+		/*
+		 * A "saved" break from when the handle was disconnected, send
+		 * it out now. Assert that the current leases state is still
+		 * the same as breaking_to_requested.
+		 */
+		SMB_ASSERT(current_state == breaking_to_requested);
+		SMB_ASSERT(breaking_to_requested != breaking_to_required);
+
+		/*
+		 * process_oplock_break_message() will set
+		 * breaking_to_requested = breaking_to_required
+		 */
+		send_break_message(fsp->conn->sconn->msg_ctx,
+				   &fsp->file_id,
+				   e,
+				   breaking_to_required);
+
+		goto fsp_lease;
+	}
+
+	if (!(current_state & SMB2_LEASE_WRITE) &&
+	    !(fsp->conn->tcon->capabilities & SMB2_SHARE_CAP_SCALEOUT) &&
+	    file_has_brlocks(fsp))
+	{
+		/*
+		 * Shared leases (R and RH) are discarded when
+		 * reconnecting on a failover cluster
+		 * (SMB2_SHARE_CAP_SCALEOUT not set) if the file
+		 * has byterange locks.
+		 */
+		current_state = 0;
+	}
+	if (!(current_state & SMB2_LEASE_HANDLE)) {
+		/*
+		 * Without a H-lease the epoch is taken from the request as if a
+		 * new lease was granted.
+		 */
+		epoch = state->lease->lease_epoch;
+	}
+	if (current_state == SMB2_LEASE_READ) {
+		/*
+		 * A R-only lease is only handled as if freshly acquired, hence
+		 * the epoch is taken from the client request and incremented by
+		 * one.
+		 */
+		epoch++;
+	}
+
+	status = leases_db_set(&e->client_guid,
+			       &e->lease_key,
+			       current_state,
+			       breaking,
+			       breaking_to_requested,
+			       breaking_to_required,
+			       lease_version,
+			       epoch);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+fsp_lease:
 	fsp->lease = find_fsp_lease(fsp,
 				    &e->lease_key,
 				    current_state,
