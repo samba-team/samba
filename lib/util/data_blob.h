@@ -52,7 +52,8 @@ typedef struct datablob {
  construct a data blob, must be freed with data_blob_free()
  you can pass NULL for p and get a blank data blob
 **/
-_PUBLIC_ DATA_BLOB data_blob_named(const void *p, size_t length, const char *name);
+#define data_blob_named(ptr, size, name) \
+	data_blob_talloc_named(NULL, (ptr), (size), name)
 
 /**
  construct a data blob, using supplied TALLOC_CTX
@@ -64,7 +65,8 @@ _PUBLIC_ DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, si
  use this sparingly as it initialises data - better to initialise
  yourself if you want specific data in the blob
 **/
-_PUBLIC_ DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length);
+#define data_blob_talloc_zero(ctx, size) \
+	_data_blob_talloc_zero((ctx), (size), "DATA_BLOB: " __location__)
 
 /**
 free a data blob
@@ -80,6 +82,17 @@ _PUBLIC_ void data_blob_clear(DATA_BLOB *d);
 free a data blob and clear its contents
 **/
 _PUBLIC_ void data_blob_clear_free(DATA_BLOB *d);
+
+static inline DATA_BLOB _data_blob_talloc_zero(TALLOC_CTX *ctx,
+					       size_t size,
+					       const char *name)
+{
+	DATA_BLOB b = data_blob_talloc_named(ctx, 0, size, name);
+	if (b.data != NULL) {
+		data_blob_clear(&b);
+	}
+	return b;
+}
 
 /**
 check if two data blobs are equal
