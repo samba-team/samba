@@ -272,8 +272,6 @@ struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
 	struct torture_suite *suite = talloc_zero(ctx, struct torture_suite);
 
 	suite->name = talloc_strdup(suite, name);
-	suite->testcases = NULL;
-	suite->children = NULL;
 
 	return suite;
 }
