@@ -30,6 +30,7 @@
 #include "source4/auth/kerberos/kerberos.h"
 #include "source4/auth/kerberos/kerberos_util.h"
 #include "lib/util/util_net.h"
+#include "param/param.h"
 
 #define krb5_is_app_tag(dat,tag)                          \
        ((dat != NULL) && (dat)->length &&                \
@@ -327,6 +328,20 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 	KRB_ERROR error;
 	size_t used;
 	bool ok;
+	bool require_canon = lpcfg_kdc_require_canonicalization(
+		test_context->tctx->lp_ctx);
+
+	if (require_canon) {
+		torture_comment(test_context->tctx, "require_canon\n");
+		ok = torture_check_krb5_error(test_context,
+					      recv_buf,
+					      KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
+					      false);
+		torture_assert(test_context->tctx,
+			       ok,
+			       "canonicalization required");
+		return true;
+	}
 
 	switch (test_context->test)
 	{
@@ -741,7 +756,7 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	krb5_get_init_creds_opt *krb_options = NULL;
 	const char *realm;
 	const char *krb5_hostname = torture_setting_string(tctx, "krb5-hostname", "");
-
+	bool require_canon = lpcfg_kdc_require_canonicalization(tctx->lp_ctx);
 
 	ok = torture_krb5_init_context(tctx, test, &smb_krb5_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
@@ -833,6 +848,20 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	k5ret = krb5_get_init_creds_password(smb_krb5_context->krb5_context, &my_creds, principal,
 					     password, NULL, NULL, 0,
 					     NULL, krb_options);
+
+	if (require_canon) {
+		/*
+		 * The clients in these requests are not using canonicalization, so
+		 * in all cases where the server has 'require canonicalization = yes',
+		 * the error code will be the same.
+		 */
+		torture_assert_int_equal(tctx,
+					 k5ret,
+					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
+					 "server requires client to ask for canonicalization");
+		return true;
+	}
+
 	krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
 
 	switch (test)
