@@ -228,6 +228,9 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 		if (session_key) {
 			*session_key = data_blob_talloc(mem_ctx,
 							KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+			if (session_key->data == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 		if (keytype) {
 			*keytype = KRB5_KEY_TYPE(subkey);
@@ -243,6 +246,9 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 	if (session_key) {
 		*session_key = data_blob_talloc(mem_ctx, set->elements[0].value,
 						set->elements[0].length);
+		if (session_key->data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (keytype) {
