@@ -54,12 +54,6 @@ if have_man_pages_support:
         environ={'LD_PRELOAD': ''}
     )
 
-try:
-    import testscenarios
-except ImportError:
-    skiptestsuite("subunit", "testscenarios not available")
-else:
-    planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
 planpythontestsuite("none", "samba.tests.blackbox.check_output")
 
