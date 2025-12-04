@@ -1048,9 +1048,9 @@ bool smb_krb5_get_smb_session_key(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("Got KRB5 session key of length %d\n",
 		   (int)KRB5_KEY_LENGTH(skey)));
 
-	*session_key = data_blob_talloc(mem_ctx,
-					 KRB5_KEY_DATA(skey),
-					 KRB5_KEY_LENGTH(skey));
+	*session_key = data_blob_talloc_s(mem_ctx,
+					  KRB5_KEY_DATA(skey),
+					  KRB5_KEY_LENGTH(skey));
 	dump_data_pw("KRB5 Session Key:\n",
 		     session_key->data,
 		     session_key->length);
@@ -2210,14 +2210,17 @@ krb5_error_code smb_krb5_kinit_keyblock_ccache(krb5_context ctx,
 		      SMB_CREDS_KEYTAB,
 		      &my_creds);
 	if (rc < 0) {
+		ZERO_STRUCT(entry);
 		return KRB5_KT_BADNAME;
 	}
 	code = krb5_kt_resolve(ctx, tmp_name, &keytab);
 	if (code) {
+		ZERO_STRUCT(entry);
 		return code;
 	}
 
 	code = krb5_kt_add_entry(ctx, keytab, &entry);
+	ZERO_STRUCT(entry);
 	if (code) {
 		(void)krb5_kt_close(ctx, keytab);
 		goto done;
