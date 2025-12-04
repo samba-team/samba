@@ -1051,6 +1051,10 @@ bool smb_krb5_get_smb_session_key(TALLOC_CTX *mem_ctx,
 	*session_key = data_blob_talloc_s(mem_ctx,
 					  KRB5_KEY_DATA(skey),
 					  KRB5_KEY_LENGTH(skey));
+	if (session_key->data == NULL) {
+		DBG_WARNING("No memory for session key\n");
+		goto done;
+	}
 	dump_data_pw("KRB5 Session Key:\n",
 		     session_key->data,
 		     session_key->length);
