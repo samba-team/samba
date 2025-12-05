@@ -20,7 +20,6 @@
 
 import os, pwd, grp
 import ldb
-import samba
 from samba.tests import source_tree_topdir
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
