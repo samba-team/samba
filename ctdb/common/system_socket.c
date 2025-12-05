@@ -269,7 +269,11 @@ static uint16_t ip6_checksum(uint8_t *data, size_t n, struct ip6_hdr *ip6)
 /* For readability */
 #undef CTDB_CAN_SEND_ARPS
 #ifdef HAVE_PACKETSOCKET
+#ifdef HAVE_GETIFADDRS
+#ifdef HAVE_IF_NAMETOINDEX
 #define CTDB_CAN_SEND_ARPS
+#endif
+#endif
 #endif
 
 #ifdef CTDB_CAN_SEND_ARPS
@@ -289,6 +293,141 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
 			    offsetof(struct sockaddr_ll, sll_addr) +
 			    sll->sll_halen);
 	return len;
+}
+
+/*
+ * Find an interface using getifaddrs(3)
+ *
+ * The goal here is to support at least Ethernet and IPoIB (RFC 4391).
+ *
+ * We need to be able to get link-level (hardware) addresses and IPoIB
+ * link-level addresses are 20 octets.
+ *
+ * ioctl(2) SIOCGIFHWADDR will get link-level addresses but it uses
+ * struct sockaddr, which only has space for 14 octets of address.
+ * There appears to be no way to use more space.
+ *
+ * Instead, we use getifaddrs(3).  struct ifaddrs uses pointers
+ * (apparently) to struct sockaddr.  Nevertheless, it seems more space
+ * is actually allocated (perhaps struct sockaddr_storage?).
+ * Similarly, struct sockaddr_ll, used for link-level (i.e. hardware)
+ * addresses has only 8 octets of address space.  Therefore, struct
+ * sockaddr_storage is used for allocations, with appropriate casts
+ * throughout.
+ */
+
+static bool check_hwaddr(struct sockaddr *sa, unsigned int index)
+{
+	struct sockaddr_ll *sall = NULL;
+
+	/*
+	 * getifaddrs(3): This field (ifa_addr) may contain a null
+	 * pointer
+	 */
+	if (sa == NULL) {
+		return false;
+	}
+
+	/* Want struct sockaddr_ll, as per packet(7) */
+	if (sa->sa_family != AF_PACKET) {
+		return false;
+	}
+
+	sall = (struct sockaddr_ll *)sa;
+
+	if (index != sall->sll_ifindex) {
+		return false;
+	}
+
+	if (sall->sll_halen == 0) {
+		return false;
+	}
+
+	return true;
+}
+
+static int find_interface(const char *name,
+			  struct sockaddr_storage *hardware_addr,
+			  struct sockaddr_storage *broadcast_addr)
+{
+	unsigned int index = 0;
+	struct ifaddrs *ifa = NULL;
+	struct ifaddrs *t = NULL;
+	bool ok = false;
+	int ret = 0;
+
+	/*
+	 * Matching will be done by index.
+	 *
+	 * Interface altname properties (altnames) are a method of
+	 * providing alternative names for a network interface (see
+	 * ip-link(8)). They can be used to provide some useful
+	 * flexibility across cluster nodes where interface name
+	 * different and dealing with udev is too bothersome..
+	 *
+	 * getifaddrs(3) only returns the primary name for each
+	 * interface.  If matching is done by name then only a primary
+	 * interface name can be matched, so altnames would not be
+	 * supported.  The key here is that if_nametoindex() works for
+	 * altnames, so matching on the returned index means that
+	 * altnames are supported by this function.
+	 */
+	index = if_nametoindex(name);
+	if (index == 0) {
+		return ENODEV;
+	}
+
+	ret = getifaddrs(&ifa);
+	if (ret == -1) {
+		ret = errno;
+		fprintf(stderr, "Unable to get interface list (%d)\n", ret);
+		return ret;
+	}
+
+	for (t = ifa; t != NULL; t = t->ifa_next) {
+		unsigned int want_flags = IFF_UP | IFF_BROADCAST;
+		unsigned int check_flags = want_flags | IFF_NOARP | IFF_LOOPBACK;
+
+		/*
+		 * Check the address to ensure this is an AF_PACKET
+		 * socket and matches the required index before
+		 * allowing soft-failure for loopback/non-arpable
+		 */
+		ok = check_hwaddr(t->ifa_addr, index);
+		if (!ok) {
+			continue;
+		}
+
+		/* Should be up, with broadcast address, arpable, not loopback */
+		if ((t->ifa_flags & check_flags) != want_flags) {
+			/*
+			 * The interface was found but it isn't one
+			 * that we can ARP on...
+			 */
+			ret = ENXIO;
+			goto done;
+		}
+
+		ok = check_hwaddr(t->ifa_ifu.ifu_broadaddr, index);
+		if (!ok) {
+			continue;
+		}
+
+		memcpy(hardware_addr,
+		       t->ifa_addr,
+		       sall_len((struct sockaddr_ll *)t->ifa_addr));
+		memcpy(broadcast_addr,
+		       t->ifa_broadaddr,
+		       sall_len((struct sockaddr_ll *)t->ifa_broadaddr));
+
+		ret = 0;
+		goto done;
+	}
+	ret = ENODEV;
+
+done:
+	freeifaddrs(ifa);
+	return ret;
 }
 
 /*
@@ -520,20 +659,16 @@ static int ip6_na_build(uint8_t *buffer,
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
+	struct sockaddr_storage hardware_addr = {};
+	struct sockaddr_storage broadcast_addr = {};
+	struct sockaddr_ll *hardware_addr_ll =
+		(struct sockaddr_ll *) &hardware_addr;
+	struct sockaddr_ll *broadcast_addr_ll =
+		(struct sockaddr_ll *) &broadcast_addr;
 	int s = -1;
 	struct sockaddr_ll sall = {0};
 	socklen_t dest_len = 0;
-	struct ifreq if_hwaddr = {
-		.ifr_ifru = {
-			.ifru_flags = 0
-		},
-	};
 	uint8_t buffer[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
-	struct ifreq ifr = {
-		.ifr_ifru = {
-			.ifru_flags = 0
-		},
-	};
 	struct ether_addr *hwaddr = NULL;
 	size_t len = 0;
 	int ret = 0;
@@ -547,40 +682,42 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
 
 	/* Find interface */
-	strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
-	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-		ret = errno;
+	ret = find_interface(iface, &hardware_addr, &broadcast_addr);
+	switch (ret) {
+	case 0:
+		break;
+	case ENODEV:
 		DBG_ERR("Interface '%s' not found\n", iface);
+		goto done;
+	case ENXIO:
+		/* Probably loopback, so convert to success */
+		ret = 0;
+		DBG_DEBUG("Interface '%s' is not ARP-able\n", iface);
+		goto done;
+	default:
+		DBG_ERR("Failed to fetch information for interface '%s' (%d)\n",
+			iface,
+			ret);
 		goto done;
 	}
 
-	/* Get MAC address */
-	strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
-	ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
-	if ( ret < 0 ) {
-		ret = errno;
-		DBG_ERR("ioctl failed\n");
-		goto done;
-	}
-	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
-		ret = 0;
-		D_DEBUG("Ignoring loopback arp request\n");
-		goto done;
-	}
-	if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
-		ret = EINVAL;
-		DBG_ERR("Not an ethernet address family (0x%x)\n",
-			if_hwaddr.ifr_hwaddr.sa_family);
+	switch (hardware_addr_ll->sll_hatype) {
+	case ARPHRD_ETHER:
+		break;
+	default:
+		DBG_ERR("Not a supported address family (0x%x)\n",
+			hardware_addr_ll->sll_hatype);
+		ret = EPROTONOSUPPORT;
 		goto done;
 	}
 
 	/* Set up most of destination address structure */
 	sall.sll_family = AF_PACKET;
 	sall.sll_halen = sizeof(struct ether_addr);
-	sall.sll_ifindex = ifr.ifr_ifindex;
+	sall.sll_ifindex = hardware_addr_ll->sll_ifindex;
 
 	/* For clarity */
-	hwaddr = (struct ether_addr *)if_hwaddr.ifr_hwaddr.sa_data;
+	hwaddr = (struct ether_addr *)hardware_addr_ll->sll_addr;
 
 	memcpy(&sall.sll_addr[0], (uint8_t *)hwaddr, ETH_ALEN);
 	dest_len = sall_len(&sall);
