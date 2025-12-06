@@ -6188,6 +6188,229 @@ done:
 	return ret;
 }
 
+/*
+ * Verify a redispatched deferred open doesn't send a lease break to the client
+ *
+ * 1. Client 1: Open file with RH lease
+ * 2. Client 1: Second open with RH lease, different lease key
+ * 3. Client 2: Try to open file with incompatible mode, triggers sharing
+ *    violation, triggers H lease breaks and gets deferred.
+ * 4. Client 1: close handle 1, this will trigger a redispatch of the deferred
+ *    open from 3.
+ * 5. Check the client doesn't get a lease break.
+ */
+static bool test_two_leases(struct torture_context *tctx,
+			    struct smb2_tree *_tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smbcli_options options = _tree->session->transport->options;
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_request *req = NULL;
+	struct smb2_create c;
+	struct smb2_lease ls;
+	uint64_t broken_ls_key;
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_handle ch1 = {};
+	struct smb2_handle ch2 = {};
+	char *fname = NULL;
+	int rc;
+	NTSTATUS status;
+	bool ret = true;
+
+	fname = talloc_asprintf(mem_ctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	options.client_guid = GUID_random();
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree1);
+	torture_assert_goto(tctx, ret, ret, done, "torture_smb2_connection_ext failed\n");
+
+	options.client_guid = GUID_random();
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+
+	status = torture_setup_simple_file(tctx, tree1, fname);
+	torture_assert_ntstatus_ok(tctx, status, "setup file failed\n");
+
+	/*
+	 * First open with RH lease
+	 */
+	smb2_lease_v2_create_share(&c,
+				   &ls,
+				   false,
+				   fname,
+				   smb2_util_share_access("R"),
+				   1,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	c.in.durable_open_v2 = true;
+	c.in.create_guid = GUID_random();
+	c.in.desired_access = SEC_RIGHTS_FILE_READ;
+
+	status = smb2_create(tree1, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.oplock_level,
+		SMB2_OPLOCK_LEVEL_LEASE,
+		ret, done,
+		"Bad lease level\n");
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.lease_response_v2.lease_state,
+		smb2_util_lease_state("RH"),
+		ret, done,
+		"Bad lease level\n");
+
+	/*
+	 * Second open with RH lease
+	 */
+	smb2_lease_v2_create_share(&c,
+				   &ls,
+				   false,
+				   fname,
+				   smb2_util_share_access("R"),
+				   2,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	c.in.durable_open_v2 = true;
+	c.in.create_guid = GUID_random();
+	c.in.desired_access = SEC_RIGHTS_FILE_READ;
+
+	status = smb2_create(tree1, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.oplock_level,
+		SMB2_OPLOCK_LEVEL_LEASE,
+		ret, done,
+		"Bad lease level\n");
+	torture_assert_int_equal_goto(
+		tctx,
+		c.out.lease_response_v2.lease_state,
+		smb2_util_lease_state("RH"),
+		ret, done,
+		"Bad lease level\n");
+
+	/*
+	 * Third open triggering a sharing violation and two H-lease breaks
+	 */
+
+	smb2_lease_v2_create_share(&c,
+				   &ls,
+				   false,
+				   fname,
+				   smb2_util_share_access(""),
+				   3,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	c.in.durable_open_v2 = true;
+	c.in.create_guid = GUID_random();
+
+	req = smb2_create_send(tree2, &c);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "smb2_create_send failed\n");
+
+	while (!req->cancel.can_cancel &&
+	       (req->state < SMB2_REQUEST_DONE))
+	{
+		rc = tevent_loop_once(req->transport->ev);
+		torture_assert_goto(tctx, rc == 0, ret, done,
+				    "tevent_loop_once failed\n");
+	}
+	torture_assert_goto(tctx, req->state < SMB2_REQUEST_DONE,
+			    ret, done,
+			    "Expected async interim response\n");
+
+	/* Wait for first break */
+	torture_wait_for_lease_break(tctx);
+
+	if (lease_break_info.lease_break.current_lease.lease_key.data[0] == 1) {
+		broken_ls_key = 1;
+		ch1 = h1;
+		ch2 = h2;
+		ZERO_STRUCT(h1);
+		ZERO_STRUCT(h2);
+	} else {
+		broken_ls_key = 2;
+		ch1 = h2;
+		ch2 = h1;
+		ZERO_STRUCT(h1);
+		ZERO_STRUCT(h2);
+	}
+
+	/* Wait for second break */
+	torture_wait_for_lease_break(tctx);
+
+	CHECK_VAL(lease_break_info.count, 2);
+	lease_break_info.count = 1; /* trick CHECK_BREAK_INFO_V2_NOWAIT() */
+	CHECK_BREAK_INFO_V2_NOWAIT(tree1->session->transport,
+			    "RH",
+			    "R",
+			    broken_ls_key,
+			    2);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_util_close(tree1, ch1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	ZERO_STRUCT(ch1);
+
+	CHECK_NO_BREAK(tctx);
+
+	status = smb2_util_close(tree1, ch2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	ZERO_STRUCT(ch2);
+
+	status = smb2_create_recv(req, tctx, &c);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_OK,
+		ret, done, "smb2_create failed\n");
+
+	status = smb2_util_close(tree2, c.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree1, h2);
+	}
+	if (!smb2_util_handle_empty(ch1)) {
+		smb2_util_close(tree1, ch1);
+	}
+	if (!smb2_util_handle_empty(ch2)) {
+		smb2_util_close(tree1, ch2);
+	}
+	smb2_util_unlink(_tree, fname);
+	TALLOC_FREE(tree1);
+	TALLOC_FREE(tree2);
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -6253,6 +6476,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "rename_dir_openfile",
 				     torture_rename_dir_openfile);
 	torture_suite_add_1smb2_test(suite, "lease-epoch", test_lease_epoch);
+	torture_suite_add_1smb2_test(suite, "two-leases", test_two_leases);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
