@@ -49,6 +49,7 @@ static struct smbd_scavenger_state *smbd_scavenger_state = NULL;
 struct scavenger_message {
 	struct file_id file_id;
 	uint64_t open_persistent_id;
+	uint32_t name_hash;
 	NTTIME until;
 };
 
@@ -433,6 +434,7 @@ void scavenger_schedule_disconnected(struct files_struct *fsp)
 	ZERO_STRUCT(msg);
 	msg.file_id = fsp->file_id;
 	msg.open_persistent_id = fsp->op->global->open_persistent_id;
+	msg.name_hash = fsp->name_hash;
 	msg.until = timeval_to_nttime(&until);
 
 	DEBUG(10, ("smbd: %s mark file %s as disconnected at %s with timeout "
@@ -472,6 +474,7 @@ struct scavenger_timer_context {
 
 struct cleanup_disconnected_state {
 	struct file_id fid;
+	uint32_t name_hash;
 	struct share_mode_lock *lck;
 	uint64_t open_persistent_id;
 	struct share_mode_entry e;
@@ -515,11 +518,12 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 }
 
 static bool share_mode_cleanup_disconnected(
-	struct file_id fid, uint64_t open_persistent_id)
+	struct file_id fid, uint64_t open_persistent_id, uint32_t name_hash)
 {
 	struct cleanup_disconnected_state state = {
 		.fid = fid,
-		.open_persistent_id = open_persistent_id
+		.open_persistent_id = open_persistent_id,
+		.name_hash = name_hash,
 	};
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -626,7 +630,8 @@ static void scavenger_timer(struct tevent_context *ev,
 	}
 
 	ok = share_mode_cleanup_disconnected(ctx->msg.file_id,
-					     ctx->msg.open_persistent_id);
+					     ctx->msg.open_persistent_id,
+					     ctx->msg.name_hash);
 	if (!ok) {
 		DBG_WARNING("Failed to cleanup share modes and byte range "
 			    "locks for file %s open %"PRIu64"\n",
