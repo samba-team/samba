@@ -2275,6 +2275,7 @@ struct delay_for_oplock_state {
 	bool disallow_write_lease;
 	uint32_t total_lease_types;
 	bool delay;
+	bool protect;
 	struct blocker_debug_state *blocker_debug_state;
 };
 
@@ -2301,14 +2302,17 @@ static bool delay_for_oplock_fn(
 	const struct smb2_lease *lease = state->lease;
 	bool e_is_lease = (e->op_type == LEASE_OPLOCK);
 	uint32_t e_lease_type = SMB2_LEASE_NONE;
-	uint32_t break_to;
+	uint32_t breaking_to_requested = 0;
+	uint32_t breaking_to_required = 0;
+	uint32_t break_to = 0;
 	bool lease_is_breaking = false;
+	uint16_t lease_version = 0;
+	uint16_t lease_epoch = 0;
 	struct tevent_req *subreq = NULL;
 	struct server_id_buf idbuf = {};
+	NTSTATUS status;
 
 	if (e_is_lease) {
-		NTSTATUS status;
-
 		if (lease != NULL) {
 			bool our_lease = is_same_lease(fsp, e, lease);
 			if (our_lease) {
@@ -2321,34 +2325,41 @@ static bool delay_for_oplock_fn(
 			&e->client_guid,
 			&e->lease_key,
 			&fsp->file_id,
-			&e_lease_type, /* current_state */
+			&e_lease_type,
 			&lease_is_breaking,
-			NULL, /* breaking_to_requested */
-			NULL, /* breaking_to_required */
-			NULL, /* lease_version */
-			NULL); /* epoch */
-
+			&breaking_to_requested,
+			&breaking_to_required,
+			&lease_version,
+			&lease_epoch);
 		/*
-		 * leases_db_get() can return NT_STATUS_NOT_FOUND
-		 * if the share_mode_entry e is stale and the
-		 * lease record was already removed. In this case return
-		 * false so the traverse continues.
+		 * leases_db_get() can return NT_STATUS_NOT_FOUND if the
+		 * share_mode_entry e is stale and the lease record was already
+		 * removed or in case of a node failure on a Samba cluster and a
+		 * Persistent Handle.
+		 *
+		 * In the first case return false so the traverse continues, in
+		 * the second case return NT_STATUS_FILE_NOT_AVAILABLE, but
+		 * assert that the client is not connected, otherwise it should
+		 * have reestablished the lease when reconnecting the handle
 		 */
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) &&
-		    share_entry_stale_pid(e))
-		{
-			struct GUID_txt_buf guid_strbuf;
-			struct file_id_buf file_id_strbuf;
-			DBG_DEBUG("leases_db_get for client_guid [%s] "
-				  "lease_key [%"PRIu64"/%"PRIu64"] "
-				  "file_id [%s] failed for stale "
-				  "share_mode_entry\n",
-				  GUID_buf_string(&e->client_guid, &guid_strbuf),
-				  e->lease_key.data[0],
-				  e->lease_key.data[1],
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			if (share_entry_stale_pid(e)) {
+				struct GUID_txt_buf guid_strbuf;
+				struct file_id_buf file_id_strbuf;
+				DBG_DEBUG("leases_db_get for client_guid [%s] "
+					  "lease_key [%"PRIu64"/%"PRIu64"] "
+					  "file_id [%s] failed for stale "
+					  "share_mode_entry\n",
+					  GUID_buf_string(&e->client_guid,
+							  &guid_strbuf),
+					  e->lease_key.data[0],
+					  e->lease_key.data[1],
 				  file_id_str_buf(fsp->file_id, &file_id_strbuf));
-			return false;
+				return false;
+			}
+			if (e->protect) {
+				status = NT_STATUS_OK;
+			}
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			struct GUID_txt_buf guid_strbuf;
@@ -2407,6 +2418,32 @@ static bool delay_for_oplock_fn(
 		return false;
 	}
 
+	if (!e->protect && (e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN)) {
+		/*
+		 * Ensure share_entry_stale_pid() is called at least once on a
+		 * Persistent Handle.
+		 */
+		share_entry_stale_pid(e);
+	}
+	if (e->protect) {
+		uint32_t file_available_mask = SMB2_LEASE_HANDLE;
+
+		if (file_has_brlocks(fsp)) {
+			/*
+			 * If a file has byterange locks, require an exclusive
+			 * lease (with W) so concurrent opens are forced to
+			 * cause a break. With a W lease, a concurrent open on a
+			 * a file with brl MUST fail with
+			 * STATUS_FILE_NOT_AVAILABLE.
+			 */
+			file_available_mask |= SMB2_LEASE_WRITE;
+		}
+		if ((e_lease_type & file_available_mask) != file_available_mask) {
+			state->protect = true;
+			return true;
+		}
+	}
+
 	break_to = e_lease_type & ~state->delay_mask;
 
 	if (state->will_overwrite && !(state->delay_mask & SMB2_LEASE_HANDLE)) {
@@ -2451,11 +2488,43 @@ static bool delay_for_oplock_fn(
 		state->delay = true;
 	}
 
-	DBG_DEBUG("breaking from %d to %d\n",
-		  (int)e_lease_type,
-		  (int)break_to);
-	send_break_message(
-		fsp->conn->sconn->msg_ctx, &fsp->file_id, e, break_to);
+	if (e->protect) {
+		/*
+		 * We have to save the break and later send it out when the
+		 * client reconnects the handle. Set "breaking_to_requested" to
+		 * the current lease state and set "breaking_to_required" to the
+		 * new lease state.
+		 */
+		if (!lease_is_breaking || (break_to != breaking_to_required)) {
+			if (lease_is_breaking) {
+				break_to &= breaking_to_required;
+			}
+
+			DBG_DEBUG("Save lease downgrade PH from %d to %d\n",
+				  (int)e_lease_type,
+				  (int)break_to);
+
+			status = leases_db_set(&e->client_guid,
+					       &e->lease_key,
+					       e_lease_type,
+					       true,
+					       e_lease_type,
+					       break_to,
+					       lease_version,
+					       lease_epoch);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("leases_db_set failed %s\n",
+					nt_errstr(status));
+				return true;
+			}
+		}
+	} else {
+		DBG_DEBUG("breaking from %d to %d\n",
+			  (int)e_lease_type,
+			  (int)break_to);
+		send_break_message(
+			fsp->conn->sconn->msg_ctx, &fsp->file_id, e, break_to);
+	}
 
 	if (!state->delay) {
 		return false;
@@ -2587,6 +2656,10 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	ok = share_mode_forall_entries(lck, delay_for_oplock_fn, &state);
 	if (!ok) {
 		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (state.protect) {
+		return NT_STATUS_FILE_NOT_AVAILABLE;
 	}
 
 	if (state.delay) {
