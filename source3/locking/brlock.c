@@ -937,6 +937,7 @@ NTSTATUS brl_lock(
 	br_off size,
 	enum brl_type lock_type,
 	enum brl_flavour lock_flav,
+	bool persistent,
 	struct server_id *blocker_pid,
 	uint64_t *psmblctx)
 {
@@ -953,7 +954,8 @@ NTSTATUS brl_lock(
 		.size = size,
 		.fnum = br_lck->fsp->fnum,
 		.lock_type = lock_type,
-		.lock_flav = lock_flav
+		.lock_flav = lock_flav,
+		.persistent = persistent,
 	};
 
 	if (lock_flav == WINDOWS_LOCK) {

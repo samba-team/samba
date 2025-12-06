@@ -324,6 +324,7 @@ NTSTATUS do_lock(struct byte_range_lock *br_lck,
 			  count,
 			  lock_type,
 			  lock_flav,
+			  fsp->op->global->persistent,
 			  &blocker_pid,
 			  &blocker_smblctx);
 	brl_req_set(br_lck, NULL, NULL);

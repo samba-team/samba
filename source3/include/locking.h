@@ -75,6 +75,7 @@ struct lock_struct {
 	uint64_t fnum;
 	enum brl_type lock_type;
 	enum brl_flavour lock_flav;
+	bool persistent;
 };
 
 struct smbd_lock_element {

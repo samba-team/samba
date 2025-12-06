@@ -55,6 +55,7 @@ NTSTATUS brl_lock(
 	br_off size,
 	enum brl_type lock_type,
 	enum brl_flavour lock_flav,
+	bool persistent,
 	struct server_id *blocker_pid,
 	uint64_t *psmblctx);
 bool brl_unlock(struct byte_range_lock *br_lck,
