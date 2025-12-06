@@ -1437,6 +1437,7 @@ bool brl_reconnect_disconnected(struct files_struct *fsp,
 	uint64_t fnum = fsp->fnum;
 	unsigned int i;
 	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
+	int matched_locks = 0;
 
 	if (fsp->op == NULL) {
 		return false;
@@ -1462,32 +1463,46 @@ bool brl_reconnect_disconnected(struct files_struct *fsp,
 		struct lock_struct *lock = &br_lck->lock_data[i];
 
 		/*
-		 * as this is a durable handle we only expect locks
-		 * of the current file handle!
+		 * If this is a durable handle we only expect locks of the
+		 * current file handle. If we're reconnecting a Persistent
+		 * Handle, we do allow other opens.
 		 */
 
 		if (lock->context.smblctx != smblctx) {
+			/*
+			 *  This lock is not for this open
+			 */
+			if (fsp->op->global->persistent) {
+				continue;
+			}
+			TALLOC_FREE(br_lck);
 			return false;
 		}
 
-		if (lock->context.tid != TID_FIELD_INVALID) {
-			return false;
-		}
+		if (!fsp->op->global->persistent) {
+			if (lock->context.tid != TID_FIELD_INVALID) {
+				TALLOC_FREE(br_lck);
+				return false;
+			}
 
-		if (!server_id_is_disconnected(&lock->context.pid)) {
-			return false;
-		}
+			if (!server_id_is_disconnected(&lock->context.pid)) {
+				TALLOC_FREE(br_lck);
+				return false;
+			}
 
-		if (lock->fnum != FNUM_FIELD_INVALID) {
-			return false;
+			if (lock->fnum != FNUM_FIELD_INVALID) {
+				TALLOC_FREE(br_lck);
+				return false;
+			}
 		}
 
 		lock->context.pid = self;
 		lock->context.tid = tid;
 		lock->fnum = fnum;
+		matched_locks++;
 	}
 
-	fsp->current_lock_count = br_lck->num_locks;
+	fsp->current_lock_count = matched_locks;
 	br_lck->modified = true;
 	return true;
 }
