@@ -848,6 +848,11 @@ static void wbcNamedBlobDestructor(void *ptr)
 
 	while (b->name != NULL) {
 		free(discard_const_p(char, b->name));
+		/*
+		 * This targets sensitive data like "session_key". To make the
+		 * implementation simple, we zero every wbcNamedBlob.
+		 */
+		BURN_PTR_SIZE(b->blob.data, b->blob.length);
 		free(b->blob.data);
 		b += 1;
 	}
