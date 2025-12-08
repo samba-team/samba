@@ -71,12 +71,34 @@ static void test_types(void)
 
 #ifdef CTDB_CAN_SEND_ARPS
 
+static void hwaddr_to_sockaddr_ll(const char *asc, struct sockaddr_ll *sall)
+{
+	struct ether_addr *hw = NULL;
+
+	*sall = (struct sockaddr_ll) {
+		.sll_family = AF_PACKET,
+		.sll_protocol = htons(ETH_P_ALL),
+		.sll_ifindex = 2,
+		.sll_pkttype = PACKET_HOST,
+		.sll_hatype = ARPHRD_ETHER,
+		.sll_halen = ETH_ALEN,
+	};
+
+	hw = ether_aton(asc);
+	assert(hw != NULL);
+
+	memcpy(&sall->sll_addr[0], hw, ETH_ALEN);
+}
+
 static void test_arp(const char *addr_str,
 		     const char *hwaddr_str,
 		     uint16_t arpop)
 {
 	ctdb_sock_addr addr;
-	struct ether_addr *hw = NULL;
+	struct sockaddr_storage hardware_addr = {};
+	struct sockaddr_ll *sall = (struct sockaddr_ll *)&hardware_addr;
+	/* Temporarily used for IPv6 - it still takes an ethernet address */
+	struct ether_addr *hw = (struct ether_addr *)&sall->sll_addr[0];
 	uint8_t buf[512];
 	size_t buflen = sizeof(buf);
 	size_t len;
@@ -85,12 +107,11 @@ static void test_arp(const char *addr_str,
 	ret = ctdb_sock_addr_from_string(addr_str, &addr, false);
 	assert(ret == 0);
 
-	hw = ether_aton(hwaddr_str);
-	assert(hw != NULL);
+	hwaddr_to_sockaddr_ll(hwaddr_str, sall);
 
 	switch (addr.ip.sin_family) {
 	case AF_INET:
-		ret = arp_build(buf, buflen, &addr.ip, hw, arpop, &len);
+		ret = arp_build(buf, buflen, &addr.ip, sall, arpop, &len);
 		break;
 	case AF_INET6:
 		ret = ip6_na_build(buf, buflen, &addr.ip6, hw, &len);

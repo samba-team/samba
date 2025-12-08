@@ -460,7 +460,7 @@ done:
 static int arp_build(uint8_t *buffer,
 		     size_t buflen,
 		     const struct sockaddr_in *addr,
-		     const struct ether_addr *hwaddr,
+		     const struct sockaddr_ll *hardware_addr,
 		     uint16_t arpop,
 		     size_t *len)
 {
@@ -488,9 +488,9 @@ static int arp_build(uint8_t *buffer,
 	 * standard.
 	 */
 	l = sizeof(struct arphdr) +
-		ETH_ALEN +
+		hardware_addr->sll_halen +
 		sizeof(addr->sin_addr) +
-		ETH_ALEN +
+		hardware_addr->sll_halen +
 		sizeof(addr->sin_addr);
 	if (buflen < l) {
 		return EMSGSIZE;
@@ -500,23 +500,23 @@ static int arp_build(uint8_t *buffer,
 
 	p = buffer;
 	ah = (struct arphdr *)p;
-	ah->ar_hrd = htons(ARPHRD_ETHER);
+	ah->ar_hrd = htons(hardware_addr->sll_hatype);
 	ah->ar_pro = htons(ETH_P_IP);
-	ah->ar_hln = ETH_ALEN;
+	ah->ar_hln = hardware_addr->sll_halen;
 	ah->ar_pln = sizeof(addr->sin_addr);
 	ah->ar_op = htons(arpop);
 	p += sizeof(struct arphdr);
 
-	memcpy(p, hwaddr, ETH_ALEN);
-	p += ETH_ALEN;
+	memcpy(p, &hardware_addr->sll_addr, hardware_addr->sll_halen);
+	p += hardware_addr->sll_halen;
 	memcpy(p, &addr->sin_addr, sizeof(addr->sin_addr));
 	p += sizeof(addr->sin_addr);
 	if (arpop == ARPOP_REQUEST) {
 		/* Field must be all 0s - already done by memset() above */
 	} else {
-		memcpy(p, hwaddr, ETH_ALEN);
+		memcpy(p, hardware_addr->sll_addr, hardware_addr->sll_halen);
 	}
-	p += ETH_ALEN;
+	p += hardware_addr->sll_halen;
 	memcpy(p, &addr->sin_addr, sizeof(addr->sin_addr));
 
 	*len = l;
@@ -794,6 +794,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	switch (addr->ip.sin_family) {
 	case AF_INET:
 		/* Send gratuitous ARP */
+		hardware_addr_ll->sll_protocol = htons(ETH_P_ARP);
 		broadcast_addr_ll->sll_protocol = htons(ETH_P_ARP);
 		/*
 		 * Unlikely to be different to previous dest_len
@@ -804,7 +805,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		ret = arp_build(buffer,
 				sizeof(buffer),
 				&addr->ip,
-				hwaddr,
+				hardware_addr_ll,
 				ARPOP_REQUEST,
 				&len);
 		if (ret != 0) {
@@ -828,7 +829,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		ret = arp_build(buffer,
 				sizeof(buffer),
 				&addr->ip,
-				hwaddr,
+				hardware_addr_ll,
 				ARPOP_REPLY,
 				&len);
 		if (ret != 0) {
