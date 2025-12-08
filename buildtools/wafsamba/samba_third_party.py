@@ -24,7 +24,7 @@ Build.BuildContext.CHECK_CMOCKA = CHECK_CMOCKA
 
 @conf
 def CHECK_SOCKET_WRAPPER(conf):
-    return conf.CHECK_BUNDLED_SYSTEM_PKG('socket_wrapper', minversion='1.5.1')
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('socket_wrapper', minversion='1.5.2')
 Build.BuildContext.CHECK_SOCKET_WRAPPER = CHECK_SOCKET_WRAPPER
 
 @conf

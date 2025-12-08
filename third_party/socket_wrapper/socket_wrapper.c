@@ -314,6 +314,16 @@ struct swrap_address {
 	} sa;
 };
 
+struct swrap_address_ip_only {
+	union {
+		struct sockaddr s;
+		struct sockaddr_in in;
+#ifdef HAVE_IPV6
+		struct sockaddr_in6 in6;
+#endif
+	} sa;
+};
+
 static int first_free;
 
 struct socket_info
@@ -323,28 +333,30 @@ struct socket_info
 	 * on any change.
 	 */
 
-	int family;
+	uint16_t family;
+	uint16_t pktinfo;
 	int type_flags; /* SOCK_CLOEXEC or SOCK_NONBLOCK */
 	int type;
 	int protocol;
 	int opt_type;
 	int opt_protocol;
-	int bound;
-	int bcast;
-	int is_server;
-	int connected;
-	int defer_connect;
-	int pktinfo;
-	int tcp_nodelay;
-	int listening;
 	int fd_passed;
+
+	/* Use bitfields for boolean types */
+	unsigned int bound:1;
+	unsigned int bcast:1;
+	unsigned int is_server:1;
+	unsigned int connected:1;
+	unsigned int defer_connect:1;
+	unsigned int tcp_nodelay:1;
+	unsigned int listening:1;
 
 	/* The unix path so we can unlink it on close() */
 	struct sockaddr_un un_addr;
 
-	struct swrap_address bindname;
-	struct swrap_address myname;
-	struct swrap_address peername;
+	struct swrap_address_ip_only bindname;
+	struct swrap_address_ip_only myname;
+	struct swrap_address_ip_only peername;
 
 	struct {
 		unsigned long pck_snd;
@@ -436,6 +448,59 @@ static const char *getprogname(void)
 }
 #endif /* HAVE_GETPROGNAME */
 
+static int swrap_debug_level = SWRAP_LOG_ERROR;
+
+static void __socket_wrapper_debug_level_once(void)
+{
+	const char *env = NULL;
+	size_t env_len;
+
+	env = getenv("SOCKET_WRAPPER_DEBUGLEVEL");
+	if (env == NULL) {
+		swrap_debug_level = SWRAP_LOG_ERROR;
+		return;
+	}
+
+	env_len = strlen(env);
+	/* Sanity check: must not be empty and not longer than "warning" */
+	if (env_len == 0 || env_len > 7) {
+		swrap_debug_level = SWRAP_LOG_ERROR;
+		return;
+	}
+
+	/* Check for string values (case-insensitive) */
+	if (strcasecmp(env, "error") == 0) {
+		swrap_debug_level = SWRAP_LOG_ERROR;
+	} else if (strcasecmp(env, "warn") == 0 ||
+		   strcasecmp(env, "warning") == 0)
+	{
+		swrap_debug_level = SWRAP_LOG_WARN;
+	} else if (strcasecmp(env, "debug") == 0) {
+		swrap_debug_level = SWRAP_LOG_DEBUG;
+	} else if (strcasecmp(env, "trace") == 0) {
+		swrap_debug_level = SWRAP_LOG_TRACE;
+	} else {
+		/* Numeric value */
+		swrap_debug_level = atoi(env);
+
+		/* Clamp to valid range */
+		if (swrap_debug_level < SWRAP_LOG_ERROR) {
+			swrap_debug_level = SWRAP_LOG_ERROR;
+		} else if (swrap_debug_level > SWRAP_LOG_TRACE) {
+			swrap_debug_level = SWRAP_LOG_TRACE;
+		}
+	}
+}
+
+static unsigned int socket_wrapper_debug_level(void)
+{
+	static pthread_once_t debug_level_once = PTHREAD_ONCE_INIT;
+
+	pthread_once(&debug_level_once, __socket_wrapper_debug_level_once);
+
+	return (unsigned int)swrap_debug_level;
+}
+
 static void swrap_log(enum swrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define SWRAP_LOG(dbglvl, ...) swrap_log((dbglvl), __func__, __VA_ARGS__)
 
@@ -445,15 +510,11 @@ static void swrap_log(enum swrap_dbglvl_e dbglvl,
 {
 	char buffer[1024];
 	va_list va;
-	const char *d;
-	unsigned int lvl = 0;
+	unsigned int lvl;
 	const char *prefix = "SWRAP";
 	const char *progname = getprogname();
 
-	d = getenv("SOCKET_WRAPPER_DEBUGLEVEL");
-	if (d != NULL) {
-		lvl = atoi(d);
-	}
+	lvl = socket_wrapper_debug_level();
 
 	if (lvl < dbglvl) {
 		return;
@@ -489,6 +550,146 @@ static void swrap_log(enum swrap_dbglvl_e dbglvl,
 		(unsigned int)getpid(),
 		func,
 		buffer);
+}
+
+/*********************************************************
+ * HELPER FUNCTIONS
+ **********************************************************/
+
+/*
+ * Get the socklen for an address family
+ */
+static inline socklen_t swrap_address_ip_only_socklen(sa_family_t family)
+{
+	switch (family) {
+	case AF_UNSPEC: /* AF_UNSPEC indicates uninitialized/empty address */
+		return 0;
+	case AF_INET:
+		return sizeof(struct sockaddr_in);
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		return sizeof(struct sockaddr_in6);
+#endif
+	default:
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "BUG: unexpected address family %d",
+			  family);
+		abort();
+	}
+
+	return 0; /* Never reached */
+}
+
+/*
+ * Get the socklen from a swrap_address_ip_only struct
+ */
+static inline socklen_t swrap_address_ip_only_len(
+	const struct swrap_address_ip_only *addr)
+{
+	return swrap_address_ip_only_socklen(addr->sa.s.sa_family);
+}
+
+/*
+ * Copy a sockaddr to swrap_address_ip_only, using the actual address size
+ * based on the address family.
+ */
+static inline void swrap_address_ip_only_from_sockaddr(
+	struct swrap_address_ip_only *dest,
+	const struct sockaddr *src,
+	socklen_t addrlen)
+{
+	socklen_t copy_len = swrap_address_ip_only_socklen(src->sa_family);
+
+	/* AF_UNSPEC means empty/unbind - zero the entire struct */
+	if (copy_len == 0) {
+		memset(&dest->sa, 0, sizeof(dest->sa));
+		return;
+	}
+
+	if (addrlen < copy_len) {
+		copy_len = addrlen;
+	}
+
+	memcpy(&dest->sa.s, src, copy_len);
+
+	/* Zero out any remaining bytes in the union */
+	if (copy_len < sizeof(dest->sa)) {
+		memset((char *)&dest->sa.s + copy_len,
+		       0,
+		       sizeof(dest->sa) - copy_len);
+	}
+}
+
+/*
+ * Copy from swrap_address (with larger union) to swrap_address_ip_only.
+ * Only allows AF_INET and AF_INET6 addresses.
+ */
+static inline void swrap_address_ip_only_from_swrap_address(
+	struct swrap_address_ip_only *dest,
+	const struct swrap_address *src)
+{
+	const struct sockaddr *sa = &src->sa.s;
+	size_t expected_len;
+
+	/* Validate address family and size */
+	switch (sa->sa_family) {
+	case AF_INET:
+		expected_len = sizeof(struct sockaddr_in);
+		if (src->sa_socklen > expected_len) {
+			SWRAP_LOG(SWRAP_LOG_ERROR,
+				  "BUG: IPv4 address size=%u > "
+				  "sizeof(sockaddr_in)=%zu",
+				  src->sa_socklen,
+				  expected_len);
+			abort();
+		}
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		expected_len = sizeof(struct sockaddr_in6);
+		if (src->sa_socklen > expected_len) {
+			SWRAP_LOG(SWRAP_LOG_ERROR,
+				  "BUG: IPv6 address size=%u > "
+				  "sizeof(sockaddr_in6)=%zu",
+				  src->sa_socklen,
+				  expected_len);
+			abort();
+		}
+		break;
+#endif
+	default:
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "BUG: unexpected address family %d (expected AF_INET "
+			  "or AF_INET6)",
+			  sa->sa_family);
+		abort();
+	}
+
+	memcpy(&dest->sa.s, &src->sa.s, src->sa_socklen);
+
+	/* Zero out any remaining bytes in the union */
+	if (src->sa_socklen < sizeof(dest->sa)) {
+		memset((char *)&dest->sa.s + src->sa_socklen,
+		       0,
+		       sizeof(dest->sa) - src->sa_socklen);
+	}
+}
+
+/* Copy between two swrap_address_ip_only structs */
+static inline void swrap_address_ip_only_copy(
+	struct swrap_address_ip_only *dest,
+	const struct swrap_address_ip_only *src)
+{
+	socklen_t copy_len = swrap_address_ip_only_socklen(src->sa.s.sa_family);
+
+	memcpy(&dest->sa.s, &src->sa.s, copy_len);
+
+	/* Zero out any remaining bytes in the union */
+	if (copy_len < sizeof(dest->sa)) {
+		memset((char *)&dest->sa.s + copy_len,
+		       0,
+		       sizeof(dest->sa) - copy_len);
+	}
 }
 
 /*********************************************************
@@ -1670,7 +1871,7 @@ static const struct in6_addr *swrap_ipv6(void)
 }
 #endif
 
-static void set_port(int family, int prt, struct swrap_address *addr)
+static void set_port(int family, int prt, struct swrap_address_ip_only *addr)
 {
 	switch (family) {
 	case AF_INET:
@@ -2534,15 +2735,15 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		}
 
 		/* Store the bind address for connect() */
-		if (si->bindname.sa_socklen == 0) {
+		if (si->bindname.sa.s.sa_family == AF_UNSPEC) {
 			struct sockaddr_in bind_in;
 			socklen_t blen = sizeof(struct sockaddr_in);
 
 			ZERO_STRUCT(bind_in);
 			bind_in.sin_family = in->sin_family;
 			bind_in.sin_port = in->sin_port;
-			bind_in.sin_addr.s_addr = htonl(swrap_ipv4_iface(iface));
-			si->bindname.sa_socklen = blen;
+			bind_in.sin_addr.s_addr = htonl(
+				swrap_ipv4_iface(iface));
 			memcpy(&si->bindname.sa.in, &bind_in, blen);
 		}
 
@@ -2584,7 +2785,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		}
 
 		/* Store the bind address for connect() */
-		if (si->bindname.sa_socklen == 0) {
+		if (si->bindname.sa.s.sa_family == AF_UNSPEC) {
 			struct sockaddr_in6 bind_in;
 			socklen_t blen = sizeof(struct sockaddr_in6);
 
@@ -2596,7 +2797,6 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			bind_in.sin6_addr.s6_addr[15] = iface;
 
 			memcpy(&si->bindname.sa.in6, &bind_in, blen);
-			si->bindname.sa_socklen = blen;
 		}
 
 		break;
@@ -3820,8 +4020,7 @@ static int swrap_socket(int family, int type, int protocol, int allow_quic)
 			.sin_family = AF_INET,
 		};
 
-		si->myname.sa_socklen = sizeof(struct sockaddr_in);
-		memcpy(&si->myname.sa.in, &sin, si->myname.sa_socklen);
+		memcpy(&si->myname.sa.in, &sin, sizeof(struct sockaddr_in));
 		break;
 	}
 #ifdef HAVE_IPV6
@@ -3830,8 +4029,7 @@ static int swrap_socket(int family, int type, int protocol, int allow_quic)
 			.sin6_family = AF_INET6,
 		};
 
-		si->myname.sa_socklen = sizeof(struct sockaddr_in6);
-		memcpy(&si->myname.sa.in6, &sin6, si->myname.sa_socklen);
+		memcpy(&si->myname.sa.in6, &sin6, sizeof(struct sockaddr_in6));
 		break;
 	}
 #endif
@@ -4087,10 +4285,7 @@ static int swrap_accept(int s,
 
 	SWRAP_UNLOCK_SI(parent_si);
 
-	child_si->peername = (struct swrap_address) {
-		.sa_socklen = in_addr.sa_socklen,
-	};
-	memcpy(&child_si->peername.sa.ss, &in_addr.sa.ss, in_addr.sa_socklen);
+	swrap_address_ip_only_from_swrap_address(&child_si->peername, &in_addr);
 
 	if (addr != NULL && addrlen != NULL) {
 		size_t copy_len = MIN(*addrlen, in_addr.sa_socklen);
@@ -4117,10 +4312,8 @@ static int swrap_accept(int s,
 		  "accept() path=%s, fd=%d",
 		  un_my_addr.sa.un.sun_path, s);
 
-	child_si->myname = (struct swrap_address) {
-		.sa_socklen = in_my_addr.sa_socklen,
-	};
-	memcpy(&child_si->myname.sa.ss, &in_my_addr.sa.ss, in_my_addr.sa_socklen);
+	swrap_address_ip_only_from_swrap_address(&child_si->myname,
+						 &in_my_addr);
 
 	idx = swrap_create_socket(&new_si, fd);
 	if (idx == -1) {
@@ -4212,10 +4405,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		in.sin_addr.s_addr = htonl(swrap_ipv4_iface(
 					   socket_wrapper_default_iface()));
 
-		si->myname = (struct swrap_address) {
-			.sa_socklen = sizeof(in),
-		};
-		memcpy(&si->myname.sa.in, &in, si->myname.sa_socklen);
+		memcpy(&si->myname.sa.in, &in, sizeof(in));
 		break;
 	}
 #ifdef HAVE_IPV6
@@ -4246,10 +4436,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		in6.sin6_addr = *swrap_ipv6();
 		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
 
-		si->myname = (struct swrap_address) {
-			.sa_socklen = sizeof(in6),
-		};
-		memcpy(&si->myname.sa.in6, &in6, si->myname.sa_socklen);
+		memcpy(&si->myname.sa.in6, &in6, sizeof(in6));
 		break;
 	}
 #endif
@@ -4387,11 +4574,9 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 	}
 
 	if (ret == 0) {
-		si->peername = (struct swrap_address) {
-			.sa_socklen = addrlen,
-		};
-
-		memcpy(&si->peername.sa.ss, serv_addr, addrlen);
+		swrap_address_ip_only_from_sockaddr(&si->peername,
+						    serv_addr,
+						    addrlen);
 		si->connected = 1;
 
 		/*
@@ -4401,18 +4586,12 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 		 * but here we have to update the name so getsockname()
 		 * returns correct information.
 		 */
-		if (si->bindname.sa_socklen > 0) {
-			si->myname = (struct swrap_address) {
-				.sa_socklen = si->bindname.sa_socklen,
-			};
-
-			memcpy(&si->myname.sa.ss,
-			       &si->bindname.sa.ss,
-			       si->bindname.sa_socklen);
+		if (swrap_address_ip_only_len(&si->bindname) > 0) {
+			swrap_address_ip_only_copy(&si->myname, &si->bindname);
 
 			/* Cleanup bindname */
-			si->bindname = (struct swrap_address) {
-				.sa_socklen = 0,
+			si->bindname = (struct swrap_address_ip_only){
+				.sa.s.sa_family = AF_UNSPEC,
 			};
 		}
 
@@ -4446,6 +4625,7 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	struct swrap_sockaddr_buf buf = {};
 	int ret_errno = errno;
 	int bind_error = 0;
+	int bcast = 0;
 #if 0 /* FIXME */
 	bool in_use;
 #endif
@@ -4516,19 +4696,20 @@ static int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	}
 #endif
 
-	si->myname.sa_socklen = addrlen;
-	memcpy(&si->myname.sa.ss, myaddr, addrlen);
+	swrap_address_ip_only_from_sockaddr(&si->myname, myaddr, addrlen);
 
 	ret = sockaddr_convert_to_un(si,
 				     myaddr,
 				     addrlen,
 				     &un_addr.sa.un,
 				     1,
-				     &si->bcast);
+				     &bcast);
 	if (ret == -1) {
 		ret_errno = errno;
 		goto out;
 	}
+
+	si->bcast = bcast;
 
 	unlink(un_addr.sa.un.sun_path);
 
@@ -4883,20 +5064,19 @@ static int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 
 	SWRAP_LOCK_SI(si);
 
-	if (si->peername.sa_socklen == 0)
-	{
+	if (swrap_address_ip_only_len(&si->peername) == 0) {
 		errno = ENOTCONN;
 		goto out;
 	}
 
-	len = MIN(*addrlen, si->peername.sa_socklen);
+	len = MIN(*addrlen, swrap_address_ip_only_len(&si->peername));
 	if (len == 0) {
 		ret = 0;
 		goto out;
 	}
 
-	memcpy(name, &si->peername.sa.ss, len);
-	*addrlen = si->peername.sa_socklen;
+	memcpy(name, &si->peername.sa.s, len);
+	*addrlen = swrap_address_ip_only_len(&si->peername);
 
 	ret = 0;
 out:
@@ -4930,14 +5110,14 @@ static int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 
 	SWRAP_LOCK_SI(si);
 
-	len = MIN(*addrlen, si->myname.sa_socklen);
+	len = MIN(*addrlen, swrap_address_ip_only_len(&si->myname));
 	if (len == 0) {
 		ret = 0;
 		goto out;
 	}
 
-	memcpy(name, &si->myname.sa.ss, len);
-	*addrlen = si->myname.sa_socklen;
+	memcpy(name, &si->myname.sa.s, len);
+	*addrlen = swrap_address_ip_only_len(&si->myname);
 
 	ret = 0;
 out:
@@ -5406,10 +5586,14 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 		struct in_addr pkt;
 #endif
 
-		if (si->bindname.sa_socklen == sizeof(struct sockaddr_in)) {
+		if (swrap_address_ip_only_len(&si->bindname) ==
+		    sizeof(struct sockaddr_in))
+		{
 			sin = &si->bindname.sa.in;
 		} else {
-			if (si->myname.sa_socklen != sizeof(struct sockaddr_in)) {
+			if (swrap_address_ip_only_len(&si->myname) !=
+			    sizeof(struct sockaddr_in))
+			{
 				return 0;
 			}
 			sin = &si->myname.sa.in;
@@ -5436,10 +5620,14 @@ static int swrap_msghdr_add_pktinfo(struct socket_info *si,
 		struct sockaddr_in6 *sin6;
 		struct in6_pktinfo pkt6;
 
-		if (si->bindname.sa_socklen == sizeof(struct sockaddr_in6)) {
+		if (swrap_address_ip_only_len(&si->bindname) ==
+		    sizeof(struct sockaddr_in6))
+		{
 			sin6 = &si->bindname.sa.in6;
 		} else {
-			if (si->myname.sa_socklen != sizeof(struct sockaddr_in6)) {
+			if (swrap_address_ip_only_len(&si->myname) !=
+			    sizeof(struct sockaddr_in6))
+			{
 				return 0;
 			}
 			sin6 = &si->myname.sa.in6;
@@ -5631,7 +5819,7 @@ static int swrap_sendmsg_filter_cmsg_sol_socket(const struct cmsghdr *cmsg,
 	return rc;
 }
 
-static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc38;
+static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc39;
 
 /*
  * We only allow up to 6 fds at a time
@@ -5646,8 +5834,35 @@ static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc38;
 #ifndef PIPE_BUF
 #define PIPE_BUF 4096
 #endif
-#define SWRAP_MAX_PASSED_FDS ((size_t)6)
+
+/*
+ * Maximum number of file descriptors that can be passed via SCM_RIGHTS.
+ * This is limited in normally by SCM_MAX_FD (typically 253).
+ *
+ * To do the calculation, run: ./tests/calc_unix_scm_rights_payload
+ *
+ * PIPE_BUF = 4096 bytes
+ * Header size (offsetof payload) = 40 bytes
+ * Payload base size (offsetof idxs) = 1 bytes
+ * Available space for arrays = 4055 bytes
+ *
+ * Calculated maximum values:
+ * SWRAP_MAX_PASSED_FDS = 16
+ * SWRAP_MAX_PASSED_SOCKET_INFO = 16
+ *
+ * Verification:
+ * Calculated total size (struct swrap_unix_scm_rights) = 3897 bytes
+ * Space used = 95.1% of PIPE_BUF
+ * Space remaining = 199 bytes
+ */
+#define SWRAP_MAX_PASSED_FDS ((size_t)16)
+
+/*
+ * Maximum number of wrapped socket_info structures to track in the payload.
+ * This needs to be kept under PIPE_BUF (4096) for non-blocking writes.
+ */
 #define SWRAP_MAX_PASSED_SOCKET_INFO SWRAP_MAX_PASSED_FDS
+
 struct swrap_unix_scm_rights_payload {
 	uint8_t num_idxs;
 	int8_t idxs[SWRAP_MAX_PASSED_FDS];
@@ -5814,6 +6029,52 @@ static int swrap_sendmsg_unix_scm_rights(struct cmsghdr *cmsg,
 	}
 	num_fds_in = size_fds_in / sizeof(int);
 	if (num_fds_in > SWRAP_MAX_PASSED_FDS) {
+#ifndef NDEBUG /* Only for debug builds */
+		size_t fd_idx;
+		union {
+			uint8_t *p;
+			int *fds;
+		} __fds_preview;
+
+		__fds_preview.p = CMSG_DATA(cmsg);
+
+		/* Debug: log what types of fds are being passed */
+		for (fd_idx = 0;
+		     fd_idx < num_fds_in &&
+		     socket_wrapper_debug_level() >= SWRAP_LOG_DEBUG;
+		     fd_idx++)
+		{
+			int fd = __fds_preview.fds[fd_idx];
+			struct stat st;
+			int rc_stat;
+			const char *fd_type = "unknown";
+			int is_socket_wrapped = 0;
+
+			rc_stat = fstat(fd, &st);
+			if (rc_stat == 0) {
+				if (S_ISSOCK(st.st_mode)) {
+					fd_type = "socket";
+					/* Check if it's wrapped */
+					is_socket_wrapped = (find_socket_info_index(fd) != -1);
+				} else if (S_ISREG(st.st_mode)) {
+					fd_type = "regular_file";
+				} else if (S_ISDIR(st.st_mode)) {
+					fd_type = "directory";
+				} else if (S_ISFIFO(st.st_mode)) {
+					fd_type = "fifo";
+				} else if (S_ISCHR(st.st_mode)) {
+					fd_type = "char_device";
+				} else if (S_ISBLK(st.st_mode)) {
+					fd_type = "block_device";
+				}
+			}
+
+			SWRAP_LOG(SWRAP_LOG_DEBUG,
+				  "  fds_in[%zu]=%d type=%s wrapped=%d",
+				  fd_idx, fd, fd_type, is_socket_wrapped);
+		}
+#endif /* NDEBUG */
+
 		SWRAP_LOG(SWRAP_LOG_ERROR,
 			  "cmsg->cmsg_len=%zu,size_fds_in=%zu => "
 			  "num_fds_in=%zu > "
@@ -5822,6 +6083,7 @@ static int swrap_sendmsg_unix_scm_rights(struct cmsghdr *cmsg,
 			  size_fds_in,
 			  num_fds_in,
 			  SWRAP_MAX_PASSED_FDS);
+
 		errno = EINVAL;
 		return -1;
 	}
@@ -6714,7 +6976,8 @@ static ssize_t swrap_sendmsg_before(int fd,
 
 		ret = sockaddr_convert_to_un(si,
 					     &si->peername.sa.s,
-					     si->peername.sa_socklen,
+					     swrap_address_ip_only_len(
+						     &si->peername),
 					     tmp_un,
 					     0,
 					     NULL);
@@ -6989,7 +7252,8 @@ static int swrap_recvmsg_after(int fd,
 	    msg->msg_name != NULL &&
 	    msg->msg_namelen > 0)
 	{
-		msg->msg_namelen = MIN(si->peername.sa_socklen, msg->msg_namelen);
+		msg->msg_namelen = MIN(swrap_address_ip_only_len(&si->peername),
+				       msg->msg_namelen);
 		memcpy(msg->msg_name, &si->peername.sa, msg->msg_namelen);
 	}
 
@@ -8435,11 +8699,15 @@ static int swrap_remove_wrapper(const char *__func_name,
 		goto set_next_free;
 	}
 
-	if (si->myname.sa_socklen > 0 && si->peername.sa_socklen > 0) {
+	if (swrap_address_ip_only_len(&si->myname) > 0 &&
+	    swrap_address_ip_only_len(&si->peername) > 0)
+	{
 		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_SEND, NULL, 0);
 	}
 
-	if (si->myname.sa_socklen > 0 && si->peername.sa_socklen > 0) {
+	if (swrap_address_ip_only_len(&si->myname) > 0 &&
+	    swrap_address_ip_only_len(&si->peername) > 0)
+	{
 		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_RECV, NULL, 0);
 		swrap_pcap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
 	}
