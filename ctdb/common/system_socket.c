@@ -523,7 +523,8 @@ static int arp_build(uint8_t *buffer,
 	return 0;
 }
 
-static int ip6_ll_multicast_build(uint8_t *buffer, size_t buflen)
+static int ip6_ll_multicast_build(struct sockaddr_ll *in,
+				  struct sockaddr_storage *out)
 {
 	/*
 	 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464, section
@@ -533,12 +534,28 @@ static int ip6_ll_multicast_build(uint8_t *buffer, size_t buflen)
 	const uint8_t ethernet_multicast[ETH_ALEN] = {
 		0x33, 0x33, 0x00, 0x00, 0x00, 0x01
 	};
+	struct sockaddr_ll *out_sall = (struct sockaddr_ll *)out;
 
-	if (buflen < sizeof(ethernet_multicast)) {
-		return EMSGSIZE;
+	*out_sall = (struct sockaddr_ll) {
+		.sll_family = AF_PACKET,
+		.sll_halen = in->sll_halen,
+		.sll_protocol = htons(ETH_P_IPV6),
+		.sll_ifindex = in->sll_ifindex,
+	};
+
+	switch (in->sll_hatype) {
+	case ARPHRD_ETHER:
+		if (SOCKADDR_LL_ADDR_LEN < sizeof(ethernet_multicast)) {
+			return EMSGSIZE;
+		}
+		memcpy(&out_sall->sll_addr[0],
+		       ethernet_multicast,
+		       sizeof(ethernet_multicast));
+		break;
+	default:
+		return EPROTONOSUPPORT;
 	}
 
-	memcpy(buffer, ethernet_multicast, sizeof(ethernet_multicast));
 	return 0;
 }
 
@@ -666,7 +683,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct sockaddr_ll *broadcast_addr_ll =
 		(struct sockaddr_ll *) &broadcast_addr;
 	int s = -1;
-	struct sockaddr_ll sall = {0};
+	struct sockaddr_storage sas = {0};
 	socklen_t dest_len = 0;
 	uint8_t buffer[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
 	struct ether_addr *hwaddr = NULL;
@@ -702,11 +719,6 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		ret = EPROTONOSUPPORT;
 		goto done;
 	}
-
-	/* Set up most of destination address structure */
-	sall.sll_family = AF_PACKET;
-	sall.sll_halen = sizeof(struct ether_addr);
-	sall.sll_ifindex = hardware_addr_ll->sll_ifindex;
 
 	/* For clarity */
 	hwaddr = (struct ether_addr *)hardware_addr_ll->sll_addr;
@@ -788,13 +800,11 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 	case AF_INET6:
 		/* Send IPv6 NA */
-		sall.sll_protocol = htons(ETH_P_IPV6);
-		ret = ip6_ll_multicast_build(&sall.sll_addr[0], ETH_ALEN);
+		ret = ip6_ll_multicast_build(broadcast_addr_ll, &sas);
 		if (ret != 0) {
 			DBG_ERR("Failed to build IPv6 link-level destination\n");
 			goto done;
 		}
-
 
 		ret = ip6_na_build(buffer,
 				   sizeof(buffer),
@@ -810,8 +820,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			     buffer,
 			     len,
 			     0,
-			     (struct sockaddr *)&sall,
-			     sizeof(sall));
+			     (struct sockaddr *)&sas,
+			     sall_len((struct sockaddr_ll *)&sas));
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
