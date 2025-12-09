@@ -268,6 +268,23 @@ static uint16_t ip6_checksum(uint8_t *data, size_t n, struct ip6_hdr *ip6)
 
 #ifdef HAVE_PACKETSOCKET
 
+static inline socklen_t sall_len(struct sockaddr_ll *sll)
+{
+	/*
+	 * To support larger hardware addresses in future, this really
+	 * wants to be the 2nd calculation below, which accommodates
+	 * 20 octet IPoIB link-level addresses (which do not fit into
+	 * a struct sockaddr_ll).  However, for Ethernet that gives an
+	 * answer smaller than sizeof(struct sockaddr_ll), which
+	 * causes operations on an AF_PACKET socket to fail with
+	 * EINVAL.
+	 */
+	socklen_t len = MAX(sizeof(struct sockaddr_ll),
+			    offsetof(struct sockaddr_ll, sll_addr) +
+			    sll->sll_halen);
+	return len;
+}
+
 /*
  * Create IPv4 ARP requests/replies or IPv6 neighbour advertisement
  * packets
@@ -453,6 +470,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	int s = -1;
 	struct sockaddr_ll sall = {0};
+	socklen_t dest_len = 0;
 	struct ifreq if_hwaddr = {
 		.ifr_ifru = {
 			.ifru_flags = 0
@@ -469,10 +487,10 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	size_t len = 0;
 	int ret = 0;
 
-	s = socket(AF_PACKET, SOCK_RAW, 0);
+	s = socket(AF_PACKET, SOCK_DGRAM, 0);
 	if (s == -1) {
 		ret = errno;
-		DBG_ERR("Failed to open raw socket\n");
+		DBG_ERR("Failed to open socket\n");
 		return ret;
 	}
 	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
@@ -508,15 +526,25 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	/* Set up most of destination address structure */
 	sall.sll_family = AF_PACKET;
 	sall.sll_halen = sizeof(struct ether_addr);
-	sall.sll_protocol = htons(ETH_P_ALL);
 	sall.sll_ifindex = ifr.ifr_ifindex;
 
 	/* For clarity */
 	hwaddr = (struct ether_addr *)if_hwaddr.ifr_hwaddr.sa_data;
 
+	memcpy(&sall.sll_addr[0], (uint8_t *)hwaddr, ETH_ALEN);
+	dest_len = sall_len(&sall);
+	ret = bind(s, (struct sockaddr *)&sall, dest_len);
+	if (ret == -1) {
+		ret = errno;
+		DBG_ERR("Failed bind (%d)\n", ret);
+		goto done;
+	}
+
 	switch (addr->ip.sin_family) {
 	case AF_INET:
 		/* Send gratuitous ARP */
+		sall.sll_protocol = htons(ETH_P_ARP);
+
 		ret = arp_build(buffer,
 				sizeof(buffer),
 				&addr->ip,
@@ -532,8 +560,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
 
 		ret = sendto(s,
-			     buffer,
-			     len,
+			     buffer + sizeof(struct ether_header),
+			     len - sizeof(struct ether_header),
 			     0,
 			     (struct sockaddr *)&sall,
 			     sizeof(sall));
@@ -559,8 +587,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
 
 		ret = sendto(s,
-			     buffer,
-			     len,
+			     buffer + sizeof(struct ether_header),
+			     len - sizeof(struct ether_header),
 			     0,
 			     (struct sockaddr *)&sall,
 			     sizeof(sall));
@@ -573,6 +601,9 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		break;
 
 	case AF_INET6:
+		/* Send IPv6 NA */
+		sall.sll_protocol = htons(ETH_P_IPV6);
+
 		ret = ip6_na_build(buffer,
 				   sizeof(buffer),
 				   &addr->ip6,
@@ -587,8 +618,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
 
 		ret = sendto(s,
-			     buffer,
-			     len,
+			     buffer + sizeof(struct ether_header),
+			     len - sizeof(struct ether_header),
 			     0,
 			     (struct sockaddr *)&sall,
 			     sizeof(sall));
