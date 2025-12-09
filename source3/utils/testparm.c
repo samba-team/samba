@@ -270,11 +270,50 @@ done:
 	return ok;
 }
 
+static int pw2kt_validate_spn_spec(const char *line, char *option)
+{
+	char *p = NULL;
+
+	/* Check for simple tokens */
+	if (strequal(option, ":account_name") ||
+	    strequal(option, ":sync_account_name") ||
+	    strequal(option, ":sync_upn") ||
+	    strequal(option, ":sync_spns"))
+	{
+		*option = 0;
+		return 0;
+	}
+
+	/* Check for key=value tokens */
+	if ((p = strrchr_m(option, '='))) {
+		if (strlen(p) <= 1) {
+			fprintf(stderr, "ERROR: Empty value "
+				"for spn_spec option '%s'\n", option);
+			return 1;
+		}
+		*p = 0;
+		if (strequal(option, ":spn_prefixes") ||
+		    strequal(option, ":spns"))
+		{
+			*option = 0;
+			return 0;
+		}
+		fprintf(stderr,
+			"ERROR: only SPN specifier 'spns' and 'spn_prefixes' "
+			"can contain '=' and comma separated list of values "
+			"in line:\n%s\noption:%s\n", line, option);
+		return 1;
+	}
+
+	fprintf(stderr, "ERROR: Invalid spn_spec value: %s\n", option);
+
+	return 1;
+}
+
 static int pw2kt_check_line(const char *line)
 {
 	char *keytabname = NULL;
 	char *spn_spec = NULL;
-	char *spn_val = NULL;
 	char *option = NULL;
 	bool machine_password = false;
 
@@ -288,26 +327,24 @@ static int pw2kt_check_line(const char *line)
 		fprintf(stderr, "ERROR: ':' is expected in line:\n%s\n\n", line);
 		return 1;
 	}
-	*spn_spec++ = 0;
 
 	/* reverse match with strrchr_m() */
 	while ((option = strrchr_m(spn_spec, ':')) != NULL) {
-		*option++ = 0;
-		if (!strequal(option, "sync_kvno") &&
-		    !strequal(option, "sync_etypes") &&
-		    !strequal(option, "additional_dns_hostnames") &&
-		    !strequal(option, "netbios_aliases") &&
-		    !strequal(option, "machine_password"))
+		if (strequal(option, ":sync_kvno") ||
+		    strequal(option, ":sync_etypes") ||
+		    strequal(option, ":additional_dns_hostnames") ||
+		    strequal(option, ":netbios_aliases"))
 		{
-			fprintf(stderr,
-				"ERROR: unknown option '%s' in line:\n%s\n\n",
-				option,
-				line);
-			return 1;
-		}
-		if (strequal(option, "machine_password")) {
+			/* consume the valid option */
+			*option = 0;
+			continue;
+		} else if (strequal(option, ":machine_password")) {
 			machine_password = true;
+			*option = 0;
+			continue;
 		}
+		/* Reached the spn_spec portion */
+		break;
 	}
 	if (!machine_password) {
 		fprintf(stderr,
@@ -316,30 +353,18 @@ static int pw2kt_check_line(const char *line)
 			line);
 	}
 
-	spn_val = strchr_m(spn_spec, '=');
-	if (spn_val != NULL) {
-		*spn_val++ = 0;
-		if (!strequal(spn_spec, "spns") &&
-		    !strequal(spn_spec, "spn_prefixes"))
-		{
-			fprintf(stderr,
-				"ERROR: only SPN specifier 'spns' and "
-				"'spn_prefixes' can contain '=' and comma "
-				"separated list of values in line:\n%s\n\n",
-				line);
+	/* Remaining part has syntax 'spn_spec[:spn_spec]' */
+	while ((option = strrchr_m(spn_spec, ':')) != NULL) {
+		if (pw2kt_validate_spn_spec(line, option)) {
 			return 1;
 		}
+		*option = 0;
 	}
 
-	if (!strequal(spn_spec, "account_name") &&
-	    !strequal(spn_spec, "sync_spns") &&
-	    !strequal(spn_spec, "spns") &&
-	    !strequal(spn_spec, "spn_prefixes"))
-	{
-		fprintf(stderr,
-			"ERROR: unknown SPN specifier '%s' in line:\n%s\n\n",
-			spn_spec,
-			line);
+	/* spn_spec must be empty at the end */
+	if (strlen(spn_spec) > 0) {
+		fprintf(stderr, "ERROR: Unexpected option '%s' in line '%s'\n",
+			spn_spec, line);
 		return 1;
 	}
 
