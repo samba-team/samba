@@ -16,6 +16,7 @@ LOCAL_PATH="$1"
 
 TEMP_CONFFILE=${LOCAL_PATH}/smb.conf.tmp
 TESTPARM="$VALGRIND ${TESTPARM:-$BINDIR/testparm} --suppress-prompt --skip-logic-checks"
+TESTPARM_LOGIC="${BINDIR}/testparm --suppress-prompt"
 
 incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
@@ -42,6 +43,19 @@ test_one_global_option()
 	${OPTION}
 EOF
 	${TESTPARM} ${TEMP_CONFFILE}
+}
+
+test_one_global_option_logic()
+{
+	OPTION="$@"
+	rm -f ${TEMP_CONFFILE}
+	cat >${TEMP_CONFFILE} <<EOF
+[global]
+	state directory = /tmp
+	cache directory = /tmp
+	${OPTION}
+EOF
+	${TESTPARM_LOGIC} ${TEMP_CONFFILE}
 }
 
 test_copy()
@@ -144,6 +158,55 @@ testit "copy" \
 
 test_testparm_deprecated "test_deprecated_warning_printed"
 test_testparm_deprecated_suppress "test_deprecated_warning_suppressed"
+
+testit "sync machine password to keytab 0" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab0:account_name:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 1" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab1:account_name:sync_etypes:sync_kvno:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 2" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab2:sync_spns:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 3" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab3:sync_spns:sync_kvno:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 4" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab4:spn_prefixes=imap,smtp:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 5" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab5:spn_prefixes=imap,smtp:netbios_aliases:additional_dns_hostnames:sync_kvno:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 6" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab6:spns=wurst/brot@REALM:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 7" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab7:spns=wurst/brot@REALM,wurst2/brot@REALM:sync_kvno:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 8" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab8:sync_account_name:sync_upn:sync_spns:spn_prefixes=host,cifs,http:spns=wurst/brot@REALM:sync_kvno:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit "sync machine password to keytab 9" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab9:machine_password\"" ||
+	failed=$(expr ${failed} + 1)
+testit_expect_failure "sync machine password to keytab 10" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab10\"" ||
+	failed=$(expr ${failed} + 1)
+testit_expect_failure "sync machine password to keytab 11" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab11:\"" ||
+	failed=$(expr ${failed} + 1)
+testit_expect_failure "sync machine password to keytab 12" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab12:foo\"" ||
+	failed=$(expr ${failed} + 1)
+testit_expect_failure "sync machine password to keytab 13" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab13:spns\"" ||
+	failed=$(expr ${failed} + 1)
+testit_expect_failure "sync machine password to keytab 14" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab14:spns=\"" ||
+	failed=$(expr ${failed} + 1)
+testit_expect_failure "sync machine password to keytab 15" \
+	test_one_global_option_logic "sync machine password to keytab = \"/path/to/keytab15:machine_password=\"" ||
+	failed=$(expr ${failed} + 1)
 
 rm -f ${TEMP_CONFFILE}
 
