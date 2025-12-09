@@ -666,6 +666,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
 	    && ntlmssp_state->allow_lm_key && lm_session_key.length == 16) {
 		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+		if (new_session_key.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		if (lm_response.length == 24) {
 			nt_status = SMBsesskeygen_lm_sess_key(lm_session_key.data,
 							      lm_response.data,
@@ -703,6 +706,11 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob_talloc(ntlmssp_state,
 							 client_session_key, sizeof(client_session_key));
+		if (encrypted_session_key.data == NULL) {
+			nt_status = NT_STATUS_NO_MEMORY;
+			ZERO_ARRAY(client_session_key);
+			goto done;
+		}
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		rc = gnutls_cipher_init(&cipher_hnd,
@@ -729,6 +737,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* Mark the new session key as the 'real' session key */
 		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
 		ZERO_ARRAY(client_session_key);
+		if (session_key.data == NULL) {
+			nt_status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 	/* this generates the actual auth packet */
