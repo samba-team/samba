@@ -291,7 +291,10 @@ class SmbDotConfTests(TestCase):
 
         failset = set()
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=get_max_worker_count()) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=get_max_worker_count(),
+                mp_context=mp_context) as executor:
             result_futures = []
 
             for tuples in self.defaults:
@@ -341,7 +344,10 @@ class SmbDotConfTests(TestCase):
 
         failset = set()
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=get_max_worker_count()) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=get_max_worker_count(),
+                mp_context=mp_context) as executor:
             result_futures = []
 
             for tuples in self.defaults:
@@ -410,7 +416,10 @@ class SmbDotConfTests(TestCase):
 
         failset = set()
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=get_max_worker_count()) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=get_max_worker_count(),
+                mp_context=mp_context) as executor:
             result_futures1 = []
             result_futures2 = []
 

@@ -26,6 +26,7 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 from concurrent import futures
 from enum import Enum
 from functools import partial
+import multiprocessing
 from multiprocessing import Pipe
 import time
 
@@ -985,7 +986,9 @@ class LockoutTests(KdcTgsBaseTests):
             password = password[:-1]
 
         # Prepare to connect to the server.
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with futures.ProcessPoolExecutor(max_workers=1,
+                                         mp_context=mp_context) as executor:
             our_pipe, their_pipe = Pipe(duplex=True)
             connect_future = executor.submit(
                 connect_fn,
@@ -1099,7 +1102,9 @@ class LockoutTests(KdcTgsBaseTests):
         user_dn = ldb.Dn(samdb, str(user_creds.get_dn()))
 
         # Prepare to connect to the server with an invalid password.
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with futures.ProcessPoolExecutor(max_workers=1,
+                                         mp_context=mp_context) as executor:
             our_pipe, their_pipe = Pipe(duplex=True)
             connect_future = executor.submit(
                 connect_fn,
@@ -1200,7 +1205,9 @@ class LockoutTests(KdcTgsBaseTests):
         # simultaneous requests. Only three of those attempts should get
         # through before the account is locked out.
         num_attempts = self.lockout_threshold + 1
-        with futures.ProcessPoolExecutor(max_workers=num_attempts) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with futures.ProcessPoolExecutor(max_workers=num_attempts,
+                                         mp_context=mp_context) as executor:
             connect_futures = []
             our_pipes = []
             for i in range(num_attempts):
@@ -1293,7 +1300,9 @@ class LockoutTests(KdcTgsBaseTests):
         password = user_creds.get_password()
 
         # Prepare to connect to the server with a valid password.
-        with futures.ProcessPoolExecutor(max_workers=1) as executor:
+        mp_context = multiprocessing.get_context('fork')
+        with futures.ProcessPoolExecutor(max_workers=1,
+                                         mp_context=mp_context) as executor:
             our_pipe, their_pipe = Pipe(duplex=True)
             connect_future = executor.submit(
                 connect_fn,
