@@ -212,7 +212,7 @@ static bool torture_check_krb5_as_rep(struct torture_krb5_context *test_context,
 		torture_assert_int_equal(test_context->tctx,
 					 test_context->as_rep->ticket->enc_part.kvno & 0xFFFF0000,
 					 0,
-					 "Unexpecedly got a RODC number in the KVNO");
+					 "Unexpectedly got a RODC number in the KVNO");
 	}
 
 	return true;
@@ -760,7 +760,7 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 				      torture_krb5_as_req_cmdline);
 
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
-	/* Only available with MIT Kerveros 1.15 and newer */
+	/* Only available with MIT Kerberos 1.15 and newer */
 	torture_suite_add_simple_test(kdc_suite, "as-req-pac-request",
 				      torture_krb5_as_req_pac_request);
 #endif
