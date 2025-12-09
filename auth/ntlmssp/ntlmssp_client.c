@@ -463,16 +463,16 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
 		}
 
-		session_key = data_blob_talloc(mem_ctx,
-					       wbc_session_key->data,
-					       wbc_session_key->length);
+		session_key = data_blob_talloc_s(mem_ctx,
+						 wbc_session_key->data,
+						 wbc_session_key->length);
 		if (session_key.length != wbc_session_key->length) {
 			wbcFreeMemory(info);
 			return NT_STATUS_NO_MEMORY;
 		}
-		*out = data_blob_talloc(mem_ctx,
-					wbc_auth_blob->data,
-					wbc_auth_blob->length);
+		*out = data_blob_talloc_s(mem_ctx,
+					  wbc_auth_blob->data,
+					  wbc_auth_blob->length);
 		if (out->length != wbc_auth_blob->length) {
 			wbcFreeMemory(info);
 			return NT_STATUS_NO_MEMORY;
@@ -665,7 +665,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
 	    && ntlmssp_state->allow_lm_key && lm_session_key.length == 16) {
-		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+		DATA_BLOB new_session_key = data_blob_talloc_s(mem_ctx,
+							       NULL,
+							       16);
 		if (new_session_key.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -704,7 +706,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		generate_random_buffer(client_session_key, sizeof(client_session_key));
 
 		/* Encrypt the new session key with the old one */
-		encrypted_session_key = data_blob_talloc(ntlmssp_state,
+		encrypted_session_key = data_blob_talloc_s(ntlmssp_state,
 							 client_session_key, sizeof(client_session_key));
 		if (encrypted_session_key.data == NULL) {
 			nt_status = NT_STATUS_NO_MEMORY;
@@ -735,7 +737,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		/* Mark the new session key as the 'real' session key */
-		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
+		session_key = data_blob_talloc_s(mem_ctx,
+						 client_session_key,
+						 sizeof(client_session_key));
 		ZERO_ARRAY(client_session_key);
 		if (session_key.data == NULL) {
 			nt_status = NT_STATUS_NO_MEMORY;
