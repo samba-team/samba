@@ -1447,5 +1447,13 @@ if "://" not in host:
     else:
         host_ldaps = "ldaps://%s" % host
         host = "ldap://%s" % host
+elif host.startswith('ldap://'):
+    host_ldaps = f"ldaps://{host[7:]}"
+elif host.startswith('ldaps://'):
+    host_ldaps = host
+    host = f"ldap://{host[8:]}"
+else:
+    host_ldaps = None
+
 
 TestProgram(module=__name__, opts=subunitopts)
