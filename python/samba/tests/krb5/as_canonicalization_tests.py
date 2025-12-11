@@ -47,6 +47,7 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_ENTERPRISE_PRINCIPAL,
     NT_PRINCIPAL,
     NT_SRV_INST,
+    KDC_ERR_C_PRINCIPAL_UNKNOWN,
 )
 
 global_asn1_print = False
@@ -308,6 +309,20 @@ class KerberosASCanonicalizationTests(KDCBaseTest):
 
         self.assertEqual(
             rep['msg-type'], KRB_ERROR, "Data {0}".format(str(data)))
+
+        if (not self.uncanonicalized_implicit_dollar and
+            not data.canonicalize and
+            TestOptions.RemoveDollar.is_set(data.options) and
+            user_creds.get_username().endswith('$')):
+            # We expect the principal not to be found because
+            # a) smb.conf asked for foo -> foo$ to only match with canonicalization
+            # b) we as client are not requesting canonicalization
+            # c) we have removed a '$' from the true name
+            #
+            # These are the tests that combine "MachineCredentials"
+            # with "RemoveDollar" but not "Canonicalize".
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return (None, None)
 
         self.assertEqual(
             rep['error-code'],
