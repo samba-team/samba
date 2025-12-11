@@ -425,7 +425,7 @@ static int ip6_na_build(uint8_t *buffer,
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
-	int s;
+	int s = -1;
 	struct sockaddr_ll sall = {0};
 	struct ifreq if_hwaddr = {
 		.ifr_ifru = {
@@ -456,7 +456,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
 		ret = errno;
 		DBG_ERR("Interface '%s' not found\n", iface);
-		goto fail;
+		goto done;
 	}
 
 	/* Get MAC address */
@@ -465,18 +465,18 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	if ( ret < 0 ) {
 		ret = errno;
 		DBG_ERR("ioctl failed\n");
-		goto fail;
+		goto done;
 	}
 	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
 		ret = 0;
 		D_DEBUG("Ignoring loopback arp request\n");
-		goto fail;
+		goto done;
 	}
 	if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
 		ret = EINVAL;
 		DBG_ERR("Not an ethernet address family (0x%x)\n",
 			if_hwaddr.ifr_hwaddr.sa_family);
-		goto fail;;
+		goto done;
 	}
 
 	/* Set up most of destination address structure */
@@ -500,7 +500,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				&len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build ARP request\n");
-			goto fail;
+			goto done;
 		}
 
 		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
@@ -514,7 +514,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
-			goto fail;
+			goto done;
 		}
 
 		/* Send unsolicited ARP reply */
@@ -527,7 +527,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				&len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build ARP reply\n");
-			goto fail;
+			goto done;
 		}
 
 		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
@@ -541,10 +541,9 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
-			goto fail;
+			goto done;
 		}
 
-		close(s);
 		break;
 
 	case AF_INET6:
@@ -556,7 +555,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				   &len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build IPv6 neighbor advertisement\n");
-			goto fail;
+			goto done;
 		}
 
 		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
@@ -570,23 +569,24 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
-			goto fail;
+			goto done;
 		}
 
-		close(s);
 		break;
 
 	default:
 		ret = EINVAL;
 		DBG_ERR("Not an ipv4/ipv6 address (family is %u)\n",
 			addr->ip.sin_family);
-		goto fail;
+		goto done;
 	}
 
-	return 0;
+	ret = 0;
 
-fail:
-	close(s);
+done:
+	if (s != -1) {
+		close(s);
+	}
 	return ret;
 }
 
