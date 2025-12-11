@@ -50,6 +50,27 @@ to a higher value than 1 will allow Samba to shard the stream to more
 than one xattr. It has an artificial limit of 16 for a maximum stream
 length of 1MB.
 
+
+Support for remote password management (Entra ID SSPR, Keycloak)
+----------------------------------------------------------------
+
+When a system such as Entra ID or Keycloak wants to change a user's
+password in its own database as well as in AD, it will use a password
+reset, meaning it does not transmit the old password to the domain
+controller. Normally a password reset avoids password history and age
+checks, which would allow a cloud password change to bypass
+on-premises password policies. To address this, a password reset using
+the "policy hints" control should respect password policies, as if it
+were an ordinary password change. Both Entra ID and Keycloak use this,
+but until now Samba did not understand this control, and would reject
+these reset requests.
+
+Now Samba AD will recognise the policy hints control and enforce local
+policy. This allows Microsoft Entra self-service password reset (SSPR)
+to work, and for Keycloak to work with the "password policy hints
+enabled" option.
+
+
 REMOVED FEATURES
 ================
 
