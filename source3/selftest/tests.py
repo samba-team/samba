@@ -2031,6 +2031,7 @@ if have_cluster_support:
     for test in CLUSTERED_TESTS:
         planclusteredmembertestsuite(test, "$PREFIX")
 
+    planclusteredmembertestsuite('smb2.persistent-open-failover', '$PREFIX', 'ca_so')
     planclusteredmembertestsuite('smb2.persistent-open', '$PREFIX', 'ca_so')
 
     CLUSTERED_LOCAL_TESTS = [
