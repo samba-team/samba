@@ -50,6 +50,19 @@ global_asn1_print = False
 global_hexdump = False
 
 
+def check_kdc_option(kdc_options, name):
+    """Get a KDC option flag by name."""
+    # krb5_asn1.KDCOptions is SO TEDIOUS
+    if not isinstance(kdc_options, krb5_asn1.KDCOptions):
+        if kdc_options == 0:
+            return False
+        raise ValueError(f"kdc_options is {kdc_options} ({type(kdc_options)})")
+
+    pos = len(tuple(krb5_asn1.KDCOptions(name))) - 1
+
+    return (pos < len(kdc_options) and str(kdc_options[pos]) == '1')
+
+
 class AsReqBaseTest(KDCBaseTest):
     def _run_as_req_enc_timestamp(self, client_creds, client_account=None,
                                   expected_cname=None, sname=None,
@@ -88,8 +101,12 @@ class AsReqBaseTest(KDCBaseTest):
             etypes = self.get_default_enctypes(client_creds)
         if kdc_options is None:
             kdc_options = krb5_asn1.KDCOptions('forwardable')
+
         if expected_error is not None:
             initial_error_mode = expected_error
+        elif (self.require_canonicalization and
+              not check_kdc_option(kdc_options, 'canonicalize')):
+            initial_error_mode = KDC_ERR_C_PRINCIPAL_UNKNOWN
         else:
             initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
 
@@ -206,7 +223,10 @@ class AsReqKerberosTests(AsReqBaseTest):
         expected_sname = sname
         expected_salt = client_creds.get_salt()
 
-        if any(etype in initial_etypes
+        if (self.require_canonicalization and
+              not check_kdc_option(initial_kdc_options, 'canonicalize')):
+            expected_error_mode = KDC_ERR_C_PRINCIPAL_UNKNOWN
+        elif any(etype in initial_etypes
                for etype in self.get_default_enctypes(client_creds)):
             expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
         else:
@@ -524,17 +544,23 @@ class AsReqKerberosTests(AsReqBaseTest):
             name_type=NT_SRV_INST,
             names=[krbtgt_account, realm])
 
+        if self.require_canonicalization:
+            # in this case the uncanonicalized client is going to be found first.
+            expected_error = KDC_ERR_C_PRINCIPAL_UNKNOWN
+        else:
+            expected_error = KDC_ERR_S_PRINCIPAL_UNKNOWN
+
         if self.strict_checking:
             self._run_as_req_enc_timestamp(
                 client_creds,
                 sname=wrong_krbtgt_princ,
-                expected_pa_error=KDC_ERR_S_PRINCIPAL_UNKNOWN,
+                expected_pa_error=expected_error,
                 expect_pa_edata=False)
         else:
             self._run_as_req_enc_timestamp(
                 client_creds,
                 sname=wrong_krbtgt_princ,
-                expected_error=KDC_ERR_S_PRINCIPAL_UNKNOWN)
+                expected_error=expected_error)
 
     def test_krbtgt_single_component_krbtgt(self):
         """Test that we can make a request to the single‐component krbtgt
@@ -569,10 +595,17 @@ class AsReqKerberosTests(AsReqBaseTest):
             account_type=self.AccountType.USER,
             opts={'logon_hours': bytes(21)})
 
+        if self.require_canonicalization:
+            # the uncanonicalized client is going to be found first.
+            expected_error = KDC_ERR_C_PRINCIPAL_UNKNOWN
+        else:
+            expected_error = (KDC_ERR_CLIENT_REVOKED,
+                              KDC_ERR_PREAUTH_REQUIRED)
+
         # Expect to get a CLIENT_REVOKED error.
         self._run_as_req_enc_timestamp(
             client_creds,
-            expected_error=(KDC_ERR_CLIENT_REVOKED, KDC_ERR_PREAUTH_REQUIRED),
+            expected_error=expected_error,
             expect_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS,
             expected_pa_error=KDC_ERR_CLIENT_REVOKED,
             expect_pa_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS)
@@ -589,11 +622,17 @@ class AsReqKerberosTests(AsReqBaseTest):
             use_cache=False)
 
         client_creds.set_password('wrong password')
+        if self.require_canonicalization:
+            # the uncanonicalized client is going to be found first.
+            expected_error = KDC_ERR_C_PRINCIPAL_UNKNOWN
+        else:
+            expected_error = (KDC_ERR_CLIENT_REVOKED,
+                              KDC_ERR_PREAUTH_REQUIRED)
 
         # Expect to get a CLIENT_REVOKED error.
         self._run_as_req_enc_timestamp(
             client_creds,
-            expected_error=(KDC_ERR_CLIENT_REVOKED, KDC_ERR_PREAUTH_REQUIRED),
+            expected_error=expected_error,
             expect_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS,
             expected_pa_error=KDC_ERR_CLIENT_REVOKED,
             expect_pa_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS)
@@ -619,10 +658,17 @@ class AsReqKerberosTests(AsReqBaseTest):
 
         time.sleep(1)
 
-        # Expect to get a CLIENT_REVOKED error.
+        if self.require_canonicalization:
+            # the uncanonicalized client is going to be found first.
+            expected_error = KDC_ERR_C_PRINCIPAL_UNKNOWN
+        else:
+            expected_error = (KDC_ERR_KEY_EXPIRED,
+                              KDC_ERR_PREAUTH_FAILED,
+                              KDC_ERR_PREAUTH_REQUIRED)
+
         self._run_as_req_enc_timestamp(
             client_creds,
-            expected_error=(KDC_ERR_KEY_EXPIRED, KDC_ERR_PREAUTH_FAILED, KDC_ERR_PREAUTH_REQUIRED),
+            expected_error=expected_error,
             expect_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED,
             expected_pa_error=KDC_ERR_KEY_EXPIRED,
             expect_pa_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED)
@@ -657,10 +703,17 @@ class AsReqKerberosTests(AsReqBaseTest):
 
         client_creds.set_password('wrong password')
 
-        # Expect to get a CLIENT_REVOKED error.
+        if self.require_canonicalization:
+            # the uncanonicalized client is going to be found first.
+            expected_error = KDC_ERR_C_PRINCIPAL_UNKNOWN
+        else:
+            expected_error = (KDC_ERR_KEY_EXPIRED,
+                              KDC_ERR_PREAUTH_FAILED,
+                              KDC_ERR_PREAUTH_REQUIRED)
+
         self._run_as_req_enc_timestamp(
             client_creds,
-            expected_error=(KDC_ERR_KEY_EXPIRED, KDC_ERR_PREAUTH_FAILED, KDC_ERR_PREAUTH_REQUIRED),
+            expected_error=expected_error,
             expect_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED,
             expected_pa_error=KDC_ERR_PREAUTH_FAILED,
             expect_pa_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED)
@@ -681,4 +734,3 @@ if __name__ == "__main__":
     global_hexdump = False
     import unittest
     unittest.main()
-
