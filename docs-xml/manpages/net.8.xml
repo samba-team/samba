@@ -1810,7 +1810,146 @@ the following entry types;
 
 </refsect2>
 
+<refsect2>
+	<title>ADS KERBEROS</title>
 
+<para>
+	Issue Kerberos operations against an Active Directory KDC.
+</para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS KERBEROS KINIT</title>
+
+<para>
+	Issue a kinit request for a given user. When no other options are
+	defined the ticket granting ticket (TGT) will be stored in a memory cache.
+</para>
+
+<para>
+	To store the TGT in a different location either use the
+	<option>--krb5-ccache</option> option or set the
+	<replaceable>KRB5CCNAME</replaceable> environment variable.
+</para>
+
+<para>Example: <userinput>net ads kerberos kinit -P --krb5-ccache=/tmp/krb5cache</userinput></para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS KERBEROS RENEW</title>
+
+<para>
+	Renew an already acquired ticket granting ticket (TGT).
+</para>
+
+<para>Example: <userinput>net ads kerberos renew</userinput></para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS KERBEROS PAC</title>
+
+<para>
+	Request a Kerberos PAC while authenticating to an Active Directory KDC.
+</para>
+
+<para>
+	The following commands are provided:
+</para>
+
+<simplelist>
+<member>net ads kerberos pac dump - Dump a PAC to stdout.</member>
+<member>net ads kerneros pac save - Save a PAC to a file.</member>
+</simplelist>
+
+<para>
+	All commands allow to define an impersonation principal to do a Kerberos
+	Service for User (S4U2SELF) operation via
+	the <replaceable>impersonate=STRING</replaceable> option.
+	The impersonation principal can have multiple different formats:
+</para>
+
+<itemizedlist>
+	<listitem>
+		<para><replaceable>user@MY.REALM</replaceable></para>
+		<para>This is the default format.</para>
+	</listitem>
+	<listitem>
+		<para><replaceable>user@MY.REALM@MY.REALM</replaceable></para>
+		<para>The Kerberos Service for User (S4U2SELF) also supports
+		Enterprise Principals.</para>
+	</listitem>
+	<listitem>
+		<para><replaceable>user@UPN.SUFFIX@MY.REALM</replaceable></para>
+		<para>Enterprise Principal using a defined upn suffix.</para>
+	</listitem>
+	<listitem>
+		<para><replaceable>user@WORKGROUP@MY.REALM</replaceable></para>
+		<para>Enterprise Principal with netbios domain name.
+		This format is currently not supported by Samba AD.</para>
+	</listitem>
+</itemizedlist>
+
+<para>
+	By default net will request a service ticket for the local service
+	of the joined machine. A different service can be defined via
+        <replaceable>local_service=STRING</replaceable>.
+</para>
+
+</refsect2>
+<refsect2>
+	<title>ADS KERBEROS PAC DUMP [impersonate=string] [local_service=string] [pac_buffer_type=int]</title>
+
+<para>
+	Request a Kerberos PAC while authenticating to an Active Directory KDC.
+	The PAC will be printed on stdout.
+</para>
+
+<para>
+	When no specific pac_buffer is selected, all buffers will be printed.
+	It is possible to select a specific one via
+	<replaceable>pac_buffer_type=INT</replaceable> from this list:
+</para>
+
+<simplelist>
+<member>1 PAC_TYPE_LOGON_INFO</member>
+<member>2 PAC_TYPE_CREDENTIAL_INFO</member>
+<member>6 PAC_TYPE_SRV_CHECKSUM</member>
+<member>7 PAC_TYPE_KDC_CHECKSUM</member>
+<member>10 PAC_TYPE_LOGON_NAME</member>
+<member>11 PAC_TYPE_CONSTRAINED_DELEGATION</member>
+<member>12 PAC_TYPE_UPN_DNS_INFO</member>
+<member>13 PAC_TYPE_CLIENT_CLAIMS_INFO</member>
+<member>14 PAC_TYPE_DEVICE_INFO</member>
+<member>15 PAC_TYPE_DEVICE_CLAIMS_INFO</member>
+<member>16 PAC_TYPE_TICKET_CHECKSUM</member>
+<member>17 PAC_TYPE_ATTRIBUTES_INFO</member>
+<member>18 PAC_TYPE_REQUESTER_SID</member>
+<member>19 PAC_TYPE_FULL_CHECKSUM</member>
+</simplelist>
+
+<para>Example: <userinput>net ads kerberos pac dump -P impersonate=anyuser@MY.REALM.COM</userinput></para>
+
+</refsect2>
+
+<refsect2>
+	<title>ADS KERBEROS PAC SAVE [impersonate=string] [local_service=string] [filename=string]</title>
+
+<para>
+	Request a Kerberos PAC while authenticating to an Active Directory KDC.
+	The PAC will be saved in a file.
+</para>
+
+<para>
+	The filename to store the PAC can be set via the
+	<replaceable>filename=STRING</replaceable> option.
+</para>
+
+<para>Example: <userinput>net ads kerberos pac save -U user%password filename=/tmp/pacstore</userinput></para>
+
+</refsect2>
 <refsect2>
 <title>SAM CREATEBUILTINGROUP &lt;NAME&gt;</title>
 
