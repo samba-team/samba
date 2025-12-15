@@ -754,3 +754,26 @@ NTSTATUS dbwrap_unmarshall(struct db_context *db, const uint8_t *buf,
 	}
 	return state.ret;
 }
+
+void dbwrap_log_key(const char *prefix, TDB_DATA key)
+{
+	if (DEBUGLEVEL < 10) {
+		return;
+	}
+	if (DEBUGLEVEL == 10) {
+		/*
+		 * Only fully spam at debuglevel > 10
+		 */
+		key.dsize = MIN(10, key.dsize);
+	}
+
+	if (key.dsize < 1024) {
+		char keystr[key.dsize*2+1];
+		hex_encode_buf(keystr, key.dptr, key.dsize);
+		DBG_DEBUG("%s key %s\n", prefix, keystr);
+		return;
+	}
+
+	DEBUG(DEBUGLEVEL, ("%s key\n", prefix));
+	dump_data(DEBUGLEVEL, key.dptr, key.dsize);
+}

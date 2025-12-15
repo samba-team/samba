@@ -42,34 +42,12 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 			      const TDB_DATA *dbufs, int num_dbufs, int flag);
 static NTSTATUS db_tdb_delete(struct db_record *rec);
 
-static void db_tdb_log_key(const char *prefix, TDB_DATA key)
-{
-	if (DEBUGLEVEL < 10) {
-		return;
-	}
-	if (DEBUGLEVEL == 10) {
-		/*
-		 * Only fully spam at debuglevel > 10
-		 */
-		key.dsize = MIN(10, key.dsize);
-	}
-
-	if (key.dsize < 1024) {
-		char keystr[key.dsize*2+1];
-		hex_encode_buf(keystr, key.dptr, key.dsize);
-		DBG_DEBUG("%s key %s\n", prefix, keystr);
-		return;
-	}
-
-	dump_data(DEBUGLEVEL, key.dptr, key.dsize);
-}
-
 static int db_tdb_record_destr(struct db_record* data)
 {
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
 
-	db_tdb_log_key("Unlocking", data->key);
+	dbwrap_log_key("Unlocking", data->key);
 	tdb_chainunlock(ctx->wtdb->tdb, data->key);
 	return 0;
 }
@@ -162,7 +140,7 @@ static struct db_record *db_tdb_fetch_locked(
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
 
-	db_tdb_log_key("Locking", key);
+	dbwrap_log_key("Locking", key);
 	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		return NULL;

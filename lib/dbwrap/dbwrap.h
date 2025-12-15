@@ -274,6 +274,8 @@ NTSTATUS dbwrap_unmarshall(struct db_context *db, const uint8_t *buf,
 NTSTATUS dbwrap_merge_dbufs(TDB_DATA *buf, TALLOC_CTX *mem_ctx,
 			    const TDB_DATA *dbufs, int num_dbufs);
 
+void dbwrap_log_key(const char *prefix, TDB_DATA key);
+
 
 /**
  * This opens a tdb file
