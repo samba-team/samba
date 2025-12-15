@@ -403,11 +403,20 @@ static bool test_smb2_bench_echo(struct torture_context *tctx,
 		state->conns[i].state = state;
 		state->conns[i].idx = i;
 
-		if (!torture_smb2_connection(tctx, &ct)) {
-			torture_comment(tctx, "Failed opening %zu/%zu connections\n", i, state->num_conns);
-			return false;
+		if (state->num_conns == 1) {
+			/*
+			 * Use the existing connection
+			 */
+			state->conns[i].tree = ct = tree;
+		} else {
+			if (!torture_smb2_connection(tctx, &ct)) {
+				torture_comment(tctx,
+					"Failed opening %zu/%zu connections\n",
+					i, state->num_conns);
+				return false;
+			}
+			state->conns[i].tree = talloc_steal(state->conns, ct);
 		}
-		state->conns[i].tree = talloc_steal(state->conns, ct);
 
 		smb2cli_conn_set_max_credits(ct->session->transport->conn, 8192);
 		smb2cli_ioctl(ct->session->transport->conn,
@@ -885,11 +894,20 @@ bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 		state->conns[i].state = state;
 		state->conns[i].idx = i;
 
-		if (!torture_smb2_connection(tctx, &ct)) {
-			torture_comment(tctx, "Failed opening %zd/%zd connections\n", i, state->num_conns);
-			return false;
+		if (state->num_conns == 1) {
+			/*
+			 * Use the existing connection
+			 */
+			state->conns[i].tree = ct = tree;
+		} else {
+			if (!torture_smb2_connection(tctx, &ct)) {
+				torture_comment(tctx,
+					"Failed opening %zu/%zu connections\n",
+					i, state->num_conns);
+				return false;
+			}
+			state->conns[i].tree = talloc_steal(state->conns, ct);
 		}
-		state->conns[i].tree = talloc_steal(state->conns, ct);
 
 		smb2cli_conn_set_max_credits(ct->session->transport->conn, 8192);
 		smb2cli_ioctl(ct->session->transport->conn,
@@ -1265,11 +1283,20 @@ static bool test_smb2_bench_read(struct torture_context *tctx,
 		state->conns[i].state = state;
 		state->conns[i].idx = i;
 
-		if (!torture_smb2_connection(tctx, &ct)) {
-			torture_comment(tctx, "Failed opening %zu/%zu connections\n", i, state->num_conns);
-			return false;
+		if (state->num_conns == 1) {
+			/*
+			 * Use the existing connection
+			 */
+			state->conns[i].tree = ct = tree;
+		} else {
+			if (!torture_smb2_connection(tctx, &ct)) {
+				torture_comment(tctx,
+					"Failed opening %zu/%zu connections\n",
+					i, state->num_conns);
+				return false;
+			}
+			state->conns[i].tree = talloc_steal(state->conns, ct);
 		}
-		state->conns[i].tree = talloc_steal(state->conns, ct);
 
 		smb2cli_conn_set_max_credits(ct->session->transport->conn, 8192);
 		smb2cli_ioctl(ct->session->transport->conn,
@@ -1784,11 +1811,20 @@ static bool test_smb2_bench_session_setup(struct torture_context *tctx,
 		state->conns[i].state = state;
 		state->conns[i].idx = i;
 
-		if (!torture_smb2_connection(tctx, &ct)) {
-			torture_comment(tctx, "Failed opening %zd/%zd connections\n", i, state->num_conns);
-			return false;
+		if (state->num_conns == 1) {
+			/*
+			 * Use the existing connection
+			 */
+			ct = tree;
+		} else {
+			if (!torture_smb2_connection(tctx, &ct)) {
+				torture_comment(tctx,
+					"Failed opening %zu/%zu connections\n",
+					i, state->num_conns);
+				return false;
+			}
+			talloc_steal(state->conns, ct);
 		}
-		talloc_steal(state->conns, ct);
 		state->conns[i].transport = ct->session->transport;
 
 		smb2cli_conn_set_max_credits(ct->session->transport->conn, 8192);
