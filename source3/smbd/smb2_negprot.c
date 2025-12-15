@@ -433,14 +433,15 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	max_limit = 0x10000;
 
 	if (protocol >= PROTOCOL_SMB2_10) {
-		int p = 0;
+		uint16_t port = 0;
 
 		if (tsocket_address_is_inet(req->sconn->local_address, "ip")) {
-			p = tsocket_address_inet_port(req->sconn->local_address);
+			port = tsocket_address_inet_port(
+				req->sconn->local_address);
 		}
 
 		/* largeMTU is not supported over NBT (tcp port 139) */
-		if (p != NBT_SMB_PORT) {
+		if (port != NBT_SMB_PORT) {
 			capabilities |= SMB2_CAP_LARGE_MTU;
 			xconn->smb2.credits.multicredit = true;
 
