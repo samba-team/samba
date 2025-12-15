@@ -3971,8 +3971,8 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 	TALLOC_FREE(im);
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("smbd_smb2_request_dispatch_immediate: idx[%d] of %d vectors\n",
-			req->current_idx, req->in.vector_count));
+		DBG_DEBUG("idx[%d] of %d vectors\n",
+			  req->current_idx, req->in.vector_count);
 		print_req_vectors(req);
 	}
 
@@ -4714,8 +4714,7 @@ NTSTATUS smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 	NTSTATUS status;
 	struct smbd_smb2_request *req = NULL;
 
-	DEBUG(10,("smbd_smb2_first_negprot: packet length %u\n",
-		 (unsigned int)size));
+	DBG_DEBUG("packet length %zu\n", size);
 
 	status = smbd_initialize_smb2(xconn, expected_seq_low);
 	if (!NT_STATUS_IS_OK(status)) {

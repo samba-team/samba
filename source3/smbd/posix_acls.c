@@ -137,14 +137,14 @@ static uint32_t get_pai_entry_val(const struct pai_entry *paie)
 {
 	switch (paie->owner_type) {
 		case UID_ACE:
-			DEBUG(10,("get_pai_entry_val: uid = %u\n", (unsigned int)paie->unix_ug.id ));
+			DBG_DEBUG("uid = %" PRIu32 "\n", paie->unix_ug.id);
 			return (uint32_t)paie->unix_ug.id;
 		case GID_ACE:
-			DEBUG(10,("get_pai_entry_val: gid = %u\n", (unsigned int)paie->unix_ug.id ));
+			DBG_DEBUG("gid = %" PRIu32 "\n", paie->unix_ug.id);
 			return (uint32_t)paie->unix_ug.id;
 		case WORLD_ACE:
 		default:
-			DEBUG(10,("get_pai_entry_val: world ace\n"));
+			DBG_DEBUG("world ace\n");
 			return (uint32_t)-1;
 	}
 }
@@ -157,14 +157,16 @@ static uint32_t get_entry_val(canon_ace *ace_entry)
 {
 	switch (ace_entry->owner_type) {
 		case UID_ACE:
-			DEBUG(10,("get_entry_val: uid = %u\n", (unsigned int)ace_entry->unix_ug.id ));
+			DBG_DEBUG("uid = %" PRIu32 "\n",
+				  ace_entry->unix_ug.id);
 			return (uint32_t)ace_entry->unix_ug.id;
 		case GID_ACE:
-			DEBUG(10,("get_entry_val: gid = %u\n", (unsigned int)ace_entry->unix_ug.id ));
+			DBG_DEBUG("gid = %" PRIu32 "\n",
+				  ace_entry->unix_ug.id);
 			return (uint32_t)ace_entry->unix_ug.id;
 		case WORLD_ACE:
 		default:
-			DEBUG(10,("get_entry_val: world ace\n"));
+			DBG_DEBUG("world ace\n");
 			return (uint32_t)-1;
 	}
 }
@@ -193,7 +195,9 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 		num_def_entries++;
 	}
 
-	DEBUG(10,("create_pai_buf_v2: num_entries = %u, num_def_entries = %u\n", num_entries, num_def_entries ));
+	DBG_DEBUG("num_entries = %u, num_def_entries = %u\n",
+		  num_entries,
+		  num_def_entries);
 
 	*store_size = PAI_V2_ENTRIES_BASE +
 		((num_entries + num_def_entries)*PAI_V2_ENTRY_LENGTH);
@@ -210,8 +214,7 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 	SSVAL(pai_buf,PAI_V2_NUM_ENTRIES_OFFSET,num_entries);
 	SSVAL(pai_buf,PAI_V2_NUM_DEFAULT_ENTRIES_OFFSET,num_def_entries);
 
-	DEBUG(10,("create_pai_buf_v2: sd_type = 0x%x\n",
-			(unsigned int)sd_type ));
+	DBG_DEBUG("sd_type = 0x%" PRIx16 "\n", sd_type);
 
 	entry_offset = pai_buf + PAI_V2_ENTRIES_BASE;
 
@@ -223,11 +226,12 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 		SCVAL(entry_offset,0,ace_list->ace_flags);
 		SCVAL(entry_offset,1,type_val);
 		SIVAL(entry_offset,2,entry_val);
-		DEBUG(10,("create_pai_buf_v2: entry %u [0x%x] [0x%x] [0x%x]\n",
-			i,
-			(unsigned int)ace_list->ace_flags,
-			(unsigned int)type_val,
-			(unsigned int)entry_val ));
+		DBG_DEBUG("entry %u [0x%" PRIx8 "] [0x%" PRIx8 "] [0x%" PRIx32
+			  "]\n",
+			  i,
+			  ace_list->ace_flags,
+			  type_val,
+			  entry_val);
 		i++;
 		entry_offset += PAI_V2_ENTRY_LENGTH;
 	}
@@ -239,11 +243,12 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 		SCVAL(entry_offset,0,ace_list->ace_flags);
 		SCVAL(entry_offset,1,type_val);
 		SIVAL(entry_offset,2,entry_val);
-		DEBUG(10,("create_pai_buf_v2: entry %u [0x%x] [0x%x] [0x%x]\n",
-			i,
-			(unsigned int)ace_list->ace_flags,
-			(unsigned int)type_val,
-			(unsigned int)entry_val ));
+		DBG_DEBUG("entry %u [0x%" PRIx8 "] [0x%" PRIx8 "] [0x%" PRIx32
+			  "]\n",
+			  i,
+			  ace_list->ace_flags,
+			  type_val,
+			  entry_val);
 		i++;
 		entry_offset += PAI_V2_ENTRY_LENGTH;
 	}
@@ -276,12 +281,12 @@ static void store_inheritance_attributes(files_struct *fsp,
 
 	TALLOC_FREE(pai_buf);
 
-	DEBUG(10,("store_inheritance_attribute: type 0x%x for file %s\n",
-		(unsigned int)sd_type,
-		fsp_str_dbg(fsp)));
+	DBG_DEBUG("type 0x%" PRIx16 " for file %s\n",
+		  sd_type,
+		  fsp_str_dbg(fsp));
 
 	if (ret == -1 && !no_acl_syscall_error(errno)) {
-		DEBUG(1,("store_inheritance_attribute: Error %s\n", strerror(errno) ));
+		DBG_WARNING("Error %s\n", strerror(errno));
 	}
 }
 
@@ -401,23 +406,21 @@ static bool get_pai_owner_type(struct pai_entry *paie, const char *entry_offset)
 		case UID_ACE:
 			paie->unix_ug.type = ID_TYPE_UID;
 			paie->unix_ug.id = (uid_t)IVAL(entry_offset,1);
-			DEBUG(10,("get_pai_owner_type: uid = %u\n",
-				(unsigned int)paie->unix_ug.id ));
+			DBG_DEBUG("uid = %" PRIu32 "\n", paie->unix_ug.id);
 			break;
 		case GID_ACE:
 			paie->unix_ug.type = ID_TYPE_GID;
 			paie->unix_ug.id = (gid_t)IVAL(entry_offset,1);
-			DEBUG(10,("get_pai_owner_type: gid = %u\n",
-				(unsigned int)paie->unix_ug.id ));
+			DBG_DEBUG("gid = %" PRIu32 "\n", paie->unix_ug.id);
 			break;
 		case WORLD_ACE:
 			paie->unix_ug.type = ID_TYPE_NOT_SPECIFIED;
 			paie->unix_ug.id = -1;
-			DEBUG(10,("get_pai_owner_type: world ace\n"));
+			DBG_DEBUG("world ace\n");
 			break;
 		default:
-			DEBUG(10,("get_pai_owner_type: unknown type %u\n",
-				(unsigned int)paie->owner_type ));
+			DBG_DEBUG("unknown type %u\n",
+				  (unsigned int)paie->owner_type);
 			return false;
 	}
 	return true;
@@ -486,8 +489,9 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 
 	entry_offset = buf + PAI_V1_ENTRIES_BASE;
 
-	DEBUG(10,("create_pai_val: num_entries = %u, num_def_entries = %u\n",
-			paiv->num_entries, paiv->num_def_entries ));
+	DBG_DEBUG("num_entries = %u, num_def_entries = %u\n",
+		  paiv->num_entries,
+		  paiv->num_def_entries);
 
 	entry_offset = create_pai_v1_entries(paiv, entry_offset, false);
 	if (entry_offset == NULL) {
