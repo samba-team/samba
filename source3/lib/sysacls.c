@@ -143,23 +143,12 @@ int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
 	return *permset_d & perm;
 }
 
-char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
+char *sys_acl_to_text(TALLOC_CTX *mem_ctx, const struct smb_acl_t *acl_d)
 {
-	int	i;
-	int	len, maxlen;
-	char	*text;
+	int32_t i;
+	char *text = NULL;
 
-	/*
-	 * use an initial estimate of 20 bytes per ACL entry
-	 * when allocating memory for the text representation
-	 * of the ACL
-	 */
-	len	= 0;
-	maxlen	= 20 * acl_d->count;
-	if ((text = (char *)SMB_MALLOC(maxlen)) == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
+	text = talloc_strdup(mem_ctx, "");
 
 	for (i = 0; i < acl_d->count; i++) {
 		struct smb_acl_entry *ap = &acl_d->acl[i];
@@ -169,7 +158,6 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 		const char	*tag;
 		const char	*id	= "";
 		char		perms[4];
-		int		nbytes;
 
 		switch (ap->a_type) {
 			/*
@@ -220,30 +208,8 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 		perms[2] = (ap->a_perm & SMB_ACL_EXECUTE) ? 'x' : '-';
 		perms[3] = '\0';
 
-		/*          <tag>      :  <qualifier>   :  rwx \n  \0 */
-		nbytes = strlen(tag) + 1 + strlen(id) + 1 + 3 + 1 + 1;
-
-		/*
-		 * If this entry would overflow the buffer
-		 * allocate enough additional memory for this
-		 * entry and an estimate of another 20 bytes
-		 * for each entry still to be processed
-		 */
-		if ((len + nbytes) > maxlen) {
-			maxlen += nbytes + 20 * (acl_d->count - i);
-			if ((text = (char *)SMB_REALLOC(text, maxlen)) == NULL) {
-				errno = ENOMEM;
-				return NULL;
-			}
-		}
-
-
-		slprintf(&text[len], nbytes, "%s:%s:%s\n", tag, id, perms);
-		len += (nbytes - 1);
+		talloc_asprintf_addbuf(&text, "%s:%s:%s\n", tag, id, perms);
 	}
-
-	if (len_p)
-		*len_p = len;
 
 	return text;
 }

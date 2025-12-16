@@ -1859,10 +1859,9 @@ static NTSTATUS cmd_sys_acl_get_fd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		printf("sys_acl_get_fd failed (%s)\n", strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	acl_text = sys_acl_to_text(acl, NULL);
+	acl_text = sys_acl_to_text(acl, acl);
 	printf("%s", acl_text);
 	TALLOC_FREE(acl);
-	SAFE_FREE(acl_text);
 	return NT_STATUS_OK;
 }
 
@@ -1908,12 +1907,11 @@ static NTSTATUS cmd_sys_acl_get_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(pathref_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	acl_text = sys_acl_to_text(acl, NULL);
+	acl_text = sys_acl_to_text(acl, acl);
 	printf("%s", acl_text);
 	TALLOC_FREE(acl);
 	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(pathref_fname);
-	SAFE_FREE(acl_text);
 	return NT_STATUS_OK;
 }
 

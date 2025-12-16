@@ -356,10 +356,11 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl)
 	}
 
 	if (acl_valid(result) != 0) {
-		char *acl_string = sys_acl_to_text(acl, NULL);
-		DEBUG(0, ("smb_acl_to_posix: ACL %s is invalid for set (%s)\n",
-			  acl_string, strerror(errno)));
-		SAFE_FREE(acl_string);
+		char *acl_string = sys_acl_to_text(talloc_tos(), acl);
+		DBG_WARNING("ACL %s is invalid for set (%s)\n",
+			    acl_string,
+			    strerror(errno));
+		TALLOC_FREE(acl_string);
 		goto fail;
 	}
 

@@ -50,7 +50,7 @@ void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
 int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
-char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p);
+char *sys_acl_to_text(TALLOC_CTX *mem_ctx, const struct smb_acl_t *acl_d);
 SMB_ACL_T sys_acl_init(TALLOC_CTX *mem_ctx);
 int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
