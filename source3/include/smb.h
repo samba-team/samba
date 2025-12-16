@@ -307,18 +307,6 @@ struct interface {
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
 
-/* Mapping of access rights to UNIX perms. */
-#define UNIX_ACCESS_RWX		FILE_GENERIC_ALL
-#define UNIX_ACCESS_R 		FILE_GENERIC_READ
-#define UNIX_ACCESS_W		FILE_GENERIC_WRITE
-#define UNIX_ACCESS_X		FILE_GENERIC_EXECUTE
-
-/* Mapping of access rights to UNIX perms. for a UNIX directory. */
-#define UNIX_DIRECTORY_ACCESS_RWX		FILE_GENERIC_ALL
-#define UNIX_DIRECTORY_ACCESS_R 		FILE_GENERIC_READ
-#define UNIX_DIRECTORY_ACCESS_W			(FILE_GENERIC_WRITE|FILE_DELETE_CHILD)
-#define UNIX_DIRECTORY_ACCESS_X			FILE_GENERIC_EXECUTE
-
 #define UNIX_ACCESS_NONE (WRITE_OWNER_ACCESS)
 
 /* Flags field. */

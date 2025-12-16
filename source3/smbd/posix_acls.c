@@ -995,9 +995,9 @@ uint32_t map_canon_ace_perms(int snum,
 
 	if (lp_acl_map_full_control(snum) && ((perms & ALL_ACE_PERMS) == ALL_ACE_PERMS)) {
 		if (directory_ace) {
-			nt_mask = UNIX_DIRECTORY_ACCESS_RWX;
+			nt_mask = FILE_GENERIC_ALL;
 		} else {
-			nt_mask = (UNIX_ACCESS_RWX & ~DELETE_ACCESS);
+			nt_mask = (FILE_GENERIC_ALL & ~DELETE_ACCESS);
 		}
 	} else if ((perms & ALL_ACE_PERMS) == (mode_t)0) {
 		/*
@@ -1012,13 +1012,18 @@ uint32_t map_canon_ace_perms(int snum,
 		nt_mask = 0;
 	} else {
 		if (directory_ace) {
-			nt_mask |= ((perms & S_IRUSR) ? UNIX_DIRECTORY_ACCESS_R : 0 );
-			nt_mask |= ((perms & S_IWUSR) ? UNIX_DIRECTORY_ACCESS_W : 0 );
-			nt_mask |= ((perms & S_IXUSR) ? UNIX_DIRECTORY_ACCESS_X : 0 );
+			nt_mask |= ((perms & S_IRUSR) ? FILE_GENERIC_READ : 0);
+			nt_mask |= ((perms & S_IWUSR) ? (FILE_GENERIC_WRITE |
+							 FILE_DELETE_CHILD)
+						      : 0);
+			nt_mask |= ((perms & S_IXUSR) ? FILE_GENERIC_EXECUTE
+						      : 0);
 		} else {
-			nt_mask |= ((perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
-			nt_mask |= ((perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
-			nt_mask |= ((perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
+			nt_mask |= ((perms & S_IRUSR) ? FILE_GENERIC_READ : 0);
+			nt_mask |= ((perms & S_IWUSR) ? FILE_GENERIC_WRITE
+						      : 0);
+			nt_mask |= ((perms & S_IXUSR) ? FILE_GENERIC_EXECUTE
+						      : 0);
 		}
 	}
 
