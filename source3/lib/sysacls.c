@@ -308,18 +308,6 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
 	return 0;
 }
 
-int sys_acl_free_text(char *text)
-{
-	SAFE_FREE(text);
-	return 0;
-}
-
-int sys_acl_valid(SMB_ACL_T acl_d)
-{
-	errno = EINVAL;
-	return -1;
-}
-
 /*
  * acl_get_file, acl_get_fd, acl_set_file, acl_set_fd and
  * sys_acl_delete_def_fd are to be redirected to the default
