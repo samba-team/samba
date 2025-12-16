@@ -21,7 +21,6 @@
 
 struct dptr_struct;
 
-#include "smb_acls.h"
 #include "vfs.h"
 #include "smbd/proto.h"
 #include "locking/proto.h"
