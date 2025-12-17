@@ -867,6 +867,9 @@ class RawKerberosTest(TestCase):
         cls.uncanonicalized_implicit_dollar = cls.get_server_param(
             "kdc name match implicit dollar without canonicalization", True)
 
+        cls.require_canonicalization = cls.get_server_param(
+            "kdc require canonicalization", True)
+
         using_embedded_heimdal = samba.tests.env_get_var_value(
             'USING_EMBEDDED_HEIMDAL',
             allow_missing=True)
