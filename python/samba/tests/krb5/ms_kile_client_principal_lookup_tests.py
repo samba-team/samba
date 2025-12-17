@@ -107,6 +107,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
@@ -169,6 +175,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         if not self.uncanonicalized_implicit_dollar:
             # we are explicitly not doing "step 2", so the principal
             # should not be found.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
 
@@ -236,6 +248,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
@@ -313,6 +331,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             # principal should not be found in this case
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
 
         self.check_as_reply(rep)
         salt = "%s%s" % (realm.upper(), user_name)
@@ -369,6 +392,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         rep = self.as_req(cname, sname, realm, etype)
         if not self.uncanonicalized_implicit_dollar:
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
 
@@ -440,6 +468,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         if not self.uncanonicalized_implicit_dollar:
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
@@ -480,6 +514,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
@@ -544,6 +584,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
@@ -610,6 +655,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         rep = self.as_req(cname, sname, realm, etype)
         if not self.uncanonicalized_implicit_dollar:
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
 
@@ -690,6 +740,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         if not self.uncanonicalized_implicit_dollar:
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
 
         self.check_as_reply(rep)
         salt = "%s%s" % (realm.upper(), user_name)
@@ -748,6 +803,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
 
         rep = self.as_req(cname, sname, realm, etype)
         if not self.uncanonicalized_implicit_dollar:
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
 
@@ -820,6 +880,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         if not self.uncanonicalized_implicit_dollar:
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return
+        if self.require_canonicalization:
+            # we have not provided the canonicalize (or any other) kdcoption
+            # so preauth will fail.
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            return
+
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
