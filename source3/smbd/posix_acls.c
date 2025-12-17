@@ -4498,55 +4498,6 @@ NTSTATUS set_unix_posix_acl(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname_in,
-				TALLOC_CTX *mem_ctx,
-				char **blob_description,
-				DATA_BLOB *blob)
-{
-	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-	/* Initialise this to zero, in a portable way */
-	struct smb_acl_wrapper acl_wrapper = {
-		0
-	};
-	struct smb_filename *smb_fname = cp_smb_filename_nostream(frame,
-						smb_fname_in);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = smb_vfs_call_stat(handle, smb_fname);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	acl_wrapper.owner = smb_fname->st.st_ex_uid;
-	acl_wrapper.group = smb_fname->st.st_ex_gid;
-	acl_wrapper.mode = smb_fname->st.st_ex_mode;
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(blob, mem_ctx,
-							  &acl_wrapper,
-							  (ndr_push_flags_fn_t)ndr_push_smb_acl_wrapper))) {
-		errno = EINVAL;
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	*blob_description = talloc_strdup(mem_ctx, "posix_acl");
-	if (!*blob_description) {
-		errno = EINVAL;
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	TALLOC_FREE(frame);
-	return 0;
-}
-
 int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      TALLOC_CTX *mem_ctx,
