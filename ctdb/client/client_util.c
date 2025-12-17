@@ -135,3 +135,9 @@ int ctdb_server_id_exists(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	return 0;
 }
+
+void ctdb_record_set_header(struct ctdb_record_handle *h,
+			    struct ctdb_ltdb_header *header)
+{
+	h->header = *header;
+}

@@ -1413,4 +1413,14 @@ int ctdb_server_id_exists(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			  struct ctdb_client_context *client,
 			  struct ctdb_server_id *sid, bool *exists);
 
+/**
+ * @brief Update the ctdb_ltdb_header of a record handle
+ *
+ * @param[in] h Record handle
+ * @param[in] header The local ctdb record header
+ * @return Nothing
+ */
+void ctdb_record_set_header(struct ctdb_record_handle *h,
+			    struct ctdb_ltdb_header *header);
+
 #endif /* __CTDB_CLIENT_H__ */
