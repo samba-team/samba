@@ -1402,6 +1402,433 @@ static bool test_smb2_bench_read(struct torture_context *tctx,
 }
 
 /*
+   stress testing write iops
+ */
+
+struct test_smb2_bench_write_conn;
+struct test_smb2_bench_write_loop;
+
+struct test_smb2_bench_write_state {
+	struct torture_context *tctx;
+	size_t num_conns;
+	struct test_smb2_bench_write_conn *conns;
+	size_t num_loops;
+	struct test_smb2_bench_write_loop *loops;
+	size_t pending_loops;
+	uint32_t io_size;
+	uint8_t *data_buffer;
+	struct timeval starttime;
+	int timecount;
+	int timelimit;
+	uint64_t num_finished;
+	double total_latency;
+	double min_latency;
+	double max_latency;
+	bool ok;
+	bool stop;
+};
+
+struct test_smb2_bench_write_conn {
+	struct test_smb2_bench_write_state *state;
+	int idx;
+	struct smb2_tree *tree;
+};
+
+struct test_smb2_bench_write_loop {
+	struct test_smb2_bench_write_state *state;
+	struct test_smb2_bench_write_conn *conn;
+	int idx;
+	struct tevent_immediate *im;
+	char *fname;
+	struct smb2_handle handle;
+	struct tevent_req *req;
+	struct timeval starttime;
+	uint64_t num_started;
+	uint64_t num_finished;
+	uint64_t total_finished;
+	uint64_t max_finished;
+	double total_latency;
+	double min_latency;
+	double max_latency;
+	NTSTATUS error;
+};
+
+static void test_smb2_bench_write_loop_do(
+	struct test_smb2_bench_write_loop *loop);
+
+static void test_smb2_bench_write_loop_start(struct tevent_context *ctx,
+						       struct tevent_immediate *im,
+						       void *private_data)
+{
+	struct test_smb2_bench_write_loop *loop =
+		(struct test_smb2_bench_write_loop *)
+		private_data;
+
+	test_smb2_bench_write_loop_do(loop);
+}
+
+static void test_smb2_bench_write_loop_done(struct tevent_req *req);
+
+static void test_smb2_bench_write_loop_do(
+	struct test_smb2_bench_write_loop *loop)
+{
+	struct test_smb2_bench_write_state *state = loop->state;
+	uint32_t timeout_msec;
+
+	timeout_msec = loop->conn->tree->session->transport->options.request_timeout * 1000;
+
+	loop->num_started += 1;
+	loop->starttime = timeval_current();
+	loop->req = smb2cli_write_send(state->loops,
+				       state->tctx->ev,
+				       loop->conn->tree->session->transport->conn,
+				       timeout_msec,
+				       loop->conn->tree->session->smbXcli,
+				       loop->conn->tree->smbXcli,
+				       state->io_size, /* length */
+				       0,              /* offset */
+				       loop->handle.data[0],/* fid_persistent */
+				       loop->handle.data[1],/* fid_volatile */
+				       0,              /* remaining_bytes */
+				       0,              /* flags */
+				       state->data_buffer);
+	torture_assert_goto(state->tctx, loop->req != NULL,
+			    state->ok, asserted, "smb2cli_write_send");
+
+	tevent_req_set_callback(loop->req,
+				test_smb2_bench_write_loop_done,
+				loop);
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_write_loop_done(struct tevent_req *req)
+{
+	struct test_smb2_bench_write_loop *loop =
+		(struct test_smb2_bench_write_loop *)
+		_tevent_req_callback_data(req);
+	struct test_smb2_bench_write_state *state = loop->state;
+	double latency = timeval_elapsed(&loop->starttime);
+	uint32_t data_length = 0;
+
+	torture_assert_goto(state->tctx, loop->req == req,
+			    state->ok, asserted, __location__);
+	loop->error = smb2cli_write_recv(req, &data_length);
+	torture_assert_ntstatus_ok_goto(state->tctx, loop->error,
+					state->ok, asserted, __location__);
+	torture_assert_u32_equal_goto(state->tctx, data_length, state->io_size,
+					state->ok, asserted, __location__);
+	SMB_ASSERT(latency >= 0.000001);
+
+	if (loop->num_finished == 0) {
+		/* first round */
+		loop->min_latency = latency;
+		loop->max_latency = latency;
+	}
+
+	loop->num_finished += 1;
+	loop->total_finished += 1;
+	loop->total_latency += latency;
+
+	if (latency < loop->min_latency) {
+		loop->min_latency = latency;
+	}
+
+	if (latency > loop->max_latency) {
+		loop->max_latency = latency;
+	}
+
+	if (loop->total_finished >= loop->max_finished) {
+		if (state->pending_loops > 0) {
+			state->pending_loops -= 1;
+		}
+		if (state->pending_loops == 0) {
+			goto asserted;
+		}
+	}
+
+	test_smb2_bench_write_loop_do(loop);
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_write_progress(struct tevent_context *ev,
+					  struct tevent_timer *te,
+					  struct timeval current_time,
+					  void *private_data)
+{
+	struct test_smb2_bench_write_state *state =
+		(struct test_smb2_bench_write_state *)private_data;
+	uint64_t num_writes = 0;
+	double total_write_latency = 0;
+	double min_write_latency = 0;
+	double max_write_latency = 0;
+	double avs_write_latency = 0;
+	size_t i;
+
+	state->timecount += 1;
+
+	for (i=0;i<state->num_loops;i++) {
+		struct test_smb2_bench_write_loop *loop =
+			&state->loops[i];
+
+		num_writes += loop->num_finished;
+		total_write_latency += loop->total_latency;
+		if (min_write_latency == 0.0 && loop->min_latency != 0.0) {
+			min_write_latency = loop->min_latency;
+		}
+		if (loop->min_latency < min_write_latency) {
+			min_write_latency = loop->min_latency;
+		}
+		if (max_write_latency == 0.0) {
+			max_write_latency = loop->max_latency;
+		}
+		if (loop->max_latency > max_write_latency) {
+			max_write_latency = loop->max_latency;
+		}
+		loop->num_finished = 0;
+		loop->total_latency = 0.0;
+	}
+
+	state->num_finished += num_writes;
+	state->total_latency += total_write_latency;
+	if (state->min_latency == 0.0 && min_write_latency != 0.0) {
+		state->min_latency = min_write_latency;
+	}
+	if (min_write_latency < state->min_latency) {
+		state->min_latency = min_write_latency;
+	}
+	if (state->max_latency == 0.0) {
+		state->max_latency = max_write_latency;
+	}
+	if (max_write_latency > state->max_latency) {
+		state->max_latency = max_write_latency;
+	}
+
+	if (state->timecount < state->timelimit) {
+		te = tevent_add_timer(state->tctx->ev,
+				      state,
+				      timeval_current_ofs(1, 0),
+				      test_smb2_bench_write_progress,
+				      state);
+		torture_assert_goto(state->tctx, te != NULL,
+				    state->ok, asserted, "tevent_add_timer");
+
+		if (!torture_setting_bool(state->tctx, "progress", true)) {
+			return;
+		}
+
+		avs_write_latency = total_write_latency / num_writes;
+
+		torture_comment(state->tctx,
+				"%.2f second: "
+				"write[num/s=%llu,bytes/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f]      \r",
+				timeval_elapsed(&state->starttime),
+				(unsigned long long)num_writes,
+				(unsigned long long)num_writes*state->io_size,
+				avs_write_latency,
+				min_write_latency,
+				max_write_latency);
+		return;
+	}
+
+	avs_write_latency = state->total_latency / state->num_finished;
+	num_writes = state->num_finished / state->timelimit;
+
+	torture_comment(state->tctx,
+			"%.2f second: "
+			"write[num/s=%llu,bytes/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f]\n",
+			timeval_elapsed(&state->starttime),
+			(unsigned long long)num_writes,
+			(unsigned long long)num_writes*state->io_size,
+			avs_write_latency,
+			state->min_latency,
+			state->max_latency);
+
+asserted:
+	state->stop = true;
+}
+
+static bool test_smb2_bench_write(struct torture_context *tctx,
+			         struct smb2_tree *tree)
+{
+	struct test_smb2_bench_write_state *state = NULL;
+	bool ret = true;
+	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
+	int torture_qdepth = torture_setting_int(tctx, "qdepth", 1);
+	int torture_io_size = torture_setting_int(tctx, "io_size", 4096);
+	size_t i;
+	size_t li = 0;
+	int looplimit = torture_setting_int(tctx, "looplimit", -1);
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	struct tevent_timer *te = NULL;
+	uint32_t timeout_msec;
+	const char *dname = "bench_write_dir";
+	const char *unique = generate_random_str(tctx, 8);
+	struct smb2_handle dh;
+	NTSTATUS status;
+
+	smb2_deltree(tree, dname);
+
+	status = torture_smb2_testdir(tree, dname, &dh);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_util_close(tree, dh);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	state = talloc_zero(tctx, struct test_smb2_bench_write_state);
+	torture_assert(tctx, state != NULL, __location__);
+	state->tctx = tctx;
+	state->num_conns = torture_nprocs;
+	state->conns = talloc_zero_array(state,
+			struct test_smb2_bench_write_conn,
+			state->num_conns);
+	torture_assert(tctx, state->conns != NULL, __location__);
+	state->num_loops = torture_nprocs * torture_qdepth;
+	state->loops = talloc_zero_array(state,
+			struct test_smb2_bench_write_loop,
+			state->num_loops);
+	torture_assert(tctx, state->loops != NULL, __location__);
+	state->ok = true;
+	state->timelimit = MAX(timelimit, 1);
+	state->io_size = MAX(torture_io_size, 1);
+	state->io_size = MIN(state->io_size, 16*1024*1024);
+	state->data_buffer = talloc_zero_array(state, uint8_t, state->io_size);
+	torture_assert(tctx, state->data_buffer != NULL, __location__);
+
+	timeout_msec = tree->session->transport->options.request_timeout * 1000;
+
+	torture_comment(tctx, "Opening %zu connections\n", state->num_conns);
+
+	for (i=0;i<state->num_conns;i++) {
+		struct smb2_tree *ct = NULL;
+		DATA_BLOB out_input_buffer = data_blob_null;
+		DATA_BLOB out_output_buffer = data_blob_null;
+		size_t pcli;
+
+		state->conns[i].state = state;
+		state->conns[i].idx = i;
+
+		if (state->num_conns == 1) {
+			/*
+			 * Use the existing connection
+			 */
+			state->conns[i].tree = ct = tree;
+		} else {
+			if (!torture_smb2_connection(tctx, &ct)) {
+				torture_comment(tctx,
+					"Failed opening %zu/%zu connections\n",
+					i, state->num_conns);
+				return false;
+			}
+			state->conns[i].tree = talloc_steal(state->conns, ct);
+		}
+
+		smb2cli_conn_set_max_credits(ct->session->transport->conn, 8192);
+		smb2cli_ioctl(ct->session->transport->conn,
+			      timeout_msec,
+			      ct->session->smbXcli,
+			      ct->smbXcli,
+			      UINT64_MAX, /* in_fid_persistent */
+			      UINT64_MAX, /* in_fid_volatile */
+			      UINT32_MAX,
+			      0, /* in_max_input_length */
+			      NULL, /* in_input_buffer */
+			      1, /* in_max_output_length */
+			      NULL, /* in_output_buffer */
+			      SMB2_IOCTL_FLAG_IS_FSCTL,
+			      ct,
+			      &out_input_buffer,
+			      &out_output_buffer);
+		torture_assert(tctx,
+		       smbXcli_conn_is_connected(ct->session->transport->conn),
+		       "smbXcli_conn_is_connected");
+
+		for (pcli = 0; pcli < torture_qdepth; pcli++) {
+			struct test_smb2_bench_write_loop *loop = &state->loops[li];
+			struct smb2_create cr;
+			union smb_setfileinfo sfinfo;
+
+			loop->idx = li++;
+			if (looplimit != -1) {
+				loop->max_finished = looplimit;
+			} else {
+				loop->max_finished = UINT64_MAX;
+			}
+			loop->state = state;
+			loop->conn = &state->conns[i];
+			loop->im = tevent_create_immediate(state->loops);
+			torture_assert(tctx, loop->im != NULL, __location__);
+
+			loop->fname = talloc_asprintf(state->loops,
+						"%s\\%s_loop_%zu_conn_%zu_loop_%zu.dat",
+						dname, unique, li, i, pcli);
+			torture_assert(tctx, loop->fname != NULL, __location__);
+
+			/* reasonable default parameters */
+			ZERO_STRUCT(cr);
+			cr.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+			cr.in.alloc_size = state->io_size;
+			cr.in.desired_access = SEC_RIGHTS_FILE_ALL;
+			cr.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+			cr.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+			cr.in.create_disposition = NTCREATEX_DISP_CREATE;
+			cr.in.create_options =
+				NTCREATEX_OPTIONS_DELETE_ON_CLOSE |
+				NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+			cr.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+			cr.in.security_flags = 0;
+			cr.in.fname = loop->fname;
+			status = smb2_create(state->conns[i].tree, tctx, &cr);
+			CHECK_STATUS(status, NT_STATUS_OK);
+			loop->handle = cr.out.file.handle;
+
+			ZERO_STRUCT(sfinfo);
+			sfinfo.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+			sfinfo.end_of_file_info.in.file.handle = loop->handle;
+			sfinfo.end_of_file_info.in.size = state->io_size;
+			status = smb2_setinfo_file(state->conns[i].tree, &sfinfo);
+			CHECK_STATUS(status, NT_STATUS_OK);
+		}
+	}
+
+	for (li = 0; li <state->num_loops; li++) {
+		struct test_smb2_bench_write_loop *loop = &state->loops[li];
+
+		tevent_schedule_immediate(loop->im,
+					  tctx->ev,
+					  test_smb2_bench_write_loop_start,
+					  loop);
+	}
+
+	torture_comment(tctx, "Opened %zu connections with qdepth=%d => %zu loops\n",
+			state->num_conns, torture_qdepth, state->num_loops);
+
+	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
+
+	state->starttime = timeval_current();
+	state->pending_loops = state->num_loops;
+
+	te = tevent_add_timer(tctx->ev,
+			      state,
+			      timeval_current_ofs(1, 0),
+			      test_smb2_bench_write_progress,
+			      state);
+	torture_assert(tctx, te != NULL, __location__);
+
+	while (!state->stop) {
+		int rc = tevent_loop_once(tctx->ev);
+		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
+	}
+
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	TALLOC_FREE(state);
+	smb2_deltree(tree, dname);
+	return ret;
+}
+
+/*
    stress testing session setups
  */
 
@@ -1898,6 +2325,7 @@ struct torture_suite *torture_smb2_bench_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "echo", test_smb2_bench_echo);
 	torture_suite_add_1smb2_test(suite, "path-contention-shared", test_smb2_bench_path_contention_shared);
 	torture_suite_add_1smb2_test(suite, "read", test_smb2_bench_read);
+	torture_suite_add_1smb2_test(suite, "write", test_smb2_bench_write);
 	torture_suite_add_1smb2_test(suite, "session-setup", test_smb2_bench_session_setup);
 
 	suite->description = talloc_strdup(suite, "SMB2-BENCH tests");
