@@ -305,6 +305,9 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	krb5_data in_data, enc_ticket;
 	krb5_get_creds_opt opt;
 
+	bool require_canon = \
+		lpcfg_kdc_require_canonicalization(tctx->lp_ctx);
+
 	bool implicit_dollar_requires_canonicalize = \
 		! lpcfg_kdc_name_match_implicit_dollar_without_canonicalization(
 			tctx->lp_ctx);
@@ -586,6 +589,17 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					 "krb5_get_init_creds_password "
 					 "(with no implicit dollar config)");
 		return true;
+	} else if (require_canon && ! test_context->test_data->canonicalize) {
+		/*
+		 * The server is requiring canonicalization, and we are not using it.
+		 * This should always fail.
+		 */
+		torture_assert_int_equal(tctx, k5ret,
+					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
+					 "Principal should not match with "
+					 "'require canonicalization = yes' "
+					 "when canonicalization is not used.");
+		return true;
 	} else {
 		assertion_message = talloc_asprintf(tctx,
 						    "krb5_get_init_creds_password for %s failed: %s",
@@ -713,6 +727,18 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	/* Confirm if we can get a ticket krbtgt/realm that we got back with the initial kinit */
 	k5ret = krb5_get_creds(k5_context, opt, ccache, krbtgt_other, &server_creds);
 
+	if (require_canon && ! test_context->test_data->canonicalize) {
+		/*
+		 * The server is requiring canonicalization, and we are not using it.
+		 * This should always fail.
+		 */
+		torture_assert_int_equal(tctx, k5ret,
+					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
+					 "Principal should not match with "
+					 "'require canonicalization = yes' "
+					 "when canonicalization is not used.");
+		return true;
+	}
 	{
 		/*
 		 * In these situations, the code above does not store a
