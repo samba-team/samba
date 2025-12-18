@@ -473,13 +473,16 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 		return NULL;
 	}
 
-	memset(paiv, '\0', sizeof(struct pai_val));
+	*paiv = (struct pai_val){
+		.sd_type = (PULL_LE_U8(buf, PAI_V1_FLAG_OFFSET) ==
+			    PAI_V1_ACL_FLAG_PROTECTED)
+				   ? SEC_DESC_DACL_PROTECTED
+				   : 0,
 
-	paiv->sd_type = (CVAL(buf,PAI_V1_FLAG_OFFSET) == PAI_V1_ACL_FLAG_PROTECTED) ?
-			SEC_DESC_DACL_PROTECTED : 0;
-
-	paiv->num_entries = SVAL(buf,PAI_V1_NUM_ENTRIES_OFFSET);
-	paiv->num_def_entries = SVAL(buf,PAI_V1_NUM_DEFAULT_ENTRIES_OFFSET);
+		.num_entries = PULL_LE_U32(buf, PAI_V1_NUM_ENTRIES_OFFSET),
+		.num_def_entries = PULL_LE_U32(
+			buf, PAI_V1_NUM_DEFAULT_ENTRIES_OFFSET),
+	};
 
 	entry_offset = buf + PAI_V1_ENTRIES_BASE;
 
