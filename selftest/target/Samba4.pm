@@ -3126,7 +3126,8 @@ sub setup_schema_dc
 					 "SCHEMADOMAIN",
 					 "schema.samba.example.com",
 					 undef,
-					 "drs: max link sync = 2",
+					 "drs: max link sync = 2\n" .
+					 "kdc require canonicalization = yes",
 					 $provision_args,
 					 "2008_R2");
 	unless ($env) {
