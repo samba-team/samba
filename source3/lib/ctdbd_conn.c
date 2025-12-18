@@ -321,6 +321,33 @@ static int ctdbd_control_get_nodemap(struct ctdbd_connection *conn,
 	return 0;
 }
 
+int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation)
+{
+	struct ctdb_vnn_map *vnnmap = NULL;
+	int32_t cstatus = -1;
+	TDB_DATA outdata = {0};
+	int ret;
+
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_GETVNNMAP, 0, 0,
+				  tdb_null, talloc_tos(), &outdata, &cstatus);
+	if (ret != 0) {
+		DBG_ERR("ctdbd_control failed: %s\n", strerror(ret));
+		return ret;
+	}
+	if ((cstatus != 0) || (outdata.dptr == NULL)) {
+		DBG_ERR("Received invalid ctdb data\n");
+		return EINVAL;
+	}
+
+	vnnmap = (struct ctdb_vnn_map *)outdata.dptr;
+	*generation = vnnmap->generation;
+	TALLOC_FREE(vnnmap);
+
+	DBG_DEBUG("Cluster generation is [0x%" PRIx32 "]\n", *generation);
+
+	return 0;
+}
+
 /*
  * Are we active (i.e. not banned or stopped?)
  */

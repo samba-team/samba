@@ -44,6 +44,7 @@ int ctdbd_reinit_connection(TALLOC_CTX *mem_ctx,
 			    struct ctdbd_connection *conn);
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
+int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation);
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 void ctdbd_socket_readable(struct tevent_context *ev,
