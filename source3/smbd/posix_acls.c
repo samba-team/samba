@@ -133,7 +133,7 @@ struct pai_val {
  Return a uint32_t of the pai_entry principal.
 ************************************************************************/
 
-static uint32_t get_pai_entry_val(struct pai_entry *paie)
+static uint32_t get_pai_entry_val(const struct pai_entry *paie)
 {
 	switch (paie->owner_type) {
 		case UID_ACE:
