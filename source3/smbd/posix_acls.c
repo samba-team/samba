@@ -1036,40 +1036,42 @@ uint32_t map_canon_ace_perms(int snum,
  Map NT perms to a UNIX mode_t.
 ****************************************************************************/
 
-#define FILE_SPECIFIC_READ_BITS (FILE_READ_DATA|FILE_READ_EA)
-#define FILE_SPECIFIC_WRITE_BITS (FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA)
-#define FILE_SPECIFIC_EXECUTE_BITS (FILE_EXECUTE)
-
-static mode_t map_nt_perms( uint32_t *mask, int type)
+static mode_t map_nt_perms(uint32_t mask, int type)
 {
 	mode_t mode = 0;
+	bool have_all = (mask & GENERIC_ALL_ACCESS);
+	bool have_r = (mask &
+		       (GENERIC_READ_ACCESS | FILE_READ_DATA | FILE_READ_EA));
+	bool have_w = (mask & (GENERIC_WRITE_ACCESS | FILE_WRITE_DATA |
+			       FILE_APPEND_DATA | FILE_WRITE_EA));
+	bool have_x = (mask & (GENERIC_EXECUTE_ACCESS | FILE_EXECUTE));
 
 	switch(type) {
 	case S_IRUSR:
-		if((*mask) & GENERIC_ALL_ACCESS)
-			mode = S_IRUSR|S_IWUSR|S_IXUSR;
-		else {
-			mode |= ((*mask) & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IRUSR : 0;
-			mode |= ((*mask) & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWUSR : 0;
-			mode |= ((*mask) & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXUSR : 0;
+		if (have_all) {
+			mode = S_IRWXU;
+		} else {
+			mode |= have_r ? S_IRUSR : 0;
+			mode |= have_w ? S_IWUSR : 0;
+			mode |= have_x ? S_IXUSR : 0;
 		}
 		break;
 	case S_IRGRP:
-		if((*mask) & GENERIC_ALL_ACCESS)
-			mode = S_IRGRP|S_IWGRP|S_IXGRP;
-		else {
-			mode |= ((*mask) & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IRGRP : 0;
-			mode |= ((*mask) & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWGRP : 0;
-			mode |= ((*mask) & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXGRP : 0;
+		if (mask & GENERIC_ALL_ACCESS) {
+			mode = S_IRWXG;
+		} else {
+			mode |= have_r ? S_IRGRP : 0;
+			mode |= have_w ? S_IWGRP : 0;
+			mode |= have_x ? S_IXGRP : 0;
 		}
 		break;
 	case S_IROTH:
-		if((*mask) & GENERIC_ALL_ACCESS)
-			mode = S_IROTH|S_IWOTH|S_IXOTH;
-		else {
-			mode |= ((*mask) & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IROTH : 0;
-			mode |= ((*mask) & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWOTH : 0;
-			mode |= ((*mask) & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXOTH : 0;
+		if (mask & GENERIC_ALL_ACCESS) {
+			mode = S_IRWXO;
+		} else {
+			mode |= have_r ? S_IROTH : 0;
+			mode |= have_w ? S_IWOTH : 0;
+			mode |= have_x ? S_IXOTH : 0;
 		}
 		break;
 	}
@@ -1605,7 +1607,7 @@ static bool add_current_ace_to_acl(files_struct *fsp, struct security_ace *psa,
 	 * S_I(R|W|X)USR bits.
 	 */
 
-	current_ace->perms |= map_nt_perms( &psa->access_mask, S_IRUSR);
+	current_ace->perms |= map_nt_perms(psa->access_mask, S_IRUSR);
 	current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
 
 	/* Store the ace_flag. */
