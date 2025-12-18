@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
-   SMB2 client calls 
+   SMB2 client calls
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -24,7 +24,7 @@
 struct smb2_negprot {
 	struct {
 		uint16_t dialect_count;    /* size of dialects array */
-		uint16_t security_mode;    /* 0==signing disabled   
+		uint16_t security_mode;    /* 0==signing disabled
 					      1==signing enabled */
 		uint16_t reserved;
 		uint32_t capabilities;

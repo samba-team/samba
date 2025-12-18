@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    functions to calculate the free disk space
    Copyright (C) Andrew Tridgell 1998-2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -20,7 +20,7 @@
 #include "replace.h"
 #include "lib/util/samba_util.h"
 #include "system/filesys.h"
- 
+
 /**
  * @file
  * @brief Utility functions for getting the amount of free disk space
@@ -48,7 +48,7 @@ static uint64_t adjust_blocks(uint64_t blocks, uint64_t fromsize, uint64_t tosiz
  * Retrieve amount of free disk space.
  * this does all of the system specific guff to get the free disk space.
  * It is derived from code in the GNU fileutils package, but has been
- * considerably mangled for use here 
+ * considerably mangled for use here
  *
  * results are returned in *dfree and *dsize, in 512 byte units
 */
@@ -61,25 +61,25 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 	if (statfs (path, &fsd, sizeof (struct statfs)) != 0)
 		return -1;
 #endif /* STAT_STATFS3_OSF1 */
-	
+
 #ifdef STAT_STATFS2_FS_DATA	/* Ultrix */
-#define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)1024, (uint64_t)512)	
+#define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)1024, (uint64_t)512)
 	struct fs_data fsd;
-	
+
 	if (statfs (path, &fsd) != 1)
 		return -1;
-	
+
 	(*dsize) = CONVERT_BLOCKS (fsd.fd_req.btot);
 	(*dfree) = CONVERT_BLOCKS (fsd.fd_req.bfreen);
 #endif /* STAT_STATFS2_FS_DATA */
-	
+
 #ifdef STAT_STATFS2_BSIZE	/* 4.3BSD, SunOS 4, HP-UX, AIX */
 #define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_bsize, (uint64_t)512)
 	struct statfs fsd;
-	
+
 	if (statfs (path, &fsd) < 0)
 		return -1;
-	
+
 #ifdef STATFS_TRUNCATES_BLOCK_COUNTS
 	/* In SunOS 4.1.2, 4.1.3, and 4.1.3_U1, the block counts in the
 	   struct statfs are truncated to 2GB.  These conditions detect that
@@ -93,17 +93,17 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 	}
 #endif /* STATFS_TRUNCATES_BLOCK_COUNTS */
 #endif /* STAT_STATFS2_BSIZE */
-	
+
 
 #ifdef STAT_STATFS2_FSIZE	/* 4.4BSD */
 #define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_fsize, (uint64_t)512)
-	
+
 	struct statfs fsd;
-	
+
 	if (statfs (path, &fsd) < 0)
 		return -1;
 #endif /* STAT_STATFS2_FSIZE */
-	
+
 #ifdef STAT_STATFS4		/* SVR3, Dynix, Irix, AIX */
 # if _AIX || defined(_CRAY)
 #  define CONVERT_BLOCKS(B) adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_bsize, (uint64_t)512)
@@ -118,7 +118,7 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 #   endif
 #  endif
 # endif
-	
+
 	struct statfs fsd;
 
 	if (statfs (path, &fsd, sizeof fsd, 0) < 0)

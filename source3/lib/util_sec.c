@@ -163,15 +163,15 @@ static void assert_gid(gid_t rgid, gid_t egid)
 }
 
 /****************************************************************************
- Gain root privilege before doing something. 
+ Gain root privilege before doing something.
  We want to end up with ruid==euid==0
 ****************************************************************************/
 void gain_root_privilege(void)
-{	
+{
 #if defined(USE_SETRESUID) || defined(HAVE_LINUX_THREAD_CREDENTIALS)
 	samba_setresuid(0,0,0);
 #endif
-    
+
 #if USE_SETEUID
 	samba_seteuid(0);
 #endif
@@ -224,7 +224,7 @@ void gain_root_group_privilege(void)
 /****************************************************************************
  Set effective uid, and possibly the real uid too.
  We want to end up with either:
-  
+
    ruid==uid and euid==uid
 
  or
@@ -331,7 +331,7 @@ void restore_re_uid(void)
 }
 
 /****************************************************************************
- save the real and effective gid for later restoration. Used by the 
+ save the real and effective gid for later restoration. Used by the
  getgroups code
 ****************************************************************************/
 void save_re_gid(void)
@@ -442,7 +442,7 @@ void become_user_permanently(uid_t uid, gid_t gid)
 	samba_setuidx(ID_EFFECTIVE, uid);
 	samba_setuid(uid);
 #endif
-	
+
 	assert_uid(uid, uid);
 	assert_gid(gid, gid);
 }
@@ -565,7 +565,7 @@ int main(void)
 		exit(1);
 #endif
 
-		/* if not running as root then at least check to see if we get ENOSYS - this 
+		/* if not running as root then at least check to see if we get ENOSYS - this
 		   handles Linux 2.0.x with glibc 2.1 */
                 fprintf(stderr,"not running as root: checking for ENOSYS\n");
 		exit(have_syscall());
@@ -595,7 +595,7 @@ int main(void)
 /****************************************************************************
 Check if we are setuid root.  Used in libsmb and smbpasswd paranoia checks.
 ****************************************************************************/
-bool is_setuid_root(void) 
+bool is_setuid_root(void)
 {
 	return (geteuid() == (uid_t)0) && (getuid() != (uid_t)0);
 }

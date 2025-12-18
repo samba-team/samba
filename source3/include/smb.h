@@ -1,24 +1,24 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB parameters and setup, plus a whole lot more.
-   
+
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2002
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
    Copyright (C) Simo Sorce                   2001-2002
    Copyright (C) Martin Pool		      2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -306,7 +306,7 @@ struct interface {
 
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
- 
+
 /* Mapping of access rights to UNIX perms. */
 #define UNIX_ACCESS_RWX		FILE_GENERIC_ALL
 #define UNIX_ACCESS_R 		FILE_GENERIC_READ
@@ -429,7 +429,7 @@ struct interface {
  *               it to 6.1 to mimic Win2K8R2.
  *
  */
- 
+
 #define SAMBA_MAJOR_NBT_ANNOUNCE_VERSION 0x06
 #define SAMBA_MINOR_NBT_ANNOUNCE_VERSION 0x01
 

@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    VFS API's statvfs abstraction
    Copyright (C) Alexander Bokovoy			2005
    Copyright (C) Steve French				2005
    Copyright (C) James Peach				2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -158,7 +158,7 @@ static int posix_statvfs(const char *path, struct vfs_statvfs_struct *statbuf)
 }
 #endif
 
-/* 
+/*
  sys_statvfs() is an abstraction layer over system-dependent statvfs()/statfs()
  for particular POSIX systems. Due to controversy of what is considered more important
  between LSB and FreeBSD/POSIX.1 (IEEE Std 1003.1-2001) we need to abstract the interface
