@@ -614,7 +614,7 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 static int ip6_na_build(uint8_t *buffer,
 			size_t buflen,
 			const struct sockaddr_in6 *addr,
-			const struct ether_addr *hwaddr,
+			const struct sockaddr_ll *hardware_addr,
 			size_t *len)
 {
 	struct ip6_hdr *ip6;
@@ -693,8 +693,8 @@ static int ip6_na_build(uint8_t *buffer,
 	 * There is probably a cleverer way of writing the following,
 	 * but listen to Kernighan's Law and aim for clarity.
 	 */
-	nd_oh->nd_opt_len = (2 + ETH_ALEN) / 8;
-	leftover = (2 + ETH_ALEN) % 8;
+	nd_oh->nd_opt_len = (2 + hardware_addr->sll_halen) / 8;
+	leftover = (2 + hardware_addr->sll_halen) % 8;
 	padding = 0;
 	if (leftover != 0) {
 		nd_oh->nd_opt_len += 1;
@@ -703,8 +703,8 @@ static int ip6_na_build(uint8_t *buffer,
 		p += padding;
 	}
 
-	memcpy(p, hwaddr, ETH_ALEN);
-	p += ETH_ALEN;
+	memcpy(p, hardware_addr->sll_addr, hardware_addr->sll_halen);
+	p += hardware_addr->sll_halen;
 
 	/*
 	 * This is either buried down here (with a helpful comment in
@@ -715,7 +715,7 @@ static int ip6_na_build(uint8_t *buffer,
 	 */
 	ip6->ip6_plen = htons(sizeof(struct nd_neighbor_advert) +
 			      sizeof(struct nd_opt_hdr) +
-			      ETH_ALEN +
+			      hardware_addr->sll_halen +
 			      padding);
 
 	nd_na->nd_na_cksum = ip6_checksum((uint8_t *)nd_na,
@@ -738,7 +738,6 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct sockaddr_storage sas = {0};
 	socklen_t dest_len = 0;
 	uint8_t buffer[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
-	struct ether_addr *hwaddr = NULL;
 	size_t len = 0;
 	int ret = 0;
 
@@ -771,9 +770,6 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		ret = EPROTONOSUPPORT;
 		goto done;
 	}
-
-	/* For clarity */
-	hwaddr = (struct ether_addr *)hardware_addr_ll->sll_addr;
 
 	s = socket(AF_PACKET, SOCK_DGRAM, 0);
 	if (s == -1) {
@@ -862,7 +858,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		ret = ip6_na_build(buffer,
 				   sizeof(buffer),
 				   &addr->ip6,
-				   hwaddr,
+				   hardware_addr_ll,
 				   &len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build IPv6 neighbor advertisement\n");

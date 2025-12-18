@@ -97,8 +97,6 @@ static void test_arp(const char *addr_str,
 	ctdb_sock_addr addr;
 	struct sockaddr_storage hardware_addr = {};
 	struct sockaddr_ll *sall = (struct sockaddr_ll *)&hardware_addr;
-	/* Temporarily used for IPv6 - it still takes an ethernet address */
-	struct ether_addr *hw = (struct ether_addr *)&sall->sll_addr[0];
 	uint8_t buf[512];
 	size_t buflen = sizeof(buf);
 	size_t len;
@@ -114,7 +112,7 @@ static void test_arp(const char *addr_str,
 		ret = arp_build(buf, buflen, &addr.ip, sall, arpop, &len);
 		break;
 	case AF_INET6:
-		ret = ip6_na_build(buf, buflen, &addr.ip6, hw, &len);
+		ret = ip6_na_build(buf, buflen, &addr.ip6, sall, &len);
 		break;
 	default:
 		abort();
