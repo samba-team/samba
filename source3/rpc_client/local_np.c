@@ -55,8 +55,8 @@ struct np_sock_connect_state {
 
 static void np_sock_connect_cleanup(
 	struct tevent_req *req, enum tevent_req_state req_state);
-static void np_sock_connect_before(void *private_data);
-static void np_sock_connect_after(void *private_data);
+static void np_sock_connect_before(int fd, void *private_data);
+static void np_sock_connect_after(int fd, void *private_data);
 static void np_sock_connect_connected(struct tevent_req *subreq);
 static void np_sock_connect_written(struct tevent_req *subreq);
 static void np_sock_connect_read_done(struct tevent_req *subreq);
@@ -147,12 +147,12 @@ static void np_sock_connect_cleanup(
 	}
 }
 
-static void np_sock_connect_before(void *private_data)
+static void np_sock_connect_before(int fd, void *private_data)
 {
 	become_root();
 }
 
-static void np_sock_connect_after(void *private_data)
+static void np_sock_connect_after(int fd, void *private_data)
 {
 	unbecome_root();
 }

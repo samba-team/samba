@@ -45,8 +45,8 @@ int samba_socket_poll_or_sock_error(int fd);
 struct tevent_req *async_connect_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, int fd,
 	const struct sockaddr *address, socklen_t address_len,
-	void (*before_connect)(void *private_data),
-	void (*after_connect)(void *private_data),
+	void (*before_connect)(int fd, void *private_data),
+	void (*after_connect)(int fd, void *private_data),
 	void *private_data);
 int async_connect_recv(struct tevent_req *req, int *perrno);
 
