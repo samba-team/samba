@@ -18,6 +18,7 @@
 */
 
 #include "replace.h"
+#include "system/dir.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
 #include "dbwrap/dbwrap_tdb.h"
@@ -32,11 +33,24 @@
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;
 
+	/* Persistent tdb for DBWRAP_FLAG_PER_REC_PERSISTENT*/
+	struct tdb_wrap *ptdb;
+
 	struct {
 		dev_t dev;
 		ino_t ino;
 	} id;
 };
+
+struct dbwrap_tdb_header {
+        uint32_t version;
+        uint32_t flags;
+        uint32_t reserved[2];
+};
+
+#define DBWRAP_TDB_HEADER_VERSION	1
+#define DBWRAP_TDB_FLAG_PERSISTENT	(1 << 0)
+
 
 static NTSTATUS db_tdb_storev(struct db_record *rec,
 			      const TDB_DATA *dbufs, int num_dbufs, int flag);
@@ -54,6 +68,7 @@ static int db_tdb_record_destr(struct db_record* data)
 
 struct tdb_fetch_locked_state {
 	TALLOC_CTX *mem_ctx;
+	struct db_context *db;
 	struct db_record *result;
 };
 
@@ -63,6 +78,24 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 	struct tdb_fetch_locked_state *state =
 		(struct tdb_fetch_locked_state *)private_data;
 	struct db_record *result;
+	struct db_record_flags flags = {};
+
+	if ((state->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) &&
+	    (data.dsize > 0))
+	{
+		struct dbwrap_tdb_header header;
+
+		SMB_ASSERT(data.dsize >= sizeof(header));
+		memcpy(&header, data.dptr, sizeof(header));
+		SMB_ASSERT(header.version == DBWRAP_TDB_HEADER_VERSION);
+
+		data.dsize -= sizeof(header);
+		data.dptr += sizeof(header);
+
+		if (header.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
+			flags.persistent = true;
+		}
+	}
 
 	result = (struct db_record *)talloc_size(
 		state->mem_ctx,
@@ -73,7 +106,7 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 	}
 	state->result = result;
 
-	result->flags = (struct db_record_flags) {};
+	result->flags = flags;
 	result->key.dsize = key.dsize;
 	result->key.dptr = ((uint8_t *)result) + sizeof(struct db_record);
 	memcpy(result->key.dptr, key.dptr, key.dsize);
@@ -103,6 +136,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 
 	state = (struct tdb_fetch_locked_state) {
 		.mem_ctx = mem_ctx,
+		.db = db,
 	};
 
 	ret = tdb_parse_record(ctx->wtdb->tdb,
@@ -158,6 +192,7 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 		db->private_data, struct db_tdb_ctx);
 	uint8_t *buf = NULL;
 	struct db_record rec;
+	TDB_DATA value;
 	int ret;
 
 	ret = tdb_chainlock(ctx->wtdb->tdb, key);
@@ -184,9 +219,28 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 		.private_data = ctx
 	};
 
-	fn(&rec,
-	   (TDB_DATA) { .dptr = buf, .dsize = talloc_get_size(buf) },
-	   private_data);
+        value = (TDB_DATA) {
+                .dptr = buf,
+                .dsize = talloc_get_size(buf)
+        };
+
+	if ((db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) &&
+	    (value.dsize > 0))
+	{
+                struct dbwrap_tdb_header header;
+
+		SMB_ASSERT(value.dsize >= sizeof(header));
+                memcpy(&header, value.dptr, sizeof(header));
+                value.dsize -= sizeof(struct dbwrap_tdb_header);
+                value.dptr += sizeof(struct dbwrap_tdb_header);
+
+                SMB_ASSERT(header.version == DBWRAP_TDB_HEADER_VERSION);
+                if (header.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
+                        rec.flags.persistent = true;
+                }
+        }
+
+        fn(&rec, value, private_data);
 
 	tdb_chainunlock(ctx->wtdb->tdb, key);
 
@@ -206,7 +260,27 @@ static int db_tdb_wipe(struct db_context *db, struct dbwrap_wipe_flags flags)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);
-	return tdb_wipe_all(ctx->wtdb->tdb);
+	int ret;
+
+	if (flags.wipe_persistent_backup_db) {
+		if (!(db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT)) {
+			return 0;
+		}
+
+		ret = tdb_wipe_all(ctx->ptdb->tdb);
+		if (ret != 0) {
+			return -1;
+		}
+	}
+
+	if (flags.wipe_default) {
+		ret = tdb_wipe_all(ctx->wtdb->tdb);
+		if (ret != 0) {
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 static int db_tdb_check(struct db_context *db)
@@ -217,6 +291,7 @@ static int db_tdb_check(struct db_context *db)
 }
 
 struct db_tdb_parse_state {
+	struct db_context *db;
 	void (*parser)(TDB_DATA key, TDB_DATA data,
 		       void *private_data);
 	void *private_data;
@@ -232,6 +307,16 @@ static int db_tdb_parser(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	struct db_tdb_parse_state *state =
 		(struct db_tdb_parse_state *)private_data;
+
+	if (state->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
+		if (data.dsize < sizeof(struct dbwrap_tdb_header)) {
+			dbwrap_log_key("bad key", key);
+			return -1;
+		}
+		data.dsize -= sizeof(struct dbwrap_tdb_header);
+		data.dptr += sizeof(struct dbwrap_tdb_header);
+	}
+
 	state->parser(key, data, state->private_data);
 	return 0;
 }
@@ -246,8 +331,11 @@ static NTSTATUS db_tdb_parse(struct db_context *db, TDB_DATA key,
 	struct db_tdb_parse_state state;
 	int ret;
 
-	state.parser = parser;
-	state.private_data = private_data;
+	state = (struct db_tdb_parse_state) {
+		.db = db,
+		.parser = parser,
+		.private_data = private_data,
+	};
 
 	ret = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_parser, &state);
 
@@ -258,12 +346,23 @@ static NTSTATUS db_tdb_parse(struct db_context *db, TDB_DATA key,
 }
 
 static NTSTATUS db_tdb_storev(struct db_record *rec,
-			      const TDB_DATA *dbufs, int num_dbufs, int flag)
+			      const TDB_DATA *orig_dbufs,
+			      int orig_num_dbufs,
+			      int flag)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
 	struct tdb_context *tdb = ctx->wtdb->tdb;
-	NTSTATUS status = NT_STATUS_OK;
+	bool db_persistent = (rec->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT);
+	int num_dbufs = db_persistent ? orig_num_dbufs + 1 : orig_num_dbufs;
+	TDB_DATA _dbufs[num_dbufs];
+	const TDB_DATA *dbufs = db_persistent ? _dbufs : orig_dbufs;
+	struct dbwrap_tdb_header h;
+	bool do_persistent_store = false;
+	bool do_persistent_delete = false;
+	bool in_txn = false;
+	int tdb_flag;
+	NTSTATUS status;
 	int ret;
 
 	/*
@@ -272,18 +371,143 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 	 * anymore after it was stored.
 	 */
 
-	ret = tdb_storev(tdb, rec->key, dbufs, num_dbufs, flag);
-	if (ret == -1) {
+	if (db_persistent) {
+		h = (struct dbwrap_tdb_header) {
+			.version = DBWRAP_TDB_HEADER_VERSION,
+			.flags = flag & DBWRAP_STORE_PERSISTENT ?
+				DBWRAP_TDB_FLAG_PERSISTENT : 0,
+		};
+
+		_dbufs[0].dsize = sizeof(h);
+		_dbufs[0].dptr = (unsigned char *)&h;
+		memcpy(&_dbufs[1],
+		       orig_dbufs,
+		       orig_num_dbufs * sizeof(TDB_DATA));
+	}
+
+	/* Make sure not to confuse tdb with any other flag */
+	tdb_flag = flag & DBWRAP_TDB_FLAGS;
+
+	ret = tdb_storev(ctx->wtdb->tdb,
+			 rec->key,
+			 dbufs,
+			 num_dbufs,
+			 tdb_flag);
+	if (ret != 0) {
 		enum TDB_ERROR err = tdb_error(tdb);
 		status = map_nt_error_from_tdb(err);
+		return status;
+	}
+
+	if (flag & DBWRAP_STORE_PERSISTENT) {
+		do_persistent_store = true;
+	} else if (rec->flags.persistent) {
+		do_persistent_delete = true;
+	}
+
+	if (!do_persistent_store && !do_persistent_delete) {
+		return NT_STATUS_OK;
+	}
+	if (!db_persistent) {
+		DBG_ERR("Invalid persistency request\n");
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	ret = tdb_transaction_start(ctx->ptdb->tdb);
+	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(tdb);
+		status = map_nt_error_from_tdb(err);
+		goto fail;
+	}
+	in_txn = true;
+
+	if (do_persistent_store) {
+		ret = tdb_storev(ctx->ptdb->tdb,
+				 rec->key,
+				 dbufs,
+				 num_dbufs,
+				 tdb_flag);
+		if (ret != 0) {
+			enum TDB_ERROR err = tdb_error(tdb);
+			status = map_nt_error_from_tdb(err);
+			goto fail;
+		}
+	} else {
+		ret = tdb_delete(ctx->ptdb->tdb, rec->key);
+		if (ret != 0) {
+			enum TDB_ERROR err = tdb_error(tdb);
+			status = map_nt_error_from_tdb(err);
+			goto fail;
+		}
+	}
+
+	ret = tdb_transaction_commit(ctx->ptdb->tdb);
+	in_txn = false;
+	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(tdb);
+		status = map_nt_error_from_tdb(err);
+		goto fail;
+	}
+
+	status = NT_STATUS_OK;
+
+fail:
+	if (in_txn) {
+		ret = tdb_transaction_cancel(ctx->ptdb->tdb);
+		SMB_ASSERT(ret == 0);
 	}
 	return status;
+}
+
+static NTSTATUS db_tdb_delete_persistent(struct db_record *rec)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
+						       struct db_tdb_ctx);
+	bool in_txn = false;
+	int ret;
+
+	ret = tdb_transaction_start(ctx->ptdb->tdb);
+	if (ret != 0) {
+		goto fail;
+	}
+	in_txn = true;
+
+	ret = tdb_delete(ctx->ptdb->tdb, rec->key);
+	if (ret != 0) {
+		goto fail;
+	}
+
+	ret = tdb_transaction_commit(ctx->ptdb->tdb);
+	in_txn = false;
+	if (ret != 0) {
+		goto fail;
+	}
+
+	return NT_STATUS_OK;
+
+fail:
+	if (in_txn) {
+		ret = tdb_transaction_cancel(ctx->ptdb->tdb);
+		SMB_ASSERT(ret == 0);
+	}
+	if (tdb_error(ctx->ptdb->tdb) == TDB_ERR_NOEXIST) {
+		return NT_STATUS_NOT_FOUND;
+	}
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS db_tdb_delete(struct db_record *rec)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
+	NTSTATUS status;
+
+	if (rec->flags.persistent) {
+		status = db_tdb_delete_persistent(rec);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	if (tdb_delete(ctx->wtdb->tdb, rec->key) == 0) {
 		return NT_STATUS_OK;
@@ -300,6 +524,7 @@ struct db_tdb_traverse_ctx {
 	struct db_context *db;
 	int (*f)(struct db_record *rec, void *private_data);
 	void *private_data;
+	bool found_marker;
 };
 
 static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
@@ -307,7 +532,40 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 {
 	struct db_tdb_traverse_ctx *ctx =
 		(struct db_tdb_traverse_ctx *)private_data;
-	struct db_record rec;
+	struct db_record rec = {};
+
+	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
+		struct dbwrap_tdb_header h;
+		int cmp = 1;
+
+		if (kbuf.dsize ==
+		    sizeof(DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY))
+		{
+			cmp = memcmp(
+				kbuf.dptr,
+				DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY,
+				sizeof(DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY));
+		}
+		if (cmp == 0) {
+			ctx->found_marker = true;
+			return 0;
+		}
+
+		if (dbuf.dsize < sizeof(struct dbwrap_tdb_header)) {
+			dbwrap_log_key("Small record", kbuf);
+			return 0;
+		}
+
+		memcpy(&h, dbuf.dptr, sizeof(h));
+		SMB_ASSERT(h.version == DBWRAP_TDB_HEADER_VERSION);
+
+		if (h.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
+			rec.flags.persistent = true;
+		}
+
+		dbuf.dptr += sizeof(struct dbwrap_tdb_header);
+		dbuf.dsize -= sizeof(struct dbwrap_tdb_header);
+	}
 
 	rec.key = kbuf;
 	rec.value = dbuf;
@@ -327,11 +585,19 @@ static int db_tdb_traverse(struct db_context *db,
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
 	struct db_tdb_traverse_ctx ctx;
+	int nrecs;
 
-	ctx.db = db;
-	ctx.f = f;
-	ctx.private_data = private_data;
-	return tdb_traverse(db_ctx->wtdb->tdb, db_tdb_traverse_func, &ctx);
+	ctx = (struct db_tdb_traverse_ctx) {
+		.db = db,
+		.f = f,
+		.private_data = private_data,
+	};
+
+	nrecs = tdb_traverse(db_ctx->wtdb->tdb, db_tdb_traverse_func, &ctx);
+	if (ctx.found_marker) {
+		nrecs--;
+	}
+	return nrecs;
 }
 
 static NTSTATUS db_tdb_storev_deny(struct db_record *rec,
@@ -351,7 +617,40 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 {
 	struct db_tdb_traverse_ctx *ctx =
 		(struct db_tdb_traverse_ctx *)private_data;
-	struct db_record rec;
+	struct db_record rec = {};
+
+	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
+		struct dbwrap_tdb_header h;
+		int cmp = 1;
+
+		if (kbuf.dsize ==
+		    sizeof(DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY))
+		{
+			cmp = memcmp(
+				kbuf.dptr,
+				DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY,
+				sizeof(DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY));
+		}
+		if (cmp == 0) {
+			ctx->found_marker = true;
+			return 0;
+		}
+
+		if (dbuf.dsize < sizeof(struct dbwrap_tdb_header)) {
+			dbwrap_log_key("Small record", kbuf);
+			return 0;
+		}
+
+		memcpy(&h, dbuf.dptr, sizeof(h));
+		SMB_ASSERT(h.version == DBWRAP_TDB_HEADER_VERSION);
+
+		if (h.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
+			rec.flags.persistent = true;
+		}
+
+		dbuf.dptr += sizeof(struct dbwrap_tdb_header);
+		dbuf.dsize -= sizeof(struct dbwrap_tdb_header);
+	}
 
 	rec.key = kbuf;
 	rec.value = dbuf;
@@ -371,11 +670,51 @@ static int db_tdb_traverse_read(struct db_context *db,
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
 	struct db_tdb_traverse_ctx ctx;
+	int nrecs;
 
-	ctx.db = db;
-	ctx.f = f;
-	ctx.private_data = private_data;
-	return tdb_traverse_read(db_ctx->wtdb->tdb, db_tdb_traverse_read_func, &ctx);
+	ctx = (struct db_tdb_traverse_ctx) {
+		.db = db,
+		.f = f,
+		.private_data = private_data,
+	};
+
+	nrecs = tdb_traverse_read(db_ctx->wtdb->tdb,
+				  db_tdb_traverse_read_func,
+				  &ctx);
+	if (ctx.found_marker) {
+		nrecs--;
+	}
+	return nrecs;
+}
+
+static int db_tdb_traverse_per_rec_persistent_read(
+	struct db_context *db,
+	int (*f)(struct db_record *rec,
+		 void *private_data),
+	void *private_data)
+{
+	struct db_tdb_ctx *db_ctx = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+	struct db_tdb_traverse_ctx ctx;
+	int nrecs;
+
+	if (!(db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT)) {
+		return 0;
+	}
+
+	ctx = (struct db_tdb_traverse_ctx) {
+		.db = db,
+		.f = f,
+		.private_data = private_data,
+	};
+
+	nrecs = tdb_traverse_read(db_ctx->ptdb->tdb,
+				  db_tdb_traverse_read_func,
+				  &ctx);
+	if (ctx.found_marker) {
+		nrecs--;
+	}
+	return nrecs;
 }
 
 static int db_tdb_get_seqnum(struct db_context *db)
@@ -433,6 +772,175 @@ static size_t db_tdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 	return sizeof(db_ctx->id);
 }
 
+struct migrate_persistent_state {
+	struct db_tdb_ctx *db_tdb;
+};
+
+static int migrate_persistent_traverse_fn(struct tdb_context *tdb,
+					  TDB_DATA key,
+					  TDB_DATA data,
+					  void *private_data)
+{
+	struct migrate_persistent_state *state =
+		(struct migrate_persistent_state *)private_data;
+	int ret;
+
+	ret = tdb_store(state->db_tdb->wtdb->tdb, key, data, 0);
+	if (ret != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static int db_tdb_migrate_persistent_recs(struct db_context *db)
+{
+	struct db_tdb_ctx *db_tdb = talloc_get_type_abort(db->private_data,
+							  struct db_tdb_ctx);
+	struct migrate_persistent_state migration_state;
+	struct db_record *marker_rec = NULL;
+	TDB_DATA marker_key;
+	TDB_DATA marker_val;
+	char *curtime = NULL;
+	NTSTATUS status;
+	int ret;
+
+	/*
+	 * First let's check if the volatile db was cleared by
+	 * clear-if-first. That would imply a smbd restart so we have to trigger
+	 * migration of records from the persistent db back to the volatile db.
+	 */
+	marker_key = string_term_tdb_data(
+		DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY);
+
+	marker_rec = dbwrap_fetch_locked(db, db, marker_key);
+	if (marker_rec == NULL) {
+		DBG_ERR("db_tdb_fetch_locked() failed\n");
+		ret = -1;
+		goto out;
+	}
+
+	marker_val = dbwrap_record_get_value(marker_rec);
+	if (marker_val.dptr != NULL) {
+		DBG_DEBUG("Migration marker: %s\n", marker_val.dptr);
+		ret = 0;
+		goto out;
+	}
+
+	migration_state = (struct migrate_persistent_state) {
+		.db_tdb = db_tdb,
+	};
+
+	ret = tdb_traverse_read(db_tdb->ptdb->tdb,
+				migrate_persistent_traverse_fn,
+				&migration_state);
+	if (ret == -1) {
+		DBG_ERR("tdb_traverse_read failed\n");
+		goto out;
+	}
+
+	curtime = current_timestring(marker_rec, false);
+	if (curtime == NULL) {
+		ret = -1;
+		goto out;
+	}
+
+	status = dbwrap_record_store(marker_rec,
+				     string_term_tdb_data(curtime),
+				     DBWRAP_INSERT);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to write migration marker: %s\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	ret = 0;
+
+out:
+	TALLOC_FREE(marker_rec);
+	return ret;
+}
+
+static bool db_open_tdb_per_rec_persistent(struct db_context *db,
+					   const char *name,
+					   int hash_size,
+					   int tdb_flags,
+					   int open_flags,
+					   mode_t mode,
+					   uint64_t dbwrap_flags)
+{
+	struct db_tdb_ctx *db_tdb = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+	char *tdb_dirname = NULL;
+	char *tdb_basename = NULL;
+	char *dot = NULL;
+	char *persistent_path = NULL;
+	int ptdb_flags;
+	int ret;
+
+	if (!(dbwrap_flags & DBWRAP_FLAG_PER_REC_PERSISTENT)) {
+		return true;
+	}
+
+	if (!(tdb_flags & TDB_CLEAR_IF_FIRST)) {
+		DBG_WARNING("DBWRAP_FLAG_PER_REC_PERSISTENT only allowed with "
+			    "TDB_CLEAR_IF_FIRST\n");
+		return false;
+	}
+
+	tdb_dirname = talloc_strdup(db, name);
+	if (tdb_dirname == NULL) {
+		return false;
+	}
+	tdb_basename = talloc_strdup(db, name);
+	if (tdb_basename == NULL) {
+		return false;
+	}
+	dot = strrchr(tdb_basename, '.');
+	if (dot != NULL) {
+		*dot = '\0';
+	}
+
+	persistent_path = talloc_asprintf(db,
+					  "%s/%s_persistent.tdb",
+					  dirname(tdb_dirname),
+					  basename(tdb_basename));
+	TALLOC_FREE(tdb_dirname);
+	TALLOC_FREE(tdb_basename);
+	if (persistent_path == NULL) {
+		return false;
+	}
+
+	ptdb_flags = tdb_flags & ~(TDB_CLEAR_IF_FIRST | TDB_MUTEX_LOCKING);
+
+	db_tdb->ptdb = tdb_wrap_open(db_tdb,
+				     persistent_path,
+				     hash_size,
+				     ptdb_flags,
+				     open_flags,
+				     mode);
+	TALLOC_FREE(persistent_path);
+	if (db_tdb->ptdb == NULL) {
+		DBG_ERR("Could not open persistent tdb for %s: %s\n",
+			db->name, strerror(errno));
+		return false;
+	}
+
+	db->traverse_per_rec_persistent_read =
+		db_tdb_traverse_per_rec_persistent_read;
+
+	if ((open_flags & O_ACCMODE) != O_RDWR) {
+		return true;
+	}
+
+	ret = db_tdb_migrate_persistent_recs(db);
+	if (ret != 0) {
+		DBG_ERR("Record migration in db %s failed\n", db->name);
+		return false;
+	}
+	return true;
+}
+
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 			       const char *name,
 			       int hash_size, int tdb_flags,
@@ -443,6 +951,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
 	struct stat st;
+	bool ok;
 
 	result = talloc_zero(mem_ctx, struct db_context);
 	if (result == NULL) {
@@ -450,7 +959,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	result->private_data = db_tdb = talloc(result, struct db_tdb_ctx);
+	result->private_data = db_tdb = talloc_zero(result, struct db_tdb_ctx);
 	if (db_tdb == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
@@ -490,6 +999,17 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->check = db_tdb_check;
 	result->name = tdb_name(db_tdb->wtdb->tdb);
 	result->flags = dbwrap_flags;
+
+	ok = db_open_tdb_per_rec_persistent(result,
+					    name,
+					    hash_size,
+					    tdb_flags,
+					    open_flags,
+					    mode,
+					    dbwrap_flags);
+	if (!ok) {
+		goto fail;
+	}
 
 	return result;
 
