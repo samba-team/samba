@@ -497,7 +497,10 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					int protocol,
 					const struct sockaddr_storage *pss,
 					uint16_t port,
-					int timeout);
+					int timeout,
+					void (*before_connect)(int fd, void *private_data),
+					void (*after_connect)(int fd, void *private_data),
+					void *private_data);
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd);
 const char *get_peer_addr(int fd, char *addr, size_t addr_len);
 

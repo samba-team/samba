@@ -207,7 +207,10 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 				      IPPROTO_TCP,
 				      addr,
 				      port,
-				      5000);
+				      5000,
+				      NULL,
+				      NULL,
+				      NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -317,7 +320,10 @@ static void nb_connect_done(struct tevent_req *subreq)
 					      IPPROTO_TCP,
 					      state->addr,
 					      NBT_SMB_PORT,
-					      5000);
+					      5000,
+					      NULL,
+					      NULL,
+					      NULL);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -685,7 +691,10 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 						 IPPROTO_TCP,
 						 state->addr,
 						 s->transport.port,
-						 5000);
+						 5000,
+						 NULL,
+						 NULL,
+						 NULL);
 		if (tevent_req_nomem(s->subreq, req)) {
 			return false;
 		}
@@ -705,7 +714,10 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 						 IPPROTO_QUIC,
 						 state->addr,
 						 s->transport.port,
-						 5000);
+						 5000,
+						 NULL,
+						 NULL,
+						 NULL);
 		if (tevent_req_nomem(s->subreq, req)) {
 			return false;
 		}

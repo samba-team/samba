@@ -407,7 +407,10 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					int protocol,
 					const struct sockaddr_storage *pss,
 					uint16_t port,
-					int timeout)
+					int timeout,
+					void (*before_connect)(int fd, void *private_data),
+					void (*after_connect)(int fd, void *private_data),
+					void *private_data)
 {
 	char addr[INET6_ADDRSTRLEN];
 	struct tevent_req *req;
@@ -472,7 +475,8 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 
 	state->connect_subreq = async_connect_send(
 		state, state->ev, state->fd, &state->saddr.u.sa,
-		state->saddr.sa_socklen, NULL, NULL, NULL);
+		state->saddr.sa_socklen,
+		before_connect, after_connect, private_data);
 	if (tevent_req_nomem(state->connect_subreq, NULL)) {
 		return tevent_req_post(req, ev);
 	}
@@ -540,7 +544,8 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 		goto fail;
 	}
 
-	req = open_socket_out_send(frame, ev, IPPROTO_TCP, pss, port, timeout);
+	req = open_socket_out_send(frame, ev, IPPROTO_TCP, pss, port, timeout,
+				   NULL, NULL, NULL);
 	if (req == NULL) {
 		goto fail;
 	}
