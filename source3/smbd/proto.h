@@ -414,9 +414,6 @@ void smb_fname_fsp_unlink(struct smb_filename *smb_fname);
 NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 				 struct smb_filename *smb_fname_src);
 
-NTSTATUS reference_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
-				      const struct smb_filename *smb_fname_src);
-
 NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 			   const struct files_struct *dirfsp,
 			   const char *base_name,

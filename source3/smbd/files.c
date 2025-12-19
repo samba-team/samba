@@ -1793,8 +1793,9 @@ static int fsp_ref_no_close_destructor(struct smb_filename *smb_fname)
 	return 0;
 }
 
-NTSTATUS reference_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
-				      const struct smb_filename *smb_fname_src)
+static NTSTATUS reference_smb_fname_fsp_link(
+	struct smb_filename *smb_fname_dst,
+	const struct smb_filename *smb_fname_src)
 {
 	bool ok;
 
