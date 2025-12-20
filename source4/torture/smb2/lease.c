@@ -4730,7 +4730,7 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	struct smb2_create io;
 	struct smb2_lease ls1;
 	struct smb2_handle h = {}, h1 = {}, h2 = {};
-	struct smb2_write w;
+	struct smb2_write w = {};
 	NTSTATUS status;
 	const char *fname = "dynamic_path.dat";
 	bool ret = true;
