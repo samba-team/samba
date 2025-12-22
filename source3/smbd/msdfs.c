@@ -223,15 +223,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		servicename = "Unknown Service (snum == -1)";
 	}
 
-	connpath = talloc_strdup(conn, path);
-	if (!connpath) {
-		TALLOC_FREE(conn);
-		return NT_STATUS_NO_MEMORY;
-	}
-	connpath = talloc_string_sub(conn,
-				     connpath,
-				     "%S",
-				     servicename);
+	connpath = talloc_string_sub(conn, path, "%S", servicename);
 	if (!connpath) {
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
