@@ -461,7 +461,7 @@ static SMB_ACL_T make_simple_acl(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (gid != -1) {
+	if (gid != (gid_t)-1) {
 		if (sys_acl_create_entry(&acl, &entry) != 0) {
 			TALLOC_FREE(acl);
 			return NULL;
