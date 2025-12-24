@@ -967,10 +967,12 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct nd
 
 	ndr_err = ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(ndr);
 		return data_blob_null;
 	}
 	ndr_err = ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(ndr);
 		return data_blob_null;
 	}
 
