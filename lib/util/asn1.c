@@ -960,7 +960,6 @@ bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLO
   err:
 
 	data_blob_free(blob);
-	*blob = data_blob_null;
 	return false;
 }
 
@@ -1047,7 +1046,6 @@ bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB 
 
 	if (data->has_error) {
 		data_blob_free(blob);
-		*blob = data_blob_null;
 		*padding = 0;
 		return false;
 	}
