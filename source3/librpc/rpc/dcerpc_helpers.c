@@ -334,8 +334,8 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 {
 	struct gensec_security *gensec_security;
 	const char pad[DCERPC_AUTH_PAD_ALIGNMENT] = { 0, };
-	DATA_BLOB auth_info;
-	DATA_BLOB auth_blob;
+	DATA_BLOB auth_info = {};
+	DATA_BLOB auth_blob = {};
 	NTSTATUS status;
 
 	if (auth->auth_type == DCERPC_AUTH_TYPE_NONE) {
@@ -354,7 +354,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	/* marshall the dcerpc_auth with an actually empty auth_blob.
 	 * This is needed because the ntmlssp signature includes the
 	 * auth header. We will append the actual blob later. */
-	auth_blob = data_blob_null;
+
 	status = dcerpc_push_dcerpc_auth(rpc_out->data,
 					 auth->auth_type,
 					 auth->auth_level,
