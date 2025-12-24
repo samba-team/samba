@@ -1022,11 +1022,13 @@ struct ndr_syntax_id dcerpc_construct_bind_time_features(uint64_t features)
 
 NTSTATUS dcerpc_generic_session_key(DATA_BLOB *session_key)
 {
-	*session_key = data_blob_null;
-
 	/* this took quite a few CPU cycles to find ... */
-	session_key->data = discard_const_p(unsigned char, "SystemLibraryDTC");
-	session_key->length = 16;
+
+	*session_key = (DATA_BLOB) {
+		.data = discard_const_p(unsigned char, "SystemLibraryDTC"),
+		.length = 16,
+	};
+
 	return NT_STATUS_OK;
 }
 
