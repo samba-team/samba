@@ -62,7 +62,7 @@ struct tevent_req *smb2cli_create_send(
 	struct tevent_req *req, *subreq;
 	struct smb2cli_create_state *state;
 	uint8_t *fixed;
-	DATA_BLOB blob;
+	DATA_BLOB blob = {};
 	NTSTATUS status;
 	size_t blobs_offset;
 	uint8_t *dyn;
@@ -110,8 +110,6 @@ struct tevent_req *smb2cli_create_send(
 
 	SSVAL(fixed, 44, SMB2_HDR_BODY + 56);
 	SSVAL(fixed, 46, state->name_utf16_len);
-
-	blob = data_blob_null;
 
 	if (blobs != NULL) {
 		status = smb2_create_blob_push(state, &blob, *blobs);
