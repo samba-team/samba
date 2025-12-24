@@ -210,8 +210,8 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	const char *sasl_mech = "GSS-SPNEGO";
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = NULL;
-	DATA_BLOB input = data_blob(NULL, 0);
-	DATA_BLOB output = data_blob(NULL, 0);
+	DATA_BLOB input = {};
+	DATA_BLOB output = {};
 	bool first = true;
 	int wrap_flags = 0;
 	uint32_t old_gensec_features;

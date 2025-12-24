@@ -570,7 +570,7 @@ static NTSTATUS gensec_krb5_update_internal(struct gensec_security *gensec_secur
 	case GENSEC_KRB5_SERVER_START:
 	{
 		DATA_BLOB unwrapped_in;
-		DATA_BLOB unwrapped_out = data_blob(NULL, 0);
+		DATA_BLOB unwrapped_out = {};
 		krb5_data inbuf, outbuf;
 		uint8_t tok_id[2];
 		struct keytab_container *keytab;

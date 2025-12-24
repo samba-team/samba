@@ -403,7 +403,7 @@ NTSTATUS pvfs_xattr_create(struct pvfs_state *pvfs,
 			   const char *attr_name)
 {
 	NTSTATUS status;
-	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB blob = {};
 	char *aname = talloc_asprintf(NULL, "%s%s", attr_prefix, attr_name);
 	if (aname == NULL) {
 		return NT_STATUS_NO_MEMORY;

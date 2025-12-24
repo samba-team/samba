@@ -580,7 +580,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 {
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = {};
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t _session_key;
 	struct auth_session_info *session_info =
@@ -670,7 +670,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	/* The confounder is in the last 16 bytes of the buffer */
 	DATA_BLOB confounder = data_blob_const(&pwbuf->data[516], 16);
 	DATA_BLOB pw_data = data_blob_const(pwbuf->data, 516);
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = {};
 	int rc;
 	bool encrypted;
 
@@ -734,7 +734,7 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 {
 	struct samr_Password *d_lm_pwd_hash = NULL, *d_nt_pwd_hash = NULL;
 	uint8_t random_session_key[16] = { 0, };
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = {};
 	DATA_BLOB in, out;
 	NTSTATUS nt_status = NT_STATUS_OK;
 	int rc;

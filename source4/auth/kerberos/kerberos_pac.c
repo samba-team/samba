@@ -44,8 +44,8 @@
 	NTSTATUS nt_status;
 	krb5_error_code ret;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB zero_blob = data_blob(NULL, 0);
-	DATA_BLOB tmp_blob = data_blob(NULL, 0);
+	DATA_BLOB zero_blob = {};
+	DATA_BLOB tmp_blob = {};
 	struct PAC_SIGNATURE_DATA *kdc_checksum = NULL;
 	struct PAC_SIGNATURE_DATA *srv_checksum = NULL;
 	uint32_t i;

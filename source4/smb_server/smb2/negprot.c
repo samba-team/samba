@@ -34,7 +34,7 @@
 static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *_blob)
 {
 	struct gensec_security *gensec_security;
-	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	DATA_BLOB null_data_blob = {};
 	DATA_BLOB blob;
 	NTSTATUS nt_status;
 	struct cli_credentials *server_credentials;

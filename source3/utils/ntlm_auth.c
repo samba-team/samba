@@ -1456,7 +1456,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 				  char *buf, int length, void **private1)
 {
 	DATA_BLOB in;
-	DATA_BLOB out = data_blob(NULL, 0);
+	DATA_BLOB out = {};
 	char *out_base64 = NULL;
 	const char *reply_arg = NULL;
 	struct gensec_ntlm_state {

@@ -440,7 +440,7 @@ static void smb2srv_notify_send(struct ntvfs_request *ntvfs)
 	size_t size = 0;
 	int i;
 	uint8_t *p;
-	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB blob = {};
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_notify);
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, 0));

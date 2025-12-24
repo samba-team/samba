@@ -1208,7 +1208,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 			r->mechanism = LDAP_AUTH_MECH_SASL;
 			if (!asn1_read_OctetString_talloc(msg, data, &r->creds.SASL.mechanism)) goto prot_err;
 			if (asn1_peek_tag(data, ASN1_OCTET_STRING)) { /* optional */
-				DATA_BLOB tmp_blob = data_blob(NULL, 0);
+				DATA_BLOB tmp_blob = {};
 				if (!asn1_read_OctetString(data, msg, &tmp_blob)) goto prot_err;
 				r->creds.SASL.secblob = talloc(msg, DATA_BLOB);
 				if (!r->creds.SASL.secblob) {
@@ -1242,7 +1242,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		if (!asn1_start_tag(data, tag)) goto prot_err;
 		if (!ldap_decode_response(msg, data, &r->response)) goto prot_err;
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
-			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			DATA_BLOB tmp_blob = {};
 			if (!asn1_read_ContextSimple(data, msg, 7, &tmp_blob)) goto prot_err;
 			r->SASL.secblob = talloc(msg, DATA_BLOB);
 			if (!r->SASL.secblob) {
@@ -1518,7 +1518,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 
 	case ASN1_APPLICATION(LDAP_TAG_ExtendedRequest): {
 		struct ldap_ExtendedRequest *r = &msg->r.ExtendedRequest;
-		DATA_BLOB tmp_blob = data_blob(NULL, 0);
+		DATA_BLOB tmp_blob = {};
 
 		msg->type = LDAP_TAG_ExtendedRequest;
 		if (!asn1_start_tag(data,tag)) goto prot_err;
@@ -1549,7 +1549,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 
 	case ASN1_APPLICATION(LDAP_TAG_ExtendedResponse): {
 		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
-		DATA_BLOB tmp_blob = data_blob(NULL, 0);
+		DATA_BLOB tmp_blob = {};
 
 		msg->type = LDAP_TAG_ExtendedResponse;
 		if (!asn1_start_tag(data, tag)) goto prot_err;

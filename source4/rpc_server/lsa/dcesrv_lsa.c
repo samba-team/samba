@@ -933,7 +933,7 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 				       TALLOC_CTX *mem_ctx, DATA_BLOB *auth_blob,
 				       struct trustDomainPasswords *auth_struct)
 {
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = {};
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
 	gnutls_cipher_hd_t cipher_hnd = NULL;

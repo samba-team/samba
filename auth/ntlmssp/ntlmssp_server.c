@@ -897,7 +897,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	DATA_BLOB user_session_key = state->user_session_key;
 	DATA_BLOB lm_session_key = state->lm_session_key;
 	NTSTATUS nt_status = NT_STATUS_OK;
-	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB session_key = {};
 	struct auth_session_info *session_info = NULL;
 
 	TALLOC_FREE(state->user_info);

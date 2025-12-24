@@ -902,8 +902,8 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 					   struct auth_user_info_dc **user_info_dc)
 {
 	NTSTATUS nt_status;
-	DATA_BLOB user_sess_key = data_blob(NULL, 0);
-	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
+	DATA_BLOB user_sess_key = {};
+	DATA_BLOB lm_sess_key = {};
 
 	struct ldb_message *msg;
 	struct ldb_dn *domain_dn;

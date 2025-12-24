@@ -455,7 +455,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx,
 					     const DATA_BLOB *names_blob)
 {
 	uint8_t client_chal[8];
-	DATA_BLOB response = data_blob(NULL, 0);
+	DATA_BLOB response = {};
 	uint8_t long_date[8];
 
 	generate_random_buffer(client_chal, sizeof(client_chal));

@@ -717,10 +717,10 @@ static bool test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 {
 	bool pass = true;
 	NTSTATUS nt_status;
-	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
+	DATA_BLOB ntlmv2_response = {};
+	DATA_BLOB lmv2_response = {};
+	DATA_BLOB lmv2_session_key = {};
+	DATA_BLOB ntlmv2_session_key = {};
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, TEST_MACHINE_NAME, samlogon_state->workgroup);
 
 	uint8_t lm_session_key[8];
@@ -870,10 +870,10 @@ static bool test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 {
 	bool pass = true;
 	NTSTATUS nt_status;
-	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
+	DATA_BLOB ntlmv2_response = {};
+	DATA_BLOB lmv2_response = {};
+	DATA_BLOB lmv2_session_key = {};
+	DATA_BLOB ntlmv2_session_key = {};
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, samlogon_state->netbios_name, samlogon_state->workgroup);
 
 	DATA_BLOB ntlm_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
@@ -1258,8 +1258,8 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_break break_which, char **error_string)
 {
 	NTSTATUS nt_status;
-	DATA_BLOB nt_response = data_blob(NULL, 0);
-	DATA_BLOB lm_response = data_blob(NULL, 0);
+	DATA_BLOB nt_response = {};
+	DATA_BLOB lm_response = {};
 	char *password;
 	char *dospw;
 	smb_ucs2_t *unicodepw;
