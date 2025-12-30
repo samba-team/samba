@@ -74,8 +74,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	messaging_register(msg_ctx, NULL, MSG_PONG, pong_message);
 
 	for (i=0;i<n;i++) {
-		messaging_send(msg_ctx, pid_to_procid(pid), MSG_PING,
-			       &data_blob_null);
+		messaging_send(msg_ctx, pid_to_procid(pid), MSG_PING, NULL);
 	}
 
 	while (pong_count < i) {
@@ -91,8 +90,10 @@ static void pong_message(struct messaging_context *msg_ctx,
 	strlcpy(buf, "1234567890", sizeof(buf));
 
 	for (i=0;i<n;i++) {
-		messaging_send(msg_ctx, messaging_server_id(msg_ctx), MSG_PING,
-			       &data_blob_null);
+		messaging_send(msg_ctx,
+			       messaging_server_id(msg_ctx),
+			       MSG_PING,
+			       NULL);
 		messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
 				   MSG_PING,(uint8_t *)buf, 11);
 	}
@@ -134,10 +135,11 @@ static void pong_message(struct messaging_context *msg_ctx,
 						   MSG_PING,
 						   (uint8_t *)buf, 11)))
 			   ping_count++;
-			if(NT_STATUS_IS_OK(messaging_send(
-						   msg_ctx, pid_to_procid(pid),
-						   MSG_PING, &data_blob_null)))
-			   ping_count++;
+			if (NT_STATUS_IS_OK(messaging_send(msg_ctx,
+							   pid_to_procid(pid),
+							   MSG_PING,
+							   NULL)))
+				ping_count++;
 
 			while (ping_count > pong_count + 20) {
 				ret = tevent_loop_once(evt_ctx);

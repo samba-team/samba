@@ -1616,7 +1616,8 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 		DEBUG( 2, ( "Closing idle connection\n" ) );
 		messaging_send(sconn->msg_ctx,
 			       messaging_server_id(sconn->msg_ctx),
-			       MSG_SHUTDOWN, &data_blob_null);
+			       MSG_SHUTDOWN,
+			       NULL);
 		return False;
 	}
 

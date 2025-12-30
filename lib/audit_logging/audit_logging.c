@@ -186,11 +186,7 @@ static NTSTATUS get_event_server(
 	 * without waiting
 	 */
 	for (i = 0; i < num_servers; i++) {
-		status = imessaging_send(
-			msg_ctx,
-			servers[i],
-			MSG_PING,
-			&data_blob_null);
+		status = imessaging_send(msg_ctx, servers[i], MSG_PING, NULL);
 		if (NT_STATUS_IS_OK(status)) {
 			*event_server = servers[i];
 			TALLOC_FREE(frame);

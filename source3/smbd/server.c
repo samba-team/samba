@@ -870,7 +870,7 @@ static void cleanupd_started(struct tevent_req *req)
 	status = messaging_send(parent->msg_ctx,
 				parent->cleanupd,
 				MSG_SMB_NOTIFY_CLEANUP,
-				&data_blob_null);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("messaging_send returned %s\n",
 			nt_errstr(status));
@@ -949,7 +949,7 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		status = messaging_send(parent->msg_ctx,
 					parent->cleanupd,
 					MSG_SMB_NOTIFY_CLEANUP,
-					&data_blob_null);
+					NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("messaging_send returned %s\n",
 				nt_errstr(status));

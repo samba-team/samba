@@ -540,8 +540,7 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 		  "(IP %s)\n", (unsigned int)procid_to_pid(&pid),
 		  state->ip));
 
-	messaging_send(state->msg_ctx, pid, MSG_SHUTDOWN,
-		       &data_blob_null);
+	messaging_send(state->msg_ctx, pid, MSG_SHUTDOWN, NULL);
 	return 0;
 }
 

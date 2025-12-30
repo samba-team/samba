@@ -1711,7 +1711,8 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 		ntstat = messaging_send(p->msg_ctx,
 					session_list[snum].pid,
-					MSG_SHUTDOWN, &data_blob_null);
+					MSG_SHUTDOWN,
+					NULL);
 
 		if (NT_STATUS_IS_OK(ntstat))
 			werr = WERR_OK;
