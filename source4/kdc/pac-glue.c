@@ -2804,6 +2804,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	const struct auth_user_info_dc *deleg_info_dc = NULL;
 	struct auth_claims deleg_claims = {};
 	size_t i = 0;
+#ifdef SAMBA4_USES_HEIMDAL
+	DATA_BLOB null_blob = {};
+#endif
 
 	if (server_audit_info_out != NULL) {
 		*server_audit_info_out = NULL;
@@ -3160,21 +3163,21 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	/* Not needed with MIT Kerberos */
 	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_LOGON_NAME,
-					  &data_blob_null);
+					  &null_blob);
 	if (code != 0) {
 		goto done;
 	}
 
 	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_SRV_CHECKSUM,
-					  &data_blob_null);
+					  &null_blob);
 	if (code != 0) {
 		goto done;
 	}
 
 	code = pac_blobs_replace_existing(pac_blobs,
 					  PAC_TYPE_KDC_CHECKSUM,
-					  &data_blob_null);
+					  &null_blob);
 	if (code != 0) {
 		goto done;
 	}

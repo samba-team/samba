@@ -350,6 +350,7 @@ static void test_ntlmv2_only_ntlm_and_lanman(void **state)
 static void test_ntlmv2_only_ntlm_once(void **state)
 {
 	DATA_BLOB user_sess_key, lm_sess_key;
+	DATA_BLOB null_blob = {};
 	struct ntlm_state *ntlm_state
 		= talloc_get_type_abort(*state,
 					struct ntlm_state);
@@ -359,7 +360,7 @@ static void test_ntlmv2_only_ntlm_once(void **state)
 				     NTLM_AUTH_NTLMV2_ONLY,
 				     0,
 				     &ntlm_state->challenge,
-				     &data_blob_null,
+				     &null_blob,
 				     &ntlm_state->ntlm,
 				     ntlm_state->username,
 				     ntlm_state->username,

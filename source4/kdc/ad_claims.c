@@ -907,6 +907,7 @@ static int get_all_claims(struct ldb_context *ldb,
 			DATA_BLOB source_syntax;
 			const char *attribute = NULL;
 			const struct ldb_val *name = NULL;
+			const struct ldb_val null_name = {};
 
 			if (claim_attribute_source == NULL) {
 				continue;
@@ -964,7 +965,7 @@ static int get_all_claims(struct ldb_context *ldb,
 
 			name = ldb_msg_find_ldb_val(res->msgs[i], "name");
 			if (name == NULL) {
-				name = &data_blob_null;
+				name = &null_name;
 			}
 
 			ad_claims[ad_claims_count++] = (struct ad_claim_info) {
