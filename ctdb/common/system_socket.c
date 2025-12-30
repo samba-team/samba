@@ -340,6 +340,25 @@ static int arp_build(uint8_t *buffer,
 	return 0;
 }
 
+static int ip6_ll_multicast_build(uint8_t *buffer, size_t buflen)
+{
+	/*
+	 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464, section
+	 * 7) - 1st 2 octets are 0x3333, final 4 are the last 4 of the
+	 * IPv6 address (see all_nodes_ll_multicast in ip6_na_build())
+	 */
+	const uint8_t ethernet_multicast[ETH_ALEN] = {
+		0x33, 0x33, 0x00, 0x00, 0x00, 0x01
+	};
+
+	if (buflen < sizeof(ethernet_multicast)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(buffer, ethernet_multicast, sizeof(ethernet_multicast));
+	return 0;
+}
+
 static int ip6_na_build(uint8_t *buffer,
 			size_t buflen,
 			const struct sockaddr_in6 *addr,
@@ -350,6 +369,11 @@ static int ip6_na_build(uint8_t *buffer,
 	size_t l = IP6_NA_BUFFER_SIZE;
 	struct ether_header *eh;
 	struct ip6_hdr *ip6;
+	/*
+	 * IPv6 all nodes link-level multicast address: (see RFC2373,
+	 * section 2.7.1)
+	 */
+	const char *all_nodes_ll_multicast = "ff02::1";
 	struct nd_neighbor_advert *nd_na;
 	struct nd_opt_hdr *nd_oh;
 	struct ether_addr *ea;
@@ -366,13 +390,10 @@ static int ip6_na_build(uint8_t *buffer,
 	memset(buffer, 0 , l);
 
 	eh = (struct ether_header *)buffer;
-	/*
-	 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464,
-	 * section 7) - note memset 0 above!
-	 */
-	eh->ether_dhost[0] = 0x33;
-	eh->ether_dhost[1] = 0x33;
-	eh->ether_dhost[5] = 0x01;
+	ret = ip6_ll_multicast_build(eh->ether_dhost, ETH_ALEN);
+	if (ret != 0) {
+		return ret;
+	}
 	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
 	eh->ether_type = htons(ETHERTYPE_IP6);
 
@@ -384,10 +405,10 @@ static int ip6_na_build(uint8_t *buffer,
 	ip6->ip6_nxt  = IPPROTO_ICMPV6;
 	ip6->ip6_hlim = 255;
 	ip6->ip6_src  = addr->sin6_addr;
-	/* all-nodes multicast */
 
-	ret = inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
+	ret = inet_pton(AF_INET6, all_nodes_ll_multicast, &ip6->ip6_dst);
 	if (ret != 1) {
+		/* Can't happen */
 		return EIO;
 	}
 
