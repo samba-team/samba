@@ -276,7 +276,7 @@ _PUBLIC_ bool data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 _PUBLIC_ bool data_blob_pad(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			    size_t pad);
 
-extern const DATA_BLOB data_blob_null;
+#define data_blob_null ((DATA_BLOB){})
 
 /** @} */ /* data_blob */
 

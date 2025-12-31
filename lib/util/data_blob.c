@@ -24,8 +24,6 @@
 #include "lib/util/samba_util.h"
 #include "lib/util/tsort.h"
 
-const DATA_BLOB data_blob_null = { NULL, 0 };
-
 /**
  * @file
  * @brief Manipulation of arbitrary data blobs
