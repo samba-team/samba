@@ -32,11 +32,245 @@
 #include <rados/librgw.h>
 #include <rados/rgw_file.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
+
+struct vfs_ceph_rgw_config {
+
+	/* Module parameters */
+	const char *bkt_name;
+	const char *user_id;
+	const char *access_key;
+	const char *secret_access_key;
+	const char *config_file;
+	const char *keyring_file;
+	bool debug;
+
+	/* rgw objects */
+	librgw_t rgw_lib_handle;
+	struct rgw_fs *rgw_root_fs;
+	struct rgw_file_handle *rgw_root_fh;
+};
+
+static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
+{
+	int rc = 0;
+	bool ret = false;
+	char **librgw_params = talloc_zero_array(talloc_tos(), char *, 2);
+
+	if (librgw_params == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
+		errno = ENOMEM;
+		goto out;
+	}
+
+	/* Prepare parameters */
+	librgw_params[0] = talloc_strdup(librgw_params, "vfs_ceph_rgw");
+	if (librgw_params[0] == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
+		errno = ENOMEM;
+		goto out;
+	}
+
+	librgw_params[1] = talloc_asprintf(
+		librgw_params,
+		" --name=client.admin --cluster=ceph"
+		" --conf=%s --keyring=%s",
+		config->config_file,
+		config->keyring_file);
+	if (librgw_params[1] == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
+		errno = ENOMEM;
+		goto out;
+	}
+
+	if (config->debug) {
+		talloc_asprintf_addbuf(librgw_params + 1,
+				       " -d --debug-rgw=20");
+	}
+
+	rc = librgw_create(&config->rgw_lib_handle, 2, librgw_params);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Failed to init librgw. rc=%d\n", rc);
+		goto out;
+	}
+
+	rc = rgw_mount2(config->rgw_lib_handle,
+			config->user_id,
+			config->access_key,
+			config->secret_access_key,
+			config->bkt_name,
+			&config->rgw_root_fs,
+			RGW_MOUNT_FLAG_NONE);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to mount bucket=%s Error=[%s] "
+			"rc=%d\n",
+			config->bkt_name,
+			((rc == -EINVAL) ? "Un-authorised user"
+					 : "unknown error"),
+			rc);
+		librgw_shutdown(config->rgw_lib_handle);
+		goto out;
+	}
+
+	config->rgw_root_fh = config->rgw_root_fs->root_fh;
+	ret = true;
+
+out:
+	TALLOC_FREE(librgw_params);
+	return ret;
+}
+
+static const char *vfs_ceph_rgw_parm(const struct vfs_handle_struct *handle,
+				     const char *opt,
+				     const char *def)
+{
+	const int snum = SNUM(handle->conn);
+	const char *parm = NULL;
+
+	parm = lp_parm_const_string(snum, "ceph_rgw", opt, def);
+	if (parm == NULL) {
+		DBG_ERR("[CEPH_RGW] missing config: '%s' for snum=%d\n",
+			opt,
+			snum);
+	}
+	return parm;
+}
+
+static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
+				     struct vfs_ceph_rgw_config **config)
+{
+	bool ret = false;
+	struct vfs_ceph_rgw_config *config_tmp = NULL;
+
+	if (SMB_VFS_HANDLE_TEST_DATA(handle)) {
+		SMB_VFS_HANDLE_GET_DATA(handle,
+					config_tmp,
+					struct vfs_ceph_rgw_config,
+					goto out);
+		ret = true;
+		*config = config_tmp;
+		goto out;
+	}
+
+	config_tmp = talloc_zero(handle->conn, struct vfs_ceph_rgw_config);
+	if (config_tmp == NULL) {
+		goto out;
+	}
+
+	config_tmp->config_file = vfs_ceph_rgw_parm(handle,
+						    "config_file",
+						    "/etc/ceph/ceph.conf");
+	if (config_tmp->config_file == NULL) {
+		goto out;
+	}
+
+	config_tmp->keyring_file = vfs_ceph_rgw_parm(
+		handle, "keyring_file", "/etc/ceph/ceph.client.admin.keyring");
+	if (config_tmp->keyring_file == NULL) {
+		goto out;
+	}
+
+	config_tmp->user_id = vfs_ceph_rgw_parm(handle, "user_id", NULL);
+	if (config_tmp->user_id == NULL) {
+		goto out;
+	}
+
+	config_tmp->access_key = vfs_ceph_rgw_parm(handle, "access_key", NULL);
+	if (config_tmp->access_key == NULL) {
+		goto out;
+	}
+
+	config_tmp->secret_access_key = vfs_ceph_rgw_parm(handle,
+							  "secret_access_key",
+							  NULL);
+	if (config_tmp->secret_access_key == NULL) {
+		goto out;
+	}
+
+	config_tmp->bkt_name = vfs_ceph_rgw_parm(handle, "bucket", NULL);
+	if (config_tmp->bkt_name == NULL) {
+		goto out;
+	}
+
+	config_tmp->debug = lp_parm_bool(SNUM(handle->conn),
+					 "ceph_rgw",
+					 "debug",
+					 false);
+	SMB_VFS_HANDLE_SET_DATA(handle,
+				config_tmp,
+				NULL,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	*config = config_tmp;
+	ret = true;
+out:
+	return ret;
+}
+
+static int vfs_ceph_rgw_connect(struct vfs_handle_struct *handle,
+				const char *service,
+				const char *user)
+{
+	struct vfs_ceph_rgw_config *config = NULL;
+	bool ok = false;
+
+	ok = vfs_ceph_rgw_load_config(handle, &config);
+	if (!ok) {
+		return -1;
+	}
+
+	/*
+	 * librgw does not support directory renaming.
+	 * This option ensures that samba do not use temporary names for
+	 * directory creation and thereby preventing rename while creating
+	 * directory.
+	 */
+	lp_do_parameter(SNUM(handle->conn), "vfs mkdir use tmp name", "no");
+
+	/*
+	 * librgw does not support random writes, therefore we do not implement
+	 * async io write methods.
+	 * This option ensures we always do sync writes.
+	 */
+	lp_do_parameter(SNUM(handle->conn), "aio write size", "0");
+
+	ok = vfs_ceph_rgw_mount_bucket(config);
+	if (!ok) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static void vfs_ceph_rgw_disconnect(struct vfs_handle_struct *handle)
+{
+	int ret = 0;
+	struct vfs_ceph_rgw_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				return);
+
+	ret = rgw_umount(config->rgw_root_fs, RGW_UMOUNT_FLAG_NONE);
+	if (ret < 0) {
+		DBG_ERR("[CEPH_RGW] failed to unmount: snum=%d ret=%d\n",
+			SNUM(handle->conn),
+			ret);
+	}
+
+	librgw_shutdown(config->rgw_lib_handle);
+
+	TALLOC_FREE(config);
+}
+
 static struct vfs_fn_pointers ceph_rgw_fns = {
 	/* Disk operations */
 
-	.connect_fn = vfs_not_implemented_connect,
-	.disconnect_fn = vfs_not_implemented_disconnect,
+	.connect_fn = vfs_ceph_rgw_connect,
+	.disconnect_fn = vfs_ceph_rgw_disconnect,
 	.disk_free_fn = vfs_not_implemented_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
