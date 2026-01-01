@@ -52,6 +52,161 @@ struct vfs_ceph_rgw_config {
 	struct rgw_file_handle *rgw_root_fh;
 };
 
+/*
+ * Note, librgw's return code model is to return -errno. Thus we have to
+ * convert to what Samba expects: set errno to non-negative value and return
+ * -1.
+ *
+ * Using convenience helper functions to avoid non-hygienic macro.
+ */
+static int status_code(int ret)
+{
+	if (ret < 0) {
+		errno = -ret;
+		return -1;
+	}
+	return ret;
+}
+
+static bool is_special_name(const char *name)
+{
+	return ISDOT(name) || ISDOTDOT(name) || strcmp(name, "/") == 0;
+}
+
+static struct smb_filename *vfs_ceph_rgw_realpath(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *ctx,
+	const struct smb_filename *smb_fname)
+{
+	const char *path = smb_fname->base_name;
+	struct smb_filename *result_fname = NULL;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_realpath);
+
+	DBG_DEBUG("[CEPH_RGW] realpath %s\n", path);
+	result_fname = synthetic_smb_fname(ctx, path, NULL, NULL, 0, 0);
+
+	END_PROFILE_X(syscall_realpath);
+	return result_fname;
+}
+
+static int vfs_ceph_rgw_stat_helper(struct vfs_handle_struct *handle,
+				    const char *base_name,
+				    const char *stream_name,
+				    SMB_STRUCT_STAT *st_in)
+{
+	int result = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct rgw_file_handle *rgw_fh = NULL;
+	struct stat st = {0};
+	bool do_release = false;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	if (stream_name) {
+		result = -ENOENT;
+		goto out;
+	}
+
+	if (is_special_name(base_name)) {
+		/* Use bucket root handle */
+		rgw_fh = config->rgw_root_fh;
+	} else {
+		result = rgw_lookup(config->rgw_root_fs,
+				    config->rgw_root_fh,
+				    base_name,
+				    &rgw_fh,
+				    &st,
+				    0,
+				    RGW_LOOKUP_TYPE_FLAGS);
+		if (result < 0) {
+			DBG_ERR("[CEPH_RGW] Unable to lookup [%s]. rc = %d\n",
+				base_name,
+				result);
+			goto out;
+		}
+		do_release = true;
+	}
+
+	result = rgw_getattr(config->rgw_root_fs,
+			     rgw_fh,
+			     &st,
+			     RGW_GETATTR_FLAG_NONE);
+	if (result < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get attr for [%s]. "
+			"rc = %d\n",
+			base_name,
+			result);
+		goto out;
+	}
+
+	init_stat_ex_from_stat(st_in, &st, false);
+
+out:
+	if (do_release) {
+		(void)rgw_fh_rele(config->rgw_root_fs,
+				  rgw_fh,
+				  RGW_FH_RELE_FLAG_NONE);
+	}
+	return result;
+}
+
+static int vfs_ceph_rgw_stat(struct vfs_handle_struct *handle,
+			     struct smb_filename *smb_fname)
+{
+	int rc = -ENOMEM;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_stat);
+
+	rc = vfs_ceph_rgw_stat_helper(handle,
+				      smb_fname->base_name,
+				      smb_fname->stream_name,
+				      &smb_fname->st);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to retrieve stats. rc = %d\n", rc);
+		/* fall through */
+	}
+
+	END_PROFILE_X(syscall_stat);
+	return status_code(rc);
+}
+
+static int vfs_ceph_rgw_lstat(struct vfs_handle_struct *handle,
+			      struct smb_filename *smb_fname)
+{
+	int rc = -ENOMEM;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_lstat);
+
+	rc = vfs_ceph_rgw_stat_helper(handle,
+				      smb_fname->base_name,
+				      smb_fname->stream_name,
+				      &smb_fname->st);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to retrieve lstats. rc = %d\n", rc);
+		/* fall through */
+	}
+
+	END_PROFILE_X(syscall_lstat);
+	return status_code(rc);
+}
+
+/*
+ * librgw do not have concept of current working directory.
+ * Therefore chdir method is really a no-op.
+ */
+static int vfs_ceph_rgw_chdir(struct vfs_handle_struct *handle,
+			      const struct smb_filename *smb_fname)
+{
+	START_PROFILE_X(SNUM(handle->conn), syscall_chdir);
+	DBG_DEBUG("[CEPH_RGW] chdir %s\n", smb_fname->base_name);
+	END_PROFILE_X(syscall_chdir);
+	return 0;
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -303,15 +458,15 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.renameat_fn = vfs_not_implemented_renameat,
 	.fsync_send_fn = vfs_not_implemented_fsync_send,
 	.fsync_recv_fn = vfs_not_implemented_fsync_recv,
-	.stat_fn = vfs_not_implemented_stat,
+	.stat_fn = vfs_ceph_rgw_stat,
 	.fstat_fn = vfs_not_implemented_fstat,
-	.lstat_fn = vfs_not_implemented_lstat,
+	.lstat_fn = vfs_ceph_rgw_lstat,
 	.fstatat_fn = vfs_not_implemented_fstatat,
 	.unlinkat_fn = vfs_not_implemented_unlinkat,
 	.fchmod_fn = vfs_not_implemented_fchmod,
 	.fchown_fn = vfs_not_implemented_fchown,
 	.lchown_fn = vfs_not_implemented_lchown,
-	.chdir_fn = vfs_not_implemented_chdir,
+	.chdir_fn = vfs_ceph_rgw_chdir,
 	.fntimes_fn = vfs_not_implemented_fntimes,
 	.ftruncate_fn = vfs_not_implemented_ftruncate,
 	.fallocate_fn = vfs_not_implemented_fallocate,
@@ -324,7 +479,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.readlinkat_fn = vfs_not_implemented_vfs_readlinkat,
 	.linkat_fn = vfs_not_implemented_linkat,
 	.mknodat_fn = vfs_not_implemented_mknodat,
-	.realpath_fn = vfs_not_implemented_realpath,
+	.realpath_fn = vfs_ceph_rgw_realpath,
 	.fchflags_fn = vfs_not_implemented_fchflags,
 	.get_real_filename_at_fn = vfs_not_implemented_get_real_filename_at,
 	.fget_dos_attributes_fn = vfs_not_implemented_fget_dos_attributes,
