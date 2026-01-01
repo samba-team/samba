@@ -35,6 +35,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+static uint64_t rgw_fd_index = 0;
+
 struct vfs_ceph_rgw_config {
 
 	/* Module parameters */
@@ -50,6 +52,15 @@ struct vfs_ceph_rgw_config {
 	librgw_t rgw_lib_handle;
 	struct rgw_fs *rgw_root_fs;
 	struct rgw_file_handle *rgw_root_fh;
+};
+
+/* Ceph-rgw file-handles via fsp-extension */
+struct vfs_ceph_rgw_fh {
+	struct vfs_ceph_rgw_dir *dirp;
+	struct files_struct *fsp;
+	struct rgw_file_handle *rgw_fh;
+	int fd;
+	int o_flags;
 };
 
 /*
@@ -71,6 +82,332 @@ static int status_code(int ret)
 static bool is_special_name(const char *name)
 {
 	return ISDOT(name) || ISDOTDOT(name) || strcmp(name, "/") == 0;
+}
+
+static int cephrgw_next_fd(void)
+{
+	/*
+	 * Those file-descriptor numbers are reported back to VFS layer
+	 * (debug-hints only). Using numbers within a large range of
+	 * [1000, 1001000], thus the chances of (annoying but harmless)
+	 * collision are low.
+	 */
+	uint64_t next;
+
+	next = (rgw_fd_index++ % 1000000) + 1000;
+	return (int)next;
+}
+
+/* Strip-off trailing '/', '.' and "..", and first '/' */
+static char *normalise_name(TALLOC_CTX *ctx, const char *pathname_in)
+{
+	char *copy = talloc_strdup(ctx, pathname_in);
+	char *result = talloc_strdup(ctx, "");
+	char *token, *saveptr;
+
+	if (copy == NULL || result == NULL) {
+		TALLOC_FREE(copy);
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	for (token = strtok_r(copy, "/", &saveptr); token != NULL;
+	     token = strtok_r(NULL, "/", &saveptr))
+	{
+		if (strcmp(token, ".") == 0 || strcmp(token, "..") == 0) {
+			continue;
+		}
+		talloc_asprintf_addbuf(&result,
+				       "%s%s",
+				       *result ? "/" : "",
+				       token);
+	}
+
+	TALLOC_FREE(copy);
+	return result;
+}
+
+static int vfs_ceph_rgw_release_fh(struct vfs_ceph_rgw_fh *cfh)
+{
+	cfh->rgw_fh = NULL;
+	cfh->fd = -1;
+	return 0;
+}
+
+static void vfs_ceph_rgw_fsp_ext_destroy_cb(void *p_data)
+{
+	vfs_ceph_rgw_release_fh((struct vfs_ceph_rgw_fh *)p_data);
+}
+
+static int vfs_ceph_rgw_add_fh(struct vfs_handle_struct *handle,
+			       files_struct *fsp,
+			       struct vfs_ceph_rgw_fh **out_cfh)
+{
+	struct vfs_ceph_rgw_config *config = NULL;
+	int ret = -ENOMEM;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	*out_cfh = VFS_ADD_FSP_EXTENSION(handle,
+					 fsp,
+					 struct vfs_ceph_rgw_fh,
+					 vfs_ceph_rgw_fsp_ext_destroy_cb);
+	if (*out_cfh == NULL) {
+		goto out;
+	}
+
+	(*out_cfh)->fsp = fsp;
+	(*out_cfh)->fd = -1;
+	ret = 0;
+out:
+	DBG_DEBUG("[CEPH_RGW] vfs_ceph_add_fh: name = %s ret = %d\n",
+		  fsp_str_dbg(fsp),
+		  ret);
+	return ret;
+}
+
+static void vfs_ceph_rgw_remove_fh(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp)
+{
+	VFS_REMOVE_FSP_EXTENSION(handle, fsp);
+}
+
+static int vfs_ceph_rgw_fetch_fh(struct vfs_handle_struct *handle,
+				 const struct files_struct *fsp,
+				 struct vfs_ceph_rgw_fh **out_cfh)
+{
+	int ret = 0;
+
+	*out_cfh = VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ret = (*out_cfh == NULL) || ((*out_cfh)->rgw_fh == NULL) ? -EBADF : 0;
+	DBG_DEBUG("[CEPH_RGW] vfs_ceph_rgw_fetch_fh: name='%s' ret=%d\n",
+		  fsp_str_dbg(fsp),
+		  ret);
+	return ret;
+}
+
+static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
+			       const struct files_struct *dirfsp,
+			       const struct smb_filename *smb_fname,
+			       files_struct *fsp,
+			       const struct vfs_open_how *how)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_fh *newfh = NULL;
+	struct rgw_file_handle *rgw_fh = NULL;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct stat st = {0};
+	int flags = how->flags;
+	mode_t mode = how->mode;
+	uint32_t mask = RGW_SETATTR_UID | RGW_SETATTR_GID | RGW_SETATTR_MODE;
+	bool skip_open = false;
+	bool do_release = false;
+	const struct security_unix_token *utok = NULL;
+	char *open_name = NULL;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_openat);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	utok = get_current_utok(handle->conn);
+
+	open_name = normalise_name(talloc_tos(), fsp->fsp_name->base_name);
+	if (open_name == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for name\n");
+		goto out;
+	}
+
+	DBG_DEBUG("[CEPH_RGW] base_name=[%s] dir->name=[%s] "
+		  "fsp->name=[%s] open_name=[%s]\n",
+		  smb_fname->base_name,
+		  fsp_str_dbg(dirfsp),
+		  fsp_str_dbg(fsp),
+		  open_name);
+
+	if (*open_name == '\0') {
+		skip_open = true;
+	}
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &newfh);
+	if (rc != 0) {
+		/* We do not found any handle, so this is new open
+		 * create handle and add.
+		 */
+
+		rc = vfs_ceph_rgw_add_fh(handle, fsp, &newfh);
+		if (rc < 0) {
+			DBG_ERR("Unable to add handle. rc=%d\n", rc);
+			goto out;
+		}
+		newfh->fd = cephrgw_next_fd();
+	}
+
+	if (skip_open) {
+		DBG_DEBUG("[CEPH_RGW] Skipping open\n");
+		newfh->rgw_fh = config->rgw_root_fh;
+		rc = newfh->fd;
+		goto out;
+	}
+
+	if (flags & O_CREAT) {
+		st.st_uid = utok->uid;
+		st.st_gid = utok->gid;
+		st.st_mode = mode;
+		DBG_DEBUG("[CEPH_RGW] create file: uid = %u gid = %u mode = "
+			  "%u flags = %u\n",
+			  utok->uid,
+			  utok->gid,
+			  mode,
+			  flags);
+
+		rc = rgw_create(config->rgw_root_fs,
+				config->rgw_root_fh,
+				open_name,
+				&st,
+				mask,
+				&rgw_fh,
+				flags,
+				RGW_CREATE_FLAG_NONE);
+		if (rc < 0) {
+			vfs_ceph_rgw_remove_fh(handle, fsp);
+			goto out;
+		}
+	} else {
+		rc = rgw_lookup(config->rgw_root_fs,
+				config->rgw_root_fh,
+				open_name,
+				&rgw_fh,
+				&st,
+				0,
+				RGW_LOOKUP_TYPE_FLAGS);
+		if (rc < 0) {
+			vfs_ceph_rgw_remove_fh(handle, fsp);
+			goto out;
+		}
+
+		rc = rgw_getattr(config->rgw_root_fs,
+				 rgw_fh,
+				 &st,
+				 RGW_GETATTR_FLAG_NONE);
+		if (rc < 0) {
+			DBG_ERR("[CEPH_RGW] Unable to get attr for [%s]. "
+				"rc = %d\n",
+				open_name,
+				rc);
+			do_release = true;
+			goto out;
+		}
+	}
+	DBG_DEBUG("[CEPH_RGW]: name = %s mode = %u\n", open_name, st.st_mode);
+
+	/* librgw has no support to open directory.
+	 * Thus we call open only for files
+	 * and perform lookup for directories.
+	 */
+	if (S_ISREG(st.st_mode)) {
+		rc = rgw_open(config->rgw_root_fs,
+			      rgw_fh,
+			      flags,
+			      RGW_OPEN_FLAG_NONE);
+		if (rc < 0) {
+			if (rc != -EPERM) {
+				DBG_ERR("[CEPH_RGW] Unable to open [%s]. rc = "
+					"%d\n",
+					open_name,
+					rc);
+				do_release = true;
+				goto out;
+			}
+
+			/* librgw is handled based, and same handle is returned
+			 * for lookup operations. It also maintains 'open'
+			 * flag. Library expects handle to be moved to open
+			 * state only once using rgw_open(). In case of
+			 * multiple rgw_open() just return EPERM. However smb
+			 * clients expects multiple opens for files, since
+			 * librgw do not allows it, we return 0 to indicate
+			 * file is already open and let call continue with all
+			 * proper handles.
+			 */
+			DBG_WARNING("[CEPH_RGW] File already open. "
+				    "Not reporting error\n");
+			rc = 0;
+		}
+		DBG_DEBUG("[CEPH_RGW] After open [%s]. rgw_fh=%p\n",
+			  open_name,
+			  rgw_fh);
+	}
+	newfh->rgw_fh = rgw_fh;
+	rc = newfh->fd;
+	newfh->o_flags = flags;
+
+	DBG_DEBUG("[CEPH_RGW] openat: [%s] success\n", open_name);
+
+out:
+	if (do_release) {
+		(void)rgw_fh_rele(config->rgw_root_fs,
+				  rgw_fh,
+				  RGW_FH_RELE_FLAG_NONE);
+		vfs_ceph_rgw_remove_fh(handle, fsp);
+	}
+	TALLOC_FREE(open_name);
+	END_PROFILE_X(syscall_openat);
+	return status_code(rc);
+}
+
+static int vfs_ceph_rgw_close(struct vfs_handle_struct *handle,
+			      files_struct *fsp)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_fh *openfh = NULL;
+	struct vfs_ceph_rgw_config *config = NULL;
+	const char *fname = fsp->fsp_name->base_name;
+	START_PROFILE_X(SNUM(handle->conn), syscall_close);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	DBG_DEBUG("[CEPH_RGW] close is for [%s]\n", fname);
+	if (is_special_name(fname) || *fname == '\0') {
+		vfs_ceph_rgw_remove_fh(handle, fsp);
+		rc = 0;
+		goto out;
+	}
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &openfh);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to find open handle for %s. "
+			"rc=%d\n",
+			fname,
+			rc);
+		goto out;
+	}
+
+	rc = rgw_close(config->rgw_root_fs,
+		       openfh->rgw_fh,
+		       RGW_CLOSE_FLAG_RELE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to close [%s]. rc = %d\n",
+			fname,
+			rc);
+		goto err_out;
+	}
+
+	DBG_DEBUG("[CEPH_RGW] close: [%s] success\n", fname);
+
+err_out:
+	vfs_ceph_rgw_remove_fh(handle, fsp);
+out:
+	END_PROFILE_X(syscall_close);
+	return status_code(rc);
 }
 
 static struct smb_filename *vfs_ceph_rgw_realpath(
@@ -191,6 +528,47 @@ static int vfs_ceph_rgw_lstat(struct vfs_handle_struct *handle,
 	}
 
 	END_PROFILE_X(syscall_lstat);
+	return status_code(rc);
+}
+
+static int vfs_ceph_rgw_fstat(struct vfs_handle_struct *handle,
+			      files_struct *fsp,
+			      SMB_STRUCT_STAT *sbuf)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_fh *openfh = NULL;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct stat st = {0};
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fstat);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &openfh);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to find open handle for %s. "
+			"rc=%d\n",
+			fsp_str_dbg(fsp),
+			rc);
+		goto out;
+	}
+
+	rc = rgw_getattr(config->rgw_root_fs,
+			 openfh->rgw_fh,
+			 &st,
+			 RGW_GETATTR_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to fstat [%s]. rc=%d\n",
+			fsp_str_dbg(fsp),
+			rc);
+		goto out;
+	}
+	init_stat_ex_from_stat(sbuf, &st, false);
+out:
+	END_PROFILE_X(syscall_fstat);
 	return status_code(rc);
 }
 
@@ -444,8 +822,8 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 
 	.create_dfs_pathat_fn = vfs_not_implemented_create_dfs_pathat,
 	.read_dfs_pathat_fn = vfs_not_implemented_read_dfs_pathat,
-	.openat_fn = vfs_not_implemented_openat,
-	.close_fn = vfs_not_implemented_close_fn,
+	.openat_fn = vfs_ceph_rgw_openat,
+	.close_fn = vfs_ceph_rgw_close,
 	.pread_fn = vfs_not_implemented_pread,
 	.pread_send_fn = vfs_not_implemented_pread_send,
 	.pread_recv_fn = vfs_not_implemented_pread_recv,
@@ -459,7 +837,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.fsync_send_fn = vfs_not_implemented_fsync_send,
 	.fsync_recv_fn = vfs_not_implemented_fsync_recv,
 	.stat_fn = vfs_ceph_rgw_stat,
-	.fstat_fn = vfs_not_implemented_fstat,
+	.fstat_fn = vfs_ceph_rgw_fstat,
 	.lstat_fn = vfs_ceph_rgw_lstat,
 	.fstatat_fn = vfs_not_implemented_fstatat,
 	.unlinkat_fn = vfs_not_implemented_unlinkat,
