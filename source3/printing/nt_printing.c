@@ -36,6 +36,7 @@
 #include "rpc_client/cli_winreg_spoolss.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "lib/util/time_basic.h"
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -851,9 +852,9 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Old file not found, so by definition new file is in fact newer */
-		DEBUG(10,("file_version_is_newer: Can't open old file [%s], "
-			  "errno = %d\n", smb_fname_str_dbg(smb_fname),
-			  errno));
+		DBG_DEBUG("Can't open old file [%s], errno = %d\n",
+			  smb_fname_str_dbg(smb_fname),
+			  errno);
 		ret = 1;
 		goto done;
 
@@ -865,16 +866,16 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	}
 
 	if (!ret) {
-		DEBUG(6,("file_version_is_newer: Version info not found [%s], "
-			 "use mod time\n",
-			 old_file));
+		struct timeval_buf buf;
+		DBG_NOTICE("Version info not found [%s], use mod time\n",
+			   old_file);
 		use_version = false;
 		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 			goto error_exit;
 		}
 		old_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
-		DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
-			    (long)old_create_time));
+		DBG_NOTICE("mod time = %s\n",
+			   timespec_string_buf(&st.st_ex_mtime, true, &buf));
 	}
 
 	close_file_free(NULL, &fsp, NORMAL_CLOSE);
@@ -907,8 +908,9 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* New file not found, this shouldn't occur if the caller did its job */
-		DEBUG(3,("file_version_is_newer: Can't open new file [%s], "
-			 "errno = %d\n", smb_fname_str_dbg(smb_fname), errno));
+		DBG_NOTICE("Can't open new file [%s], errno = %d\n",
+			   smb_fname_str_dbg(smb_fname),
+			   errno);
 		goto error_exit;
 
 	}
@@ -919,16 +921,16 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	}
 
 	if (!ret) {
-		DEBUG(6,("file_version_is_newer: Version info not found [%s], "
-			 "use mod time\n",
-			 new_file));
+		struct timeval_buf buf;
+		DBG_INFO("Version info not found [%s], use mod time\n",
+			 new_file);
 		use_version = false;
 		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 			goto error_exit;
 		}
 		new_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
-		DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
-			    (long)new_create_time));
+		DBG_NOTICE("mod time = %s\n",
+			   timespec_string_buf(&st.st_ex_mtime, true, &buf));
 	}
 
 	close_file_free(NULL, &fsp, NORMAL_CLOSE);
@@ -938,12 +940,14 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		if (new_major > old_major ||
 			(new_major == old_major && new_minor > old_minor)) {
 
-			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			DBG_INFO("Replacing [%s] with [%s]\n",
+				 old_file,
+				 new_file);
 			ret = 1;
 			goto done;
 		}
 		else {
-			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			DBG_INFO("Leaving [%s] unchanged\n", old_file);
 			ret = 0;
 			goto done;
 		}
@@ -951,12 +955,14 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	} else {
 		/* Compare modification time/dates and choose the newest time/date */
 		if (new_create_time > old_create_time) {
-			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			DBG_INFO("Replacing [%s] with [%s]\n",
+				 old_file,
+				 new_file);
 			ret = 1;
 			goto done;
 		}
 		else {
-			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			DBG_INFO("Leaving [%s] unchanged\n", old_file);
 			ret = 0;
 			goto done;
 		}
@@ -1442,18 +1448,18 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 
 		smb_fname_new->base_name = new_name;
 
-		DEBUG(10,("move_driver_file_to_download_area: copying '%s' to "
-			  "'%s'\n", smb_fname_old->base_name,
-			  smb_fname_new->base_name));
+		DBG_DEBUG("copying '%s' to '%s'\n",
+			  smb_fname_old->base_name,
+			  smb_fname_new->base_name);
 
 		status = copy_file(mem_ctx, conn, smb_fname_old, smb_fname_new,
 				   FILE_OVERWRITE_IF);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("move_driver_file_to_download_area: Unable "
-				 "to rename [%s] to [%s]: %s\n",
-				 smb_fname_old->base_name, new_name,
-				 nt_errstr(status)));
+			DBG_ERR("Unable to rename [%s] to [%s]: %s\n",
+				smb_fname_old->base_name,
+				new_name,
+				nt_errstr(status));
 			ret = WERR_APP_INIT_FAILURE;
 			goto out;
 		}
