@@ -1397,6 +1397,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 						uint32_t version,
 						const char *driver_directory)
 {
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_fname_old = NULL;
 	struct smb_filename *smb_fname_new = NULL;
 	char *old_name = NULL;
@@ -1432,42 +1433,42 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 	}
 
 	version = file_version_is_newer(conn, old_name, new_name);
-	if (version > 0) {
-		struct files_struct *dirfsp = NULL;
+	if (version <= 0) {
+		goto done;
+	}
 
-		status = driver_unix_convert(conn,
-					     old_name,
-					     &dirfsp,
-					     &smb_fname_old);
-		if (!NT_STATUS_IS_OK(status)) {
-			ret = WERR_NOT_ENOUGH_MEMORY;
-			goto out;
-		}
+	status = driver_unix_convert(conn, old_name, &dirfsp, &smb_fname_old);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = WERR_NOT_ENOUGH_MEMORY;
+		goto out;
+	}
 
-		/* Setup a synthetic smb_filename struct */
-		smb_fname_new = talloc_zero(mem_ctx, struct smb_filename);
-		if (!smb_fname_new) {
-			ret = WERR_NOT_ENOUGH_MEMORY;
-			goto out;
-		}
+	/* Setup a synthetic smb_filename struct */
+	smb_fname_new = talloc_zero(mem_ctx, struct smb_filename);
+	if (!smb_fname_new) {
+		ret = WERR_NOT_ENOUGH_MEMORY;
+		goto out;
+	}
 
-		smb_fname_new->base_name = new_name;
+	smb_fname_new->base_name = new_name;
 
-		DBG_DEBUG("copying '%s' to '%s'\n",
-			  smb_fname_old->base_name,
-			  smb_fname_new->base_name);
+	DBG_DEBUG("copying '%s' to '%s'\n",
+		  smb_fname_old->base_name,
+		  smb_fname_new->base_name);
 
-		status = copy_file(mem_ctx, conn, smb_fname_old, smb_fname_new,
-				   FILE_OVERWRITE_IF);
+	status = copy_file(mem_ctx,
+			   conn,
+			   smb_fname_old,
+			   smb_fname_new,
+			   FILE_OVERWRITE_IF);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Unable to rename [%s] to [%s]: %s\n",
-				smb_fname_old->base_name,
-				new_name,
-				nt_errstr(status));
-			ret = WERR_APP_INIT_FAILURE;
-			goto out;
-		}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Unable to rename [%s] to [%s]: %s\n",
+			smb_fname_old->base_name,
+			new_name,
+			nt_errstr(status));
+		ret = WERR_APP_INIT_FAILURE;
+		goto out;
 	}
 
 done:
