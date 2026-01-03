@@ -1427,7 +1427,11 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	if (version != -1 && (version = file_version_is_newer(conn, old_name, new_name)) > 0) {
+	if (version == -1) {
+		goto done;
+	}
+
+	if ((version = file_version_is_newer(conn, old_name, new_name)) > 0) {
 		struct files_struct *dirfsp = NULL;
 
 		status = driver_unix_convert(conn,
@@ -1465,6 +1469,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+done:
 	ret = WERR_OK;
  out:
 	TALLOC_FREE(smb_fname_old);
