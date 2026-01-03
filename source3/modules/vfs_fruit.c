@@ -4970,14 +4970,16 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 	}
 
 	for (i = 0; i < num_streams; i++) {
+		const char *stream = streams[i].name;
+
 		DBG_DEBUG("stream: '%s'/%zu\n",
-			  streams[i].name,
+			  stream,
 			  (size_t)streams[i].size);
 
 		src_fname_tmp = synthetic_smb_fname(
 			req,
 			state->src_fsp->fsp_name->base_name,
-			streams[i].name,
+			stream,
 			NULL,
 			state->src_fsp->fsp_name->twrp,
 			state->src_fsp->fsp_name->flags);
@@ -4993,7 +4995,7 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 		dst_fname_tmp = synthetic_smb_fname(
 			req,
 			state->dst_fsp->fsp_name->base_name,
-			streams[i].name,
+			stream,
 			NULL,
 			state->dst_fsp->fsp_name->twrp,
 			state->dst_fsp->fsp_name->flags);
