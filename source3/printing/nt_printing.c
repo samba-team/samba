@@ -1593,8 +1593,8 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 
 	DEBUG(5,("Moving files now !\n"));
 
-	if (driver->driver_path && strlen(driver->driver_path)) {
-
+	if ((driver->driver_path != NULL) && (driver->driver_path[0] != '\0'))
+	{
 		err = move_driver_file_to_download_area(frame,
 							conn,
 							driver->driver_path,
@@ -1607,7 +1607,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		}
 	}
 
-	if (driver->data_file && strlen(driver->data_file)) {
+	if ((driver->data_file != NULL) && (driver->data_file[0] != '\0')) {
 		if (!strequal(driver->data_file, driver->driver_path)) {
 
 			err = move_driver_file_to_download_area(frame,
@@ -1623,7 +1623,8 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		}
 	}
 
-	if (driver->config_file && strlen(driver->config_file)) {
+	if ((driver->config_file != NULL) && (driver->config_file[0] != '\0'))
+	{
 		if (!strequal(driver->config_file, driver->driver_path) &&
 		    !strequal(driver->config_file, driver->data_file)) {
 
@@ -1640,7 +1641,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		}
 	}
 
-	if (driver->help_file && strlen(driver->help_file)) {
+	if ((driver->help_file != NULL) && (driver->help_file[0] != '\0')) {
 		if (!strequal(driver->help_file, driver->driver_path) &&
 		    !strequal(driver->help_file, driver->data_file) &&
 		    !strequal(driver->help_file, driver->config_file)) {
