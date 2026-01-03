@@ -367,7 +367,6 @@ bool split_domain_user(TALLOC_CTX *mem_ctx,
 const char *strip_hostname(const char *s);
 bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result);
 int timeval_to_msec(struct timeval t);
-char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);
 bool is_executable(const char *fname);
 bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 int deny_mode, int open_func,
