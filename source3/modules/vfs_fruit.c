@@ -4936,6 +4936,8 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
 	unsigned int i;
+	struct smb_filename *src_fname = NULL;
+	struct smb_filename *dst_fname = NULL;
 
 	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(state->handle,
 					      subreq,
@@ -4967,6 +4969,9 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 		return;
 	}
 
+	src_fname = state->src_fsp->fsp_name;
+	dst_fname = state->dst_fsp->fsp_name;
+
 	for (i = 0; i < num_streams; i++) {
 		struct smb_filename *src_fname_tmp = NULL;
 		struct smb_filename *dst_fname_tmp = NULL;
@@ -4976,13 +4981,12 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 			  stream,
 			  (size_t)streams[i].size);
 
-		src_fname_tmp = synthetic_smb_fname(
-			streams,
-			state->src_fsp->fsp_name->base_name,
-			stream,
-			NULL,
-			state->src_fsp->fsp_name->twrp,
-			state->src_fsp->fsp_name->flags);
+		src_fname_tmp = synthetic_smb_fname(streams,
+						    src_fname->base_name,
+						    stream,
+						    NULL,
+						    src_fname->twrp,
+						    src_fname->flags);
 		if (tevent_req_nomem(src_fname_tmp, req)) {
 			TALLOC_FREE(streams);
 			return;
@@ -4993,13 +4997,12 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 			continue;
 		}
 
-		dst_fname_tmp = synthetic_smb_fname(
-			streams,
-			state->dst_fsp->fsp_name->base_name,
-			stream,
-			NULL,
-			state->dst_fsp->fsp_name->twrp,
-			state->dst_fsp->fsp_name->flags);
+		dst_fname_tmp = synthetic_smb_fname(streams,
+						    dst_fname->base_name,
+						    stream,
+						    NULL,
+						    dst_fname->twrp,
+						    dst_fname->flags);
 		if (tevent_req_nomem(dst_fname_tmp, req)) {
 			TALLOC_FREE(streams);
 			return;
