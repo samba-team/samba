@@ -1552,8 +1552,7 @@ char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname)
 	if (!ptr) {
 		return NULL;
 	}
-	/* Convert any '\' paths to '/' */
-	unix_format(ptr);
+	string_replace(ptr, '\\', '/');
 	ptr = unix_clean_name(ctx, ptr);
 	if (!ptr) {
 		return NULL;

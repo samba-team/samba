@@ -175,7 +175,6 @@ copy an IP address from one buffer to another
 ****************************************************************************/
 
 #define IS_DIRECTORY_SEP(c) ((c) == '\\' || (c) == '/')
-#define unix_format(fname) string_replace(fname,'\\','/')
 
 /****************************************************************************
  Make a file into DOS format.

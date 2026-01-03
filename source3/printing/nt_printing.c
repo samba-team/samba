@@ -252,7 +252,7 @@ static NTSTATUS driver_unix_convert(connection_struct *conn,
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	unix_format(name);
+	string_replace(name, '\\', '/');
 	name = unix_clean_name(ctx, name);
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
