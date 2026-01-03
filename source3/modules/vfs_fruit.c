@@ -4970,8 +4970,9 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 	}
 
 	for (i = 0; i < num_streams; i++) {
-		DEBUG(10, ("%s: stream: '%s'/%zu\n",
-			  __func__, streams[i].name, (size_t)streams[i].size));
+		DBG_DEBUG("stream: '%s'/%zu\n",
+			  streams[i].name,
+			  (size_t)streams[i].size);
 
 		src_fname_tmp = synthetic_smb_fname(
 			req,
@@ -5007,10 +5008,10 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 				   dst_fname_tmp,
 				   FILE_CREATE);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("%s: copy %s to %s failed: %s\n", __func__,
-				  smb_fname_str_dbg(src_fname_tmp),
-				  smb_fname_str_dbg(dst_fname_tmp),
-				  nt_errstr(status)));
+			DBG_WARNING("copy %s to %s failed: %s\n",
+				    smb_fname_str_dbg(src_fname_tmp),
+				    smb_fname_str_dbg(dst_fname_tmp),
+				    nt_errstr(status));
 			TALLOC_FREE(src_fname_tmp);
 			TALLOC_FREE(dst_fname_tmp);
 			tevent_req_nterror(req, status);
