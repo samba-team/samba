@@ -1431,7 +1431,8 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if ((version = file_version_is_newer(conn, old_name, new_name)) > 0) {
+	version = file_version_is_newer(conn, old_name, new_name);
+	if (version > 0) {
 		struct files_struct *dirfsp = NULL;
 
 		status = driver_unix_convert(conn,
