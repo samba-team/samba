@@ -4936,8 +4936,6 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
 	unsigned int i;
-	struct smb_filename *src_fname_tmp = NULL;
-	struct smb_filename *dst_fname_tmp = NULL;
 
 	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(state->handle,
 					      subreq,
@@ -4970,6 +4968,8 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 	}
 
 	for (i = 0; i < num_streams; i++) {
+		struct smb_filename *src_fname_tmp = NULL;
+		struct smb_filename *dst_fname_tmp = NULL;
 		const char *stream = streams[i].name;
 
 		DBG_DEBUG("stream: '%s'/%zu\n",
