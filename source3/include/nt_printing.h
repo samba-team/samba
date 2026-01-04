@@ -173,10 +173,6 @@ WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 			      uint32_t flags,
 			      const char **driver_directory);
 
-void map_printer_permissions(struct security_descriptor *sd);
-
-void map_job_permissions(struct security_descriptor *sd);
-
 bool print_time_access_check(const struct auth_session_info *server_info,
 			     struct messaging_context *msg_ctx,
 			     const char *servicename);

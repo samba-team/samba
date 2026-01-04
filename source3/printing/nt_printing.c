@@ -2185,21 +2185,6 @@ jfm: I should use this comment for the text file to explain
 
 */
 
-/* Convert generic access rights to printer object specific access rights.
-   It turns out that NT4 security descriptors use generic access rights and
-   NT5 the object specific ones. */
-
-void map_printer_permissions(struct security_descriptor *sd)
-{
-	security_acl_map_generic(sd->dacl, &printer_generic_mapping);
-}
-
-void map_job_permissions(struct security_descriptor *sd)
-{
-	security_acl_map_generic(sd->dacl, &job_generic_mapping);
-}
-
-
 /****************************************************************************
  Check a user has permissions to perform the given operation.  We use the
  permission constants defined in include/rpc_spoolss.h to check the various
@@ -2289,9 +2274,10 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 			return ntstatus_to_werror(status);
 		}
 
-		map_job_permissions(secdesc);
+		security_acl_map_generic(secdesc->dacl, &job_generic_mapping);
 	} else {
-		map_printer_permissions(secdesc);
+		security_acl_map_generic(secdesc->dacl,
+					 &printer_generic_mapping);
 	}
 
 	/* Check access */
