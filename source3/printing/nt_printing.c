@@ -796,7 +796,9 @@ missing the version info structure, compare the creation date (on Unix use
 the modification date). Otherwise chose the numerically larger version number.
 ****************************************************************************/
 
-static int file_version_is_newer(connection_struct *conn, fstring new_file, fstring old_file)
+static int file_version_is_newer(connection_struct *conn,
+				 const char *new_file,
+				 const char *old_file)
 {
 	bool use_version = true;
 
