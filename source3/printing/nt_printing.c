@@ -2191,22 +2191,12 @@ jfm: I should use this comment for the text file to explain
 
 void map_printer_permissions(struct security_descriptor *sd)
 {
-	uint32_t i;
-
-	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		se_map_generic(&sd->dacl->aces[i].access_mask,
-			       &printer_generic_mapping);
-	}
+	security_acl_map_generic(sd->dacl, &printer_generic_mapping);
 }
 
 void map_job_permissions(struct security_descriptor *sd)
 {
-	uint32_t i;
-
-	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		se_map_generic(&sd->dacl->aces[i].access_mask,
-			       &job_generic_mapping);
-	}
+	security_acl_map_generic(sd->dacl, &job_generic_mapping);
 }
 
 
