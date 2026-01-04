@@ -353,11 +353,11 @@ static ssize_t printing_pread_data(files_struct *fsp,
 ****************************************************************************/
 
 static int handle_pe_file(files_struct *fsp,
-				off_t in_pos,
-				char *fname,
-				char *buf,
-				uint32_t *major,
-				uint32_t *minor)
+			  off_t in_pos,
+			  const char *fname,
+			  char *buf,
+			  uint32_t *major,
+			  uint32_t *minor)
 {
 	unsigned int i;
 	unsigned int num_sections;
@@ -531,11 +531,11 @@ static int handle_pe_file(files_struct *fsp,
 ****************************************************************************/
 
 static int handle_ne_file(files_struct *fsp,
-				off_t in_pos,
-				char *fname,
-				char *buf,
-				uint32_t *major,
-				uint32_t *minor)
+			  off_t in_pos,
+			  const char *fname,
+			  char *buf,
+			  uint32_t *major,
+			  uint32_t *minor)
 {
 	unsigned int i;
 	ssize_t byte_count;
@@ -695,9 +695,9 @@ static int handle_ne_file(files_struct *fsp,
 ****************************************************************************/
 
 static int get_file_version(files_struct *fsp,
-				char *fname,
-				uint32_t *major,
-				uint32_t *minor)
+			    const char *fname,
+			    uint32_t *major,
+			    uint32_t *minor)
 {
 	char    *buf = NULL;
 	ssize_t byte_count;
