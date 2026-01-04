@@ -40,25 +40,16 @@
 
 /* Map generic permissions to printer object specific permissions */
 
-const struct generic_mapping printer_generic_mapping = {
+static const struct generic_mapping printer_generic_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
 	PRINTER_ALL_ACCESS
 };
 
-/* Map generic permissions to print server object specific permissions */
-
-const struct generic_mapping printserver_generic_mapping = {
-	SERVER_READ,
-	SERVER_WRITE,
-	SERVER_EXECUTE,
-	SERVER_ALL_ACCESS
-};
-
 /* Map generic permissions to job object specific permissions */
 
-const struct generic_mapping job_generic_mapping = {
+static const struct generic_mapping job_generic_mapping = {
 	JOB_READ,
 	JOB_WRITE,
 	JOB_EXECUTE,
