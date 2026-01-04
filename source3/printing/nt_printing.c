@@ -823,6 +823,8 @@ static int file_version_is_newer(connection_struct *conn,
 		goto error_exit;
 	}
 
+	old_stat = smb_fname->st;
+
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
@@ -860,16 +862,12 @@ static int file_version_is_newer(connection_struct *conn,
 
 	if (!ret) {
 		struct timeval_buf buf;
-		DBG_NOTICE("Version info not found [%s], use mod time\n",
-			   old_file);
-		use_version = false;
-		if (SMB_VFS_FSTAT(fsp, &old_stat) == -1) {
-			goto error_exit;
-		}
-		DBG_NOTICE("mod time = %s\n",
+		DBG_NOTICE("Version info not found [%s], use mod time = %s\n",
+			   old_file,
 			   timespec_string_buf(&old_stat.st_ex_mtime,
 					       true,
 					       &buf));
+		use_version = false;
 	}
 
 	close_file_free(NULL, &fsp, NORMAL_CLOSE);
@@ -879,6 +877,8 @@ static int file_version_is_newer(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error_exit;
 	}
+
+	new_stat = smb_fname->st;
 
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -916,16 +916,12 @@ static int file_version_is_newer(connection_struct *conn,
 
 	if (!ret) {
 		struct timeval_buf buf;
-		DBG_INFO("Version info not found [%s], use mod time\n",
-			 new_file);
+		DBG_INFO("Version info not found [%s], use mod time = %s\n",
+			 new_file,
+			 timespec_string_buf(&new_stat.st_ex_mtime,
+					     true,
+					     &buf));
 		use_version = false;
-		if (SMB_VFS_FSTAT(fsp, &new_stat) == -1) {
-			goto error_exit;
-		}
-		DBG_NOTICE("mod time = %s\n",
-			   timespec_string_buf(&new_stat.st_ex_mtime,
-					       true,
-					       &buf));
 	}
 
 	close_file_free(NULL, &fsp, NORMAL_CLOSE);
