@@ -267,11 +267,7 @@ static NTSTATUS driver_unix_convert(connection_struct *conn,
 					 0, /* twrp */
 					 pdirfsp,
 					 psmb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************
