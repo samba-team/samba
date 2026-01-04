@@ -804,23 +804,18 @@ static int file_version_is_newer(connection_struct *conn,
 
 	uint32_t new_major;
 	uint32_t new_minor;
-	time_t new_create_time;
+	struct stat_ex new_stat = {};
 
 	uint32_t old_major;
 	uint32_t old_minor;
-	time_t old_create_time;
+	struct stat_ex old_stat = {};
 
 	struct smb_filename *smb_fname = NULL;
 	files_struct    *fsp = NULL;
 	struct files_struct *dirfsp = NULL;
-	SMB_STRUCT_STAT st;
 
 	NTSTATUS status;
 	int ret;
-
-	SET_STAT_INVALID(st);
-	new_create_time = (time_t)0;
-	old_create_time = (time_t)0;
 
 	/* Get file version info (if available) for previous file (if it exists) */
 	status = driver_unix_convert(conn, old_file, &dirfsp, &smb_fname);
@@ -868,12 +863,13 @@ static int file_version_is_newer(connection_struct *conn,
 		DBG_NOTICE("Version info not found [%s], use mod time\n",
 			   old_file);
 		use_version = false;
-		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &old_stat) == -1) {
 			goto error_exit;
 		}
-		old_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
 		DBG_NOTICE("mod time = %s\n",
-			   timespec_string_buf(&st.st_ex_mtime, true, &buf));
+			   timespec_string_buf(&old_stat.st_ex_mtime,
+					       true,
+					       &buf));
 	}
 
 	close_file_free(NULL, &fsp, NORMAL_CLOSE);
@@ -923,12 +919,13 @@ static int file_version_is_newer(connection_struct *conn,
 		DBG_INFO("Version info not found [%s], use mod time\n",
 			 new_file);
 		use_version = false;
-		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &new_stat) == -1) {
 			goto error_exit;
 		}
-		new_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
 		DBG_NOTICE("mod time = %s\n",
-			   timespec_string_buf(&st.st_ex_mtime, true, &buf));
+			   timespec_string_buf(&new_stat.st_ex_mtime,
+					       true,
+					       &buf));
 	}
 
 	close_file_free(NULL, &fsp, NORMAL_CLOSE);
@@ -951,8 +948,9 @@ static int file_version_is_newer(connection_struct *conn,
 		}
 
 	} else {
-		/* Compare modification time/dates and choose the newest time/date */
-		if (new_create_time > old_create_time) {
+		int cmp = timespec_compare(&old_stat.st_ex_mtime,
+					   &new_stat.st_ex_mtime);
+		if (cmp == -1) {
 			DBG_INFO("Replacing [%s] with [%s]\n",
 				 old_file,
 				 new_file);
