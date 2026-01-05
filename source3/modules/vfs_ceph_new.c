@@ -3518,6 +3518,7 @@ static struct smb_filename *vfs_ceph_getwd(struct vfs_handle_struct *handle,
 
 	cwd = config->ceph_getcwd_fn(config->mount);
 	DBG_DEBUG("[CEPH] getwd: cwd=%s\n", cwd);
+	result = cp_smb_basename(ctx, cwd);
 out:
 	END_PROFILE_X(syscall_getwd);
 	return result;
