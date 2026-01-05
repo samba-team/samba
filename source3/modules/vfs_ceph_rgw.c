@@ -960,6 +960,80 @@ out:
 	return lstatus_code(rc);
 }
 
+static struct tevent_req *vfs_ceph_rgw_fsync_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	files_struct *fsp)
+{
+	int rc = -1;
+	struct tevent_req *req = NULL;
+	struct vfs_ceph_rgw_aio_state *state = NULL;
+
+	DBG_DEBUG("[CEPH_RGW] fsync_send: name=%s\n", fsp_str_dbg(fsp));
+
+	req = tevent_req_create(mem_ctx,
+				&state,
+				struct vfs_ceph_rgw_aio_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	vfs_ceph_rgw_aio_prepare(handle, req, ev, fsp);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	SMBPROFILE_BYTES_ASYNC_START_X(SNUM(handle->conn),
+				       syscall_asys_fsync,
+				       state->profile_bytes,
+				       state->profile_bytes_x,
+				       0);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->profile_bytes,
+					  state->profile_bytes_x);
+
+	vfs_ceph_rgw_aio_start(state);
+	rc = rgw_fsync(state->config->rgw_root_fs,
+		       state->fh->rgw_fh,
+		       RGW_FSYNC_FLAG_NONE);
+	vfs_ceph_rgw_aio_finish(state, rc);
+	if (rc != 0) {
+		tevent_req_error(req, -rc);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static int vfs_ceph_rgw_fsync_recv(struct tevent_req *req,
+				   struct vfs_aio_state *vfs_aio_state)
+{
+	struct vfs_ceph_rgw_aio_state *state = tevent_req_data(
+		req, struct vfs_ceph_rgw_aio_state);
+	int res = -1;
+
+	DBG_DEBUG("[CEPH_RGW] fsync_recv: error=%d duration=%" PRIu64
+		  " fd=%d result=%zd\n",
+		  state->vfs_aio_state.error,
+		  state->vfs_aio_state.duration,
+		  state->fh->fd,
+		  state->result);
+
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		goto out;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	res = (int)state->result;
+out:
+	tevent_req_received(req);
+	return res;
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -1209,8 +1283,8 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.sendfile_fn = vfs_not_implemented_sendfile,
 	.recvfile_fn = vfs_not_implemented_recvfile,
 	.renameat_fn = vfs_not_implemented_renameat,
-	.fsync_send_fn = vfs_not_implemented_fsync_send,
-	.fsync_recv_fn = vfs_not_implemented_fsync_recv,
+	.fsync_send_fn = vfs_ceph_rgw_fsync_send,
+	.fsync_recv_fn = vfs_ceph_rgw_fsync_recv,
 	.stat_fn = vfs_ceph_rgw_stat,
 	.fstat_fn = vfs_ceph_rgw_fstat,
 	.lstat_fn = vfs_ceph_rgw_lstat,
