@@ -2056,7 +2056,7 @@ plansmbtorture4testsuite('krb5.kdc', "ad_dc_ntvfs:local",
                           '--workgroup=$DOMAIN', '--realm=$REALM',
                           '--option=torture:krb5-hostname=$SERVER',
                           '--option=torture:run_removedollar_test=true',
-                          '--option=torture:expect_machine_account=true'] + extra_options,
+                          '--option=torture:expect_machine_account=true'],
                          "samba4.krb5.kdc with machine account no dollar extension")
 
 planpythontestsuite(
