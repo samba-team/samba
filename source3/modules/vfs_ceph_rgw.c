@@ -63,6 +63,12 @@ struct vfs_ceph_rgw_fh {
 	int o_flags;
 };
 
+struct vfs_ceph_rgw_getxattr_arg {
+	int rc;
+	char *val;
+	size_t size;
+};
+
 /*
  * Note, librgw's return code model is to return -errno. Thus we have to
  * convert to what Samba expects: set errno to non-negative value and return
@@ -854,6 +860,106 @@ static NTSTATUS vfs_ceph_rgw_fset_dos_attributes(
 	return status;
 }
 
+static void prepare_xattr_list(rgw_xattrlist *attr_list,
+			       char *name,
+			       char *value,
+			       uint32_t size)
+{
+	rgw_xattr *attr = attr_list->xattrs;
+
+	attr->key.val = name;
+	attr->key.len = strlen(name);
+
+	if (value != NULL) {
+		attr->val.val = value;
+		attr->val.len = size;
+	}
+}
+
+static int ceph_rgw_getxattr_cb(rgw_xattrlist *attr_list,
+				void *arg,
+				uint32_t flags)
+{
+	struct vfs_ceph_rgw_getxattr_arg
+		*cb_arg = (struct vfs_ceph_rgw_getxattr_arg *)arg;
+	rgw_xattr *xattr = attr_list->xattrs;
+
+	if ((cb_arg->size != 0) && (cb_arg->size < xattr->val.len)) {
+		cb_arg->rc = -ERANGE;
+		return 0;
+	}
+	if (cb_arg->val != NULL) {
+		memcpy(cb_arg->val, xattr->val.val, xattr->val.len);
+	}
+	cb_arg->rc = xattr->val.len;
+	return 0;
+}
+
+static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      const char *name,
+				      void *value,
+				      size_t size)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct vfs_ceph_rgw_fh *fh = NULL;
+	struct vfs_ceph_rgw_getxattr_arg cb_arg = {0};
+	rgw_xattr attr = {{0}, {0}};
+	rgw_xattrlist attr_list = {&attr, 1};
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fgetxattr);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	DBG_DEBUG("[CEPH_RGW] fgetxattr: [%s] %s\n", fsp_str_dbg(fsp), name);
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to fetch handle\n");
+		goto out;
+	}
+
+	prepare_xattr_list(&attr_list, discard_const(name), NULL, 0);
+
+	cb_arg.rc = 0;
+	cb_arg.val = value;
+	cb_arg.size = size;
+
+	rc = rgw_getxattrs(config->rgw_root_fs,
+			   fh->rgw_fh,
+			   &attr_list,
+			   ceph_rgw_getxattr_cb,
+			   &cb_arg,
+			   RGW_GETXATTR_FLAG_NONE);
+
+	if (rc < 0) {
+		int err = errno;
+		if (err == 0) {
+			rc = -ENODATA;
+		} else {
+			DBG_ERR("[CEPH_RGW] Error getting xattr. "
+				"rc = %d errno = %d cbErr = %d\n",
+				rc,
+				err,
+				cb_arg.rc);
+			rc = -err;
+		}
+		goto out;
+	}
+	rc = cb_arg.rc;
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Error getting xattr. Err=%d\n", cb_arg.rc);
+	}
+out:
+	DBG_DEBUG("[CEPH_RGW] fgetxattr(...) = %d\n", rc);
+	END_PROFILE_X(syscall_fgetxattr);
+	return lstatus_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -1135,7 +1241,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	/* EA operations. */
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
-	.fgetxattr_fn = vfs_not_implemented_fgetxattr,
+	.fgetxattr_fn = vfs_ceph_rgw_fgetxattr,
 	.flistxattr_fn = vfs_not_implemented_flistxattr,
 	.fremovexattr_fn = vfs_not_implemented_fremovexattr,
 	.fsetxattr_fn = vfs_not_implemented_fsetxattr,
