@@ -129,6 +129,7 @@ test_touch()
 	rm -f "$tmpfile"
 	atime1=`stat -c '%x' "$share_test_dir/test_mtime"`
 	mtime1=`stat -c '%y' "$share_test_dir/test_mtime"`
+	sleep 1
 	if ! $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/recycle -I$SERVER_IP $ADDARGS -c 'del test_mtime' ; then
 		printf "failed recycle smbclient"
 		return 1
