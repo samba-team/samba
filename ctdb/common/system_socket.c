@@ -673,14 +673,6 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	size_t len = 0;
 	int ret = 0;
 
-	s = socket(AF_PACKET, SOCK_DGRAM, 0);
-	if (s == -1) {
-		ret = errno;
-		DBG_ERR("Failed to open socket\n");
-		return ret;
-	}
-	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
-
 	/* Find interface */
 	ret = find_interface(iface, &hardware_addr, &broadcast_addr);
 	switch (ret) {
@@ -718,6 +710,14 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 	/* For clarity */
 	hwaddr = (struct ether_addr *)hardware_addr_ll->sll_addr;
+
+	s = socket(AF_PACKET, SOCK_DGRAM, 0);
+	if (s == -1) {
+		ret = errno;
+		DBG_ERR("Failed to open socket\n");
+		return ret;
+	}
+	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
 
 	memcpy(&sall.sll_addr[0], (uint8_t *)hwaddr, ETH_ALEN);
 	dest_len = sall_len(&sall);
