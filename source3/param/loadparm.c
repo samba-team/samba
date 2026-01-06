@@ -964,6 +964,7 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 		= KDC_CERT_BINDING_FULL;
 	Globals.certificate_backdating_compensation = 0;
 	Globals.kdc_always_include_pac = true;
+	Globals.krb5_acceptor_report_canonical_client_name = true;
 
 	Globals.kdc_name_match_implicit_dollar_without_canonicalization = true;
 

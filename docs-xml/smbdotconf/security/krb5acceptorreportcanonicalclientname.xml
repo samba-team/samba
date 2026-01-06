@@ -1,0 +1,21 @@
+<samba:parameter name="krb5 acceptor report canonical client name"
+                 type="boolean"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+        This option affects the client name provided to Kerberos acceptors for
+        incoming Kerberos tickets. If set to ‘yes’, the client name in the
+        ticket will be replaced with the canonical client name (the
+        sAMAccountName). Otherwise, it will be left unchanged.
+	</para>
+
+    <para>
+        This option currently only applies if the embedded Heimdal
+        KDC is used.
+    </para>
+
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
