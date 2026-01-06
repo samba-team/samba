@@ -978,13 +978,13 @@ static void terminate_child(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (c->pid != 0) {
+		TALLOC_FREE(c->monitor_fde);
 		kill(c->pid, SIGTERM);
 		c->pid = 0;
 		if (c->sock != -1) {
 			close(c->sock);
 		}
 		c->sock = -1;
-		TALLOC_FREE(c->monitor_fde);
 	}
 
 	c = NULL;
