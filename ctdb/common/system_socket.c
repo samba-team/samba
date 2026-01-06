@@ -290,7 +290,7 @@ static int arp_build(uint8_t *buffer,
 		     size_t buflen,
 		     const struct sockaddr_in *addr,
 		     const struct ether_addr *hwaddr,
-		     bool reply,
+		     uint16_t arpop,
 		     struct ether_addr **ether_dhost,
 		     size_t *len)
 {
@@ -302,6 +302,15 @@ static int arp_build(uint8_t *buffer,
 	if (addr->sin_family != AF_INET) {
 		return EINVAL;
 	}
+
+	switch (arpop) {
+	case ARPOP_REQUEST:
+	case ARPOP_REPLY:
+		break;
+	default:
+		DBG_ERR("Internal error: invalid op=%" PRIu32 "\n", arpop);
+		return EINVAL;
+	};
 
 	if (buflen < l) {
 		return EMSGSIZE;
@@ -321,14 +330,14 @@ static int arp_build(uint8_t *buffer,
 	ah->ar_hln = ETH_ALEN;
 	ah->ar_pln = sizeof(ea->arp_spa);
 
-	if (! reply) {
-		ah->ar_op  = htons(ARPOP_REQUEST);
+	if (arpop == ARPOP_REQUEST) {
+		ah->ar_op  = htons(arpop);
 		memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
 		memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
 		memset(ea->arp_tha, 0, ETH_ALEN);
 		memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
 	} else {
-		ah->ar_op  = htons(ARPOP_REPLY);
+		ah->ar_op  = htons(arpop);
 		memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
 		memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
 		memcpy(ea->arp_tha, hwaddr, ETH_ALEN);
@@ -516,7 +525,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				sizeof(buffer),
 				&addr->ip,
 				hwaddr,
-				false,
+				ARPOP_REQUEST,
 				&ether_dhost,
 				&len);
 		if (ret != 0) {
@@ -543,7 +552,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				sizeof(buffer),
 				&addr->ip,
 				hwaddr,
-				true,
+				ARPOP_REPLY,
 				&ether_dhost,
 				&len);
 		if (ret != 0) {

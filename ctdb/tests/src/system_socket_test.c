@@ -71,7 +71,9 @@ static void test_types(void)
 
 #ifdef HAVE_PACKETSOCKET
 
-static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
+static void test_arp(const char *addr_str,
+		     const char *hwaddr_str,
+		     uint16_t arpop)
 {
 	ctdb_sock_addr addr;
 	struct ether_addr *hw, *dhw;
@@ -88,7 +90,7 @@ static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
 
 	switch (addr.ip.sin_family) {
 	case AF_INET:
-		ret = arp_build(buf, buflen, &addr.ip, hw, reply, &dhw, &len);
+		ret = arp_build(buf, buflen, &addr.ip, hw, arpop, &dhw, &len);
 		break;
 	case AF_INET6:
 		ret = ip6_na_build(buf, buflen, &addr.ip6, hw, &dhw, &len);
@@ -271,7 +273,9 @@ int main(int argc, char **argv)
 		if (argc != 4 && argc != 5) {
 			usage(argv[0]);
 		}
-		test_arp(argv[2], argv[3], (argc == 5));
+		test_arp(argv[2],
+			 argv[3],
+			 argc == 5 ? ARPOP_REPLY : ARPOP_REQUEST);
 	} else if (strcmp(argv[1], "tcp") == 0) {
 		if (argc != 7) {
 			usage(argv[0]);
