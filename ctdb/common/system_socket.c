@@ -329,20 +329,16 @@ static int arp_build(uint8_t *buffer,
 	ah->ar_pro = htons(ETH_P_IP);
 	ah->ar_hln = ETH_ALEN;
 	ah->ar_pln = sizeof(ea->arp_spa);
+	ah->ar_op = htons(arpop);
 
+	memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
+	memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
 	if (arpop == ARPOP_REQUEST) {
-		ah->ar_op  = htons(arpop);
-		memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
-		memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
-		memset(ea->arp_tha, 0, ETH_ALEN);
-		memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
+		/* Field must be all 0s - already done by memset() above */
 	} else {
-		ah->ar_op  = htons(arpop);
-		memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
-		memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
 		memcpy(ea->arp_tha, hwaddr, ETH_ALEN);
-		memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
 	}
+	memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
 
 	*ether_dhost = (struct ether_addr *)eh->ether_dhost;
 	*len = l;
