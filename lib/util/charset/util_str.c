@@ -360,7 +360,7 @@ _PUBLIC_ size_t strlen_m_term_null(const char *s)
 _PUBLIC_ char *strchr_m(const char *src, char c)
 {
 	const char *s;
-	struct smb_iconv_handle *ic = get_iconv_handle();
+	struct smb_iconv_handle *ic = NULL;
 	if (src == NULL) {
 		return NULL;
 	}
@@ -387,6 +387,8 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 	/* With compose characters we must restart from the beginning. JRA. */
 	s = src;
 #endif
+
+	ic = get_iconv_handle();
 
 	while (*s) {
 		size_t size;
