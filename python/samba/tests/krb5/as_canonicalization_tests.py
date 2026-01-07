@@ -324,6 +324,13 @@ class KerberosASCanonicalizationTests(KDCBaseTest):
             self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
             return (None, None)
 
+        if self.require_canonicalization and not data.canonicalize:
+            self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            # by returning None for the preauth rep, we avoid further
+            # checks of the as_rep (second argument), which we don't
+            # have.
+            return (None, None)
+
         self.assertEqual(
             rep['error-code'],
             KDC_ERR_PREAUTH_REQUIRED,
