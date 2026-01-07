@@ -1561,8 +1561,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 				     struct loadparm_service *,
 				     iNumServices + 1);
 		if (tsp == NULL) {
-			DEBUG(0, ("add_a_service: failed to enlarge "
-				  "ServicePtrs!\n"));
+			DBG_ERR("failed to enlarge ServicePtrs!\n");
 			return (-1);
 		}
 		ServicePtrs = tsp;
@@ -1570,7 +1569,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 	}
 	ServicePtrs[i] = talloc_zero(ServicePtrs, struct loadparm_service);
 	if (!ServicePtrs[i]) {
-		DEBUG(0,("add_a_service: out of memory!\n"));
+		DBG_ERR("out of memory!\n");
 		return (-1);
 	}
 
@@ -1581,8 +1580,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->szService,
 				 name);
 
-	DEBUG(8,("add_a_service: Creating snum = %d for %s\n",
-		i, ServicePtrs[i]->szService));
+	DBG_DEBUG("Creating snum = %d for %s\n", i, ServicePtrs[i]->szService);
 
 	if (!hash_a_service(ServicePtrs[i]->szService, i)) {
 		return (-1);
