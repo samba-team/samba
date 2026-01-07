@@ -124,7 +124,7 @@ class TestData:
     def __repr__(self):
         rep = "Test Data: "
         rep += "options = '" + "{:08b}".format(self.options) + "'"
-        rep += "user name = '" + self.user_name + "'"
+        rep += ", user name = '" + self.user_name + "'"
         rep += ", realm = '" + self.realm + "'"
         rep += ", cname = '" + str(self.cname) + "'"
         rep += ", sname = '" + str(self.sname) + "'"
