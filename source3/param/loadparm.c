@@ -1539,7 +1539,6 @@ static void free_service_byindex(int idx)
 static int add_a_service(const struct loadparm_service *pservice, const char *name)
 {
 	int i;
-	struct loadparm_service **tsp = NULL;
 
 	/* it might already exist */
 	if (name) {
@@ -1556,6 +1555,8 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		}
 	}
 	if (i == iNumServices) {
+		struct loadparm_service **tsp = NULL;
+
 		/* if not, then create one */
 		tsp = talloc_realloc(NULL, ServicePtrs,
 				     struct loadparm_service *,
