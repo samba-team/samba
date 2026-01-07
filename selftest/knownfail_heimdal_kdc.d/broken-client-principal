@@ -1,0 +1,2 @@
+# Test for a broken client principal.
+^samba4\.local\.pac\.saved\ check\(none\)$

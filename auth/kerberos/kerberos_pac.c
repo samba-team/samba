@@ -405,9 +405,6 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 				  "in ticket [%s]\n",
 				  logon_name->account_name,
 				  client_principal_string));
-			SAFE_FREE(client_principal_string);
-			status = NT_STATUS_ACCESS_DENIED;
-			goto out;
 		}
 		SAFE_FREE(client_principal_string);
 
