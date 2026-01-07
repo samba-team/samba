@@ -2071,6 +2071,14 @@ planpythontestsuite(
     "ad_dc_ntvfs",
     "samba.tests.krb5.alias_tests",
     environ=krb5_environ)
+planpythontestsuite(
+    "ad_dc_ntvfs",
+    "samba.tests.krb5.as_canonicalization_tests",
+    environ=krb5_environ)
+planpythontestsuite(
+    "ad_dc_ntvfs",
+    "samba.tests.krb5.as_req_tests",
+    environ=krb5_environ)
 
 
 planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests",

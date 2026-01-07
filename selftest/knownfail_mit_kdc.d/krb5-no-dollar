@@ -1,0 +1,19 @@
+# We expect these ones to fail return PRINCIPAL_UNKNOWN due to the combination of
+#
+#   kdc name match implicit dollar without canonicalization = no
+#
+# in the smb.conf, and combinations of test options 
+# ("MachineCredentials", "RemoveDollar", NO "Canonicalize")
+# should cause an uncanonicalized dollar-ticket attempt.
+#
+# For some reason, MIT returns PREAUTH_REQUIRED when these options are
+# combined with "Enterprise" and "UpperRealm".
+
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_RemoveDollar\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_RemoveDollar_AsReqSelf\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_UPN_RemoveDollar\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_UPN_RemoveDollar_AsReqSelf\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_UpperUserName_RemoveDollar\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_UpperUserName_RemoveDollar_AsReqSelf\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_UpperUserName_UPN_RemoveDollar\(ad_dc_ntvfs\)
+^samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_tests.KerberosASCanonicalizationTests.test_MachineCredentials_Enterprise_UpperRealm_UpperUserName_UPN_RemoveDollar_AsReqSelf\(ad_dc_ntvfs\)
