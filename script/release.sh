@@ -912,6 +912,8 @@ announcement_samba_stable()
 			-e 's!Ö!\&Ouml;!g' \
 			-e 's!ü!\&uuml;!g' \
 			-e 's!Ü!\&Uuml;!g' \
+			-e 's!ý!\&yacute;!g' \
+			-e 's!Ý!\&Yacute;!g' \
 			-e 's!ß!\&szlig;!g' \
 			-e 's!"!\&quot;!g' \
 			-e "s!'!\&apos;!g" |
