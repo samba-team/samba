@@ -1598,17 +1598,12 @@ char *canonicalize_servicename(TALLOC_CTX *ctx, const char *src)
 	char *result;
 
 	if ( !src ) {
-		DEBUG(0,("canonicalize_servicename: NULL source name!\n"));
+		DBG_ERR("NULL source name!\n");
 		return NULL;
 	}
 
-	result = talloc_strdup(ctx, src);
+	result = strlower_talloc(ctx, src);
 	SMB_ASSERT(result != NULL);
-
-	if (!strlower_m(result)) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
 	return result;
 }
 
