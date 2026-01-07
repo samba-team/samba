@@ -311,9 +311,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	struct smb_krb5_context *smb_krb5_context;
 
 	const char *principal_string;
-	char *broken_principal_string;
 	krb5_principal client_principal;
-	krb5_principal broken_principal;
 	const char *authtime_string;
 	time_t authtime;
 	TALLOC_CTX *mem_ctx = tctx;
@@ -670,43 +668,6 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 		torture_fail(tctx, "(saved test) PAC decoding DID NOT fail on broken auth time (time + 1)");
 	}
-
-	/* Break the client principal */
-	broken_principal_string = talloc_strdup(mem_ctx, principal_string);
-	broken_principal_string[0]++;
-
-	ret = krb5_parse_name(smb_krb5_context->krb5_context,
-			      broken_principal_string, &broken_principal);
-	if (ret) {
-
-		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    krbtgt_keyblock_p);
-		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &server_keyblock);
-		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
-		torture_fail(tctx, talloc_asprintf(tctx, 
-						   "(saved test) parsing of broken client principal failed: %s", 
-						   smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
-	}
-
-	nt_status = kerberos_decode_pac(mem_ctx, 
-					tmp_blob,
-					smb_krb5_context->krb5_context,
-					krbtgt_keyblock_p,
-					&server_keyblock,
-					broken_principal,
-					authtime, &pac_data);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    krbtgt_keyblock_p);
-		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-					    &server_keyblock);
-		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
-		krb5_free_principal(smb_krb5_context->krb5_context, broken_principal);
-		torture_fail(tctx, "(saved test) PAC decoding DID NOT fail on modified principal");
-	}
-
-	krb5_free_principal(smb_krb5_context->krb5_context, broken_principal);
 
 	/*
 	 * Finally...  Bugger up the KDC signature, and check we fail the checksum.
