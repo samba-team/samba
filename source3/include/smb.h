@@ -476,7 +476,6 @@ Offset  Data                  length.
 
 enum smbd_capability {
     DMAPI_ACCESS_CAPABILITY,
-    LEASE_CAPABILITY,
     DAC_OVERRIDE_CAPABILITY
 };
 

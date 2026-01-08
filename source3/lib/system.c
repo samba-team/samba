@@ -617,11 +617,6 @@ static bool set_process_capability(enum smbd_capability capability,
 			cap_vals[num_cap_vals++] = CAP_MKNOD;
 #endif
 			break;
-		case LEASE_CAPABILITY:
-#ifdef CAP_LEASE
-			cap_vals[num_cap_vals++] = CAP_LEASE;
-#endif
-			break;
 		case DAC_OVERRIDE_CAPABILITY:
 #ifdef CAP_DAC_OVERRIDE
 			cap_vals[num_cap_vals++] = CAP_DAC_OVERRIDE;
