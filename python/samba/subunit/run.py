@@ -81,6 +81,9 @@ class TestProtocolClient(unittest.TestResult):
         self._stream.write("test: " + test.id() + "\n")
         self._stream.flush()
 
+    def addDuration(self, *args):
+        pass
+
     def stopTest(self, test):
         """Mark a test as having finished its test run."""
         super().stopTest(test)
@@ -453,6 +456,9 @@ class AutoTimingTestResultDecorator(HookedTestResultDecorator):
         """
         self._time = a_datetime
         return self.decorated.time(a_datetime)
+
+    def addDuration(self, *args):
+        pass
 
 
 class SubunitTestRunner(object):

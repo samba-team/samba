@@ -42,6 +42,9 @@ VALID_RESULTS = set(['success', 'successful', 'failure', 'fail', 'skip',
 
 class TestsuiteEnabledTestResult(unittest.TestResult):
 
+    def addDuration(self, *args):
+        pass
+
     def start_testsuite(self, name):
         raise NotImplementedError(self.start_testsuite)
 
@@ -304,6 +307,9 @@ class FilterOps(unittest.TestResult):
 
     def _add_prefix(self, test):
         return subunit.RemotedTestCase(self.prefix + test.id() + self.suffix)
+
+    def addDuration(self, *args):
+        pass
 
     def addError(self, test, err=None):
         test = self._add_prefix(test)
