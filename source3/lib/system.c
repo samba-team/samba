@@ -608,12 +608,6 @@ static bool set_process_capability(enum smbd_capability capability,
 		 * declaration of cap_vals[] above just to be
 		 * trivially safe to never overwrite cap_vals[].
 		 */
-		case KERNEL_OPLOCK_CAPABILITY:
-#ifdef CAP_NETWORK_MGT
-			/* IRIX has CAP_NETWORK_MGT for oplocks. */
-			cap_vals[num_cap_vals++] = CAP_NETWORK_MGT;
-#endif
-			break;
 		case DMAPI_ACCESS_CAPABILITY:
 #ifdef CAP_DEVICE_MGT
 			/* IRIX has CAP_DEVICE_MGT for DMAPI access. */
