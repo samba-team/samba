@@ -403,6 +403,7 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 				  libname);
 			FALL_THROUGH;
 		} else {
+			DBG_INFO("[CEPH] libcephfs proxy loaded\n");
 			break;
 		}
 	case VFS_CEPHFS_PROXY_NO:
