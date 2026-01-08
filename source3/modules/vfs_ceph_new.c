@@ -395,12 +395,11 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 		libhandle = dlopen(libname_proxy, RTLD_NOW);
 		if (libhandle == NULL) {
 			if (config->proxy == VFS_CEPHFS_PROXY_YES) {
-				DBG_ERR("[CEPH] %s\n", dlerror());
+				DBG_ERR("[CEPH] dlopen: %s\n", dlerror());
 				return false;
 			}
-			DBG_DEBUG("[CEPH] dlopen: error=%s libname=%s\n",
-				  dlerror(),
-				  libname);
+			DBG_DEBUG("[CEPH] dlopen: %s, trying %s\n",
+				  dlerror(), libname);
 			FALL_THROUGH;
 		} else {
 			DBG_INFO("[CEPH] libcephfs proxy loaded\n");
@@ -410,7 +409,7 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 	default:
 		libhandle = dlopen(libname, RTLD_LAZY);
 		if (libhandle == NULL) {
-			DBG_ERR("[CEPH] %s\n", dlerror());
+			DBG_ERR("[CEPH] dlopen: %s\n", dlerror());
 			return false;
 		}
 		break;
