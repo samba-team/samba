@@ -60,27 +60,28 @@ as non-root while catching trapdoor systems
 
 void sec_init(void)
 {
-	static int initialized;
+	static bool initialized = false;
 
-	if (!initialized) {
-
-#ifndef AUTOCONF_TEST
-		if (uid_wrapper_enabled()) {
-			setenv("UID_WRAPPER_MYUID", "1", 1);
-		}
-#endif
-
-		initial_uid = geteuid();
-		initial_gid = getegid();
-
-#ifndef AUTOCONF_TEST
-		if (uid_wrapper_enabled()) {
-			unsetenv("UID_WRAPPER_MYUID");
-		}
-#endif
-
-		initialized = 1;
+	if (initialized) {
+		return;
 	}
+
+#ifndef AUTOCONF_TEST
+	if (uid_wrapper_enabled()) {
+		setenv("UID_WRAPPER_MYUID", "1", 1);
+	}
+#endif
+
+	initial_uid = geteuid();
+	initial_gid = getegid();
+
+#ifndef AUTOCONF_TEST
+	if (uid_wrapper_enabled()) {
+		unsetenv("UID_WRAPPER_MYUID");
+	}
+#endif
+
+	initialized = true;
 }
 
 /****************************************************************************
