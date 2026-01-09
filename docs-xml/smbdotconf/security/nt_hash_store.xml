@@ -11,7 +11,7 @@
 
     <para>If so configured, the Samba Active Directory Domain Controller,
     will, except for trust accounts (computers, domain
-    controllers and inter-domain trusts) the
+    controllers and inter-domain trusts),
     <emphasis>NOT store the NT hash</emphasis>
     for new and changed accounts in the sam.ldb database.</para>
 
