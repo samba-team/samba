@@ -484,12 +484,6 @@ while we were waiting\n", WTERMSIG(wstat)));
 	} else {
 		/* CHILD */
 
-		/*
-		 * Lose any elevated privileges.
-		 */
-		drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
-		drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
-
 		/* make sure it doesn't freeze */
 		alarm(20);
 

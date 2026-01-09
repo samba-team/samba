@@ -76,12 +76,6 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize,
 	gid_t gid = current_user.ut.gid;
 	void (*saved_handler)(int);
 
-	/*
-	 * Lose any elevated privileges.
-	 */
-	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
-	drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
-
 	/* point our stdout at the file we want output to go into */
 
 	if (outfd && ((*outfd = setup_out_fd()) == -1)) {
@@ -241,12 +235,6 @@ int smbrunsecret(const char *cmd, const char *secret)
 	gid_t gid = current_user.ut.gid;
 	int ifd[2];
 	void (*saved_handler)(int);
-
-	/*
-	 * Lose any elevated privileges.
-	 */
-	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
-	drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
 	/* build up an input pipe */
 	if(pipe(ifd)) {
