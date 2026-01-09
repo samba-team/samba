@@ -538,8 +538,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			 (unsigned int)lck_state.del_token->uid);
 
 		if (!push_sec_ctx()) {
-			smb_panic("close_remove_share_mode: file %s. failed to push "
-				  "sec_ctx.\n");
+			char *msg = talloc_asprintf(
+				talloc_tos(),
+				"close_remove_share_mode: file %s. "
+				"failed to push sec_ctx.\n", fsp_str_dbg(fsp));
+			smb_panic(msg);
 		}
 
 		set_sec_ctx(lck_state.del_token->uid,
