@@ -193,8 +193,6 @@ DIR *sys_fdopendir(int fd);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
 int sys_mknodat(int dirfd, const char *path, mode_t mode, SMB_DEV_T dev);
 char *sys_getwd(void);
-void set_effective_capability(enum smbd_capability capability);
-void drop_effective_capability(enum smbd_capability capability);
 void set_dmapi_capability(bool enable);
 void set_dac_override_capability(bool enable);
 long sys_random(void);
