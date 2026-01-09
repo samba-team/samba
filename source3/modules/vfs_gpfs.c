@@ -422,12 +422,12 @@ static int gpfs_getacl_with_capability(struct files_struct *fsp,
 {
 	int ret, saved_errno;
 
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	set_dac_override_capability(true);
 
 	ret = gpfswrap_fgetacl(fsp_get_pathref_fd(fsp), flags, buf);
 	saved_errno = errno;
 
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	set_dac_override_capability(false);
 
 	errno = saved_errno;
 	return ret;
@@ -1458,7 +1458,7 @@ static int vfs_gpfs_get_winattrs_helper(
 		 * open a file implies FILE_LIST_DIRECTORY.
 		 */
 
-		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		set_dac_override_capability(true);
 
 		ret = gpfswrap_get_winattrs(
 			fsp_get_pathref_fd(fd),
@@ -1466,7 +1466,7 @@ static int vfs_gpfs_get_winattrs_helper(
 
 		saved_errno = errno;
 
-		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		set_dac_override_capability(false);
 
 		errno = saved_errno;
 	}
@@ -1768,14 +1768,14 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		 * open a file implies FILE_LIST_DIRECTORY.
 		 */
 
-		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		set_dac_override_capability(true);
 
 		ret = gpfswrap_get_winattrs(fsp_get_pathref_fd(fsp), &attrs);
 		if (ret == -1) {
 			saved_errno = errno;
 		}
 
-		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		set_dac_override_capability(false);
 
 		if (saved_errno != 0) {
 			errno = saved_errno;

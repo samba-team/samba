@@ -124,13 +124,13 @@ static int fstatat_with_cap_dac_override(int fd,
 {
 	int ret;
 
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	set_dac_override_capability(true);
 	ret = sys_fstatat(fd,
 			  pathname,
 			  sbuf,
 			  flags,
 			  fake_dir_create_times);
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	set_dac_override_capability(false);
 
 	return ret;
 }
@@ -197,9 +197,9 @@ static int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
 {
 	int ret;
 
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	set_dac_override_capability(true);
 	ret = sys_fstat(fd, sbuf, fake_dir_create_times);
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	set_dac_override_capability(false);
 
 	return ret;
 }

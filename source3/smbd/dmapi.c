@@ -147,7 +147,7 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 	}
 
 	if (ctx->session != DM_NO_SESSION) {
-		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
+		set_dmapi_capability(true);
 	}
 
 	/*
@@ -308,7 +308,7 @@ uint32_t dmapi_file_flags(const char * const path)
 		 * can re-acquire them if necessary.
 		 */
 
-		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
+		set_dmapi_capability(true);
 
 		err = dm_path_to_handle(discard_const_p(char, path),
 			&dm_handle, &dm_handle_len);
