@@ -94,7 +94,7 @@
  *
  * Attention: There is a difference between "modify" and "reset" operations
  * (see MS-ADTS 3.1.1.3.1.5). If the client sends a "add" and "remove"
- * operation for a password attribute we thread this as a "modify"; if it sends
+ * operation for a password attribute we treat this as a "modify"; if it sends
  * only a "replace" one we have an (administrative) reset.
  *
  * Finally, if the administrator has requested that a password history
