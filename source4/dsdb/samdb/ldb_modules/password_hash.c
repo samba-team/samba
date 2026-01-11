@@ -3064,7 +3064,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		bool equal = data_blob_equal_const_time(&io->g.aes_256,
 							&io->o.aes_256);
 		if (equal) {
-			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			if (io->ac->pwd_reset) {
+				ret = LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			}
 			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 					       "%08X: %s - check_password_restrictions: "
@@ -3084,7 +3088,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		for (i = 0; i < io->o.nt_history_len; i++) {
 			bool pw_cmp = mem_equal_const_time(io->n.nt_hash, io->o.nt_history[i].hash, 16);
 			if (pw_cmp) {
-				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				if (io->ac->pwd_reset) {
+					ret = LDB_ERR_UNWILLING_TO_PERFORM;
+				} else {
+					ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				}
 				*werror = WERR_PASSWORD_RESTRICTION;
 				ldb_asprintf_errstring(ldb,
 					"%08X: %s - check_password_restrictions: "
