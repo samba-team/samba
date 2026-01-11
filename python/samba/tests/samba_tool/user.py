@@ -162,7 +162,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                           f'-U{dc_username}%{dc_password}')
         self.assertCmdFail(result)
         self.assertIn('Failed to add user', err)
-        self.assertIn('LDAP_CONSTRAINT_VIOLATION', err)
+        self.assertIn('LDAP_UNWILLING_TO_PERFORM', err)
         self.assertIn(f'{werror.WERR_PASSWORD_RESTRICTION:08X}', err)
 
         # Now search for the user, and make sure we don't find anything.

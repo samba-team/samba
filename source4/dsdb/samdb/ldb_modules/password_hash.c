@@ -2994,7 +2994,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 			break;
 
 		case SAMR_VALIDATION_STATUS_PWD_TOO_SHORT:
-			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			if (io->ac->pwd_reset) {
+				ret = LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			}
 			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
@@ -3006,7 +3010,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 			return ret;
 
 		case SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH:
-			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			if (io->ac->pwd_reset) {
+				ret = LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			}
 			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
@@ -3017,7 +3025,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 			return ret;
 
 		default:
-			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			if (io->ac->pwd_reset) {
+				ret = LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			}
 			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "

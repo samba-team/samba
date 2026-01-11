@@ -107,7 +107,8 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail("Password '%s' should have been rejected" % password)
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEqual(num, ldb.ERR_CONSTRAINT_VIOLATION, msg)
+            self.assertIn(num, (ldb.ERR_UNWILLING_TO_PERFORM,
+                                ldb.ERR_CONSTRAINT_VIOLATION), msg)
             self.assertTrue('0000052D' in msg, msg)
 
     def assert_password_valid(self, user, password):
@@ -804,7 +805,8 @@ unicodePwd:: %s
             self.fail()
         except ldb.LdbError as e:
                 (num, msg) = e.args
-                self.assertEqual(num, ldb.ERR_CONSTRAINT_VIOLATION, msg)
+                self.assertIn(num, (ldb.ERR_CONSTRAINT_VIOLATION,
+                                    ldb.ERR_UNWILLING_TO_PERFORM), msg)
                 self.assertTrue('0000052D' in msg, msg)
 
         # check setting a password that meets the PSO settings works
