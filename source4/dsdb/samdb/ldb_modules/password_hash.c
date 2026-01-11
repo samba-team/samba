@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "ldb.h"
 #include "ldb_errors.h"
 #include "ldb_module.h"
 #include "libcli/auth/libcli_auth.h"
@@ -128,6 +129,7 @@ struct ph_context {
 	const char **gpg_key_ids;
 
 	bool pwd_reset;
+	bool policy_hints_reset_is_change;
 	bool change_status;
 	bool hash_values;
 	bool userPassword;
@@ -3504,6 +3506,7 @@ static int setup_io(struct ph_context *ac,
 	const struct ldb_message *info_msg = NULL;
 	struct dom_sid *account_sid = NULL;
 	int rodc_krbtgt = 0;
+	struct ldb_control *hints_ctrl = NULL;
 
 	*io = (struct setup_password_fields_io) {};
 
@@ -3912,6 +3915,47 @@ static int setup_io(struct ph_context *ac,
 			"setup_io: "
 			"it's only allowed to provide the old cleartext password as 'unicodePwd' or as 'userPassword' or as 'clearTextPassword'");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	/*
+	 * Check if a POLICY_HINTS OID (or its DEPRECATED twin) is
+	 * set, with a value of 1, which means something along the
+	 * lines that a reset needs to be treated as a change with
+	 * respect to password history.
+	 */
+	hints_ctrl = ldb_request_get_control(
+		ac->req,
+		LDB_CONTROL_POLICY_HINTS_OID);
+
+	if (hints_ctrl == NULL) {
+		/* This other one works just the same */
+		hints_ctrl = ldb_request_get_control(
+			ac->req,
+			LDB_CONTROL_POLICY_HINTS_DEPRECATED_OID);
+	}
+
+	if (hints_ctrl != NULL) {
+		int *valp = NULL;
+		valp = talloc_get_type_abort(hints_ctrl->data, int);
+		DBG_INFO("policy hints control value %d\n", *valp);
+		if (valp != NULL && *valp == 1) {
+			ac->policy_hints_reset_is_change = true;
+		} else if (valp == NULL) {
+			ldb_asprintf_errstring(
+				ldb,
+				"policy hints oid %s value is NULL\n",
+				hints_ctrl->oid);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		} else {
+			/*
+			 * MS-ADTS 3.1.1.3.4.1.27 says:
+			 * If it is 0x1, then that constraint will be
+			 * enforced. Otherwise, the constraint is not
+			 * enforced.
+			 *
+			 * so we just ignore this case.
+			 */
+		}
+		hints_ctrl->critical = false;
 	}
 
 	/* Decides if we have a password modify or password reset operation */
@@ -5162,10 +5206,39 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	return ldb_next_request(ac->module, mod_req);
 }
 
+static int password_hash_module_init(struct ldb_module *module)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_POLICY_HINTS_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "password_hash: "
+			  "Unable to register policy hints oid\n");
+		return ldb_operr(ldb);
+	}
+	ret = ldb_mod_register_control(module,
+				       LDB_CONTROL_POLICY_HINTS_DEPRECATED_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "password_hash: "
+			  "Unable to register policy hints deprecated oid\n");
+		return ldb_operr(ldb);
+	}
+
+	return ldb_next_init(module);
+}
+
+
 static const struct ldb_module_ops ldb_password_hash_module_ops = {
 	.name          = "password_hash",
 	.add           = password_hash_add,
-	.modify        = password_hash_modify
+	.modify        = password_hash_modify,
+	.init_context  = password_hash_module_init
+
 };
 
 int ldb_password_hash_module_init(const char *version)
