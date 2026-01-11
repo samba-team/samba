@@ -2964,9 +2964,12 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 
 	/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
 	if ((io->u.pwdLastSet - io->ac->status->domain_data.minPwdAge > io->g.last_set) &&
-	    !io->ac->pwd_reset)
-	{
-		ret = LDB_ERR_CONSTRAINT_VIOLATION;
+	    (!io->ac->pwd_reset || io->ac->policy_hints_reset_is_change)) {
+		if (io->ac->pwd_reset) {
+			ret = LDB_ERR_UNWILLING_TO_PERFORM;
+		} else {
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 		*werror = WERR_PASSWORD_RESTRICTION;
 		ldb_asprintf_errstring(ldb,
 			"%08X: %s - check_password_restrictions: "
