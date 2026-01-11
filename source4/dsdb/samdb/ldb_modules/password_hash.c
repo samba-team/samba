@@ -3045,7 +3045,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		}
 	}
 
-	if (io->ac->pwd_reset) {
+	if (io->ac->pwd_reset  && ! io->ac->policy_hints_reset_is_change) {
 		*werror = WERR_OK;
 		return LDB_SUCCESS;
 	}
@@ -3180,6 +3180,14 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 			io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 			return ret;
 		}
+	}
+	if (io->ac->pwd_reset) {
+		/*
+		 * We would have returned before the password history
+		 * check, but the policy hints OID said no.
+		 */
+		*werror = WERR_OK;
+		return LDB_SUCCESS;
 	}
 
 	/* are all password changes disallowed? */
