@@ -148,36 +148,18 @@ void ctdb_wait_for_process_to_exit(pid_t pid)
 	}
 }
 
-#ifdef HAVE_IF_NAMEINDEX
+#ifdef HAVE_IF_NAMETOINDEX
 
 bool ctdb_sys_check_iface_exists(const char *iface)
 {
-	struct if_nameindex *ifnis, *ifni;
-	bool found = false;
+	unsigned int index = 0;
 
-	ifnis = if_nameindex();
-	if (ifnis == NULL) {
-		DBG_ERR("Failed to retrieve interface list\n");
-		return false;
-	}
+	index = if_nametoindex(iface);
 
-	for (ifni = ifnis;
-	     ifni->if_index != 0 || ifni->if_name != NULL;
-	     ifni++) {
-		int cmp = strcmp(iface, ifni->if_name);
-		if (cmp == 0) {
-			found = true;
-			goto done;
-		}
-	}
-
-done:
-	if_freenameindex(ifnis);
-
-	return found;
+	return index != 0;
 }
 
-#else /* HAVE_IF_NAMEINDEX */
+#else /* HAVE_IF_NAMETOINDEX */
 
 bool ctdb_sys_check_iface_exists(const char *iface)
 {
@@ -185,7 +167,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 	return true;
 }
 
-#endif /* HAVE_IF_NAMEINDEX */
+#endif /* HAVE_IF_NAMETOINDEX */
 
 #ifdef HAVE_PEERCRED
 
