@@ -607,18 +607,11 @@ static bool set_one_cap(cap_value_t val, bool enable)
 	return true;
 }
 
-#else /* HAVE_POSIX_CAPABILITIES */
-
-static bool set_one_cap(cap_value_t val, bool enable)
-{
-	return false;
-}
-
 #endif /* HAVE_POSIX_CAPABILITIES */
 
 void set_dmapi_capability(bool enable)
 {
-#ifdef CAP_MKNOD
+#if defined(HAVE_POSIX_CAPABILITIES) && defined(CAP_MKNOD)
 	/*
 	 * Ignore result, we'll get EACCES/EPERM later
 	 */
@@ -629,7 +622,7 @@ void set_dmapi_capability(bool enable)
 
 void set_dac_override_capability(bool enable)
 {
-#ifndef CAP_DAC_OVERRIDE
+#if !defined(HAVE_POSIX_CAPABILITIES) || !defined(CAP_DAC_OVERRIDE)
 
 /*
  * Use [un]become_root()
