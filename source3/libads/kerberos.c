@@ -1259,10 +1259,10 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		cldap_reply = &responses[i]->data.nt5_ex;
 
 		if (cldap_reply->pdc_dns_name != NULL) {
-			status = check_negative_conn_cache(
+			bool has_entry = has_negative_conn_cache_entry(
 				realm,
 				cldap_reply->pdc_dns_name);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (has_entry) {
 				/* propagate blacklisting from name to ip */
 				add_failed_connection_entry(realm, addr, status);
 				continue;

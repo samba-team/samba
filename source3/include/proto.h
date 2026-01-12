@@ -576,7 +576,7 @@ unsigned wins_srv_count_tag(const char *tag);
 
 /* The following definitions come from libsmb/conncache.c  */
 
-NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
+bool has_negative_conn_cache_entry( const char *domain, const char *server);
 void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) ;
 void flush_negative_conn_cache_for_domain(const char *domain);
 

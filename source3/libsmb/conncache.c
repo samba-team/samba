@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "lib/gencache.h"
+#include "ntstatus.h"
 
 /**
  * @file
@@ -131,12 +132,13 @@ static void delete_matches(const char *key, const char *value,
  *
  * @param[in] domain
  * @param[in] server may be either a FQDN or an IP address
- * @return The cached failure status
- * @retval NT_STATUS_OK returned if no record is found or an error occurs
+ *
+ * @retval true if there is an entry, false otherwise
  */
-NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
+bool has_negative_conn_cache_entry(const char *domain, const char *server)
 {
-	NTSTATUS result = NT_STATUS_OK;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	bool has_entry = false;
 	char *key = NULL;
 	char *value = NULL;
 
@@ -144,15 +146,29 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
 	if (key == NULL)
 		goto done;
 
-	if (gencache_get(key, talloc_tos(), &value, NULL))
+	if (gencache_get(key, talloc_tos(), &value, NULL)) {
+		/* result is the NTSTATUS value from the failed connection */
 		result = negative_conn_cache_valuedecode(value);
- done:
-	DBG_PREFIX(NT_STATUS_IS_OK(result) ? DBGLVL_DEBUG : DBGLVL_INFO,
-		   ("returning result %s for domain %s "
-		    "server %s\n", nt_errstr(result), domain, server));
+		has_entry = !NT_STATUS_IS_OK(result);
+	}
+
+done:
+	if (has_entry) {
+		DBG_INFO("Found negative entry for domain %s and server %s - "
+			 "reason: %s",
+			 domain,
+			 server,
+			 nt_errstr(result));
+	} else {
+		DBG_DEBUG("No negative entry for domain %s and server %s\n",
+			  domain,
+			  server);
+	}
+
 	TALLOC_FREE(key);
 	TALLOC_FREE(value);
-	return result;
+
+	return has_entry;
 }
 
 /**

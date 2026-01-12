@@ -194,8 +194,9 @@ static bool rpc_dc_name(const char *domain,
 			continue;
 
 		if (name_status_find(domain, 0x1c, 0x20, &sa_list[i].u.ss, srv_name)) {
-			result = check_negative_conn_cache( domain, srv_name );
-			if ( NT_STATUS_IS_OK(result) ) {
+			bool has_entry = has_negative_conn_cache_entry(domain,
+					srv_name);
+			if (!has_entry) {
 				dc_ss = sa_list[i].u.ss;
 				goto done;
 			}

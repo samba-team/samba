@@ -448,6 +448,7 @@ again:
 
 	for (i = 0; i < count; i++) {
 		char server[INET6_ADDRSTRLEN];
+		bool has_entry = false;
 		int ret;
 
 		if (is_zero_addr(&sa_list[i].u.ss)) {
@@ -456,8 +457,8 @@ again:
 
 		print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
-		status = check_negative_conn_cache(domain, server);
-		if (!NT_STATUS_IS_OK(status)) {
+		has_entry = has_negative_conn_cache_entry(domain, server);
+		if (has_entry) {
 			continue;
 		}
 
@@ -542,10 +543,10 @@ again:
 		cldap_reply = &responses[i]->data.nt5_ex;
 
 		if (cldap_reply->pdc_dns_name != NULL) {
-			status = check_negative_conn_cache(
+			bool has_entry = has_negative_conn_cache_entry(
 				domain,
 				cldap_reply->pdc_dns_name);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (has_entry) {
 				/*
 				 * only use the server if it's not black listed
 				 * by name
@@ -642,11 +643,14 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 	if (*realm) {
 		for (i = 0; i < count; ++i) {
 			char server[INET6_ADDRSTRLEN];
+			bool has_entry;
 
 			print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
-			if(!NT_STATUS_IS_OK(
-				check_negative_conn_cache(realm, server))) {
+			has_entry = has_negative_conn_cache_entry(
+					realm,
+					server);
+			if (has_entry) {
 				/* Ensure we add the workgroup name for this
 				   IP address as negative too. */
 				add_failed_connection_entry(

@@ -2617,9 +2617,11 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	for(i = 0; i < numdcs; i++) {
 		/* Copy all the IP addresses from the SRV response */
 		size_t j;
+		bool has_entry = false;
 
-		status = check_negative_conn_cache(name, dcs[i].hostname);
-		if (!NT_STATUS_IS_OK(status)) {
+		has_entry = has_negative_conn_cache_entry(name,
+				dcs[i].hostname);
+		if (has_entry) {
 			DBG_DEBUG("Skipping blacklisted server [%s] "
 				  "for domain [%s]", dcs[i].hostname, name);
 			continue;
@@ -2640,8 +2642,8 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 			DBG_DEBUG("SRV lookup %s got IP[%zu] %s\n",
 				  name, j, addr);
 
-			status = check_negative_conn_cache(name, addr);
-			if (!NT_STATUS_IS_OK(status)) {
+			has_entry = has_negative_conn_cache_entry(name, addr);
+			if (has_entry) {
 				DBG_DEBUG("Skipping blacklisted server [%s] "
 					   "for domain [%s]", addr, name);
 				continue;
@@ -3404,14 +3406,17 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 			size_t j;
 			for (j=0; j<auto_count; j++) {
 				char addr[INET6_ADDRSTRLEN];
+				bool has_entry;
+
 				print_sockaddr(addr,
 						sizeof(addr),
 						&auto_sa_list[j].u.ss);
 				/* Check for and don't copy any
 				 * known bad DC IP's. */
-				if(!NT_STATUS_IS_OK(check_negative_conn_cache(
+				has_entry = has_negative_conn_cache_entry(
 						domain,
-						addr))) {
+						addr);
+				if (has_entry) {
 					DEBUG(5,("get_dc_list: "
 						"negative entry %s removed "
 						"from DC list\n",
@@ -3428,6 +3433,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		 * handle names & IP addresses */
 		if (resolve_name(name, &name_sa.u.ss, 0x20, true)) {
 			char addr[INET6_ADDRSTRLEN];
+			bool has_entry;
 			bool ok;
 
 			/*
@@ -3449,8 +3455,10 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 					&name_sa.u.ss);
 
 			/* Check for and don't copy any known bad DC IP's. */
-			if( !NT_STATUS_IS_OK(check_negative_conn_cache(domain,
-							addr)) ) {
+			has_entry = has_negative_conn_cache_entry(
+					domain,
+					addr);
+			if (has_entry) {
 				DEBUG(5,("get_dc_list: negative entry %s "
 					"removed from DC list\n",
 					name ));

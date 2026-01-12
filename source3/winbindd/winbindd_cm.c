@@ -979,8 +979,10 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			      struct dc_name_ip **dcs, int *num)
 {
 	int i = 0;
+	bool has_entry;
 
-	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname))) {
+	has_entry = has_negative_conn_cache_entry(domain_name, dcname);
+	if (has_entry) {
 		DEBUG(10, ("DC %s was in the negative conn cache\n", dcname));
 		return False;
 	}
@@ -1339,6 +1341,7 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 			lp_client_smb_transports());
 	struct loadparm_context *lp_ctx = NULL;
 	NTSTATUS status;
+	bool has_entry;
 	bool ok;
 
 	/*
@@ -1356,9 +1359,9 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 	 * down may have triggered the reconnection.
 	 */
 	if (saf_servername != NULL) {
-		status = check_negative_conn_cache(domain->name,
-						   saf_servername);
-		if (!NT_STATUS_IS_OK(status)) {
+		has_entry = has_negative_conn_cache_entry(domain->name,
+				saf_servername);
+		if (has_entry) {
 			saf_servername = NULL;
 		}
 	}
@@ -1400,8 +1403,8 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	status = check_negative_conn_cache(domain->name, domain->dcname);
-	if (!NT_STATUS_IS_OK(status)) {
+	has_entry = has_negative_conn_cache_entry(domain->name, domain->dcname);
+	if (has_entry) {
 		return false;
 	}
 
