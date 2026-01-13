@@ -51,28 +51,16 @@ static void disk_norm(uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
  Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
-static uint64_t sys_disk_free(connection_struct *conn,
-			      struct smb_filename *fname,
-			      uint64_t *bsize,
-			      uint64_t *dfree,
-			      uint64_t *dsize)
+static bool handle_dfree_command(connection_struct *conn,
+				 struct smb_filename *fname,
+				 uint64_t *bsize,
+				 uint64_t *dfree,
+				 uint64_t *dsize)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	uint64_t dfree_retval;
-	uint64_t dfree_q = 0;
-	uint64_t bsize_q = 0;
-	uint64_t dsize_q = 0;
 	const char *dfree_command;
-	static bool dfree_broken = false;
 	char *path = fname->base_name;
-
-	(*dfree) = (*dsize) = 0;
-	(*bsize) = 512;
-
-	/*
-	 * If external disk calculation specified, use it.
-	 */
 
 	dfree_command = lp_dfree_command(talloc_tos(), lp_sub, SNUM(conn));
 	if (dfree_command && *dfree_command) {
@@ -84,7 +72,7 @@ static uint64_t sys_disk_free(connection_struct *conn,
 		str_list_add_printf(&argl, "%s", dfree_command);
 		str_list_add_printf(&argl, "%s", path);
 		if (argl == NULL) {
-			return (uint64_t)-1;
+			return false;
 		}
 
 		DBG_NOTICE("Running command '%s %s'\n",
@@ -122,11 +110,37 @@ static uint64_t sys_disk_free(connection_struct *conn,
 			if (!*dfree)
 				*dfree = 1024;
 
-			goto dfree_done;
+			return true;
 		}
 		DBG_ERR("file_lines_load() failed for "
 			   "command '%s %s'. Error was : %s\n",
 			   dfree_command, path, strerror(errno));
+	}
+	return false;
+}
+
+static uint64_t sys_disk_free(connection_struct *conn,
+			      struct smb_filename *fname,
+			      uint64_t *bsize,
+			      uint64_t *dfree,
+			      uint64_t *dsize)
+{
+	uint64_t dfree_retval;
+	uint64_t dfree_q = 0;
+	uint64_t bsize_q = 0;
+	uint64_t dsize_q = 0;
+	static bool dfree_broken = false;
+	bool ok;
+
+	(*dfree) = (*dsize) = 0;
+	(*bsize) = 512;
+
+	/*
+	 * If external disk calculation specified, use it.
+	 */
+	ok = handle_dfree_command(conn, fname, bsize, dfree, dsize);
+	if (ok) {
+		goto dfree_done;
 	}
 
 	if (SMB_VFS_DISK_FREE(conn, fname, bsize, dfree, dsize) ==
