@@ -148,11 +148,9 @@ static int smb_pam_conv(int num_msg,
 		return PAM_CONV_ERR;
 	}
 
-	reply = SMB_MALLOC_ARRAY(struct pam_response, num_msg);
+	reply = SMB_CALLOC_ARRAY(struct pam_response, num_msg);
 	if (!reply)
 		return PAM_CONV_ERR;
-
-	memset(reply, '\0', sizeof(struct pam_response) * num_msg);
 
 	for (replies = 0; replies < num_msg; replies++) {
 		switch (msg[replies]->msg_style) {
