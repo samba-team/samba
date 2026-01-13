@@ -59,64 +59,67 @@ static bool handle_dfree_command(connection_struct *conn,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	const char *dfree_command;
+	const char *dfree_command = NULL;
 	char *path = fname->base_name;
+	const char *p = NULL;
+	char **lines = NULL;
+	char **argl = NULL;
+	char *line = NULL;
 
 	dfree_command = lp_dfree_command(talloc_tos(), lp_sub, SNUM(conn));
-	if (dfree_command && *dfree_command) {
-		const char *p;
-		char **lines = NULL;
-		char **argl = NULL;
-
-		argl = str_list_make_empty(talloc_tos());
-		str_list_add_printf(&argl, "%s", dfree_command);
-		str_list_add_printf(&argl, "%s", path);
-		if (argl == NULL) {
-			return false;
-		}
-
-		DBG_NOTICE("Running command '%s %s'\n",
-			dfree_command,
-			path);
-
-		lines = file_lines_ploadv(talloc_tos(), argl, NULL);
-
-		TALLOC_FREE(argl);
-
-		if (lines != NULL) {
-			char *line = lines[0];
-
-			DBG_NOTICE("Read input from dfree, \"%s\"\n", line);
-
-			*dsize = STR_TO_SMB_BIG_UINT(line, &p);
-			while (p && *p && isspace(*p))
-				p++;
-			if (p && *p)
-				*dfree = STR_TO_SMB_BIG_UINT(p, &p);
-			while (p && *p && isspace(*p))
-				p++;
-			if (p && *p)
-				*bsize = STR_TO_SMB_BIG_UINT(p, NULL);
-			else
-				*bsize = 1024;
-			TALLOC_FREE(lines);
-
-			DBG_NOTICE("Parsed output of dfree, dsize=%"PRIu64", "
-				   "dfree=%"PRIu64", bsize=%"PRIu64"\n",
-				   *dsize, *dfree, *bsize);
-
-			if (!*dsize)
-				*dsize = 2048;
-			if (!*dfree)
-				*dfree = 1024;
-
-			return true;
-		}
-		DBG_ERR("file_lines_load() failed for "
-			   "command '%s %s'. Error was : %s\n",
-			   dfree_command, path, strerror(errno));
+	if (!dfree_command || !*dfree_command) {
+		return false;
 	}
-	return false;
+
+	argl = str_list_make_empty(talloc_tos());
+	str_list_add_printf(&argl, "%s", dfree_command);
+	str_list_add_printf(&argl, "%s", path);
+	if (argl == NULL) {
+		return false;
+	}
+
+	DBG_NOTICE("Running command '%s %s'\n",
+		dfree_command,
+		path);
+
+	lines = file_lines_ploadv(talloc_tos(), argl, NULL);
+
+	TALLOC_FREE(argl);
+
+	if (lines == NULL) {
+		DBG_ERR("file_lines_load() failed for "
+			"command '%s %s'. Error was : %s\n",
+			dfree_command, path, strerror(errno));
+		return false;
+	}
+
+	line = lines[0];
+
+	DBG_NOTICE("Read input from dfree, \"%s\"\n", line);
+
+	*dsize = STR_TO_SMB_BIG_UINT(line, &p);
+	while (p && *p && isspace(*p))
+		p++;
+	if (p && *p)
+		*dfree = STR_TO_SMB_BIG_UINT(p, &p);
+	while (p && *p && isspace(*p))
+		p++;
+	if (p && *p)
+		*bsize = STR_TO_SMB_BIG_UINT(p, NULL);
+	else
+		*bsize = 1024;
+	TALLOC_FREE(lines);
+
+	DBG_NOTICE("Parsed output of dfree, dsize=%"PRIu64", "
+		   "dfree=%"PRIu64", bsize=%"PRIu64"\n",
+		   *dsize, *dfree, *bsize);
+
+	if (!*dsize)
+		*dsize = 2048;
+	if (!*dfree)
+		*dfree = 1024;
+
+	return true;
 }
 
 static uint64_t sys_disk_free(connection_struct *conn,
