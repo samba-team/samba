@@ -1258,9 +1258,7 @@ static struct ldb_dn_component ldb_dn_copy_component(
 						TALLOC_CTX *mem_ctx,
 						struct ldb_dn_component *src)
 {
-	struct ldb_dn_component dst;
-
-	memset(&dst, 0, sizeof(dst));
+	struct ldb_dn_component dst = {};
 
 	if (src == NULL) {
 		return dst;
@@ -1304,9 +1302,7 @@ static struct ldb_dn_ext_component ldb_dn_ext_copy_component(
 						TALLOC_CTX *mem_ctx,
 						struct ldb_dn_ext_component *src)
 {
-	struct ldb_dn_ext_component dst;
-
-	memset(&dst, 0, sizeof(dst));
+	struct ldb_dn_ext_component dst = {};
 
 	if (src == NULL) {
 		return dst;

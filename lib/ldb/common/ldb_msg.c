@@ -1603,12 +1603,11 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 */
 time_t ldb_string_to_time(const char *s)
 {
-	struct tm tm;
+	struct tm tm = {};
 	time_t t;
 
 	if (s == NULL) return 0;
 
-	memset(&tm, 0, sizeof(tm));
 	if (sscanf(s, "%04u%02u%02u%02u%02u%02u.0Z",
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
@@ -1727,11 +1726,10 @@ char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t)
 */
 time_t ldb_string_utc_to_time(const char *s)
 {
-	struct tm tm;
+	struct tm tm = {};
 
 	if (s == NULL) return 0;
 
-	memset(&tm, 0, sizeof(tm));
 	if (sscanf(s, "%02u%02u%02u%02u%02u%02uZ",
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {

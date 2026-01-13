@@ -87,8 +87,7 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
 			ok = hex_byte(&str[i+1], &c);
 			if (!ok) {
 				talloc_free(ret.data);
-				memset(&ret, 0, sizeof(ret));
-				return ret;
+				return (struct ldb_val){};
 			}
 			((uint8_t *)ret.data)[j++] = c;
 			i += 2;
