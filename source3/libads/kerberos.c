@@ -1264,7 +1264,10 @@ static char *get_kdc_ip_string(char *mem_ctx,
 				cldap_reply->pdc_dns_name);
 			if (has_entry) {
 				/* propagate blacklisting from name to ip */
-				add_failed_connection_entry(realm, addr, status);
+				add_failed_connection_entry(
+					realm,
+					addr,
+					NT_STATUS_UNSUCCESSFUL);
 				continue;
 			}
 		}
