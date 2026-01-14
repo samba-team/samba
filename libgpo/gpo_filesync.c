@@ -148,7 +148,7 @@ static NTSTATUS gpo_sync_func(struct file_info *info,
 
 	ctx = (struct sync_context *)state;
 
-	if (strequal(info->name, ".") || strequal(info->name, "..")) {
+	if (ISDOT(info->name) || ISDOTDOT(info->name)) {
 		return NT_STATUS_OK;
 	}
 
