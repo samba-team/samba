@@ -61,10 +61,10 @@ static bool handle_dfree_command(connection_struct *conn,
 		loadparm_s3_global_substitution();
 	const char *dfree_command = NULL;
 	char *path = fname->base_name;
-	const char *p = NULL;
 	char **lines = NULL;
 	char **argl = NULL;
 	char *line = NULL;
+	int ret;
 
 	dfree_command = lp_dfree_command(talloc_tos(), lp_sub, SNUM(conn));
 	if (!dfree_command || !*dfree_command) {
@@ -98,27 +98,27 @@ static bool handle_dfree_command(connection_struct *conn,
 
 	DBG_NOTICE("Read input from dfree, \"%s\"\n", line);
 
-	*dsize = STR_TO_SMB_BIG_UINT(line, &p);
-	while (p && *p && isspace(*p))
-		p++;
-	if (p && *p)
-		*dfree = STR_TO_SMB_BIG_UINT(p, &p);
-	while (p && *p && isspace(*p))
-		p++;
-	if (p && *p)
-		*bsize = STR_TO_SMB_BIG_UINT(p, NULL);
-	else
-		*bsize = 1024;
+	ret = sscanf(
+		line, "%" SCNu64 " %" SCNu64 " %" SCNu64, dsize, dfree, bsize);
+
 	TALLOC_FREE(lines);
 
-	DBG_NOTICE("Parsed output of dfree, dsize=%"PRIu64", "
-		   "dfree=%"PRIu64", bsize=%"PRIu64"\n",
-		   *dsize, *dfree, *bsize);
-
-	if (!*dsize)
-		*dsize = 2048;
-	if (!*dfree)
+	if (ret < 3) {
+		*bsize = 1024;
+	}
+	if (ret < 2) {
 		*dfree = 1024;
+	}
+	if (ret < 1) {
+		*dsize = 2048;
+	}
+
+	DBG_NOTICE("Parsed output of dfree, ret=%d, dsize=%" PRIu64 ", "
+		   "dfree=%" PRIu64 ", bsize=%" PRIu64 "\n",
+		   ret,
+		   *dsize,
+		   *dfree,
+		   *bsize);
 
 	return true;
 }
