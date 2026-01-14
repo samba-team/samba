@@ -241,6 +241,15 @@
 	Private addresses should not be used by clients to connect to
 	services provided by the cluster.
       </para>
+
+      <para>
+	Note that CTDB is not resilient to private network interface
+	failures.  CTDB will notice when a node becomes disconnected
+	and will exclude it from the cluster.  Standard mechanisms
+	such as bonding can be used to improve resilience of the
+	private network.
+      </para>
+
       <para>
         It is strongly recommended that the private addresses are
         configured on a private network that is separate from client
@@ -281,7 +290,15 @@
         more other nodes in the cluster.  This ensures that services
         provided by all public addresses are always available to
         clients, as long as there are nodes available capable of
-        hosting this address.
+        hosting each address.
+      </para>
+
+      <para>
+	Note that public addresses must be on different networks to
+	private addresses.  CTDB uses the private network to
+	coordinate failover of public addresses.  This means that
+	public addresses can not be failed over if the private network
+	is not operational.
       </para>
 
       <para>
