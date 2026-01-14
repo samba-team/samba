@@ -379,33 +379,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 	return ret;
 }
 
-/* read a SMB_BIG_UINT from a string */
-uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
-{
-
-	uint64_t val = (uint64_t)-1;
-	const char *p = nptr;
-
-	if (!p) {
-		if (entptr) {
-			*entptr = p;
-		}
-		return val;
-	}
-
-	while (*p && isspace(*p))
-		p++;
-
-	sscanf(p,"%"SCNu64,&val);
-	if (entptr) {
-		while (*p && isdigit(*p))
-			p++;
-		*entptr = p;
-	}
-
-	return val;
-}
-
 /* Convert a size specification to a count of bytes. We accept the following
  * suffixes:
  *	    bytes if there is no suffix

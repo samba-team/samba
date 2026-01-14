@@ -542,7 +542,6 @@ bool strlower_m(char *s);
 bool strupper_m(char *s);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 
-uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 uint64_t conv_str_size(const char * str);
 char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...)
 				 PRINTF_ATTRIBUTE(2,3);
