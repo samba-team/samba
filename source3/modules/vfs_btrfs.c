@@ -88,7 +88,7 @@ static NTSTATUS btrfs_fget_compression(struct vfs_handle_struct *handle,
 		ret = ioctl(fsp_fd, FS_IOC_GETFLAGS, &flags);
 		if (ret < 0) {
 			DBG_WARNING("FS_IOC_GETFLAGS failed: %s, fd %lld\n",
-				    strerror(errno), (long long)fd);
+				    strerror(errno), (long long)fsp_fd);
 			return map_nt_error_from_unix(errno);
 		}
 		if (flags & FS_COMPR_FL) {
