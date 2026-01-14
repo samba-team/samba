@@ -174,7 +174,7 @@ ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags)
 
 	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8_t,
 					 buf_size + grow_size))) {
-		DEBUG(0, ("talloc failed\n"));
+		DBG_ERR("talloc failed\n");
 		return -1;
 	}
 
@@ -182,7 +182,7 @@ ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags)
 			     tmp + buf_size, str, grow_size, flags, &result);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("srvstr_push failed\n"));
+		DBG_ERR("srvstr_push failed\n");
 		return -1;
 	}
 

@@ -271,7 +271,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		_id = id.gid;
 		break;
 	default:
-		DEBUG(0,("invalid quota type.\n"));
+		DBG_ERR("invalid quota type.\n");
 		return -1;
 	}
 
@@ -296,7 +296,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 	if (lines) {
 		char *line = lines[0];
 
-		DEBUG (3, ("Read output from get_quota, \"%s\"\n", line));
+		DBG_NOTICE("Read output from get_quota, \"%s\"\n", line);
 
 		/* we need to deal with long long unsigned here, if supported */
 
@@ -400,13 +400,13 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		return 0;
 	}
 
-	DEBUG (0, ("get_quota_command failed!\n"));
+	DBG_ERR("get_quota_command failed!\n");
 	return -1;
 
 invalid_param:
 
 	TALLOC_FREE(lines);
-	DEBUG(0,("The output of get_quota_command is invalid!\n"));
+	DBG_ERR("The output of get_quota_command is invalid!\n");
 	return -1;
 }
 
