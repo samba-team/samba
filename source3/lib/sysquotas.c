@@ -294,8 +294,9 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 	lines = file_lines_ploadv(talloc_tos(), argl, NULL);
 	TALLOC_FREE(argl);
 
-	if (lines == NULL) {
+	if ((lines == NULL) || (lines[0] == NULL)) {
 		DBG_ERR("get_quota_command failed!\n");
+		TALLOC_FREE(lines);
 		return -1;
 	}
 
