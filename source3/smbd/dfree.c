@@ -86,10 +86,11 @@ static bool handle_dfree_command(connection_struct *conn,
 
 	TALLOC_FREE(argl);
 
-	if (lines == NULL) {
-		DBG_ERR("file_lines_load() failed for "
+	if ((lines == NULL) || (lines[0] == NULL)) {
+		DBG_ERR("file_lines_ploadv() failed for "
 			"command '%s %s'. Error was : %s\n",
 			dfree_command, path, strerror(errno));
+		TALLOC_FREE(lines);
 		return false;
 	}
 
