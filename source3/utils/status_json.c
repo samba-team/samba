@@ -1383,7 +1383,7 @@ bool print_notify_rec_json(struct traverse_state *state,
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return -1;
+		return false;
 	}
 
 	sub_json = json_new_object();
