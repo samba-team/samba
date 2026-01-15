@@ -82,7 +82,7 @@ static bool send_http_request(TALLOC_CTX *mem_ctx,
 				response_size);
 	if (!req) {
 		DBG_ERR("no memory\n");
-		return -1;
+		return false;
 	}
 
 	if (!tevent_req_set_endtime(req, ev_ctx, timeval_current_ofs(10, 0))) {
