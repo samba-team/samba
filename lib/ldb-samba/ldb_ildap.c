@@ -558,8 +558,21 @@ static int ildb_search(struct ildb_context *ac)
 	msg->r.SearchRequest.tree = discard_const(req->op.search.tree);
 
 	for (n = 0; req->op.search.attrs && req->op.search.attrs[n]; n++) /* noop */ ;
+
+	/*
+	 * In LDB, an empty attribute list indicates a request for no
+	 * attributes, but in LDAP no attributes is requested with an
+	 * attribute list of ["1.1"] according to RFC4511:4.5.1.8.
+	 */
+	if (req->op.search.attrs && n == 0) {
+		static const char * attrs[] = {"1.1", NULL};
+		msg->r.SearchRequest.attributes = attrs;
+		n = 1;
+	} else {
+		msg->r.SearchRequest.attributes = req->op.search.attrs;
+	}
+
 	msg->r.SearchRequest.num_attributes = n;
-	msg->r.SearchRequest.attributes = req->op.search.attrs;
 	msg->controls = req->controls;
 
 	return ildb_request_send(ac, msg);

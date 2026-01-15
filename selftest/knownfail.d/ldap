@@ -1,3 +1,2 @@
 # the attributes too long test returns the wrong error
 ^samba4.ldap.python.+test_attribute_ranges_too_long
-samba4.ldap.python\(ad_dc_default\).*__main__.BasicTests.test_ldapSearchNoAttributes

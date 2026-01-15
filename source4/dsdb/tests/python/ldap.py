@@ -3200,6 +3200,40 @@ nTSecurityDescriptor:: """ + desc_base64
         self.assertEqual(len(res), 1)
         self.assertEqual(len(res[0]), 0)
 
+    def test_ldapSearchExplicitNoAttributesOid(self):
+        """Testing ldap search with the no attributes OID 1.1 specified"""
+
+        user_name = "testnoattributesoiduser"
+        user_dn = "CN=%s,%s" % (user_name, self.base_dn)
+        delete_force(self.ldb, user_dn)
+
+        self.ldb.add({"dn": user_dn,
+                      "objectClass": "user",
+                      "sAMAccountName": user_name})
+
+        res = self.ldb.search(user_dn, scope=SCOPE_BASE, attrs=["1.1"])
+        delete_force(self.ldb, user_dn)
+
+        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0]), 0)
+
+    def test_ldapSearchAllAttributes(self):
+        """Testing ldap search with all attributes"""
+
+        user_name = "testallattributesuser"
+        user_dn = "CN=%s,%s" % (user_name, self.base_dn)
+        delete_force(self.ldb, user_dn)
+
+        self.ldb.add({"dn": user_dn,
+                      "objectClass": "user",
+                      "sAMAccountName": user_name})
+
+        res = self.ldb.search(user_dn, scope=SCOPE_BASE, attrs=["*"])
+        delete_force(self.ldb, user_dn)
+
+        self.assertEqual(len(res), 1)
+        self.assertTrue(len(res[0]) > 3)
+
 
 class BaseDnTests(samba.tests.TestCase):
 

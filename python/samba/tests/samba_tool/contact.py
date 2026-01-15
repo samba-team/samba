@@ -461,7 +461,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
         contactlist = self.samdb.search(base=self.samdb.domain_dn(),
                                         scope=ldb.SCOPE_SUBTREE,
                                         expression=search_filter,
-                                        attrs=[])
+                                        attrs=["*"])
         if contactlist:
             return contactlist[0]
         else:
