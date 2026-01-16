@@ -2035,7 +2035,7 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_streams; i++) {
-		if (strcasecmp_m(streams[i].name, "::$DATA") == 0) {
+		if (strequal_m(streams[i].name, "::$DATA")) {
 			continue;
 		}
 		to_convert++;
