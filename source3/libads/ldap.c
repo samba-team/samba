@@ -237,7 +237,7 @@ bool ads_sitename_match(ADS_STRUCT *ads)
 
 bool ads_closest_dc(ADS_STRUCT *ads)
 {
-	if (ads->config.flags & NBT_SERVER_CLOSEST) {
+	if (ads->config.server_flags & NBT_SERVER_CLOSEST) {
 		DEBUG(10,("ads_closest_dc: NBT_SERVER_CLOSEST flag set\n"));
 		return True;
 	}
@@ -344,7 +344,7 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 	sitename_store(cldap_reply->dns_domain, cldap_reply->client_site);
 
 	/* Leave this until last so that the flags are not clobbered */
-	ads->config.flags = cldap_reply->server_type;
+	ads->config.server_flags = cldap_reply->server_type;
 
 	ret = true;
 
@@ -379,7 +379,8 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	ok = ads_cldap_netlogon_5(frame,
 				  ss,
 				  ads->server.realm,
-				  ads->config.flags | DS_ONLY_LDAP_NEEDED,
+				  ads->config.required_flags |
+					  DS_ONLY_LDAP_NEEDED,
 				  &cldap_reply);
 	if (!ok) {
 		DBG_NOTICE("ads_cldap_netlogon_5(%s, %s) failed.\n",
@@ -491,20 +492,21 @@ again:
 		return status;
 	}
 
-	status = netlogon_pings(frame, /* mem_ctx */
-				lp_client_netlogon_ping_protocol(), /* proto */
-				ts_list,      /* servers */
-				num_requests, /* num_servers */
-				(struct netlogon_ping_filter){
-					.ntversion = nt_version,
-					.domain = ads->server.realm,
-					.acct_ctrl = -1,
-					.required_flags = ads->config.flags |
-							  DS_ONLY_LDAP_NEEDED,
-				},
-				1,	 /* wanted_servers */
-				endtime, /* timeout */
-				&responses);
+	status = netlogon_pings(
+		frame,				    /* mem_ctx */
+		lp_client_netlogon_ping_protocol(), /* proto */
+		ts_list,			    /* servers */
+		num_requests,			    /* num_servers */
+		(struct netlogon_ping_filter){
+			.ntversion = nt_version,
+			.domain = ads->server.realm,
+			.acct_ctrl = -1,
+			.required_flags = ads->config.required_flags |
+					  DS_ONLY_LDAP_NEEDED,
+		},
+		1,	 /* wanted_servers */
+		endtime, /* timeout */
+		&responses);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("netlogon_pings(realm=%s, num_requests=%zu) "
 			    "for count[%zu] - %s\n",
@@ -1265,7 +1267,7 @@ void ads_disconnect(ADS_STRUCT *ads)
 	if (ads->ldap_wrap_data.mem_ctx) {
 		talloc_free(ads->ldap_wrap_data.mem_ctx);
 	}
-	ads->config.flags = 0;
+	ads->config.server_flags = 0;
 	ads_zero_ldap(ads);
 	ZERO_STRUCT(ads->ldap_tls_data);
 	ZERO_STRUCT(ads->ldap_wrap_data);
@@ -3732,10 +3734,10 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		}
 
 		/*
-		 * Reset ads->config.flags as it can contain the flags
+		 * Reset flags as it can contain the flags
 		 * returned by the previous CLDAP ping when reusing the struct.
 		 */
-		ads_s->config.flags = 0;
+		ads_s->config.server_flags = 0;
 
 		status = ads_connect_simple_anon(ads_s);
 		if ( !ADS_ERR_OK(status))
@@ -3821,10 +3823,10 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 		}
 
 		/*
-		 * Reset ads->config.flags as it can contain the flags
+		 * Reset flags as it can contain the flags
 		 * returned by the previous CLDAP ping when reusing the struct.
 		 */
-		ads_s->config.flags = 0;
+		ads_s->config.server_flags = 0;
 
 		status = ads_connect_simple_anon(ads_s);
 		if ( !ADS_ERR_OK(status))
