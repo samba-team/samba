@@ -1051,7 +1051,7 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 		ads_status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto out;
 	}
-	ads->config.flags |= request_flags;
+	ads->config.required_flags |= request_flags;
 	ads->server.no_fallback = true;
 
 	ads_status = ads_connect_cldap_only(ads);
@@ -1067,9 +1067,9 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 	}
 	namecache_store(name, 0x20, 1, sa);
 
-	DBG_DEBUG("CLDAP flags = 0x%"PRIx32"\n", ads->config.flags);
+	DBG_DEBUG("CLDAP flags = 0x%" PRIx32 "\n", ads->config.server_flags);
 
-	if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
+	if (domain->primary && (ads->config.server_flags & NBT_SERVER_KDC)) {
 		if (ads_closest_dc(ads)) {
 			char *sitename = sitename_fetch(tmp_ctx,
 							ads->config.realm);
