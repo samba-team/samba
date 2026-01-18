@@ -207,6 +207,17 @@ user|computer keytrust
    Add the public key details of a self signed certificate to an account.
    The command supports PEM and DER encoded public keys.
 
+
+New AIO rate-limiting VFS module
+--------------------------------
+A new VFS stackable module has been introduced to implement rate-limiting for
+asynchronous I/O operations. Administrators can now enforce throughput ceilings
+by defining limits in either operations per second or bytes per second. The
+module utilizes a token-based algorithm to calculate real-time I/O load; when
+limits are exceeded, it dynamically injects millisecond delays into async
+operations to maintain the defined threshold.
+
+
 REMOVED FEATURES
 ================
 
