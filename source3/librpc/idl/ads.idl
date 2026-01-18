@@ -6,6 +6,7 @@
 */
 
 import "nbt.idl";
+import "netlogon.idl";
 
 cpp_quote("#include <system/network.h>")
 
@@ -51,7 +52,8 @@ interface ads
 	} ads_auth;
 
 	typedef [nopull,nopush] struct {
-		nbt_server_type flags; /* cldap flags identifying the services. */
+		nbt_server_type server_flags; /* NBT_* cldap flags identifying the services. */
+		netr_DsRGetDCName_flags required_flags; /* DS_* - Netlogon flags */
 		string workgroup;
 		string realm;
 		string bind_path;
