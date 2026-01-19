@@ -218,7 +218,7 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 				goto fail;
 			}
 		}
-	} else if (use_kerberos && !fallback_after_kerberos) {
+	} else if (use_kerberos) {
 		const char *error_string = NULL;
 		int rc;
 
