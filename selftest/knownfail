@@ -315,8 +315,6 @@
 # ad_member don't support ntlmv1 (not even over SMB1)
 ^samba3.blackbox.smbclient_auth.plain.*option=clientntlmv2auth=no.member.creds.*as.user.*ad_member
 ^samba3.blackbox.smbclient_auth.plain.*option=clientntlmv2auth=no.*mNT1.member.creds.*as.user.*ad_member
-# regression smbclient using --use-kerberos=desired https://bugzilla.samba.org/show_bug.cgi?id=15789
-samba3.blackbox.smbclient.kerberos.smbclient.smb3.kerberos.desired \(no user/pass\).*
 #nt-vfs server blocks read with execute access
 ^samba4.smb2.read.access
 #ntvfs server blocks copychunk with execute access on read handle
