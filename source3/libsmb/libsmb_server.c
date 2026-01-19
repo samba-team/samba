@@ -617,6 +617,8 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		password_used = "";
 
                 if (smbc_getOptionNoAutoAnonymousLogin(context) ||
+		    cli_credentials_get_kerberos_state(creds) ==
+			    CRED_USE_KERBEROS_REQUIRED ||
 		    !NT_STATUS_IS_OK(cli_session_setup_anon(c))) {
 
                         cli_shutdown(c);
