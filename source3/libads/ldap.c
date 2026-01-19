@@ -1265,6 +1265,7 @@ void ads_disconnect(ADS_STRUCT *ads)
 	if (ads->ldap_wrap_data.mem_ctx) {
 		talloc_free(ads->ldap_wrap_data.mem_ctx);
 	}
+	ads->config.flags = 0;
 	ads_zero_ldap(ads);
 	ZERO_STRUCT(ads->ldap_tls_data);
 	ZERO_STRUCT(ads->ldap_wrap_data);
