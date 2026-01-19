@@ -362,17 +362,12 @@ char *gensec_get_unparsed_target_principal(struct gensec_security *gensec_securi
 NTSTATUS gensec_kerberos_possible(struct gensec_security *gensec_security)
 {
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
-	bool auth_requested = cli_credentials_authentication_requested(creds);
 	enum credentials_use_kerberos krb5_state =
 		cli_credentials_get_kerberos_state(creds);
 	char *user_principal = NULL;
 	const char *client_realm = cli_credentials_get_realm(creds);
 	const char *target_principal = gensec_get_target_principal(gensec_security);
 	const char *hostname = gensec_get_target_hostname(gensec_security);
-
-	if (!auth_requested) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	if (krb5_state == CRED_USE_KERBEROS_DISABLED) {
 		return NT_STATUS_INVALID_PARAMETER;
