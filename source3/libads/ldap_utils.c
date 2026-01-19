@@ -53,6 +53,28 @@ static ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
 					     bool *more_values);
 
 /*
+ * Do not reduce the page size in case of immediate timeouts. E.g. kernel
+ * detected broken connection but samba hasn't tried to use the socket yet.
+ * time() uses resolution in seconds, so it is avoided for timeouts < 1s and
+ * might be avoided for timeouts < 2s.
+ */
+static inline void adjust_ldap_page_size(ADS_STRUCT *ads,
+					 time_t start,
+					 time_t end)
+{
+	if (ads->config.ldap_page_size >= (lp_ldap_page_size() / 4) &&
+	    lp_ldap_page_size() > 4 && end - start > 1)
+	{
+		int new_page_size = (ads->config.ldap_page_size / 2);
+		DBG_WARNING("Reducing LDAP page size from %d to %d due to "
+			    "IO_TIMEOUT\n",
+			    ads->config.ldap_page_size,
+			    new_page_size);
+		ads->config.ldap_page_size = new_page_size;
+	}
+}
+
+/*
   a wrapper around ldap_search_s that retries depending on the error code
   this is supposed to catch dropped connections and auto-reconnect
 */
@@ -64,6 +86,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	ADS_STATUS status;
 	int count = 3;
 	char *bp;
+	time_t search_start, search_end;
 
 	*res = NULL;
 
@@ -83,6 +106,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	/* when binding anonymously, we cannot use the paged search LDAP
 	 * control - Guenther */
 
+	search_start = time(NULL);
 	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
 		status = ads_do_search(ads, bp, scope, expr, attrs, res);
 	} else {
@@ -100,13 +124,10 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		char *cred_name = NULL;
 		NTSTATUS ntstatus;
 
-		if (NT_STATUS_EQUAL(ads_ntstatus(status), NT_STATUS_IO_TIMEOUT) &&
-		    ads->config.ldap_page_size >= (lp_ldap_page_size() / 4) &&
-		    lp_ldap_page_size() > 4) {
-			int new_page_size = (ads->config.ldap_page_size / 2);
-			DEBUG(1, ("Reducing LDAP page size from %d to %d due to IO_TIMEOUT\n",
-				  ads->config.ldap_page_size, new_page_size));
-			ads->config.ldap_page_size = new_page_size;
+		search_end = time(NULL);
+		if (NT_STATUS_EQUAL(ads_ntstatus(status), NT_STATUS_IO_TIMEOUT))
+		{
+			adjust_ldap_page_size(ads, search_start, search_end);
 		}
 
 		if (*res)
@@ -162,6 +183,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		/* when binding anonymously, we cannot use the paged search LDAP
 		 * control - Guenther */
 
+		search_start = time(NULL);
 		if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
 			status = ads_do_search(ads, bp, scope, expr, attrs, res);
 		} else {
