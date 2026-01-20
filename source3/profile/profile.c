@@ -121,7 +121,7 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
 }
 
 /*******************************************************************
-  open the profiling shared memory area
+  open the profiling tdb file
   ******************************************************************/
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 {
