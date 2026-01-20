@@ -1202,7 +1202,8 @@ sub provision($$$$$$$$$$$)
 	    $force_fips_mode,
 	    $extra_smbconf_options,
 	    $extra_smbconf_shares,
-	    $extra_provision_options) = @_;
+	    $extra_provision_options,
+	    $extra_krb5_conf_options) = @_;
 
 	my $samsid = Samba::random_domain_sid();
 
@@ -1323,6 +1324,8 @@ sub provision($$$$$$$$$$$)
 
 $extra_smbconf_shares
 ";
+
+	$ctx->{krb5_conf_extra_options} = $extra_krb5_conf_options if defined($extra_krb5_conf_options);
 
 	my $ret = $self->provision_raw_step1($ctx);
 	unless (defined $ret) {

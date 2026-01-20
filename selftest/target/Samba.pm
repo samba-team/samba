@@ -336,6 +336,18 @@ sub mk_krb5_conf($$)
 	print KRB5CONF "
 #Generated krb5.conf for $ctx->{realm}
 
+";
+
+	if (defined($ctx->{krb5_conf_extra_options})) {
+		# These come first so that they override any later options in the file.
+		print KRB5CONF "
+[libdefaults]
+$ctx->{krb5_conf_extra_options}
+
+";
+	}
+
+	print KRB5CONF "
 [libdefaults]
  default_realm = $ctx->{realm}
  dns_lookup_realm = false
