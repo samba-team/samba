@@ -250,10 +250,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 	const char *get_quota_command = NULL;
 	char **lines = NULL;
 	char *line = NULL;
-	const char *p = NULL;
-	char *p2 = NULL;
 	int _id = -1;
-	int error = 0;
 	char **argl = NULL;
 	int ret;
 
@@ -340,11 +337,6 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		 dp->ihardlimit,
 		 dp->bsize);
 	return 0;
-
-invalid_param:
-	TALLOC_FREE(lines);
-	DBG_ERR("The output of get_quota_command is invalid!\n");
-	return -1;
 }
 
 static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
