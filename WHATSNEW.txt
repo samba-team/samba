@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first pre candidate release of Samba 4.24.  This is *not*
+This is the first release candidate release of Samba 4.24.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
