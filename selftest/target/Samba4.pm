@@ -1895,6 +1895,9 @@ sub provision_fl2008r2dc($$$)
 	krb5 acceptor report canonical client name = no
 ";
 	my $extra_provision_options = ["--base-schema=2008_R2"];
+	my $extra_krb5_conf_options = "
+ report_canonical_client_name = no
+";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
@@ -1907,7 +1910,8 @@ sub provision_fl2008r2dc($$$)
 				   undef,
 				   $extra_conf_options,
 				   "",
-				   $extra_provision_options);
+				   $extra_provision_options,
+				   $extra_krb5_conf_options);
 	unless (defined $ret) {
 		return undef;
 	}

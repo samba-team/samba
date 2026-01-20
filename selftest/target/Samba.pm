@@ -370,6 +370,9 @@ $ctx->{krb5_conf_extra_options}
  clockskew = 5
  # To allow the FL 2000 DC to still work for now
  allow_rc4 = yes
+
+ # Report the canonical client name by default
+ report_canonical_client_name = yes
     ";
 	}
 
