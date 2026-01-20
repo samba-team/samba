@@ -3782,10 +3782,6 @@ sub setup_customdc
 	    return undef;
 	}
 
-	# if this was a backup-rename, then we may need to setup namespaces
-	my $upn_array = ["$env->{REALM}.upn"];
-	my $spn_array = ["$env->{REALM}.spn"];
-
 	return $env;
 }
 
