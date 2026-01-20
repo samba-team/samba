@@ -4448,7 +4448,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		bool require_canon = lpcfg_kdc_require_canonicalization(
 			kdc_db_ctx->lp_ctx);
 		if (require_canon) {
-			return EINVAL;
+			return SDB_ERR_NOENTRY;
 		}
 	}
 
