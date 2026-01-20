@@ -11,7 +11,7 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
                          internal_module=True)
     else:
             bld.SAMBA_MODULE('TORTURE_KRB5',
-                             source='kdc-mit.c',
+                             source='kdc-mit.c kdc-canon-mit.c',
                              autoproto='proto.h',
                              subsystem='smbtorture',
                              init_function='torture_krb5_init',

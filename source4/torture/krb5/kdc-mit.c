@@ -772,9 +772,8 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew",
 				      torture_krb5_as_req_clock_skew);
 
-#if 0
-	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
-#endif
+	torture_suite_add_suite(kdc_suite, torture_krb5_canon_mit(kdc_suite));
+
 	torture_suite_add_simple_test(kdc_suite,
 				      "as-req-aes",
 				      torture_krb5_as_req_aes);
