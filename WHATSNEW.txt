@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate release of Samba 4.24.  This is *not*
+This is the first pre release of Samba 4.25.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.24 will be the next version of the Samba suite.
+Samba 4.25 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -15,207 +15,6 @@ UPGRADING
 
 NEW FEATURES/CHANGES
 ====================
-
-Authentication information audit support
-----------------------------------------
-
-There are some Active Directory attributes that are not secret, but
-are relied on in some forms of authentication. Changes to these
-attributes could indicate surreptitious activity. The
-"dsdb_password_audit" and "dsdb_password_json_audit" debug classes now
-log changes to the following attributes:
-
- * altSecurityIdentities
- * dNSHostName
- * msDS-AdditionalDnsHostName
- * msDS-KeyCredentialLink
- * servicePrincipalName
-
-For the JSON logs, changes to these will be logged with the "action"
-field set to "Auth info change".
-
-
-vfs_streams_xattr can hold larger streams
------------------------------------------
-
-On Linux the size of a single extended attribute is limited to 65536
-bytes of size. For some file systems, this is also the overall limit
-of space for xattrs, but for example xfs can hold more than that 64k
-of extended xattrs, although the individual xattr is still limited to
-64k. Setting
-
-streams_xattr:max xattrs per stream = 1
-
-to a higher value than 1 will allow Samba to shard the stream to more
-than one xattr. It has an artificial limit of 16 for a maximum stream
-length of 1MB.
-
-
-Support for remote password management (Entra ID SSPR, Keycloak)
-----------------------------------------------------------------
-
-When a system such as Entra ID or Keycloak wants to change a user's
-password in its own database as well as in AD, it will use a password
-reset, meaning it does not transmit the old password to the domain
-controller. Normally a password reset avoids password history and age
-checks, which would allow a cloud password change to bypass
-on-premises password policies. To address this, a password reset using
-the "policy hints" control should respect password policies, as if it
-were an ordinary password change. Both Entra ID and Keycloak use this,
-but until now Samba did not understand this control, and would reject
-these reset requests.
-
-Now Samba AD will recognise the policy hints control and enforce local
-policy. This allows Microsoft Entra self-service password reset (SSPR)
-to work, and for Keycloak to work with the "password policy hints
-enabled" option.
-
-
-Kerberos PKINIT KeyTrust logon support
---------------------------------------
-
-Samba servers configured with the embedded heimdal KDC and running as an ADDC,
-now support "Windows Hello for Business Key-Trust logons". This allows the
-PKINIT authentication mechanism to be used with self-signed keys.
-
-The samba-tool computer and user commands have a new "keytrust"
-sub-command which allows for the setting and viewing of the public key
-details for computer and user accounts. This stores the public key
-details in msDS-KeyCredentialLink attribute of the account.
-
-
-msDS-KeyCredentialLink validation
----------------------------------
-
-Updates to the msDS-KeyCredentialLink attribute are validated against the
-rules specified by MS-ADTS 3.1.1.5.3.1.1.6.
-
-Kerberos PKINIT strong/flexible key mappings
---------------------------------------------
-
-Samba servers configured with the embedded heimdal KDC and running as an ADDC
-now support "Windows Strong and Flexible key mappings" as outlined in
-Microsoft KB5014754: Certificate-based authentication changes on Windows domain
-controllers.
-
-The default enforcement mode ("full") allows only strong certificate
-mappings. The smb.conf option
-
-  strong certificate binding enforcement = compatibility
-
-will allow weak mappings where the certificate is newer than the user
-account. The option "none" will allow any mappings.
-
-The mappings for an account should be placed in the altSecurityIdentities
-attribute and follow the syntax documented in KB5014754.
-
-
-Kerberos PKINIT SID extension
------------------------------
-
-PKINIT authentication now supports certificates containing an Object SID
-extension (extension 1.3.6.1.4.1.311.25.2), this is considered to be a STRONG
-mapping for KB5014754.
-
-The computer and user samba-tool commands have a new sub-command
-"generate-csr" to generate certificate signing requests.
-
-
-KDC includes PAC by default
----------------------------
-
-Samba will ignore the value provided by the client in "PA-PAC-REQUEST"
-and always include a PAC in responses, unless "kdc always generate
-pac" is set to "no".
-
-
-KDC can insist clients request canonicalization
------------------------------------------------
-
-Canonicalization of principal client names is not mandatory in
-Kerberos (per RFC4120), but must be requested by the client. In some
-circumstances allows a client to deceive Active Directory member
-servers (known as the "dollar ticket" attack).
-
-The new configuration option "kdc require canonicalization" can be
-used to require that clients request canonicalization; if they do not,
-their AS_REQ requests will be rejected as if the account was unknown.
-
-The default value is "no", for backward compatibility. Windows clients
-will ask for canonicalization by default, so in Windows-heavy
-environments it is safe and recommended to set this to "yes".
-
-KDC can avoid potentially confusing canonicalization
-----------------------------------------------------
-
-Currently when the client does not request canonicalization, when the
-KDC looks up a name and there is no match it will append a "$" to the
-name and try again. An attacker who can create arbitrary machine
-accounts can sometimes get tickets for Unix users by mimicking their
-names (the "dollar ticket" attack).
-
-The configuration option
-
-  kdc name match implicit dollar without canonicalization = no
-
-can be used to disable this behaviour for clients that do not request
-canonicalization. Probably this only affects traditional Unix clients,
-as Windows clients use canonicalization. If affected clients want a
-ticket for a machine account, they will have to use the full name
-including the dollar (e.g. "server$", not "server").
-
-If the "kdc require canonicalization" option cannot be set to "yes"
-(because some clients do not request canonicalization) setting this
-option to "no" is a good alternative.
-
-
-KDC provides Kerberos acceptors with canonical client names
------------------------------------------------------------
-
-By default the KDC will now send Kerberos services the canonicalized
-name (the sAMAccountName from the PAC) rather than trusting the cname.
-
-To return to the old behaviour, use
-
-  krb5 acceptor report canonical client name = no
-
-in the smb.conf.
-
-This currently affects Heimdal KDC only, not MIT.
-
-
-KDC recommended configuration:
------------------------------
-strong certificate binding enforcement                            full
-kdc always include pac                                            yes
-kdc require canonicalization                                      yes
-
-If unable to use "kdc require canonicalization" = "yes", then
-"kdc name match implicit dollar without implicit canonicalization" should be
-set to "no" if possible.
-
-samba tool
-----------
-
-Two new sub-commands have been added to the user and computer commands:
-
-user|computer generate-csr
-    Generate a Certificate signing request for an account containing the
-    Object SID extension  (extension 1.3.6.1.4.1.311.25.2)
-
-user|computer keytrust
-   Add the public key details of a self signed certificate to an account.
-   The command supports PEM and DER encoded public keys.
-
-
-New AIO rate-limiting VFS module
---------------------------------
-A new VFS stackable module has been introduced to implement rate-limiting for
-asynchronous I/O operations. Administrators can now enforce throughput ceilings
-by defining limits in either operations per second or bytes per second. The
-module utilizes a token-based algorithm to calculate real-time I/O load; when
-limits are exceeded, it dynamically injects millisecond delays into async
-operations to maintain the defined threshold.
 
 
 REMOVED FEATURES
@@ -227,17 +26,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  strong certificate binding enforcement  New             full
-  certificate backdating compensation     New             0
-  kdc always include pac                  New             yes
-  kdc require canonicalization            New             no
-  kdc name match implicit dollar without canonicalization
-                                          New             yes
+
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.24#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.25#Release_blocking_bugs
 
 
 #######################################
