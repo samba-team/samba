@@ -59,6 +59,7 @@ static int fetch_share_cache_time(const char *key_name,
 				  time_t *curr_time)
 {
 	char *key = NULL;
+	int64_t curr_time64 = -1;
 
 	key = talloc_asprintf(NULL, "%s/%s", key_name, sharename);
 	if (key == NULL) {
@@ -66,11 +67,12 @@ static int fetch_share_cache_time(const char *key_name,
 		return -1;
 	}
 
-	if (tdb_fetch_int64(tdb, key, curr_time) != 0) {
+	if (tdb_fetch_int64(tdb, key, &curr_time64) != 0) {
 		DBG_ERR("No timing record found for[%s]!\n", sharename);
 		TALLOC_FREE(key);
 		return -1;
 	}
+	*curr_time = curr_time64;
 
 	TALLOC_FREE(key);
 	return 0;
@@ -82,6 +84,7 @@ static int update_share_cache_time(const char *key_name,
 				   time_t curr_time)
 {
 	char *key = NULL;
+	int64_t curr_time64 = curr_time;
 
 	key = talloc_asprintf(NULL, "%s/%s", key_name, sharename);
 	if (key == NULL) {
@@ -89,7 +92,7 @@ static int update_share_cache_time(const char *key_name,
 		return -1;
 	}
 
-	if (tdb_store_int64(tdb, key, (int64_t)curr_time) != 0) {
+	if (tdb_store_int64(tdb, key, curr_time64) != 0) {
 		DBG_ERR("Unable to update print cache for %s\n", sharename);
 		TALLOC_FREE(key);
 		return -1;
