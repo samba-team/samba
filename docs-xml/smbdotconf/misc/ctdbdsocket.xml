@@ -4,12 +4,16 @@
                  function="_ctdbd_socket"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>If you set <value type="example">clustering=yes</value>,
-	you need to tell Samba where ctdbd listens on its unix domain
-	socket. The default path as of ctdb 1.0 is /tmp/ctdb.socket which
-	you have to explicitly set for Samba in smb.conf.
-	</para>
+  <para>
+    In a test environment, this parameter can be used when
+    <value type="example">clustering=yes</value> to specify an alternate
+    location for the CTDB Unix domain socket.
+  </para>
+  <para>
+    This parameter should not be set in production environments.  If it
+    is not set then the (correct) build-time default is used.
+  </para>
 </description>
 <value type="default"></value>
-<value type="example">/tmp/ctdb.socket</value>
+<value type="example">/var/run/altctdb/ctdbd.socket</value>
 </samba:parameter>
