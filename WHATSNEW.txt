@@ -218,6 +218,21 @@ limits are exceeded, it dynamically injects millisecond delays into async
 operations to maintain the defined threshold.
 
 
+CephFS FSCrypt support for the VFS ceph_new module
+--------------------------------------------------
+The ceph_new VFS module can now make use of the FSCrypt feature recently added
+to CephFS. This enhancement enables data and file name encryption on a per
+share basis. A single CephFS file system may host a mix of encrypted and
+unencrypted directories.
+
+To obtain the encryption keys needed for FSCrypt the ceph_new module includes
+support for the Keybridge protocol. Keybridge is an RPC protocol based on
+Varlink that can retrieve keys from a local service via a UNIX socket. Users
+can choose to develop a custom Keybridge implementation or use the existing
+KMIP-compatible Keybridge server available as part of the sambacc project
+(https://github.com/samba-in-kubernetes/sambacc).
+
+
 REMOVED FEATURES
 ================
 
