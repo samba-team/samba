@@ -123,6 +123,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		struct cli_credentials *creds = NULL;
 		char *cred_name = NULL;
 		NTSTATUS ntstatus;
+		TALLOC_CTX *frame = talloc_stackframe();
 
 		search_end = time(NULL);
 		if (NT_STATUS_EQUAL(ads_ntstatus(status), NT_STATUS_IO_TIMEOUT))
@@ -140,18 +141,20 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 			DBG_NOTICE("Search for %s in <%s> failed: %s\n",
 				   expr, bp, ads_errstr(status));
 			SAFE_FREE(bp);
+			TALLOC_FREE(frame);
 			return status;
 		}
 
 		ntstatus = ads->auth.reconnect_state->fn(ads,
 				ads->auth.reconnect_state->private_data,
-				ads, &creds);
+				frame, &creds);
 		if (!NT_STATUS_IS_OK(ntstatus)) {
 			DBG_WARNING("Failed to get creds for realm(%s): %s\n",
 				    ads->server.realm, nt_errstr(ntstatus));
 			DBG_WARNING("Search for %s in <%s> failed: %s\n",
 				   expr, bp, ads_errstr(status));
 			SAFE_FREE(bp);
+			TALLOC_FREE(frame);
 			return status;
 		}
 
@@ -172,11 +175,11 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 			 * callers depend on it being around.
 			 */
 			ads_disconnect(ads);
-			TALLOC_FREE(creds);
+			TALLOC_FREE(frame);
 			SAFE_FREE(bp);
 			return status;
 		}
-		TALLOC_FREE(creds);
+		TALLOC_FREE(frame);
 
 		*res = NULL;
 
