@@ -108,6 +108,7 @@ struct ratelimiter {
 	int64_t bw_limit;
 	float iops_capacity;
 	float bytes_capacity;
+
 	/*
 	 * burst_mult is kept as a configuration policy.
 	 * It allows capacity to be recalculated if limits
@@ -122,11 +123,6 @@ struct vfs_aio_ratelimit_config {
 	struct ratelimiter rd_ratelimiter;
 	struct ratelimiter wr_ratelimiter;
 };
-
-static float minf(float x, float y)
-{
-	return MIN(x, y);
-}
 
 static uint64_t time_now_usec(void)
 {
@@ -440,8 +436,8 @@ static void ratelimiter_refill(struct ratelimiter *rl)
 						 rl->iops_capacity,
 						 rl->iops_limit);
 
-		rl->iops_tokens = minf(rl->iops_tokens + refill,
-				       rl->iops_capacity);
+		rl->iops_tokens = MIN(rl->iops_tokens + refill,
+				      rl->iops_capacity);
 	}
 
 	if (rl->bw_limit > 0) {
@@ -451,8 +447,8 @@ static void ratelimiter_refill(struct ratelimiter *rl)
 						 rl->bytes_capacity,
 						 rl->bw_limit);
 
-		rl->bytes_tokens = minf(rl->bytes_tokens + refill,
-					rl->bytes_capacity);
+		rl->bytes_tokens = MIN(rl->bytes_tokens + refill,
+				       rl->bytes_capacity);
 	}
 
 	rl->last_usec = now;
@@ -468,7 +464,7 @@ static uint32_t ratelimiter_deficit_to_delay(float deficit, int64_t rate)
 	}
 
 	delay = (uint32_t)((deficit * 1e6f) / (float)rate);
-	return minf(delay, DELAY_SEC_MAX * 1000000L);
+	return MIN(delay, DELAY_SEC_MAX * 1000000L);
 }
 
 static uint32_t ratelimiter_pre_io(struct ratelimiter *rl, int64_t nbytes)
@@ -536,8 +532,8 @@ static void ratelimiter_post_io(struct ratelimiter *rl,
 	if (rl->bw_limit > 0 && nbytes_done < nbytes_want) {
 		int64_t unused = nbytes_want - MAX(nbytes_done, (int64_t)0);
 
-		rl->bytes_tokens = minf(rl->bytes_tokens + (float)unused,
-					rl->bytes_capacity);
+		rl->bytes_tokens = MIN(rl->bytes_tokens + (float)unused,
+				       rl->bytes_capacity);
 	}
 }
 
@@ -572,6 +568,29 @@ static int64_t vfs_aio_ratelimit_lp_parm(int snum,
 	return (val > lim) ? lim : val;
 }
 
+static uint64_t vfs_aio_ratelimit_lp_parm_bw(int snum,
+					     const char *option,
+					     uint64_t def,
+					     uint64_t lim)
+{
+	const char *str = lp_parm_const_string(snum, MODULE_NAME, option, NULL);
+	uint64_t val;
+
+	if (str == NULL) {
+		return def;
+	}
+
+	if (!conv_str_size_error(str, &val)) {
+		DBG_ERR("[%s] invalid value for %s: '%s'\n",
+			MODULE_NAME,
+			option,
+			str);
+		return def;
+	}
+
+	return MIN(val, lim);
+}
+
 static void vfs_aio_ratelimit_setup(struct vfs_aio_ratelimit_config *config,
 				    int snum)
 {
@@ -583,10 +602,10 @@ static void vfs_aio_ratelimit_setup(struct vfs_aio_ratelimit_config *config,
 					       "read_iops_limit",
 					       0,
 					       IOPS_LIMIT_MAX);
-	bw_limit = vfs_aio_ratelimit_lp_parm(snum,
-					     "read_bw_limit",
-					     0,
-					     BYTES_LIMIT_MAX);
+	bw_limit = vfs_aio_ratelimit_lp_parm_bw(snum,
+						"read_bw_limit",
+						0,
+						BYTES_LIMIT_MAX);
 	burst_mult = (float)vfs_aio_ratelimit_lp_parm(snum,
 						      "read_burst_mult",
 						      BURST_MULT_DEF,
@@ -604,10 +623,10 @@ static void vfs_aio_ratelimit_setup(struct vfs_aio_ratelimit_config *config,
 					       "write_iops_limit",
 					       0,
 					       IOPS_LIMIT_MAX);
-	bw_limit = vfs_aio_ratelimit_lp_parm(snum,
-					     "write_bw_limit",
-					     0,
-					     BYTES_LIMIT_MAX);
+	bw_limit = vfs_aio_ratelimit_lp_parm_bw(snum,
+						"write_bw_limit",
+						0,
+						BYTES_LIMIT_MAX);
 	burst_mult = (float)vfs_aio_ratelimit_lp_parm(snum,
 						      "write_burst_mult",
 						      BURST_MULT_DEF,
