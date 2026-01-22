@@ -32,9 +32,17 @@
 	rate-limiting on specific shares by enforcing upper limit on async I/O
 	operations. An administrator may define this limit as operations
 	per-second or bytes-per-second. When one of those limits is exceeded,
-	a delay value (in milliseconds) is calculated based on current I/O load
+	a delay value (in microseconds) is calculated based on current I/O load
 	and injected to async I/O operations, yielding an implicit throughput
 	ceiling.
+	</para>
+
+	<para>
+	A configurable burst allowance is supported via a burst multiplier,
+	allowing short-term bursts above the steady-state rate while still
+	enforcing a long-term ceiling. Rate-limiter state is periodically
+	persisted to a local TDB, allowing limits to be enforced consistently
+	across client reconnects and smbd restarts.
 	</para>
 
 	<para>
@@ -79,23 +87,26 @@
 		<para>
 			Upper limit of READ bandwidth (bytes-per-second) before
 			injecting delays. Zero value implies no limit.
+			Supports size suffixes (K, M, G, T).
 		</para>
 		<para>Default: 0, Max: 1T</para>
-		<para>Example: aio_ratelimit:read_bw_limit = 1000000</para>
+		<para>Example: aio_ratelimit:read_bw_limit = 2M</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>aio_ratelimit:read_delay_max = seconds</term>
+		<term>aio_ratelimit:read_burst_mult = value</term>
 		<listitem>
 		<para>
-			Maximal allowed delay value, in seconds, for READ.
+			Burst multiplier for READ operations, expressed in
+			tenths (e.g., 15 = 1.5x). Defines the token bucket
+			capacity as a multiple of the rate limit, allowing
+			short-term bursts above the steady-state rate.
 		</para>
-		<para>Default: 30, Max: 300</para>
-		<para>Example: aio_ratelimit:read_delay_max = 15</para>
+		<para>Default: 15 (1.5x), Max: 100 (10x)</para>
+		<para>Example: aio_ratelimit:read_burst_mult = 20</para>
 		</listitem>
 		</varlistentry>
-
 
 		<varlistentry>
 		<term>aio_ratelimit:write_iops_limit = count</term>
@@ -115,24 +126,65 @@
 		<para>
 			Upper limit of WRITE bandwidth (bytes-per-second)
 			before injecting delays. Zero value implies no limit.
+			Supports size suffixes (K, M, G, T).
 		</para>
 		<para>Default: 0, Max: 1T</para>
-		<para>Example: aio_ratelimit:write_bw_limit = 1000000</para>
+		<para>Example: aio_ratelimit:write_bw_limit = 1M</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>aio_ratelimit:write_delay_max = seconds</term>
+		<term>aio_ratelimit:write_burst_mult = value</term>
 		<listitem>
 		<para>
-			Maximal allowed delay value, in seconds, for WRITE.
+			Burst multiplier for WRITE operations, expressed in
+			tenths (e.g., 15 = 1.5x). Defines the token bucket
+			capacity as a multiple of the rate limit, allowing
+			short-term bursts above the steady-state rate.
 		</para>
-		<para>Default: 30, Max: 300</para>
-		<para>Example: aio_ratelimit:write_delay_max = 20</para>
+		<para>Default: 15 (1.5x), Max: 100 (10x)</para>
+		<para>Example: aio_ratelimit:write_burst_mult = 15</para>
 		</listitem>
 		</varlistentry>
 
 	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>BURST BEHAVIOR</title>
+
+	<para>
+	The <command>read_burst_mult</command> and <command>write_burst_mult</command>
+	parameters control the maximum burst capacity of the rate limiter relative to
+	the configured rate limits. The effective burst capacity is calculated as:
+	<emphasis>rate_limit * (burst_mult / 10)</emphasis>.
+	</para>
+	<para>
+	For example, with <command>read_iops_limit = 1000</command> and
+	<command>read_burst_mult = 15</command>, the burst capacity is
+	1000 * 1.5 = 1500 IOPS.
+	</para>
+	<para>
+	This allows short-term I/O bursts above the steady-state rate while
+	still enforcing the configured long-term limit.
+	</para>
+
+	<para>
+	The appropriate burst multiplier depends on workload characteristics.
+	Workloads with larger or more variable asynchronous I/O requests may
+	require a higher burst value to avoid premature throttling, while
+	smaller or latency-sensitive workloads may benefit from lower values.
+	</para>
+
+	<note>
+	<para>
+	The <command>read_burst_mult</command> and <command>write_burst_mult</command>
+	parameters do not change the long-term average throughput, which remains limited
+	by <command>read_iops_limit</command>/<command>read_bw_limit</command> and
+	<command>write_iops_limit</command>/<command>write_bw_limit</command> respectively.
+	Higher burst values only affect initial acceleration and recovery from idle periods.
+	</para>
+	</note>
 </refsect1>
 
 <refsect1>
