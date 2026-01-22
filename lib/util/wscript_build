@@ -399,6 +399,12 @@ else:
                      local_include=False,
                      for_selftest=True)
 
+    bld.SAMBA_BINARY('test_json_logging',
+                     source='tests/test_json_logging.c',
+                     deps='cmocka samba-util',
+                     local_include=False,
+                     for_selftest=True)
+
     bld.SAMBA_BINARY('test_s4_logging',
                      source='tests/test_logging.c',
                      deps=' '.join(['CMDLINE_S4',

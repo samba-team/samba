@@ -556,6 +556,8 @@ plantestsuite("samba.unittests.memcache", "none",
               [os.path.join(bindir(), "default/lib/util/test_memcache")])
 plantestsuite("samba.unittests.sys_rw", "none",
               [os.path.join(bindir(), "default/lib/util/test_sys_rw")])
+plantestsuite("samba.unittests.json_logging", "none",
+              [os.path.join(bindir(), "default/lib/util/test_json_logging")])
 plantestsuite("samba.unittests.stable_sort", "none",
               [os.path.join(bindir(), "default/lib/util/test_stable_sort")])
 plantestsuite("samba.unittests.ntlm_check", "none",
