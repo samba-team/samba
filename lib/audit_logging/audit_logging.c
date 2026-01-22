@@ -132,14 +132,10 @@ void audit_log_json(struct json_object* message,
 		return;
 	}
 	/*
-	 * This is very strange, but we call this routine to get a log
-	 * output without the header.  JSON logs all have timestamps
-	 * so this only makes parsing harder.
-	 *
-	 * We push out the raw JSON blob without a prefix, consumers
-	 * can find such lines by the leading {
+	 * Output a single line to the logs, with no prefix
+	 * or time stamps, any embedded '\n' chars will be removed
 	 */
-	DEBUGADDC(debug_class, debug_level, ("%s\n", s));
+	DEBUGJSONC(debug_class, debug_level, (s));
 	TALLOC_FREE(frame);
 }
 
