@@ -237,6 +237,19 @@ void debuglevel_set_class(size_t idx, int level);
        && (dbgsetclass(level, dbgc_class))                     \
        && (dbgtext body) )
 
+bool dbgjson( const char *msg );
+#define DEBUGJSON( level, line) \
+  (void) ( ((level) <= MAX_DEBUG_LEVEL) && \
+       unlikely(debuglevel_get_class(DBGC_CLASS) >= (level)) \
+       && (dbgsetclass(level, DBGC_CLASS))                   \
+       && (dbgjson line) )
+
+#define DEBUGJSONC( dbgc_class, level, line) \
+  (void)( ((level) <= MAX_DEBUG_LEVEL) && \
+       unlikely((debuglevel_get_class(dbgc_class) >= (level))) \
+       && (dbgsetclass(level, dbgc_class))                     \
+       && (dbgjson line) )
+
 /* Print a separator to the debug log. */
 #define DEBUGSEP(level)\
 	DEBUG((level),("===============================================================\n"))

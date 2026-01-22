@@ -46,6 +46,10 @@
 /*
  * format_bufr[FORMAT_BUFR_SIZE - 1] should always be reserved
  * for a terminating null byte.
+ *
+ * Note: The json logging unit tests lib/util/tests/test_json_logging.c
+ *       assume this value is 4096, they'll need to be updated if
+ *       this is changed
  */
 #define FORMAT_BUFR_SIZE 4096
 
@@ -1685,6 +1689,48 @@ static void format_debug_text( const char *msg )
 
 	/* Just to be safe... */
 	format_bufr[format_pos] = '\0';
+}
+
+/***************************************************************************
+  Output a single line of JSON to the logs
+
+ Input:  msg - text to be output
+
+ Output: none.
+
+ Notes:  - msg is output without any added leading white space
+	 - Any embedded "\n" characters are replaced with spaces
+	 - A terminating "\n" is output.
+**************************************************************************/
+
+bool dbgjson( const char *msg )
+{
+	size_t i;
+	const char eol[] = "\n";
+
+	debug_init();
+
+	for( i = 0; msg[i]; i++ ) {
+		/* If the buffer is full output it */
+		if (format_pos >= FORMAT_BUFR_SIZE - 1) {
+			bufr_print();
+		}
+		/* replace any new lines with spaces*/
+		if( '\n' == msg[i] ) {
+			format_bufr[format_pos++] = ' ';
+		} else {
+			format_bufr[format_pos++] = msg[i];
+		}
+
+	}
+	if (format_pos > 0) {
+		bufr_print();
+	}
+	(void)Debug1(eol , sizeof(eol) - 1);
+
+	/* Just to be safe... */
+	format_bufr[format_pos] = '\0';
+	return true;
 }
 
 /***************************************************************************
