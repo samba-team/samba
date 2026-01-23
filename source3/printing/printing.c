@@ -42,6 +42,7 @@
 #include "lib/global_contexts.h"
 #include "source3/printing/rap_jobid.h"
 #include "source3/lib/substitute.h"
+#include "lib/util/statvfs.h"
 
 #define CACHE_LAST_SCAN_TIME "CACHE"
 #define MSG_PENDING_TIME "MSG_PENDING"
@@ -2559,8 +2560,6 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 	const char *sharename = lp_const_servicename(snum);
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	uint64_t dspace, dsize;
-	uint64_t minspace;
 	int ret;
 
 	if (!W_ERROR_IS_OK(print_access_check(server_info, msg_ctx, snum,
@@ -2578,12 +2577,19 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 
 	/* see if we have sufficient disk space */
 	if (lp_min_print_space(snum)) {
-		minspace = lp_min_print_space(snum);
-		ret = sys_fsusage(lp_path(talloc_tos(), lp_sub, snum), &dspace, &dsize);
-		if (ret == 0 && dspace < 2*minspace) {
-			DEBUG(3, ("print_job_checks: "
-				  "disk space check failed.\n"));
-			return WERR_NO_SPOOL_SPACE;
+		struct vfs_statvfs_struct buf;
+		uint64_t minspace = lp_min_print_space(snum);
+
+		ret = sys_statvfs(lp_path(talloc_tos(), lp_sub, snum), &buf);
+		if (ret == 0) {
+			uint64_t dspace, dsize;
+
+			statvfs2fsusage(&buf, &dspace, &dsize);
+
+			if (dspace < 2 * minspace) {
+				DBG_NOTICE("disk space check failed.\n");
+				return WERR_NO_SPOOL_SPACE;
+			}
 		}
 	}
 

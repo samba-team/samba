@@ -23,6 +23,7 @@
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/ndr/libndr.h"
+#include "lib/util/statvfs.h"
 
 /* We use libblkid out of e2fsprogs to identify UUID of a volume */
 #ifdef HAVE_LIBBLKID
@@ -92,17 +93,24 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 	struct stat st;
 	const uint16_t block_size = 512;
 
-	/* only some levels need the expensive sys_fsusage() call */
+	/* only some levels need the expensive sys_statvfs() call */
 	switch (fs->generic.level) {
 	case RAW_QFS_DSKATTR:
 	case RAW_QFS_ALLOCATION:
 	case RAW_QFS_SIZE_INFO:
 	case RAW_QFS_SIZE_INFORMATION:
-	case RAW_QFS_FULL_SIZE_INFORMATION:
-		if (sys_fsusage(pvfs->base_directory, &blocks_free, &blocks_total) == -1) {
+	case RAW_QFS_FULL_SIZE_INFORMATION: {
+		struct vfs_statvfs_struct statvfsbuf;
+		int ret;
+
+		ret = sys_statvfs(pvfs->base_directory, &statvfsbuf);
+		if (ret == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
+		statvfs2fsusage(&statvfsbuf, &blocks_free, &blocks_total);
+
 		break;
+	}
 	default:
 		break;
 	}

@@ -105,10 +105,14 @@ static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,
 				  uint64_t *dsize)
 {
 	const struct smb_filename *smb_fname = fsp->fsp_name;
+	struct vfs_statvfs_struct statvfsbuf;
+	int ret;
 
-	if (sys_fsusage(smb_fname->base_name, dfree, dsize) != 0) {
+	ret = sys_statvfs(smb_fname->base_name, &statvfsbuf);
+	if (ret != 0) {
 		return (uint64_t)-1;
 	}
+	statvfs2fsusage(&statvfsbuf, dfree, dsize);
 
 	*bsize = 512;
 	return *dfree / 2;

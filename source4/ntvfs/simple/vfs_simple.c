@@ -33,6 +33,7 @@
 #include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/simple/proto.h"
+#include "lib/util/statvfs.h"
 
 #ifndef O_DIRECTORY
 #define O_DIRECTORY 0
@@ -781,17 +782,22 @@ static NTSTATUS svfs_fsinfo(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	struct svfs_private *p = ntvfs->private_data;
+	struct vfs_statvfs_struct statvfsbuf;
 	struct stat st;
+	int ret;
 
 	if (fs->generic.level != RAW_QFS_GENERIC) {
 		return ntvfs_map_fsinfo(ntvfs, req, fs);
 	}
 
-	if (sys_fsusage(p->connectpath,
-			&fs->generic.out.blocks_free, 
-			&fs->generic.out.blocks_total) == -1) {
+	ret = sys_statvfs(p->connectpath, &statvfsbuf);
+	if (ret == -1) {
 		return map_nt_error_from_unix_common(errno);
 	}
+
+	statvfs2fsusage(&statvfsbuf,
+			&fs->generic.out.blocks_free,
+			&fs->generic.out.blocks_total);
 
 	fs->generic.out.block_size = 512;
 

@@ -32,6 +32,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
 #include "lib/util/gpfswrap.h"
+#include "lib/util/statvfs.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -2321,6 +2322,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle,
 	struct security_unix_token *utok;
 	struct gpfs_quotaInfo qi_user = { 0 }, qi_group = { 0 };
 	struct gpfs_config_data *config;
+	struct vfs_statvfs_struct statvfsbuf;
 	int err;
 	time_t cur_time;
 
@@ -2331,14 +2333,16 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle,
 			handle, fsp, bsize, dfree, dsize);
 	}
 
-	err = sys_fsusage(smb_fname->base_name, dfree, dsize);
+	err = sys_statvfs(smb_fname->base_name, &statvfsbuf);
 	if (err) {
 		DEBUG (0, ("Could not get fs usage, errno %d\n", errno));
 		return SMB_VFS_NEXT_DISK_FREE(
 			handle, fsp, bsize, dfree, dsize);
 	}
 
-	/* sys_fsusage returns units of 512 bytes */
+	statvfs2fsusage(&statvfsbuf, dfree, dsize);
+
+	/* statvfs2fsusage returns units of 512 bytes */
 	*bsize = 512;
 
 	DEBUG(10, ("fs dfree %llu, dsize %llu\n",
