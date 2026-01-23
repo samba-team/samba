@@ -1,4 +1,52 @@
                    ==============================
+                   Release Notes for Samba 4.23.5
+                          January 23, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.4
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15959: New Spotlight default search field incorrectly initialized
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15972: Winbind group resolution failure
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 15937: winbindd crashes with Bad talloc magic value - unknown value
+
+o  Michael Tokarev <mjt@tls.msk.ru>
+   * BUG 15790: Bind dlz 9.20
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.23.4
                          December 12, 2025
                    ==============================
@@ -54,8 +102,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.23.3
                          November 07, 2025
