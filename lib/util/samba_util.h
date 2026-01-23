@@ -490,19 +490,6 @@ void *memalign_array(size_t el_size, size_t align, unsigned int count);
 
 void *calloc_array(size_t size, size_t nmemb);
 
-/* The following definitions come from lib/util/fsusage.c  */
-
-
-/**
- * Retrieve amount of free disk space.
- * this does all of the system specific guff to get the free disk space.
- * It is derived from code in the GNU fileutils package, but has been
- * considerably mangled for use here
- *
- * results are returned in *dfree and *dsize, in 512 byte units
-*/
-_PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
-
 /* The following definitions come from lib/util/ms_fnmatch.c  */
 
 
