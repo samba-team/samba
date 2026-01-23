@@ -1963,9 +1963,6 @@ static bool fsinfo_unix_valid_level(connection_struct *conn,
 	return false;
 }
 
-/*
- * fsp is only valid for SMB2.
- */
 NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 connection_struct *conn,
 			 TALLOC_CTX *mem_ctx,
