@@ -54,5 +54,8 @@ struct vfs_statvfs_struct {
 
 int sys_statvfs(const char *path, struct vfs_statvfs_struct *statbuf);
 int sys_fstatvfs(int fd, struct vfs_statvfs_struct *statbuf);
+void statvfs2fsusage(const struct vfs_statvfs_struct *statbuf,
+		     uint64_t *dfree,
+		     uint64_t *dsize);
 
 #endif

@@ -255,3 +255,32 @@ int sys_fstatvfs(int fd, struct vfs_statvfs_struct *statbuf)
 #endif /* EOPNOTSUPP */
 #endif /* LINUX */
 }
+
+/*
+ * Return the number of TOSIZE-byte blocks used by BLOCKS
+ * FROMSIZE-byte blocks, rounding away from zero.
+ */
+static uint64_t adjust_blocks(uint64_t blocks, uint64_t fromsize)
+{
+	if (fromsize == 512) {
+		return blocks;
+	}
+
+	if (fromsize > 512) {
+		return blocks * (fromsize / 512);
+	}
+
+	if (fromsize == 0) {
+		fromsize = 512;
+	}
+
+	return (blocks + 1) / (512 / fromsize);
+}
+
+void statvfs2fsusage(const struct vfs_statvfs_struct *statbuf,
+		     uint64_t *dfree,
+		     uint64_t *dsize)
+{
+	*dfree = adjust_blocks(statbuf->UserBlocksAvail, statbuf->BlockSize);
+	*dsize = adjust_blocks(statbuf->TotalBlocks, statbuf->BlockSize);
+}
