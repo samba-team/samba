@@ -1316,6 +1316,10 @@ void contend_dirleases(struct connection_struct *conn,
 	int ret;
 	bool ok;
 
+	if (!lp_smb3_directory_leases()) {
+		return;
+	}
+
 	if (lease != NULL) {
 		DBG_DEBUG("Parent leasekey %"PRIx64"/%"PRIx64"\n",
 			  lease->parent_lease_key.data[0],
