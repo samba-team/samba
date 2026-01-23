@@ -37,7 +37,7 @@
 #include "offload_token.h"
 #include "util_reparse.h"
 #include "lib/util/string_wrappers.h"
-#include "source3/smbd/statvfs.h"
+#include "lib/util/statvfs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

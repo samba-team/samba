@@ -684,7 +684,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/quotas.c
                           smbd/ntquotas.c
                           smbd/msdfs.c
-                          smbd/smb2_aio.c smbd/statvfs.c
+                          smbd/smb2_aio.c
                           smbd/dmapi.c
                           smbd/smb2_signing.c
                           smbd/file_access.c

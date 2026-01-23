@@ -30,7 +30,7 @@
 #include "version.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "smbd/statvfs.h"
+#include "lib/util/statvfs.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/xattr.h"
 #include "../librpc/gen_ndr/ndr_security.h"
