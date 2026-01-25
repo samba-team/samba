@@ -86,7 +86,7 @@ char* audit_get_timestamp(TALLOC_CTX *frame)
  *
  * @param prefix Text to be printed at the start of the log line
  * @param message The content of the log line.
- * @param debub_class The debug class to log the message with.
+ * @param debug_class The debug class to log the message with.
  * @param debug_level The debug level to log the message with.
  */
 void audit_log_human_text(const char* prefix,
@@ -108,7 +108,7 @@ const struct json_object json_empty_object = {.valid = false, .root = NULL};
  * Write the json object to the audit logs as a formatted string
  *
  * @param message The content of the log line.
- * @param debub_class The debug class to log the message with.
+ * @param debug_class The debug class to log the message with.
  * @param debug_level The debug level to log the message with.
  */
 void audit_log_json(struct json_object* message,
@@ -211,8 +211,8 @@ static NTSTATUS get_event_server(
  *
  * @param msg_ctx an imessaging_context, can be NULL in which case no message
  *                will be sent.
- * @param server_name the naname of the event server to send the message to.
- * @param messag_type A message type defined in librpc/idl/messaging.idl
+ * @param server_name the name of the event server to send the message to.
+ * @param message_type A message type defined in librpc/idl/messaging.idl
  * @param message The message to send.
  *
  */
