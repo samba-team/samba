@@ -163,6 +163,31 @@ static struct argdef * find_named_arg(const char * arg)
 	return(NULL);
 }
 
+/**
+ * Parse a string containing a boolean value.
+ *
+ * val will be set to the read value.
+ *
+ * @retval true if a boolean value was parsed, false otherwise.
+ */
+static bool conv_str_bool(const char *str, bool *val)
+{
+	char *end = NULL;
+	long lval;
+
+	if (str == NULL || *str == '\0') {
+		return false;
+	}
+
+	lval = strtol(str, &end, 10 /* base */);
+	if (end == NULL || *end != '\0' || end == str) {
+		return set_boolean(str, val);
+	}
+
+	*val = (lval) ? true : false;
+	return true;
+}
+
 int set_arg_argv(const char * argv)
 {
 	struct argdef *	arg;

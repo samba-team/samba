@@ -34,31 +34,6 @@
  **/
 
 /**
- * Parse a string containing a boolean value.
- *
- * val will be set to the read value.
- *
- * @retval true if a boolean value was parsed, false otherwise.
- */
-_PUBLIC_ bool conv_str_bool(const char * str, bool * val)
-{
-	char *	end = NULL;
-	long	lval;
-
-	if (str == NULL || *str == '\0') {
-		return false;
-	}
-
-	lval = strtol(str, &end, 10 /* base */);
-	if (end == NULL || *end != '\0' || end == str) {
-		return set_boolean(str, val);
-	}
-
-	*val = (lval) ? true : false;
-	return true;
-}
-
-/**
  * Convert a size specification like 16K into an integral number of bytes.
  **/
 _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
