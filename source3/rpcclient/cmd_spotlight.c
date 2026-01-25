@@ -24,6 +24,7 @@
 #include "../rpc_server/mdssvc/mdssvc.h"
 #include "../rpc_server/mdssvc/dalloc.h"
 #include "../rpc_server/mdssvc/marshalling.h"
+#include "lib/util/smb_strtox.h"
 
 static NTSTATUS cmd_mdssvc_fetch_properties(
 			struct rpc_pipe_client *cli,
@@ -202,6 +203,7 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 	uint64_t cnid;
 	uint32_t unkn4;
 	int result;
+	int error = 0;
 	bool ok;
 
 	if (argc != 4) {
@@ -209,8 +211,8 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 		return NT_STATUS_OK;
 	}
 
-	ok = conv_str_u64(argv[3], &cnid);
-	if (!ok) {
+	cnid = smb_strtoull(argv[3], NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+	if (error != 0) {
 		printf("Failed to parse: %s\n", argv[3]);
 		return NT_STATUS_INVALID_PARAMETER;
 	}

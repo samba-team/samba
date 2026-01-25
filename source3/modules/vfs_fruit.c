@@ -37,6 +37,7 @@
 #include "lib/adouble.h"
 #include "lib/util_macstreams.h"
 #include "source3/smbd/dir.h"
+#include "lib/util/smb_strtox.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -5095,9 +5096,8 @@ static bool fruit_get_bandsize_from_line(char *line, size_t *_band_size)
 	static regex_t re;
 	static bool re_initialized = false;
 	regmatch_t matches[2];
-	uint64_t band_size;
 	int ret;
-	bool ok;
+	int error = 0;
 
 	if (!re_initialized) {
 		ret = regcomp(&re,
@@ -5118,12 +5118,12 @@ static bool fruit_get_bandsize_from_line(char *line, size_t *_band_size)
 
 	line[matches[1].rm_eo] = '\0';
 
-	ok = conv_str_u64(&line[matches[1].rm_so], &band_size);
-	if (!ok) {
-		return false;
-	}
-	*_band_size = (size_t)band_size;
-	return true;
+	*_band_size = smb_strtoull(&line[matches[1].rm_so],
+				   NULL,
+				   10,
+				   &error,
+				   SMB_STR_FULL_STR_CONV);
+	return (error == 0);
 }
 
 /*

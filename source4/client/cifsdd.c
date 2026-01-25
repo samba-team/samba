@@ -25,6 +25,7 @@
 #include "libcli/resolve/resolve.h"
 #include "libcli/raw/libcliraw.h"
 #include "lib/events/events.h"
+#include "lib/util/smb_strtox.h"
 
 #include "cifsdd.h"
 #include "param/param.h"
@@ -190,11 +191,15 @@ int set_arg_argv(const char * argv)
 
 	/* Found a matching name; convert the variable argument. */
 	switch (arg->arg_type) {
-		case ARG_NUMERIC:
-			if (!conv_str_u64(val, &arg->arg_val.nval)) {
-				goto fail;
-			}
-			break;
+	case ARG_NUMERIC: {
+		int error = 0;
+		arg->arg_val.nval = smb_strtoull(
+			val, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+		if (error != 0) {
+			goto fail;
+		}
+		break;
+	}
 		case ARG_SIZE:
 			if (!conv_str_size_error(val, &arg->arg_val.nval)) {
 				goto fail;

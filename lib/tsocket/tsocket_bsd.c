@@ -31,6 +31,7 @@
 #include "lib/util/util_net.h"
 #include "lib/util/samba_util.h"
 #include "lib/async_req/async_sock.h"
+#include "lib/util/smb_strtox.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,
@@ -443,7 +444,7 @@ int _tsocket_address_inet_from_hostport_strings(TALLOC_CTX *mem_ctx,
 	int ret;
 	char *s_addr = NULL;
 	uint16_t s_port = default_port;
-	bool conv_ret;
+	int error = 0;
 	bool is_ipv6_by_squares = false;
 
 	if (host_port_addr == NULL) {
@@ -480,8 +481,9 @@ int _tsocket_address_inet_from_hostport_strings(TALLOC_CTX *mem_ctx,
 			return -1;
 		}
 		cport = port_sep + 1;
-		conv_ret = conv_str_u64(cport, &port);
-		if (!conv_ret) {
+		port = smb_strtoull(
+			cport, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+		if (error != 0) {
 			errno = EINVAL;
 			return -1;
 		}
@@ -498,8 +500,9 @@ int _tsocket_address_inet_from_hostport_strings(TALLOC_CTX *mem_ctx,
 	} else if (pl_period != NULL && port_sep != NULL) {
 		/* IPv4 with port - more than one period in string */
 		cport = port_sep + 1;
-		conv_ret = conv_str_u64(cport, &port);
-		if (!conv_ret) {
+		port = smb_strtoull(
+			cport, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+		if (error != 0) {
 			errno = EINVAL;
 			return -1;
 		}
