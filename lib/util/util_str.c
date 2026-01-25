@@ -233,10 +233,11 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean)
 	    strwicmp(boolean_string, "1") == 0) {
 		*boolean = true;
 		return true;
-	} else if (strwicmp(boolean_string, "no") == 0 ||
-		   strwicmp(boolean_string, "false") == 0 ||
-		   strwicmp(boolean_string, "off") == 0 ||
-		   strwicmp(boolean_string, "0") == 0) {
+	}
+	if (strwicmp(boolean_string, "no") == 0 ||
+	    strwicmp(boolean_string, "false") == 0 ||
+	    strwicmp(boolean_string, "off") == 0 ||
+	    strwicmp(boolean_string, "0") == 0) {
 		*boolean = false;
 		return true;
 	}
