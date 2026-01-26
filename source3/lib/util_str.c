@@ -393,38 +393,10 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 uint64_t conv_str_size(const char * str)
 {
         uint64_t lval;
-        char *end;
-	int error = 0;
+	bool ok;
 
-        if (str == NULL || *str == '\0') {
-                return 0;
-        }
-
-	lval = smb_strtoull(str, &end, 10, &error, SMB_STR_STANDARD);
-
-        if (error != 0) {
-                return 0;
-        }
-
-	if (*end == '\0') {
-		return lval;
-	}
-
-	if (strwicmp(end, "K") == 0) {
-		lval *= 1024ULL;
-	} else if (strwicmp(end, "M") == 0) {
-		lval *= (1024ULL * 1024ULL);
-	} else if (strwicmp(end, "G") == 0) {
-		lval *= (1024ULL * 1024ULL *
-			 1024ULL);
-	} else if (strwicmp(end, "T") == 0) {
-		lval *= (1024ULL * 1024ULL *
-			 1024ULL * 1024ULL);
-	} else if (strwicmp(end, "P") == 0) {
-		lval *= (1024ULL * 1024ULL *
-			 1024ULL * 1024ULL *
-			 1024ULL);
-	} else {
+	ok = conv_str_size_error(str, &lval);
+	if (!ok) {
 		return 0;
 	}
 
