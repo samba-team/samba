@@ -3624,7 +3624,7 @@ NTSTATUS rpc_pipe_open_local_np(
 	}
 
 	if (local_server_name == NULL) {
-		local_server_name = get_myname(result);
+		local_server_name = get_myname(frame);
 	}
 
 	if (local_server_addr != NULL) {
