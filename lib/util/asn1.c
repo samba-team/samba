@@ -522,7 +522,7 @@ bool asn1_load(struct asn1_data *data, DATA_BLOB blob)
 }
 
 /* Peek into an ASN1 buffer, not advancing the pointer */
-bool asn1_peek(struct asn1_data *data, void *p, int len)
+static bool asn1_peek(struct asn1_data *data, void *p, int len)
 {
 	size_t ofs, end;
 

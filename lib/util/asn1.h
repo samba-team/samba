@@ -79,7 +79,6 @@ bool asn1_check_BOOLEAN(struct asn1_data *data, bool v);
 bool asn1_write_BOOLEAN_context(struct asn1_data *data, bool v, int context);
 bool asn1_read_BOOLEAN_context(struct asn1_data *data, bool *v, int context);
 bool asn1_load(struct asn1_data *data, DATA_BLOB blob);
-bool asn1_peek(struct asn1_data *data, void *p, int len);
 bool asn1_read(struct asn1_data *data, void *p, int len);
 bool asn1_read_uint8(struct asn1_data *data, uint8_t *v);
 bool asn1_peek_uint8(struct asn1_data *data, uint8_t *v);
