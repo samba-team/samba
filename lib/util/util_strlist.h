@@ -118,12 +118,6 @@ const char **str_list_append(const char **list1,
 */
 const char **str_list_unique(const char **list);
 
-/*
-  very useful when debugging complex list related code
- */
-void str_list_show(const char **list);
-
-
 /**
   append one list to another - expanding list1
   this assumes the elements of list2 are const pointers, so we can re-use them

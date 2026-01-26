@@ -454,21 +454,6 @@ _PUBLIC_ const char **str_list_unique(const char **list)
 	return list;
 }
 
-/*
-  very useful when debugging complex list related code
- */
-_PUBLIC_ void str_list_show(const char **list)
-{
-	int i;
-	DEBUG(0,("{ "));
-	for (i=0;list && list[i];i++) {
-		DEBUG(0,("\"%s\", ", list[i]));
-	}
-	DEBUG(0,("}\n"));
-}
-
-
-
 /**
   append one list to another - expanding list1
   this assumes the elements of list2 are const pointers, so we can re-use them
