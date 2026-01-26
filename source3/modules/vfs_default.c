@@ -130,7 +130,8 @@ static int vfswrap_get_quota(struct vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_get_quota);
-	result = sys_get_quota(smb_fname->base_name, qtype, id, qt);
+	result = sys_get_quota(
+		smb_fname->st.st_ex_dev, smb_fname->base_name, qtype, id, qt);
 	END_PROFILE_X(syscall_get_quota);
 	return result;
 #else
@@ -150,7 +151,8 @@ static int vfswrap_set_quota(struct vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_set_quota);
-	result = sys_set_quota(smb_fname->base_name, qtype, id, qt);
+	result = sys_set_quota(
+		smb_fname->st.st_ex_dev, smb_fname->base_name, qtype, id, qt);
 	END_PROFILE_X(syscall_set_quota);
 	return result;
 #else

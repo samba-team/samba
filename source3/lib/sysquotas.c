@@ -42,6 +42,84 @@
 
 #endif /* NO_QUOTACTL_USED */
 
+static bool sys_dev_to_bdev(TALLOC_CTX *mem_ctx,
+			    dev_t dev,
+			    char **mntpath,
+			    char **bdev,
+			    char **fs)
+{
+	static bool have_proc_self_mountinfo = true;
+	FILE *f = NULL;
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t nread;
+	bool ret = false;
+
+	if (!have_proc_self_mountinfo) {
+		/*
+		 * try only once
+		 */
+		return false;
+	}
+
+	/*
+	 * /proc/self/mountinfo gives us all we need without stat()ing
+	 * every mountpoint.
+	 */
+
+	f = fopen("/proc/self/mountinfo", "r");
+	if (f == NULL) {
+		have_proc_self_mountinfo = false;
+		return false;
+	}
+
+	while ((nread = getline(&line, &len, f)) != -1) {
+		unsigned long major, minor;
+		char **entry = NULL;
+		size_t entrylen;
+		int num;
+
+		entry = str_list_make(mem_ctx, line, " ");
+		if (entry == NULL) {
+			break;
+		}
+
+		entrylen = str_list_length((const char *const *)entry);
+		if (entrylen < 11) {
+			TALLOC_FREE(entry);
+			continue;
+		}
+
+		num = sscanf(entry[2], "%lu:%lu", &major, &minor);
+		if (num != 2) {
+			TALLOC_FREE(entry);
+			continue;
+		}
+
+		if (makedev(major, minor) != dev) {
+			TALLOC_FREE(entry);
+			continue;
+		}
+
+		*mntpath = talloc_move(mem_ctx, &entry[4]);
+		*bdev = talloc_move(mem_ctx, &entry[9]);
+		*fs = talloc_move(mem_ctx, &entry[8]);
+		TALLOC_FREE(entry);
+		ret = true;
+
+		break;
+	}
+
+	SAFE_FREE(line);
+
+	if (f != NULL) {
+		fclose(f);
+		f = NULL;
+	}
+
+	return ret;
+}
+
 #if defined(HAVE_MNTENT) && defined(HAVE_REALPATH)
 static int sys_path_to_bdev(TALLOC_CTX *mem_ctx,
 			    const char *path,
@@ -425,8 +503,13 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 	return -1;
 }
 
-int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
+int sys_get_quota(dev_t dev,
+		  const char *path,
+		  enum SMB_QUOTA_TYPE qtype,
+		  unid_t id,
+		  SMB_DISK_QUOTA *dp)
 {
+	bool ok;
 	int ret = -1;
 	int i;
 	bool ready = False;
@@ -443,10 +526,14 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 		return -1;
 	}
 
-	ret = sys_path_to_bdev(talloc_tos(), path, &mntpath, &bdev, &fs);
-	if (ret != 0) {
-		DEBUG(0,("sys_path_to_bdev() failed for path [%s]!\n",path));
-		return ret;
+	ok = sys_dev_to_bdev(talloc_tos(), dev, &mntpath, &bdev, &fs);
+	if (!ok) {
+		ret = sys_path_to_bdev(
+			talloc_tos(), path, &mntpath, &bdev, &fs);
+		if (ret != 0) {
+			DEBUG(0,("sys_path_to_bdev() failed for path [%s]!\n",path));
+			return ret;
+		}
 	}
 
 	errno = 0;
@@ -486,8 +573,13 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	return ret;
 }
 
-int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
+int sys_set_quota(dev_t dev,
+		  const char *path,
+		  enum SMB_QUOTA_TYPE qtype,
+		  unid_t id,
+		  SMB_DISK_QUOTA *dp)
 {
+	bool ok;
 	int ret = -1;
 	int i;
 	bool ready = False;
@@ -506,10 +598,14 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 		return -1;
 	}
 
-	ret = sys_path_to_bdev(talloc_tos(), path, &mntpath, &bdev, &fs);
-	if (ret != 0) {
-		DEBUG(0,("sys_path_to_bdev() failed for path [%s]!\n",path));
-		return ret;
+	ok = sys_dev_to_bdev(talloc_tos(), dev, &mntpath, &bdev, &fs);
+	if (!ok) {
+		ret = sys_path_to_bdev(
+			talloc_tos(), path, &mntpath, &bdev, &fs);
+		if (ret != 0) {
+			DEBUG(0,("sys_path_to_bdev() failed for path [%s]!\n",path));
+			return ret;
+		}
 	}
 
 	errno = 0;

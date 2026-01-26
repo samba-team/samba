@@ -142,8 +142,16 @@ int smbrunsecret(const char *cmd, const char *secret);
 
 /* The following definitions come from lib/sysquotas.c  */
 
-int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
-int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
+int sys_get_quota(dev_t dev,
+		  const char *path,
+		  enum SMB_QUOTA_TYPE qtype,
+		  unid_t id,
+		  SMB_DISK_QUOTA *dp);
+int sys_set_quota(dev_t dev,
+		  const char *path,
+		  enum SMB_QUOTA_TYPE qtype,
+		  unid_t id,
+		  SMB_DISK_QUOTA *dp);
 
 /* The following definitions come from lib/sysquotas_*.c  */
 
