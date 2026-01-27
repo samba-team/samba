@@ -613,8 +613,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 
 	len -= fsp->fsp_name->st.st_ex_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail =
-	    get_dfree_info(conn, fsp->fsp_name, &bsize, &dfree, &dsize);
+	space_avail = get_dfree_info(fsp, &bsize, &dfree, &dsize);
 	if (space_avail == (uint64_t)-1) {
 		return -1;
 	}

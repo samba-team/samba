@@ -213,9 +213,13 @@ struct dfree_cached_info {
 	uint64_t dsize;
 };
 
-uint64_t get_dfree_info(connection_struct *conn, struct smb_filename *fname,
-			uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+uint64_t get_dfree_info(struct files_struct *fsp,
+			uint64_t *bsize,
+			uint64_t *dfree,
+			uint64_t *dsize)
 {
+	struct connection_struct *conn = fsp->conn;
+	struct smb_filename *fname = fsp->fsp_name;
 	int dfree_cache_time = lp_dfree_cache_time(SNUM(conn));
 	struct dfree_cached_info *dfc = NULL;
 	struct dfree_cached_info dfc_new = { 0 };

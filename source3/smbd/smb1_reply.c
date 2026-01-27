@@ -1008,7 +1008,7 @@ void reply_dskattr(struct smb_request *req)
 		return;
 	}
 
-	ret = get_dfree_info(conn, dot->fsp->fsp_name, &bsize, &dfree, &dsize);
+	ret = get_dfree_info(dot->fsp, &bsize, &dfree, &dsize);
 
 	TALLOC_FREE(dot);
 
