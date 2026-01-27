@@ -5403,11 +5403,12 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
  * - calculate used size of all bands: band_count * band_size
  **/
 static uint64_t fruit_disk_free(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
+				struct files_struct *fsp,
 				uint64_t *_bsize,
 				uint64_t *_dfree,
 				uint64_t *_dsize)
 {
+	const struct smb_filename *smb_fname = fsp->fsp_name;
 	struct fruit_config_data *config = NULL;
 	struct fruit_disk_free_state state = {0};
 	struct smb_Dir *dir_hnd = NULL;
@@ -5425,11 +5426,8 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 	if (!config->time_machine ||
 	    config->time_machine_max_size == 0)
 	{
-		return SMB_VFS_NEXT_DISK_FREE(handle,
-					      smb_fname,
-					      _bsize,
-					      _dfree,
-					      _dsize);
+		return SMB_VFS_NEXT_DISK_FREE(
+			handle, fsp, _bsize, _dfree, _dsize);
 	}
 
 	status = OpenDir(talloc_tos(),

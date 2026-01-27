@@ -122,22 +122,27 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 {
 	struct smb_filename *smb_fname = NULL;
 	uint64_t diskfree, bsize, dfree, dsize;
+	NTSTATUS status;
+
 	if (argc != 2) {
 		printf("Usage: disk_free <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					argv[1],
-					NULL,
-					NULL,
-					0,
-					ssf_flags());
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	status = synthetic_pathref(talloc_tos(),
+				   vfs->conn->cwd_fsp,
+				   argv[1],
+				   NULL,
+				   NULL,
+				   0,
+				   ssf_flags(),
+				   &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	diskfree = SMB_VFS_DISK_FREE(vfs->conn, smb_fname,
-				&bsize, &dfree, &dsize);
+	diskfree = SMB_VFS_DISK_FREE(
+		vfs->conn, smb_fname->fsp, &bsize, &dfree, &dsize);
+	TALLOC_FREE(smb_fname);
 	printf("disk_free: %" PRIu64 ", bsize = %" PRIu64 ", dfree = %" PRIu64
 	       ", dsize = %" PRIu64 "\n",
 	       diskfree,

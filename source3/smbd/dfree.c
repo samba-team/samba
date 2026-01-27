@@ -148,8 +148,8 @@ static uint64_t sys_disk_free(struct files_struct *fsp,
 		goto dfree_done;
 	}
 
-	if (SMB_VFS_DISK_FREE(conn, fname, bsize, dfree, dsize) ==
-	    (uint64_t)-1) {
+	if (SMB_VFS_DISK_FREE(conn, fsp, bsize, dfree, dsize) == (uint64_t)-1)
+	{
 		DBG_ERR("VFS disk_free failed. Error was : %s\n",
 			strerror(errno));
 		return (uint64_t)-1;

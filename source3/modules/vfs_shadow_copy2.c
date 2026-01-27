@@ -2622,17 +2622,19 @@ static NTSTATUS shadow_copy2_parent_pathname(vfs_handle_struct *handle,
 }
 
 static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint64_t *bsize,
-				uint64_t *dfree,
-				uint64_t *dsize)
+				       struct files_struct *fsp,
+				       uint64_t *bsize,
+				       uint64_t *dfree,
+				       uint64_t *dsize)
 {
+	const struct smb_filename *smb_fname = fsp->fsp_name;
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	int saved_errno = 0;
 	char *conv = NULL;
 	struct smb_filename *conv_smb_fname = NULL;
 	uint64_t ret = (uint64_t)-1;
+	NTSTATUS status;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
@@ -2642,26 +2644,28 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 		return (uint64_t)-1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
-					      bsize, dfree, dsize);
+		return SMB_VFS_NEXT_DISK_FREE(
+			handle, fsp, bsize, dfree, dsize);
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
 		return (uint64_t)-1;
 	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					0,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
+	status = synthetic_pathref(talloc_tos(),
+				   handle->conn->cwd_fsp,
+				   conv,
+				   NULL,
+				   NULL,
+				   0,
+				   smb_fname->flags,
+				   &conv_smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(conv);
 		return (uint64_t)-1;
 	}
-	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv_smb_fname,
-				bsize, dfree, dsize);
+	ret = SMB_VFS_NEXT_DISK_FREE(
+		handle, conv_smb_fname->fsp, bsize, dfree, dsize);
 	if (ret == (uint64_t)-1) {
 		saved_errno = errno;
 	}

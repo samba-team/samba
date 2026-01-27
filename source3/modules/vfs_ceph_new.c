@@ -2388,11 +2388,12 @@ out:
 /* Disk operations */
 
 static uint64_t vfs_ceph_disk_free(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint64_t *bsize,
-				uint64_t *dfree,
-				uint64_t *dsize)
+				   struct files_struct *fsp,
+				   uint64_t *bsize,
+				   uint64_t *dfree,
+				   uint64_t *dsize)
 {
+	const struct smb_filename *smb_fname = fsp->fsp_name;
 	struct statvfs statvfs_buf = { 0 };
 	int ret;
 	struct vfs_ceph_config *config = NULL;

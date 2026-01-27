@@ -174,25 +174,25 @@ static void smb_time_audit_disconnect(vfs_handle_struct *handle)
 }
 
 static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					uint64_t *bsize,
-					uint64_t *dfree,
-					uint64_t *dsize)
+					 struct files_struct *fsp,
+					 uint64_t *bsize,
+					 uint64_t *dfree,
+					 uint64_t *dsize)
 {
 	uint64_t result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_DISK_FREE(handle, smb_fname, bsize, dfree, dsize);
+	result = SMB_VFS_NEXT_DISK_FREE(handle, fsp, bsize, dfree, dsize);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	/* Don't have a reasonable notion of failure here */
 	if (timediff > audit_timeout) {
 		smb_time_audit_log_fname("disk_free",
-				timediff,
-				smb_fname->base_name);
+					 timediff,
+					 fsp->fsp_name->base_name);
 	}
 
 	return result;

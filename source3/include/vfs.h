@@ -397,9 +397,11 @@
  * Version 52 - Remove connectpath
  * Version 52 - Remove audit_file
  * Version 52 - Add VFS_OPEN_HOW_RESOLVE_NO_XDEV for SMB_VFS_OPENAT()
+ * Change to Version 53 - will ship with 4.25
+ * Version 53 - Change DISK_FREE to take a fsp instead of a name
  */
 
-#define SMB_VFS_INTERFACE_VERSION 52
+#define SMB_VFS_INTERFACE_VERSION 53
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -983,10 +985,10 @@ struct vfs_fn_pointers {
 	int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 	void (*disconnect_fn)(struct vfs_handle_struct *handle);
 	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint64_t *bsize,
-				uint64_t *dfree,
-				uint64_t *dsize);
+				 struct files_struct *fsp,
+				 uint64_t *bsize,
+				 uint64_t *dfree,
+				 uint64_t *dsize);
 	int (*get_quota_fn)(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				enum SMB_QUOTA_TYPE qtype,
@@ -1468,7 +1470,7 @@ int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user);
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_filename,
+				struct files_struct *fsp,
 				uint64_t *bsize,
 				uint64_t *dfree,
 				uint64_t *dsize);
@@ -1901,10 +1903,10 @@ int vfs_not_implemented_connect(
 			const char *user);
 void vfs_not_implemented_disconnect(vfs_handle_struct *handle);
 uint64_t vfs_not_implemented_disk_free(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint64_t *bsize,
-				uint64_t *dfree,
-				uint64_t *dsize);
+				       struct files_struct *fsp,
+				       uint64_t *bsize,
+				       uint64_t *dfree,
+				       uint64_t *dsize);
 int vfs_not_implemented_get_quota(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				enum SMB_QUOTA_TYPE qtype,

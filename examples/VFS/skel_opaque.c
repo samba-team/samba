@@ -46,10 +46,10 @@ static void skel_disconnect(vfs_handle_struct *handle)
 }
 
 static uint64_t skel_disk_free(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint64_t *bsize,
-				uint64_t *dfree,
-				uint64_t *dsize)
+			       struct files_struct *fsp,
+			       uint64_t *bsize,
+			       uint64_t *dfree,
+			       uint64_t *dsize)
 {
 	*bsize = 0;
 	*dfree = 0;

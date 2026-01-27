@@ -30,31 +30,39 @@ static char *capencode(TALLOC_CTX *ctx, const char *from);
 static char *capdecode(TALLOC_CTX *ctx, const char *from);
 
 static uint64_t cap_disk_free(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uint64_t *bsize,
-			uint64_t *dfree,
-			uint64_t *dsize)
+			      struct files_struct *fsp,
+			      uint64_t *bsize,
+			      uint64_t *dfree,
+			      uint64_t *dsize)
 {
+	const struct smb_filename *smb_fname = fsp->fsp_name;
 	char *capname = capencode(talloc_tos(), smb_fname->base_name);
 	struct smb_filename *cap_smb_fname = NULL;
+	NTSTATUS status;
+	uint64_t ret;
 
 	if (!capname) {
 		errno = ENOMEM;
 		return (uint64_t)-1;
 	}
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					capname,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
+
+	status = synthetic_pathref(capname,
+				   handle->conn->cwd_fsp,
+				   capname,
+				   NULL,
+				   NULL,
+				   smb_fname->twrp,
+				   smb_fname->flags,
+				   &cap_smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(capname);
-		errno = ENOMEM;
+		errno = map_errno_from_nt_status(status);
 		return (uint64_t)-1;
 	}
-	return SMB_VFS_NEXT_DISK_FREE(handle, cap_smb_fname,
-			bsize, dfree, dsize);
+	ret = SMB_VFS_NEXT_DISK_FREE(
+		handle, cap_smb_fname->fsp, bsize, dfree, dsize);
+	TALLOC_FREE(cap_smb_fname);
+	return ret;
 }
 
 static int cap_get_quota(vfs_handle_struct *handle,

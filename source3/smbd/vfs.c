@@ -541,7 +541,6 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 {
 	int ret;
-	connection_struct *conn = fsp->conn;
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
 	NTSTATUS status;
@@ -1432,14 +1431,13 @@ void smb_vfs_call_disconnect(struct vfs_handle_struct *handle)
 }
 
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
+				struct files_struct *fsp,
 				uint64_t *bsize,
 				uint64_t *dfree,
 				uint64_t *dsize)
 {
 	VFS_FIND(disk_free);
-	return handle->fns->disk_free_fn(handle, smb_fname,
-			bsize, dfree, dsize);
+	return handle->fns->disk_free_fn(handle, fsp, bsize, dfree, dsize);
 }
 
 int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,

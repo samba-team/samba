@@ -517,11 +517,12 @@ static void vfs_gluster_disconnect(struct vfs_handle_struct *handle)
 }
 
 static uint64_t vfs_gluster_disk_free(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint64_t *bsize_p,
-				uint64_t *dfree_p,
-				uint64_t *dsize_p)
+				      struct files_struct *fsp,
+				      uint64_t *bsize_p,
+				      uint64_t *dfree_p,
+				      uint64_t *dsize_p)
 {
+	const struct smb_filename *smb_fname = fsp->fsp_name;
 	struct statvfs statvfs = { 0, };
 	int ret;
 
