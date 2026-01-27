@@ -1317,14 +1317,30 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 	struct smb_filename *smb_fname_cpath = NULL;
 	struct vfs_statvfs_struct statbuf = {};
-	int ret;
+	NTSTATUS status;
+	int dirfd, ret;
 
-	smb_fname_cpath = cp_smb_basename(talloc_tos(), conn->connectpath);
-	if (smb_fname_cpath == NULL) {
+	dirfd = fsp_get_pathref_fd(conn->cwd_fsp);
+
+	if (dirfd == -1) {
+		/*
+		 * This happens in create_conn_struct_as_root()
+		 */
+		status = openat_pathref_fsp_rootdir(talloc_tos(),
+						    conn,
+						    &smb_fname_cpath);
+	} else {
+		status = openat_pathref_fsp_dot(talloc_tos(),
+						conn->cwd_fsp,
+						0,
+						&smb_fname_cpath);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
 		return caps;
 	}
 
-	ret = SMB_VFS_STATVFS(conn, smb_fname_cpath, &statbuf);
+	ret = SMB_VFS_FSTATVFS(conn, smb_fname_cpath->fsp, &statbuf);
 	if (ret == 0) {
 		caps = statbuf.FsCapabilities;
 	}
@@ -1339,12 +1355,6 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 
 	/* Work out what timestamp resolution we can
 	 * use when setting a timestamp. */
-
-	ret = SMB_VFS_STAT(conn, smb_fname_cpath);
-	if (ret == -1) {
-		TALLOC_FREE(smb_fname_cpath);
-		return caps;
-	}
 
 	if (smb_fname_cpath->st.st_ex_mtime.tv_nsec ||
 			smb_fname_cpath->st.st_ex_atime.tv_nsec ||

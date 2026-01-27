@@ -2495,7 +2495,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
-			rc = SMB_VFS_STATVFS(conn, &smb_fname, &svfs);
+			rc = SMB_VFS_FSTATVFS(conn, fsp, &svfs);
 
 #ifdef EOPNOTSUPP
 			if (rc == EOPNOTSUPP) {
