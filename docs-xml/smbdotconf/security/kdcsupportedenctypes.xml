@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
   <para>
-    On an active directory domain controller, this is the list of supported encryption types for local running kdc.
+    On an active directory domain controller, this is the list of supported encryption types for the local running kdc.
   </para>
 
   <para>
