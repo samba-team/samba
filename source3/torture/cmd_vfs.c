@@ -138,11 +138,12 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 	}
 	diskfree = SMB_VFS_DISK_FREE(vfs->conn, smb_fname,
 				&bsize, &dfree, &dsize);
-	printf("disk_free: %lu, bsize = %lu, dfree = %lu, dsize = %lu\n",
-			(unsigned long)diskfree,
-			(unsigned long)bsize,
-			(unsigned long)dfree,
-			(unsigned long)dsize);
+	printf("disk_free: %" PRIu64 ", bsize = %" PRIu64 ", dfree = %" PRIu64
+	       ", dsize = %" PRIu64 "\n",
+	       diskfree,
+	       bsize,
+	       dfree,
+	       dsize);
 	return NT_STATUS_OK;
 }
 
