@@ -16,6 +16,12 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+JSON Audit logging
+------------------
+
+The two leading spaces before the opening '{' on JSON audit log lines have been
+removed. And any embedded new line characters '\n' are converted to spaces.
+
 
 REMOVED FEATURES
 ================
