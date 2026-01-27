@@ -45,3 +45,9 @@ bld.SAMBA_BINARY('pthreadpool_tevent_cmocka_unit_test',
                   deps='PTHREADPOOL cmocka',
                   enabled=bld.env.WITH_PTHREADPOOL,
                   for_selftest=True)
+
+bld.SAMBA_BINARY('pthreadpool_pipe_cmocka_unit_test',
+                  source='test_pthreadpool_pipe.c',
+                  deps='PTHREADPOOL cmocka',
+                  enabled=bld.env.WITH_PTHREADPOOL,
+                  for_selftest=True)
