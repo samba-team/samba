@@ -2319,6 +2319,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle,
 				   uint64_t *dsize)
 {
 	const struct smb_filename *smb_fname = fsp->fsp_name;
+	int fd = fsp_get_pathref_fd(fsp);
 	struct security_unix_token *utok;
 	struct gpfs_quotaInfo qi_user = { 0 }, qi_group = { 0 };
 	struct gpfs_config_data *config;
@@ -2333,7 +2334,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle,
 			handle, fsp, bsize, dfree, dsize);
 	}
 
-	err = sys_statvfs(smb_fname->base_name, &statvfsbuf);
+	err = sys_fstatvfs(fd, &statvfsbuf);
 	if (err) {
 		DEBUG (0, ("Could not get fs usage, errno %d\n", errno));
 		return SMB_VFS_NEXT_DISK_FREE(
