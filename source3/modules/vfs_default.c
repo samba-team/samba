@@ -104,11 +104,12 @@ static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,
 				  uint64_t *dfree,
 				  uint64_t *dsize)
 {
-	const struct smb_filename *smb_fname = fsp->fsp_name;
 	struct vfs_statvfs_struct statvfsbuf;
-	int ret;
+	int fd, ret;
 
-	ret = sys_statvfs(smb_fname->base_name, &statvfsbuf);
+	fd = fsp_get_pathref_fd(fsp);
+
+	ret = sys_fstatvfs(fd, &statvfsbuf);
 	if (ret != 0) {
 		return (uint64_t)-1;
 	}
