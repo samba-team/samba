@@ -1479,13 +1479,6 @@ int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 						    shadow_copy_data,
 						    labels);
 }
-int smb_vfs_call_statvfs(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			struct vfs_statvfs_struct *statbuf)
-{
-	VFS_FIND(statvfs);
-	return handle->fns->statvfs_fn(handle, smb_fname, statbuf);
-}
 
 int smb_vfs_call_fstatvfs(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp,

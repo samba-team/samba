@@ -162,13 +162,6 @@ static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 	return -1;  /* Not implemented. */
 }
 
-static int vfswrap_statvfs(struct vfs_handle_struct *handle,
-			   const struct smb_filename *smb_fname,
-			   struct vfs_statvfs_struct *statbuf)
-{
-	return sys_statvfs(smb_fname->base_name, statbuf);
-}
-
 static int vfswrap_fstatvfs(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp,
 			    struct vfs_statvfs_struct *statbuf)
@@ -4056,7 +4049,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.get_quota_fn = vfswrap_get_quota,
 	.set_quota_fn = vfswrap_set_quota,
 	.get_shadow_copy_data_fn = vfswrap_get_shadow_copy_data,
-	.statvfs_fn = vfswrap_statvfs,
 	.fstatvfs_fn = vfswrap_fstatvfs,
 	.fs_capabilities_fn = vfswrap_fs_capabilities,
 	.get_dfs_referrals_fn = vfswrap_get_dfs_referrals,

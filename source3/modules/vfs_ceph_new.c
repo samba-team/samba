@@ -4622,7 +4622,6 @@ static struct vfs_fn_pointers ceph_new_fns = {
 	.disk_free_fn = vfs_ceph_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
-	.statvfs_fn = vfs_ceph_statvfs,
 	.fstatvfs_fn = vfs_ceph_fstatvfs,
 	.fs_capabilities_fn = vfs_ceph_fs_capabilities,
 

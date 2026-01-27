@@ -2569,7 +2569,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.disk_free_fn = vfs_gluster_disk_free,
 	.get_quota_fn = vfs_gluster_get_quota,
 	.set_quota_fn = vfs_gluster_set_quota,
-	.statvfs_fn = vfs_gluster_statvfs,
 	.fstatvfs_fn = vfs_gluster_fstatvfs,
 	.fs_capabilities_fn = vfs_gluster_fs_capabilities,
 

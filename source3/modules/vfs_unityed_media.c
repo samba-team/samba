@@ -530,38 +530,6 @@ err:
  * Success: return 0
  * Failure: set errno, return -1
  */
-static int um_statvfs(struct vfs_handle_struct *handle,
-		      const struct smb_filename *smb_fname,
-		      struct vfs_statvfs_struct *statbuf)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering with path '%s'\n", smb_fname->base_name));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_STATVFS(handle, client_fname, statbuf);
-err:
-	TALLOC_FREE(client_fname);
-	DEBUG(10, ("Leaving with path '%s'\n", smb_fname->base_name));
-	return status;
-}
-
-/*
- * Success: return 0
- * Failure: set errno, return -1
- */
 static int um_fstatvfs(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp,
 		       struct vfs_statvfs_struct *statbuf)
@@ -1548,7 +1516,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 
 	/* Disk operations */
 
-	.statvfs_fn = um_statvfs,
 	.fstatvfs_fn = um_fstatvfs,
 
 	/* Directory operations */

@@ -61,11 +61,6 @@
 #define SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data ,labels) \
 	smb_vfs_call_get_shadow_copy_data((handle)->next, (fsp), (shadow_copy_data), (labels))
 
-#define SMB_VFS_STATVFS(conn, smb_fname, statbuf) \
-	smb_vfs_call_statvfs((conn)->vfs_handles, (smb_fname), (statbuf))
-#define SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf) \
-	smb_vfs_call_statvfs((handle)->next, (smb_fname), (statbuf))
-
 #define SMB_VFS_FSTATVFS(conn, fsp, statbuf) \
 	smb_vfs_call_fstatvfs((conn)->vfs_handles, (fsp), (statbuf))
 #define SMB_VFS_NEXT_FSTATVFS(handle, fsp, statbuf) \

@@ -83,14 +83,6 @@ static int skel_get_shadow_copy_data(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_statvfs(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				struct vfs_statvfs_struct *statbuf)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_fstatvfs(struct vfs_handle_struct *handle,
 			 struct files_struct *fsp,
 			 struct vfs_statvfs_struct *statbuf)
@@ -969,7 +961,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.get_quota_fn = skel_get_quota,
 	.set_quota_fn = skel_set_quota,
 	.get_shadow_copy_data_fn = skel_get_shadow_copy_data,
-	.statvfs_fn = skel_statvfs,
 	.fstatvfs_fn = skel_fstatvfs,
 	.fs_capabilities_fn = skel_fs_capabilities,
 	.get_dfs_referrals_fn = skel_get_dfs_referrals,
