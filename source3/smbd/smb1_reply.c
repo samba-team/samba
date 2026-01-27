@@ -995,20 +995,23 @@ void reply_dskattr(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	uint64_t ret;
 	uint64_t dfree,dsize,bsize;
-	struct smb_filename smb_fname;
+	struct smb_filename *dot = NULL;
+	NTSTATUS status;
+
 	START_PROFILE(SMBdskattr);
 
-	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = discard_const_p(char, ".");
-
-	if (SMB_VFS_STAT(conn, &smb_fname) != 0) {
-		reply_nterror(req, map_nt_error_from_unix(errno));
-		DBG_WARNING("stat of . failed (%s)\n", strerror(errno));
+	status = openat_pathref_fsp_dot(talloc_tos(), conn->cwd_fsp, 0, &dot);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		DBG_WARNING("openat of . failed (%s)\n", nt_errstr(status));
 		END_PROFILE(SMBdskattr);
 		return;
 	}
 
-	ret = get_dfree_info(conn, &smb_fname, &bsize, &dfree, &dsize);
+	ret = get_dfree_info(conn, dot->fsp->fsp_name, &bsize, &dfree, &dsize);
+
+	TALLOC_FREE(dot);
+
 	if (ret == (uint64_t)-1) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBdskattr);
