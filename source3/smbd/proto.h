@@ -877,8 +877,11 @@ bool init_smb1_request(struct smb_request *req,
 
 /* The following definitions come from smbd/quotas.c  */
 
-bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
-		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(connection_struct *conn,
+		 struct files_struct *fsp,
+		 uint64_t *bsize,
+		 uint64_t *dfree,
+		 uint64_t *dsize);
 
 /* The following definitions come from smbd/smb2_reply.c  */
 

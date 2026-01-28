@@ -216,9 +216,13 @@ try to get the disk space from disk quotas (SunOS & Solaris2 version)
 Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 ****************************************************************************/
 
-bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
-		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn,
+		 struct files_struct *fsp,
+		 uint64_t *bsize,
+		 uint64_t *dfree,
+		 uint64_t *dsize)
 {
+	struct smb_filename *fname = fsp->fsp_name;
 	uid_t euser_id;
 	int ret;
 	struct dqblk D;
@@ -339,8 +343,11 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 
 #else /* WITH_QUOTAS */
 
-bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
-		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn,
+		 struct files_struct *fsp,
+		 uint64_t *bsize,
+		 uint64_t *dfree,
+		 uint64_t *dsize)
 {
 	(*bsize) = 512; /* This value should be ignored */
 
@@ -358,9 +365,13 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 /* wrapper to the new sys_quota interface
    this file should be removed later
    */
-bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
-		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn,
+		 struct files_struct *fsp,
+		 uint64_t *bsize,
+		 uint64_t *dfree,
+		 uint64_t *dsize)
 {
+	struct smb_filename *fname = fsp->fsp_name;
 	int r;
 	SMB_DISK_QUOTA D;
 	unid_t id;

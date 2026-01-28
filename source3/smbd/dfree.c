@@ -155,7 +155,7 @@ static uint64_t sys_disk_free(struct files_struct *fsp,
 		return (uint64_t)-1;
 	}
 
-	if (disk_quotas(conn, fname, &bsize_q, &dfree_q, &dsize_q)) {
+	if (disk_quotas(conn, fsp, &bsize_q, &dfree_q, &dsize_q)) {
 		uint64_t min_bsize = MIN(*bsize, bsize_q);
 
 		(*dfree) = (*dfree) * (*bsize) / min_bsize;
