@@ -120,8 +120,7 @@ static void gen_name(char *name)
 {
 	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~... ";
 	unsigned max_idx = strlen(chars);
-	unsigned len;
-	int i;
+	unsigned i, len;
 	char *p;
 
 	fstrcpy(name, "\\mangle_test\\");
