@@ -834,20 +834,20 @@ static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				enum SMB_QUOTA_TYPE qtype,
-				unid_t id,
-				SMB_DISK_QUOTA *qt)
+				    struct files_struct *fsp,
+				    enum SMB_QUOTA_TYPE qtype,
+				    unid_t id,
+				    SMB_DISK_QUOTA *qt)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, qt);
+	result = SMB_VFS_NEXT_GET_QUOTA(handle, fsp, qtype, id, qt);
 
 	do_log(SMB_VFS_OP_GET_QUOTA,
 	       errmsg_unix(result),
 	       handle,
 	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
+	       smb_fname_str_do_log(handle->conn, fsp->fsp_name));
 
 	return result;
 }

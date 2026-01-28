@@ -2678,17 +2678,19 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_get_quota(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				enum SMB_QUOTA_TYPE qtype,
-				unid_t id,
-				SMB_DISK_QUOTA *dq)
+				  struct files_struct *fsp,
+				  enum SMB_QUOTA_TYPE qtype,
+				  unid_t id,
+				  SMB_DISK_QUOTA *dq)
 {
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	int ret;
 	int saved_errno = 0;
 	char *conv;
 	struct smb_filename *conv_smb_fname = NULL;
+	NTSTATUS status;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
@@ -2698,25 +2700,31 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle,
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, dq);
+		return SMB_VFS_NEXT_GET_QUOTA(handle, fsp, qtype, id, dq);
 	}
 
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					0,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
+
+	status = synthetic_pathref(talloc_tos(),
+				   fsp->conn->cwd_fsp,
+				   conv,
+				   NULL,
+				   NULL,
+				   0,
+				   smb_fname->flags,
+				   &conv_smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(conv);
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = SMB_VFS_NEXT_GET_QUOTA(handle, conv_smb_fname, qtype, id, dq);
+	ret = SMB_VFS_NEXT_GET_QUOTA(
+		handle, conv_smb_fname->fsp, qtype, id, dq);
 
 	if (ret == -1) {
 		saved_errno = errno;

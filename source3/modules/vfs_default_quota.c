@@ -93,15 +93,14 @@
 	lp_parm_bool(SNUM((handle)->conn),DEFAULT_QUOTA_NAME,"gid nolimit",DEFAULT_QUOTA_GID_NOLIMIT_DEFAULT)
 
 static int default_quota_get_quota(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				enum SMB_QUOTA_TYPE qtype,
-				unid_t id,
-				SMB_DISK_QUOTA *dq)
+				   struct files_struct *fsp,
+				   enum SMB_QUOTA_TYPE qtype,
+				   unid_t id,
+				   SMB_DISK_QUOTA *dq)
 {
 	int ret = -1;
 
-	if ((ret = SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname,
-				qtype, id, dq)) != 0) {
+	if ((ret = SMB_VFS_NEXT_GET_QUOTA(handle, fsp, qtype, id, dq)) != 0) {
 		return ret;
 	}
 
@@ -127,8 +126,11 @@ static int default_quota_get_quota(vfs_handle_struct *handle,
 				unid_t qid;
 				uint32_t qflags = dq->qflags;
 				qid.uid = DEFAULT_QUOTA_UID(handle);
-				SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname,
-					SMB_USER_QUOTA_TYPE, qid, dq);
+				SMB_VFS_NEXT_GET_QUOTA(handle,
+						       fsp,
+						       SMB_USER_QUOTA_TYPE,
+						       qid,
+						       dq);
 				dq->qflags = qflags;
 			}
 			break;
@@ -138,9 +140,11 @@ static int default_quota_get_quota(vfs_handle_struct *handle,
 				unid_t qid;
 				uint32_t qflags = dq->qflags;
 				qid.gid = DEFAULT_QUOTA_GID(handle);
-				SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname,
+				SMB_VFS_NEXT_GET_QUOTA(handle,
+						       fsp,
 						       SMB_GROUP_QUOTA_TYPE,
-						       qid, dq);
+						       qid,
+						       dq);
 				dq->qflags = qflags;
 			}
 			break;

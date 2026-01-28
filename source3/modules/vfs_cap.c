@@ -66,30 +66,42 @@ static uint64_t cap_disk_free(vfs_handle_struct *handle,
 }
 
 static int cap_get_quota(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			enum SMB_QUOTA_TYPE qtype,
-			unid_t id,
-			SMB_DISK_QUOTA *dq)
+			 struct files_struct *fsp,
+			 enum SMB_QUOTA_TYPE qtype,
+			 unid_t id,
+			 SMB_DISK_QUOTA *dq)
 {
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
 	struct smb_filename *cap_smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					cappath,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
-		TALLOC_FREE(cappath);
-		errno = ENOMEM;
+	status = synthetic_pathref(talloc_tos(),
+				   fsp->conn->cwd_fsp,
+				   cappath,
+				   NULL,
+				   NULL,
+				   smb_fname->twrp,
+				   smb_fname->flags,
+				   &cap_smb_fname);
+	TALLOC_FREE(cappath);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	return SMB_VFS_NEXT_GET_QUOTA(handle, cap_smb_fname, qtype, id, dq);
+	ret = SMB_VFS_NEXT_GET_QUOTA(
+		handle, cap_smb_fname->fsp, qtype, id, dq);
+	{
+		int err = errno;
+		TALLOC_FREE(cap_smb_fname);
+		errno = err;
+	}
+	return ret;
 }
 
 static struct dirent *

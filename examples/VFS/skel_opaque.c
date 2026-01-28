@@ -58,10 +58,10 @@ static uint64_t skel_disk_free(vfs_handle_struct *handle,
 }
 
 static int skel_get_quota(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				enum SMB_QUOTA_TYPE qtype,
-				unid_t id,
-				SMB_DISK_QUOTA *dq)
+			  struct files_struct *fsp,
+			  enum SMB_QUOTA_TYPE qtype,
+			  unid_t id,
+			  SMB_DISK_QUOTA *dq)
 {
 	errno = ENOSYS;
 	return -1;

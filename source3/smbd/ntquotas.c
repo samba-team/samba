@@ -66,6 +66,7 @@ NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
 	unid_t id;
 	struct smb_filename *smb_fname_cwd = NULL;
 	int saved_errno = 0;
+	NTSTATUS status;
 
 	ZERO_STRUCT(D);
 
@@ -84,12 +85,18 @@ NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	smb_fname_cwd = cp_smb_basename(talloc_tos(), ".");
-	if (smb_fname_cwd == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	/*
+	 * SMB_VFS_GET_QUOTA needs a "real" fsp, not a fake file one.
+	 */
+	status = openat_pathref_fsp_dot(talloc_tos(),
+					fsp->conn->cwd_fsp,
+					0,
+					&smb_fname_cwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	ret = SMB_VFS_GET_QUOTA(fsp->conn, smb_fname_cwd, qtype, id, &D);
+	ret = SMB_VFS_GET_QUOTA(smb_fname_cwd->fsp, qtype, id, &D);
 	if (ret == -1) {
 		saved_errno = errno;
 	}

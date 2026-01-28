@@ -28,10 +28,10 @@
 #define DBGC_CLASS DBGC_VFS
 
 static int dfq_get_quota(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			enum SMB_QUOTA_TYPE qtype,
-			unid_t id,
-			SMB_DISK_QUOTA *qt);
+			 struct files_struct *fsp,
+			 enum SMB_QUOTA_TYPE qtype,
+			 unid_t id,
+			 SMB_DISK_QUOTA *qt);
 
 static uint64_t dfq_load_param(int snum, const char *path, const char *section,
 			       const char *param, uint64_t def_val)
@@ -95,11 +95,12 @@ static uint64_t dfq_disk_free(vfs_handle_struct *handle,
 }
 
 static int dfq_get_quota(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			enum SMB_QUOTA_TYPE qtype,
-			unid_t id,
-			SMB_DISK_QUOTA *qt)
+			 struct files_struct *fsp,
+			 enum SMB_QUOTA_TYPE qtype,
+			 unid_t id,
+			 SMB_DISK_QUOTA *qt)
 {
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	int rc = 0;
 	int save_errno;
 	char *section = NULL;
@@ -178,7 +179,7 @@ static int dfq_get_quota(struct vfs_handle_struct *handle,
 	goto out;
 
 dflt:
-	rc = SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, qt);
+	rc = SMB_VFS_NEXT_GET_QUOTA(handle, fsp, qtype, id, qt);
 
 out:
 	save_errno = errno;

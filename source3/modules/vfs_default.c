@@ -120,12 +120,13 @@ static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,
 }
 
 static int vfswrap_get_quota(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				enum SMB_QUOTA_TYPE qtype,
-				unid_t id,
-				SMB_DISK_QUOTA *qt)
+			     struct files_struct *fsp,
+			     enum SMB_QUOTA_TYPE qtype,
+			     unid_t id,
+			     SMB_DISK_QUOTA *qt)
 {
 #ifdef HAVE_SYS_QUOTAS
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	int result;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_get_quota);
