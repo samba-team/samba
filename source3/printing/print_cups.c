@@ -1130,6 +1130,9 @@ static int cups_job_submit(int snum, struct printjob *pjob,
 	if (http)
 		httpClose(http);
 
+	if (num_options) {
+		cupsFreeOptions(num_options, options);
+	}
 	TALLOC_FREE(frame);
 
 	return ret;
