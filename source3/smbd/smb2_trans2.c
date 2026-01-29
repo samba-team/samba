@@ -2020,7 +2020,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	st = smb_fname.st;
+	st = fsp->fsp_name->st;
 
 	if (max_data_bytes + DIR_ENTRY_SAFETY_MARGIN < max_data_bytes) {
 		return NT_STATUS_INVALID_PARAMETER;
