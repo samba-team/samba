@@ -470,13 +470,14 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		status = smbd_do_qfsinfo(smb2req->xconn, conn, state,
+		status = smbd_do_qfsinfo(smb2req->xconn,
+					 conn,
+					 state,
 					 file_info_level,
 					 STR_UNICODE,
 					 in_output_buffer_length,
 					 &fixed_portion,
 					 fsp,
-					 fsp->fsp_name,
 					 &data,
 					 &data_size);
 		/* some responses set STATUS_BUFFER_OVERFLOW and return

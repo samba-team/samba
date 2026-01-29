@@ -1972,7 +1972,6 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 unsigned int max_data_bytes,
 			 size_t *fixed_portion,
 			 struct files_struct *fsp,
-			 struct smb_filename *fname,
 			 char **ppdata,
 			 int *ret_data_len)
 {
@@ -1984,19 +1983,11 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
 	int snum = SNUM(conn);
 	const char *fstype = lp_fstype(SNUM(conn));
-	const char *filename = NULL;
 	uint64_t bytes_per_sector = 512;
-	struct smb_filename smb_fname;
 	SMB_STRUCT_STAT st;
 	NTSTATUS status = NT_STATUS_OK;
 	uint64_t df_ret;
 	uint32_t serial;
-
-	if (fname == NULL || fname->base_name == NULL) {
-		filename = ".";
-	} else {
-		filename = fname->base_name;
-	}
 
 	if (IS_IPC(conn)) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
@@ -2007,18 +1998,6 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	}
 
 	DBG_NOTICE("level = %d\n", info_level);
-
-	smb_fname = (struct smb_filename) {
-		.base_name = discard_const_p(char, filename),
-		.flags = fname ? fname->flags : 0,
-		.twrp = fname ? fname->twrp : 0,
-	};
-
-	if(info_level != SMB_FS_QUOTA_INFORMATION
-	   && SMB_VFS_STAT(conn, &smb_fname) != 0) {
-		DEBUG(2,("stat of . failed (%s)\n", strerror(errno)));
-		return map_nt_error_from_unix(errno);
-	}
 
 	st = fsp->fsp_name->st;
 

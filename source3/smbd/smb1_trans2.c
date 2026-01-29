@@ -1681,7 +1681,6 @@ static void call_trans2qfsinfo(connection_struct *conn,
 				 max_data_bytes,
 				 &fixed_portion,
 				 dot->fsp,
-				 NULL,
 				 ppdata,
 				 &data_len);
 
