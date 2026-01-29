@@ -2836,7 +2836,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 			pjob->filename, pjob->size ? "deleted" : "zero length" ));
 		unlink(pjob->filename);
 		pjob_delete(global_event_context(), msg_ctx, sharename, jobid);
-		return NT_STATUS_OK;
+		goto out;
 	}
 
 	/* don't strip out characters like '$' from the printername */
@@ -2878,7 +2878,8 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(msg_ctx, snum, False);
-
+out:
+	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 
 fail:
