@@ -132,7 +132,7 @@ static int pthreadpool_pipe_reinit(struct pthreadpool_pipe *pool)
 	}
 
 	ret = dup2(pool->pipe_fds[0], signal_fd);
-	if (ret != 0) {
+	if (ret == -1) {
 		return errno;
 	}
 
