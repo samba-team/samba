@@ -140,24 +140,21 @@ def generatePythonFile(out_file, errors):
     out_file.write("\t.m_name = \"hresult\",\n")
     out_file.write("\t.m_doc = \"HRESULT defines\",\n")
     out_file.write("\t.m_size = -1,\n")
-    out_file.write("\t};\n\n")
+    out_file.write("};\n\n")
+    out_file.write("static void py_addstr(PyObject *m, HRESULT err, const char *name)\n");
+    out_file.write("{\n");
+    out_file.write("\tPyObject *num = PyLong_FromUnsignedLongLong(HRES_ERROR_V(err));\n");
+    out_file.write("\tPyModule_AddObject(m, name, num);\n");
+    out_file.write("}\n\n");
     out_file.write("MODULE_INIT_FUNC(hresult)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m = NULL;\n")
-    out_file.write("\tPyObject *py_obj = NULL;\n")
-    out_file.write("\tint ret;\n\n")
     out_file.write("\tm = PyModule_Create(&moduledef);\n")
     out_file.write("\tif (m == NULL) {\n")
     out_file.write("\t\treturn NULL;\n")
     out_file.write("\t}\n\n")
     for err in errors:
-        out_file.write(f"\tpy_obj = PyLong_FromUnsignedLongLong(HRES_ERROR_V({err.err_define}));\n")
-        out_file.write(f"\tret = PyModule_AddObject(m, \"{err.err_define}\", py_obj);\n")
-        out_file.write("\tif (ret) {\n")
-        out_file.write("\t\tPy_XDECREF(py_obj);\n")
-        out_file.write("\t\tPy_DECREF(m);\n")
-        out_file.write("\t\treturn NULL;\n")
-        out_file.write("\t}\n")
+        out_file.write(f"\tpy_addstr(m, {err.err_define}, \"{err.err_define}\");\n")
     out_file.write("\n")
     out_file.write("\treturn m;\n")
     out_file.write("}\n")
