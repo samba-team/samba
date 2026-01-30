@@ -78,6 +78,11 @@ def generatePythonFile(out_file, errors):
     out_file.write("\t.m_doc = \"NTSTATUS error defines\",\n")
     out_file.write("\t.m_size = -1,\n")
     out_file.write("};\n\n")
+    out_file.write("static void py_addstr(PyObject *m, NTSTATUS status, const char *name)\n");
+    out_file.write("{\n");
+    out_file.write("\tPyObject *num = PyLong_FromUnsignedLongLong(NT_STATUS_V(status));\n");
+    out_file.write("\tPyModule_AddObject(m, name, num);\n");
+    out_file.write("}\n\n");
     out_file.write("MODULE_INIT_FUNC(ntstatus)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m;\n\n")
@@ -85,9 +90,7 @@ def generatePythonFile(out_file, errors):
     out_file.write("\tif (m == NULL)\n")
     out_file.write("\t\treturn NULL;\n\n")
     for err in errors:
-        line = """\tPyModule_AddObject(m, \"%s\",
-                  \t\tPyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
-        out_file.write(line)
+        out_file.write(f"\tpy_addstr(m, {err.err_define}, \"{err.err_define}\");\n")
     out_file.write("\n")
     out_file.write("\treturn m;\n")
     out_file.write("}\n")
