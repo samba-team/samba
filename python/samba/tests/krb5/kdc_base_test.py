@@ -109,6 +109,8 @@ from samba.security import (
 
 rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
 aes256_sk_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
+aes128_bit = security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+aes256_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 
 import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
@@ -1647,6 +1649,21 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return keys
 
+    def default_supported_enctypes(self):
+        default_supported_enctypes = self.default_etypes
+        if default_supported_enctypes is None:
+            lp = self.get_lp()
+            default_supported_enctypes = lp.get(
+                'kdc default domain supported enctypes')
+            if default_supported_enctypes == 0:
+                if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
+                    # AES keys are available.
+                    default_supported_enctypes = aes128_bit | aes256_bit
+                else:
+                    default_supported_enctypes = rc4_bit | aes256_sk_bit
+
+        return default_supported_enctypes
+
     def creds_set_keys(self, creds, keys):
         if keys is not None:
             for enctype, key in keys.items():
@@ -1663,12 +1680,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         supported_enctypes = res[0].get('msDS-SupportedEncryptionTypes', idx=0)
 
         if supported_enctypes is None:
-            supported_enctypes = self.default_etypes
-        if supported_enctypes is None:
-            lp = self.get_lp()
-            supported_enctypes = lp.get('kdc default domain supported enctypes')
-            if supported_enctypes == 0:
-                supported_enctypes = rc4_bit | aes256_sk_bit
+            supported_enctypes = self.default_supported_enctypes()
         supported_enctypes = int(supported_enctypes)
 
         if extra_bits is not None:

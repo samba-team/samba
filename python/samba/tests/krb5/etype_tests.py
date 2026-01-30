@@ -60,14 +60,6 @@ class EtypeTests(KdcTgsBaseTests):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
-        self.default_supported_enctypes = self.default_etypes
-        if self.default_supported_enctypes is None:
-            lp = self.get_lp()
-            self.default_supported_enctypes = lp.get(
-                'kdc default domain supported enctypes')
-            if self.default_supported_enctypes == 0:
-                self.default_supported_enctypes = rc4_bit | aes256_sk_bit
-
     def _server_creds(self, supported=None, force_nt4_hash=False,
                       account_type=None):
         if account_type is None:
@@ -172,7 +164,7 @@ class EtypeTests(KdcTgsBaseTests):
         if not supported_bits:
             # If msDS-SupportedEncryptionTypes is missing or set to zero, the
             # default value, provided by smb.conf, is assumed.
-            supported_bits = self.default_supported_enctypes
+            supported_bits = self.default_supported_enctypes()
 
         # If msDS-SupportedEncryptionTypes specifies only non-etype bits, we
         # expect an error.
@@ -248,7 +240,7 @@ class EtypeTests(KdcTgsBaseTests):
         if not supported_bits:
             # If msDS-SupportedEncryptionTypes is missing or set to zero, the
             # default value, provided by smb.conf, is assumed.
-            supported_bits = self.default_supported_enctypes
+            supported_bits = self.default_supported_enctypes()
 
         # If msDS-SupportedEncryptionTypes specifies only non-etype bits, we
         # expect an error.

@@ -1941,11 +1941,16 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val = data_blob_string_const("computer");
 	struct ldb_val gmsa_oc_val = data_blob_string_const("msDS-GroupManagedServiceAccount");
+	int domain_functional_level = dsdb_functional_level(kdc_db_ctx->samdb);
 	uint32_t config_default_supported_enctypes = lpcfg_kdc_default_domain_supported_enctypes(lp_ctx);
+	uint32_t domain_default_supported_enctypes =
+		domain_functional_level >= DS_DOMAIN_FUNCTION_2008
+			? ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256
+			: ENC_RC4_HMAC_MD5 | ENC_HMAC_SHA1_96_AES256_SK;
 	uint32_t default_supported_enctypes =
-		config_default_supported_enctypes != 0 ?
-		config_default_supported_enctypes :
-		ENC_RC4_HMAC_MD5 | ENC_HMAC_SHA1_96_AES256_SK;
+		config_default_supported_enctypes != 0
+			? config_default_supported_enctypes
+			: domain_default_supported_enctypes;
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
@@ -1982,7 +1987,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		supported_enctypes = default_supported_enctypes;
 	}
 
-	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
+	if (domain_functional_level >= DS_DOMAIN_FUNCTION_2008) {
 		domain_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
 	}
 

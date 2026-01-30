@@ -38,5 +38,8 @@
 
 </description>
 
-<value type="default">0<comment>maps to what the software supports currently: arcfour-hmac-md5 aes256-cts-hmac-sha1-96-sk</comment></value>
+<value type="default">0<comment>maps to what the software supports currently. If
+AES keys are available (the domain functional level is 2008 or higher), this is
+aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96. Otherwise it is
+arcfour-hmac-md5 aes256-cts-hmac-sha1-96-sk.</comment></value>
 </samba:parameter>
