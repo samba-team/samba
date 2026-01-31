@@ -126,9 +126,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp,
 					 bool update_mtime,
 					 bool update_ctime)
 {
-	struct smb_file_time ft;
-
-	init_smb_file_time(&ft);
+	struct smb_file_time ft = smb_file_time_omit();
 
 	if (fsp->fsp_flags.posix_open) {
 		return;
@@ -200,9 +198,8 @@ void mark_file_modified(files_struct *fsp,
 	if (fsp->fsp_flags.write_time_forced &&
 	    modified_state->valid)
 	{
-		struct smb_file_time ft;
+		struct smb_file_time ft = smb_file_time_omit();
 
-		init_smb_file_time(&ft);
 		ft.mtime = modified_state->st.st_ex_mtime;
 
 		/*

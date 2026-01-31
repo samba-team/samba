@@ -872,7 +872,7 @@ void reply_getatr(struct smb_request *req)
 
 void reply_setatr(struct smb_request *req)
 {
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname = NULL;
 	struct files_struct *dirfsp = NULL;
@@ -886,7 +886,6 @@ void reply_setatr(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsetatr);
-	init_smb_file_time(&ft);
 
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2362,7 +2361,7 @@ void reply_mknew(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	uint32_t fattr = 0;
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	struct files_struct *dirfsp = NULL;
 	files_struct *fsp;
 	int oplock_request = 0;
@@ -2376,7 +2375,6 @@ void reply_mknew(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcreate);
-	init_smb_file_time(&ft);
 
         if (req->wct < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -6853,12 +6851,11 @@ void reply_readbs(struct smb_request *req)
 void reply_setattrE(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	files_struct *fsp;
 	NTSTATUS status;
 
 	START_PROFILE(SMBsetattrE);
-	init_smb_file_time(&ft);
 
 	if (req->wct < 7) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

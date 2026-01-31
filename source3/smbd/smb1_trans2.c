@@ -3913,7 +3913,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					files_struct *fsp,
 					struct smb_filename *smb_fname)
 {
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	uint32_t raw_unixmode;
 	mode_t unixmode;
 	off_t size = 0;
@@ -3926,8 +3926,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_DOS(ERRSRV, ERRaccess);
 	}
-
-	init_smb_file_time(&ft);
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;

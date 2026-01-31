@@ -1198,11 +1198,11 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	return NT_STATUS_OK;
 }
 
-void init_smb_file_time(struct smb_file_time *ft)
+struct smb_file_time smb_file_time_omit(void)
 {
 	struct timespec omit = make_omit_timespec();
 
-	*ft = (struct smb_file_time) {
+	return (struct smb_file_time){
 		.atime = omit,
 		.ctime = omit,
 		.mtime = omit,

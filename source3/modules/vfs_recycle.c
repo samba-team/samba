@@ -425,11 +425,9 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 			     bool touch_mtime)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	int ret, err;
 	NTSTATUS status;
-
-	init_smb_file_time(&ft);
 
 	status = synthetic_pathref(talloc_tos(),
 				   handle->conn->cwd_fsp,

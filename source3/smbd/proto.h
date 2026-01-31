@@ -1202,7 +1202,7 @@ NTSTATUS vfs_fstreaminfo(struct files_struct *fsp,
 			TALLOC_CTX *mem_ctx,
 			unsigned int *num_streams,
 			struct stream_struct **streams);
-void init_smb_file_time(struct smb_file_time *ft);
+struct smb_file_time smb_file_time_omit(void);
 int vfs_fake_fd(void);
 int vfs_fake_fd_close(int fd);
 uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,

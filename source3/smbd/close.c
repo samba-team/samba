@@ -732,10 +732,8 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
  */
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	NTSTATUS status;
-
-	init_smb_file_time(&ft);
 
 	if (is_omit_timespec(&fsp->close_write_time)) {
 		return NT_STATUS_OK;

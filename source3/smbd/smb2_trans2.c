@@ -4651,11 +4651,9 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 					struct smb_filename *smb_fname)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
-	struct smb_file_time ft;
+	struct smb_file_time ft = smb_file_time_omit();
 	uint32_t dosmode = 0;
 	NTSTATUS status = NT_STATUS_OK;
-
-	init_smb_file_time(&ft);
 
 	if (total_data < 36) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4707,9 +4705,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
-	struct smb_file_time ft;
-
-	init_smb_file_time(&ft);
+	struct smb_file_time ft = smb_file_time_omit();
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
