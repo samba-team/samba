@@ -4740,8 +4740,11 @@ void reply_lseek(struct smb_request *req)
 	reply_smb1_outbuf(req, 2, 0);
 	SIVAL(req->outbuf,smb_vwv0,res);
 
-	DEBUG(3,("lseek %s ofs=%.0f newpos = %.0f mode=%d\n",
-		fsp_fnum_dbg(fsp), (double)startpos, (double)res, mode));
+	DBG_NOTICE("lseek %s ofs=%ju newpos =%ju mode=%d\n",
+		   fsp_fnum_dbg(fsp),
+		   (uintmax_t)startpos,
+		   (uintmax_t)res,
+		   mode);
 
 	END_PROFILE(SMBlseek);
 	return;
