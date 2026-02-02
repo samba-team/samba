@@ -320,6 +320,14 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if ((fsp->fsp_name->twrp != 0) ||
+	    ((fsp->access_mask &
+	      (SEC_FILE_WRITE_DATA | SEC_FILE_WRITE_ATTRIBUTE)) == 0))
+	{
+		DBG_DEBUG("Access denied on a readonly handle\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	status = reparse_buffer_check(in_data,
 				      in_len,
 				      &reparse_tag,
@@ -389,6 +397,14 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 	NTSTATUS status;
 	uint32_t dos_mode;
 	int ret;
+
+	if ((fsp->fsp_name->twrp != 0) ||
+	    ((fsp->access_mask &
+	      (SEC_FILE_WRITE_DATA | SEC_FILE_WRITE_ATTRIBUTE)) == 0))
+	{
+		DBG_DEBUG("Access denied on a readonly handle\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	status = fsctl_get_reparse_tag(fsp, &existing_tag);
 	if (!NT_STATUS_IS_OK(status)) {
