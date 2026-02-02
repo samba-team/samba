@@ -435,7 +435,7 @@ def CHECK_MAKEFLAGS(options):
                 Logs.zones = ['runner']
             if Logs.verbose > 2:
                 Logs.zones = ['*']
-        elif opt[0].isupper() and opt.find('=') != -1:
+        elif (opt[0].isupper() or opt[0] == '_') and '=' in opt:
             # this allows us to set waf options on the make command line
             # for example, if you do "make FOO=blah", then we set the
             # option 'FOO' in Options.options, to blah. If you look in wafsamba/wscript
@@ -470,6 +470,16 @@ def wafsamba_options_parse_cmd_args(self, _args=None, cwd=None, allow_unknown=Fa
                                       _args=_args,
                                       cwd=cwd,
                                       allow_unknown=allow_unknown)
+    commands = []
+    for arg in leftover_args:
+        if '=' in arg and (arg.startswith('_') or arg[0].isupper()):
+            # We assume this is an environment setting argument, not a
+            # build target.
+            k, v = arg.split('=', 1)
+            setattr(options, k, v)
+        else:
+            commands.append(arg)
+
     CHECK_MAKEFLAGS(options)
     if options.jobs == 1:
         #
@@ -489,7 +499,7 @@ def wafsamba_options_parse_cmd_args(self, _args=None, cwd=None, allow_unknown=Fa
                 return
         from waflib import Runner
         Runner.Spawner = NoOpSpawner
-    return options, leftover_args
+    return options, commands
 Options.OptionsContext.parse_cmd_args = wafsamba_options_parse_cmd_args
 
 option_groups = {}
