@@ -54,6 +54,7 @@
 #include "source3/utils/passwd_proto.h"
 #include "auth/gensec/gensec.h"
 #include "lib/param/param.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
@@ -1414,18 +1415,33 @@ static struct functable net_func[] = {
 				CRED_SPECIFIED);
 		}
 
-		/* cli_credentials_get_ccache_name_obtained() would not work
-		 * here but we can now access the content of the
-		 * --use-krb5-ccache option via cli credentials. Fallback to
-		 * KRB5CCNAME environment variable to get 'net ads kerberos'
-		 * functions to work at all - gd */
-
+		/*
+		 * Priority order for krb5 credential cache name
+		 *
+		 *    via cli_credentials_get_out_ccache_name() :
+		 *
+		 * 1. '--use-krb5-ccache' option
+		 *
+		 *    via krb5_cc_default_name() :
+		 *
+		 * 2. KRB5CCNAME environment variable
+		 * 3. default_ccache_name in [libdefaults] section of krb5.conf
+		 * 4. ...more - krb5_cc_default_name() always returns something
+		 *    - see documentation
+		 */
 		krb5ccname = cli_credentials_get_out_ccache_name(c->creds);
 		if (krb5ccname == NULL || krb5ccname[0] == '\0') {
-			krb5ccname = getenv("KRB5CCNAME");
-		}
-		if (krb5ccname == NULL || krb5ccname[0] == '\0') {
-			krb5ccname = talloc_strdup(c, "MEMORY:net");
+			krb5_context ct = NULL;
+			krb5_error_code ret = smb_krb5_init_context_common(&ct);
+
+			if (ret == 0) {
+				krb5ccname = smb_force_krb5_cc_default_name(ct);
+				if (krb5ccname != NULL) {
+					krb5ccname = talloc_strdup(c,
+								   krb5ccname);
+				}
+				krb5_free_context(ct);
+			}
 		}
 		if (krb5ccname == NULL) {
 			DBG_ERR("Not able to setup krb5 ccache");
