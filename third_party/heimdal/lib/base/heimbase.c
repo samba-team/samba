@@ -918,7 +918,7 @@ heim_path_vcreate(heim_object_t ptr, size_t size, heim_object_t leaf,
     heim_object_t next_path_element = NULL;
     heim_object_t node = ptr;
     heim_object_t next_node = NULL;
-    heim_tid_t node_type;
+    heim_tid_t node_type = 0;
     int ret = 0;
 
     if (ptr == NULL)

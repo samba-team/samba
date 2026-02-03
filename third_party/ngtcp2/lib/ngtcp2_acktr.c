@@ -270,7 +270,7 @@ static void acktr_on_ack(ngtcp2_acktr *acktr, ngtcp2_ringbuf *rb,
 }
 
 void ngtcp2_acktr_recv_ack(ngtcp2_acktr *acktr, const ngtcp2_ack *fr) {
-  ngtcp2_acktr_ack_entry *ent;
+  ngtcp2_acktr_ack_entry *ent = NULL;
   int64_t largest_ack = fr->largest_ack, min_ack;
   size_t i, j;
   ngtcp2_ringbuf *rb = &acktr->acks.rb;
