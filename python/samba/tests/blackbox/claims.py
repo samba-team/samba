@@ -26,6 +26,7 @@ import os
 from samba import NTSTATUSError
 from samba.auth import AuthContext
 from samba.credentials import Credentials
+from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.gensec import FEATURE_SEAL, Security
 from samba.ntstatus import NT_STATUS_LOGON_FAILURE, NT_STATUS_UNSUCCESSFUL
 from samba.tests import BlackboxTestCase
@@ -485,6 +486,7 @@ class ClaimsSupportTests(BlackboxTestCase):
             client_creds.set_krb5_fast_armor_credentials(device_creds, True)
 
         target_creds = Credentials()
+        target_creds.set_secure_channel_type(SEC_CHAN_WKSTA)
         target_creds.set_username(target_username)
         target_creds.set_password(target_password)
         target_creds.guess(lp)
