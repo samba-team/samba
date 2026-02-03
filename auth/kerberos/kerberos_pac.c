@@ -414,14 +414,13 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 		 logon_info->info3.base.account_name.string,
 		 logon_info->info3.base.full_name.string));
 
-	DEBUG(10,("Successfully validated Kerberos PAC\n"));
-
 	if (DEBUGLEVEL >= 10) {
-		const char *s;
-		s = NDR_PRINT_STRUCT_STRING(tmp_ctx, PAC_DATA, pac_data);
-		if (s) {
-			DEBUGADD(10,("%s\n", s));
-		}
+		const char *s = NDR_PRINT_STRUCT_STRING(
+			tmp_ctx, PAC_DATA, pac_data);
+
+		DEBUG(10,("Successfully validated Kerberos PAC\n%s%c",
+			  s != NULL ? s : "",
+			  s != NULL ? '\n' : '\0'));
 	}
 
 	if (pac_data_out) {
