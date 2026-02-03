@@ -151,17 +151,24 @@ dbwrap_merge_dbs(struct db_context *to, struct db_context *from, int flags)
 
 const char *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
 
-static void debug_lock_order(int level)
+static const char *lock_order_dbg(void)
 {
 	int i;
-	DEBUG(level, ("lock order:"));
-	for (i=0; i<DBWRAP_LOCK_ORDER_MAX; i++) {
-		DEBUGADD(level,
-			 (" %d:%s",
-			  i + 1,
-			  locked_dbs[i] ? locked_dbs[i] : "<none>"));
+	char *msg = talloc_strdup(talloc_tos(), "lock order:");
+
+	for (i = 0; i < DBWRAP_LOCK_ORDER_MAX; i++) {
+		talloc_asprintf_addbuf(
+			&msg,
+			" %d:%s",
+			i + 1,
+			locked_dbs[i] != NULL ? locked_dbs[i] : "<none>");
 	}
-	DEBUGADD(level, ("\n"));
+
+	if (msg == NULL) {
+		return "lock order: <out of memory>\n";
+	}
+
+	return msg;
 }
 
 void dbwrap_lock_order_lock(const char *db_name,
@@ -183,19 +190,19 @@ void dbwrap_lock_order_lock(const char *db_name,
 	for (idx=lock_order-1; idx<DBWRAP_LOCK_ORDER_MAX; idx++) {
 		if (locked_dbs[idx] != NULL) {
 			DBG_ERR("Lock order violation: Trying %s at %d while "
-				"%s at %d is locked\n",
+				"%s at %d is locked\n%s\n",
 				db_name,
 				(int)lock_order,
 				locked_dbs[idx],
-				idx + 1);
-			debug_lock_order(0);
+				idx + 1,
+				lock_order_dbg());
 			smb_panic("lock order violation");
 		}
 	}
 
 	locked_dbs[lock_order-1] = db_name;
 
-	debug_lock_order(10);
+	DBG_DEBUG("%s\n", lock_order_dbg());
 }
 
 void dbwrap_lock_order_unlock(const char *db_name,
