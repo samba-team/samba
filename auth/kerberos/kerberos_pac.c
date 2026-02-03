@@ -55,10 +55,10 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 		/* RFC8009 types. Not supported by AD yet but used by FreeIPA and MIT Kerberos */
 		{CKSUMTYPE_HMAC_SHA256_128_AES128, ENCTYPE_AES128_CTS_HMAC_SHA256_128},
 		{CKSUMTYPE_HMAC_SHA384_192_AES256, ENCTYPE_AES256_CTS_HMAC_SHA384_192},
-		{0, 0},
 	};
+	size_t num_supported_types = ARRAY_SIZE(supported_types);
 
-	for(idx = 0; supported_types[idx].cksum_type != 0; idx++) {
+	for (idx = 0; idx < num_supported_types; idx++) {
 		if (sig->type == supported_types[idx].cksum_type) {
 			if (KRB5_KEY_TYPE(keyblock) != supported_types[idx].enc_type) {
 				return EINVAL;
@@ -70,7 +70,7 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 
 	/* do not do key type check for HMAC-MD5 */
 	if ((sig->type != CKSUMTYPE_HMAC_MD5) &&
-	    (supported_types[idx].cksum_type == 0)) {
+	    (idx == num_supported_types)) {
 		DEBUG(2,("check_pac_checksum: Checksum Type %d is not supported\n",
 			(int)sig->type));
 		return EINVAL;
