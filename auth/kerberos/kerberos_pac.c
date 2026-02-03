@@ -143,7 +143,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB modified_pac_blob;
 
 	NTTIME tgs_authtime_nttime;
-	int i;
+	uint32_t i;
 
 	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
 	struct PAC_SIGNATURE_DATA *kdc_sig_ptr = NULL;
@@ -446,7 +446,7 @@ NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	struct PAC_DATA *pac_data;
-	int i;
+	uint32_t i;
 	nt_status = kerberos_decode_pac(mem_ctx,
 					blob,
 					context,
