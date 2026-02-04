@@ -22,6 +22,13 @@ JSON Audit logging
 The two leading spaces before the opening '{' on JSON audit log lines have been
 removed. And any embedded new line characters '\n' are converted to spaces.
 
+Domain encryption types changed to AES by default
+-------------------------------------------------
+
+The default value of the smb.conf option ‘kdc default domain supported enctypes’
+now corresponds to ‘aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96’ (both AES
+encryption types) if the domain functional level is 2008 or higher. This
+addresses CVE-2026-20833.
 
 REMOVED FEATURES
 ================
@@ -32,6 +39,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
 
 
 KNOWN ISSUES
