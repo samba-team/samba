@@ -994,10 +994,10 @@ sub provision_raw_step2($$$)
 
 	my $cmd_env = $self->get_cmd_env_vars($ret);
 
-	my $testallowed_account = "testallowed";
+	my $testallowed_account = "testallowed account";
 	my $samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
-	    . " user create --configfile=$ctx->{smb_conf} $testallowed_account $ctx->{password}";
+	    . " user create --configfile=$ctx->{smb_conf} '$testallowed_account' $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testallowed user: \n$samba_tool_cmd\n");
 		return undef;
@@ -1030,21 +1030,6 @@ sub provision_raw_step2($$$)
 	}
 
 	my $user_dn = "cn=$testallowed_account,cn=users,$base_dn";
-	$testallowed_account = "testallowed account";
-	open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
-	    or die "Failed to run $ldbmodify: $!";
-	print $ldif "dn: $user_dn
-changetype: modify
-replace: samAccountName
-samAccountName: $testallowed_account
--
-";
-	close($ldif);
-	unless ($? == 0) {
-	    warn("$ldbmodify failed: $?");
-	    return undef;
-	}
-
 	open($ldif, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb")
             or die "Failed to run $ldbmodify: $!";
 	print $ldif "dn: $user_dn
