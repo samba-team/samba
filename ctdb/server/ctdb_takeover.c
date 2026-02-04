@@ -97,6 +97,13 @@ struct ctdb_vnn {
 	   This helps to avoid races. */
 	bool update_in_flight;
 
+	/*
+	 * Help avoid removing connections when a RELEASE_IP is in
+	 * progress.  In this case the takeover node will need the
+	 * connection information to send tickle ACKs.
+	 */
+	bool release_in_flight;
+
 	/* If CTDB_CONTROL_DEL_PUBLIC_IP is received for this IP
 	 * address then this flag is set.  It will be deleted in the
 	 * release IP callback. */
@@ -939,6 +946,7 @@ static int ctdb_releaseip_destructor(struct release_ip_callback_state *state)
 {
 	if (state->vnn != NULL) {
 		state->vnn->update_in_flight = false;
+		state->vnn->release_in_flight = false;
 	}
 	return 0;
 }
@@ -1040,6 +1048,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	state->vnn   = vnn;
 
 	vnn->update_in_flight = true;
+	vnn->release_in_flight = true;
 	talloc_set_destructor(state, ctdb_releaseip_destructor);
 
 	ret = ctdb_event_script_callback(ctdb, 
@@ -1393,6 +1402,7 @@ int32_t ctdb_control_tcp_client_disconnected(struct ctdb_context *ctdb,
 	int ret;
 	TDB_DATA data;
 	char conn_str[132] = { 0, };
+	struct ctdb_vnn *vnn = NULL;
 	bool found = false;
 
 	tcp_sock = (struct ctdb_connection *)indata.dptr;
@@ -1420,6 +1430,22 @@ int32_t ctdb_control_tcp_client_disconnected(struct ctdb_context *ctdb,
 	D_INFO("deregistered TCP connection %s "
 	       "(client_id %u pid %u)\n",
 	       conn_str, client_id, client->pid);
+
+	/*
+	 * If the public IP has been released or is in the process of
+	 * being released, don't remove connection info from all
+	 * nodes.  The takeover node will need it send a tickle ACK.
+	 */
+	vnn = find_public_ip_vnn(ctdb, &tcp_sock->dst);
+	if (vnn != NULL) {
+		if (vnn->pnn != ctdb->pnn) {
+			/* Moved elsewhere */
+			return 0;
+		}
+		if (vnn->release_in_flight) {
+			return 0;
+		}
+	}
 
 	data.dptr = (uint8_t *)tcp_sock;
 	data.dsize = sizeof(*tcp_sock);
@@ -1775,6 +1801,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 			continue;
 		}
 		vnn->update_in_flight = true;
+		vnn->release_in_flight = true;
 
 		D_INFO("Release of IP %s/%u on interface %s node:-1\n",
 		       ctdb_vnn_address_string(vnn),
@@ -1804,18 +1831,21 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 					ctdb_vnn_address_string(vnn));
 			}
 			vnn->update_in_flight = false;
+			vnn->release_in_flight = false;
 			continue;
 		}
 		if (ret != 0) {
 			DBG_ERR("Error releasing IP %s (but IP is gone!)\n",
 				ctdb_vnn_address_string(vnn));
 			vnn->update_in_flight = false;
+			vnn->release_in_flight = false;
 			continue;
 		}
 
 		vnn = release_ip_post(ctdb, vnn, &vnn->public_address);
 		if (vnn != NULL) {
 			vnn->update_in_flight = false;
+			vnn->release_in_flight = false;
 		}
 		count++;
 	}
