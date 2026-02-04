@@ -3234,6 +3234,24 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 			return status;
 		}
 
+		if (domain->secure_channel_type != SEC_CHAN_NULL) {
+			/*
+			 * We tried to connect via ncan_ip_tcp and schannel and
+			 * failed - this is either a trusted domain we can't
+			 * connect to or a firewall blocking access.
+			 *
+			 * This also prevents LSA over TCP
+			 */
+			DBG_ERR("Unable to connect to DC %s of domain %s over "
+				"TCP/IP: %s.\nPlease check your firewall if it "
+				"allows connections to port 135 and port "
+				"range 49152-65535 over TCP/IP!\n",
+				domain->dcname,
+				domain->name,
+				nt_errstr(status));
+			return status;
+		}
+
 		/*
 		 * we tried twice to connect via ncan_ip_tcp and schannel and
 		 * failed - maybe it is a trusted domain we can't connect to ?
@@ -3397,6 +3415,24 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			status = cm_connect_netlogon_transport(domain, NCACN_IP_TCP, cli);
 		}
 		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (domain->secure_channel_type != SEC_CHAN_NULL) {
+			/*
+			 * We tried to connect via ncan_ip_tcp and schannel and
+			 * failed - this is either a trusted domain we can't
+			 * connect to or a firewall blocking access.
+			 *
+			 * This also prevents LSA over TCP
+			 */
+			DBG_ERR("Unable to connect to DC %s of domain %s over "
+				"TCP/IP: %s.\nPlease check your firewall if it "
+				"allows connections to port 135 and port "
+				"range 49152-65535 over TCP/IP!\n",
+				domain->dcname,
+				domain->name,
+				nt_errstr(status));
 			return status;
 		}
 
