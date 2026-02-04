@@ -232,6 +232,13 @@ can choose to develop a custom Keybridge implementation or use the existing
 KMIP-compatible Keybridge server available as part of the sambacc project
 (https://github.com/samba-in-kubernetes/sambacc).
 
+Domain encryption types changed to AES by default
+-------------------------------------------------
+
+The default value of the smb.conf option ‘kdc default domain supported enctypes’
+now corresponds to ‘aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96’ (both AES
+encryption types) if the domain functional level is 2008 or higher. This
+addresses CVE-2026-20833.
 
 REMOVED FEATURES
 ================
@@ -248,6 +255,7 @@ smb.conf changes
   kdc require canonicalization            New             no
   kdc name match implicit dollar without canonicalization
                                           New             yes
+  kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
 
 
 CHANGES SINCE 4.24.0rc1
