@@ -1823,17 +1823,37 @@ the following entry types;
 	<title>ADS KERBEROS KINIT</title>
 
 <para>
-	Issue a kinit request for a given user. When no other options are
-	defined the ticket granting ticket (TGT) will be stored in a memory cache.
+	Issue a kinit request for a given user.  The following methods can be used
+	to specify where to store the ticket granting ticket (TGT) (in order of
+	precedence):
 </para>
 
-<para>
-	To store the TGT in a different location either use the
-	<option>--krb5-ccache</option> option or set the
-	<replaceable>KRB5CCNAME</replaceable> environment variable.
-</para>
+<itemizedlist>
+	<listitem>
+		<para>option <option>--use-krb5-ccache</option></para>
+	</listitem>
+	<listitem>
+		<para><replaceable>KRB5CCNAME</replaceable> environment variable</para>
+	</listitem>
+	<listitem>
+		<para><parameter>default_ccache_name</parameter> setting in <filename>krb5.conf</filename></para>
+	</listitem>
+</itemizedlist>
 
-<para>Example: <userinput>net ads kerberos kinit -P --krb5-ccache=/tmp/krb5cache</userinput></para>
+<variablelist><title>Examples:</title>
+<varlistentry>
+<term>Use file based cache (FILE:/tmp/krb5cache)</term>
+<listitem><literallayout>
+net ads kerberos kinit -P --use-krb5-ccache=/tmp/krb5cache
+</literallayout></listitem>
+</varlistentry>
+<varlistentry>
+<term>Use memory cache (MEMORY:net) to verify the authentication</term>
+<listitem><literallayout>
+net ads kerberos kinit -P --use-krb5-ccache=MEMORY:net
+</literallayout></listitem>
+</varlistentry>
+</variablelist>
 
 </refsect2>
 
