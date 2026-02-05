@@ -429,7 +429,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             wire_mode = libsmb.unix_mode_to_wire(0o600)
             f,_,cc_out = c.create_ex('\\reparse',
-                                     DesiredAccess=security.SEC_STD_ALL,
+                                     DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE,
                                      CreateDisposition=libsmb.FILE_CREATE,
                                      CreateContexts=[posix_context(wire_mode)])
 
@@ -443,7 +443,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             wire_mode = libsmb.unix_mode_to_wire(0o600)
             f,_,cc_out = c.create_ex('\\reparse',
-                                     DesiredAccess=security.SEC_STD_ALL,
+                                     DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE,
                                      CreateDisposition=libsmb.FILE_OPEN,
                                      CreateContexts=[posix_context(wire_mode)])
             c.close(f)
