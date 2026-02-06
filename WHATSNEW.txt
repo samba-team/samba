@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate release of Samba 4.24.  This is *not*
+This is the second release candidate release of Samba 4.24.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -248,6 +248,26 @@ smb.conf changes
   kdc require canonicalization            New             no
   kdc name match implicit dollar without canonicalization
                                           New             yes
+
+
+CHANGES SINCE 4.24.0rc1
+=======================
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15979: possible memory leak  on rpc_spoolss
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15972: Winbind group resolution failure
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15979: possible memory leak  on rpc_spoolss
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15977: ctdbd socket documentation is wrong
+
+o  Michael Tokarev <mjt@tls.msk.ru>
+   * BUG 15976: time_t related build failure on 32bit arch in 4.24.0rc1
+
 
 KNOWN ISSUES
 ============
