@@ -165,7 +165,7 @@ chmod a-r "$tfile"
 uid=$(id -u)
 # root can read unreadable files
 if [ "$uid" = 0 ]; then
-	ok_tunable_defaults
+	ok_tunable
 else
 	required_error EINVAL <<EOF
 ctdb_tunable_load_file: Failed to open ${tfile}
