@@ -362,9 +362,18 @@ static void fetch_record_migrate_callback(struct ctdb_client_call_state *state)
 		goto done;
 	}
 
-	D_INFO("Vacuum Fetch record, key=%.*s\n",
-	       (int)fetch->key.dsize,
-	       fetch->key.dptr);
+	if (DEBUGLEVEL >= DBGLVL_INFO) {
+		char *keystr = hex_encode_talloc(
+			fetch,
+			(unsigned char *)fetch->key.dptr,
+			fetch->key.dsize);
+
+		D_INFO(DEBUGLEVEL >= DBGLVL_DEBUG ?
+		       "Vacuum Fetch record, key=%s\n" :
+		       "Vacuum Fetch record, key=%.20s\n",
+		       keystr ? keystr : "<UNKNOWN>");
+		TALLOC_FREE(keystr);
+	}
 
 	(void) ctdb_local_schedule_for_deletion(fetch_queue->ctdb_db,
 						&hdr,
