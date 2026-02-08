@@ -110,3 +110,11 @@ simple_test ()
 {
 	simple_test_other $test_args "$@"
 }
+
+simple_json_test ()
+{
+	if ! "$CTDB" version --json > /dev/null 2>&1; then
+		return 0
+	fi
+	simple_test "$@" --json
+}
