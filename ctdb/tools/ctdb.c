@@ -798,12 +798,44 @@ static int get_leader(TALLOC_CTX *mem_ctx,
 /*
  * Command Functions
  */
+#ifdef HAVE_JANSSON
+static int print_json_version(void)
+{
+	int ret;
+	json_t *root_json = json_object();
+
+	if (root_json == NULL) {
+		fprintf(stderr, "failed to create json object\n");
+		return 1;
+	}
+	ret = json_object_set_new(root_json,
+				  "version",
+				  json_string(SAMBA_VERSION_STRING));
+	if (ret != 0) {
+		fprintf(stderr, "failed to create json object\n");
+		return 1;
+	}
+
+	ret = json_dumpf(root_json, stdout, JSON_INDENT(2));
+	if (ret != 0) {
+		fprintf(stderr, "failed to create json object\n");
+		return 1;
+	}
+	json_decref(root_json);
+	return 0;
+}
+#endif
 
 static int control_version(TALLOC_CTX *mem_ctx,
 			   struct ctdb_context *ctdb,
 			   int argc,
 			   const char **argv)
 {
+#ifdef HAVE_JANSSON
+	if (options.json_output) {
+		return print_json_version();
+	}
+#endif
 	printf("%s\n", SAMBA_VERSION_STRING);
 	return 0;
 }
@@ -7087,7 +7119,7 @@ static const struct ctdb_cmd {
 	 control_version,
 	 true,
 	 false,
-	 false,
+	 true,
 	 "show version of ctdb",
 	 NULL},
 	{"status", control_status, false, true, true, "show node status", NULL},
