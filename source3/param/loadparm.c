@@ -2838,27 +2838,22 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 	}
 }
 
-
-static const char *ad_dc_req_vfs_mods[] = {"dfs_samba4", "acl_xattr", NULL};
-
 /*
  * check that @vfs_objects includes all vfs modules required by an AD DC.
  */
 static bool check_ad_dc_required_mods(const char **vfs_objects)
 {
-	int i;
-	int j;
-	int got_req;
+	static const char *ad_dc_req_vfs_mods[] = {"dfs_samba4", "acl_xattr"};
+	size_t i, j;
 
-	for (i = 0; ad_dc_req_vfs_mods[i] != NULL; i++) {
-		got_req = false;
+	for (i = 0; i < ARRAY_SIZE(ad_dc_req_vfs_mods); i++) {
+
 		for (j = 0; vfs_objects[j] != NULL; j++) {
 			if (!strwicmp(ad_dc_req_vfs_mods[i], vfs_objects[j])) {
-				got_req = true;
 				break;
 			}
 		}
-		if (!got_req) {
+		if (vfs_objects[j] == NULL) {
 			DEBUG(0, ("vfs objects specified without required AD "
 				  "DC module: %s\n", ad_dc_req_vfs_mods[i]));
 			return false;
