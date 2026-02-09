@@ -45,32 +45,6 @@ static bool is_user_xattr(const char *xattr_name)
 	return (match == 0);
 }
 
-static int xattr_tdb_get_file_id(struct vfs_handle_struct *handle,
-				const char *path, struct file_id *id)
-{
-	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct smb_filename *smb_fname;
-
-	smb_fname = cp_smb_basename(frame, path);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-
-	if (ret == -1) {
-		TALLOC_FREE(frame); 
-		return -1;
-	}
-
-	*id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &smb_fname->st);
-	TALLOC_FREE(frame);
-	return 0;
-}
-
 struct xattr_tdb_getxattrat_state {
 	struct vfs_aio_state vfs_aio_state;
 	ssize_t xattr_size;
@@ -84,7 +58,7 @@ static struct tevent_req *xattr_tdb_getxattrat_send(
 			struct tevent_context *ev,
 			struct vfs_handle_struct *handle,
 			files_struct *dir_fsp,
-			const struct smb_filename *smb_fname,
+			const struct smb_filename *_smb_fname,
 			const char *xattr_name,
 			size_t alloc_hint)
 {
@@ -92,12 +66,10 @@ static struct tevent_req *xattr_tdb_getxattrat_send(
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct xattr_tdb_getxattrat_state *state = NULL;
-	struct smb_filename *cwd = NULL;
+	struct smb_filename *smb_fname = NULL;
 	struct file_id id;
-	int ret;
-	int error;
-	int cwd_ret;
 	DATA_BLOB xattr_blob;
+	NTSTATUS status;
 
 	if (!xattr_tdb_init(handle, &config)) {
 		return NULL;
@@ -125,27 +97,21 @@ static struct tevent_req *xattr_tdb_getxattrat_send(
 		return req;
 	}
 
-	cwd = SMB_VFS_GETWD(dir_fsp->conn, state);
-	if (tevent_req_nomem(cwd, req)) {
+	smb_fname = cp_smb_filename(talloc_tos(), _smb_fname);
+	if (tevent_req_nomem(smb_fname, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	ret = SMB_VFS_CHDIR(dir_fsp->conn, dir_fsp->fsp_name);
-	if (ret != 0) {
-		tevent_req_error(req, errno);
+	status = openat_pathref_fsp(dir_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_error(req, map_errno_from_nt_status(status));
 		return tevent_req_post(req, ev);
 	}
 
-	ret = xattr_tdb_get_file_id(handle, smb_fname->base_name, &id);
-	error = errno;
 
-	cwd_ret = SMB_VFS_CHDIR(dir_fsp->conn, cwd);
-	SMB_ASSERT(cwd_ret == 0);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &smb_fname->st);
 
-	if (ret == -1) {
-		tevent_req_error(req, error);
-		return tevent_req_post(req, ev);
-	}
+	TALLOC_FREE(smb_fname);
 
 	state->xattr_size = xattr_tdb_getattr(config->db,
 					      state,
