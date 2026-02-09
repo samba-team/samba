@@ -332,6 +332,7 @@ set -xueo pipefail
 zypper --non-interactive refresh
 zypper --non-interactive update
 zypper --non-interactive install \
+    --force-resolution \
     --no-recommends \
     system-user-nobody \
     {pkgs}
