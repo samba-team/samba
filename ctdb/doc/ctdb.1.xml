@@ -166,6 +166,23 @@
       </listitem>
       </varlistentry>
 
+      <varlistentry><term>-j --json</term>
+      <listitem>
+	<para>
+	  Produce output in JSON encoded text. JSON is widely supported
+	  by many programming languages and command line tools and can
+	  represent common structured data types. Not all commands support
+	  this option. A command that does not support JSON will exit with
+	  an error code when --json is specified. Commands will not
+	  produce human-readable output when --json is specified.
+	</para>
+	<para>
+	  The ctdb command line tool must be compiled with JSON support
+	  to enable this option.
+	</para>
+      </listitem>
+      </varlistentry>
+
       <varlistentry><term>-t <parameter>TIMEOUT</parameter></term>
       <listitem>
 	<para>
