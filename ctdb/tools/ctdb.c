@@ -51,10 +51,10 @@
 #include "conf/ctdb_config.h"
 #include "conf/node.h"
 
-#define TIMEOUT()	timeval_current_ofs(options.timelimit, 0)
+#define TIMEOUT() timeval_current_ofs(options.timelimit, 0)
 
-#define SRVID_CTDB_TOOL    (CTDB_SRVID_TOOL_RANGE | 0x0001000000000000LL)
-#define SRVID_CTDB_PUSHDB  (CTDB_SRVID_TOOL_RANGE | 0x0002000000000000LL)
+#define SRVID_CTDB_TOOL (CTDB_SRVID_TOOL_RANGE | 0x0001000000000000LL)
+#define SRVID_CTDB_PUSHDB (CTDB_SRVID_TOOL_RANGE | 0x0002000000000000LL)
 
 #define NODE_FLAGS_UNKNOWN 0x00000040
 
@@ -108,12 +108,12 @@ static double timeval_delta(struct timeval *tv2, struct timeval *tv)
 }
 
 static struct ctdb_node_and_flags *get_node_by_pnn(
-					struct ctdb_node_map *nodemap,
-					uint32_t pnn)
+	struct ctdb_node_map *nodemap,
+	uint32_t pnn)
 {
 	unsigned int i;
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		if (nodemap->node[i].pnn == pnn) {
 			return &nodemap->node[i];
 		}
@@ -127,26 +127,27 @@ static const char *pretty_print_flags(TALLOC_CTX *mem_ctx, uint32_t flags)
 		uint32_t flag;
 		const char *name;
 	} flag_names[] = {
-		{ NODE_FLAGS_DISCONNECTED,	    "DISCONNECTED" },
-		{ NODE_FLAGS_UNKNOWN,		    "UNKNOWN" },
-		{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
-		{ NODE_FLAGS_BANNED,		    "BANNED" },
-		{ NODE_FLAGS_UNHEALTHY,		    "UNHEALTHY" },
-		{ NODE_FLAGS_DELETED,		    "DELETED" },
-		{ NODE_FLAGS_STOPPED,		    "STOPPED" },
-		{ NODE_FLAGS_INACTIVE,		    "INACTIVE" },
+		{NODE_FLAGS_DISCONNECTED, "DISCONNECTED"},
+		{NODE_FLAGS_UNKNOWN, "UNKNOWN"},
+		{NODE_FLAGS_PERMANENTLY_DISABLED, "DISABLED"},
+		{NODE_FLAGS_BANNED, "BANNED"},
+		{NODE_FLAGS_UNHEALTHY, "UNHEALTHY"},
+		{NODE_FLAGS_DELETED, "DELETED"},
+		{NODE_FLAGS_STOPPED, "STOPPED"},
+		{NODE_FLAGS_INACTIVE, "INACTIVE"},
 	};
 	char *flags_str = NULL;
 	size_t i;
 
-	for (i=0; i<ARRAY_SIZE(flag_names); i++) {
+	for (i = 0; i < ARRAY_SIZE(flag_names); i++) {
 		if (flags & flag_names[i].flag) {
 			if (flags_str == NULL) {
 				flags_str = talloc_asprintf(mem_ctx,
-						"%s", flag_names[i].name);
+							    "%s",
+							    flag_names[i].name);
 			} else {
-				flags_str = talloc_asprintf_append(flags_str,
-						"|%s", flag_names[i].name);
+				flags_str = talloc_asprintf_append(
+					flags_str, "|%s", flag_names[i].name);
 			}
 			if (flags_str == NULL) {
 				return "OUT-OF-MEMORY";
@@ -195,10 +196,15 @@ static struct ctdb_node_map *get_nodemap(struct ctdb_context *ctdb, bool force)
 
 	current_node = ctdb->pnn;
 again:
-	ret = ctdb_ctrl_get_nodemap(tmp_ctx, ctdb->ev, ctdb->client,
-				    current_node, TIMEOUT(), &nodemap);
+	ret = ctdb_ctrl_get_nodemap(tmp_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    current_node,
+				    TIMEOUT(),
+				    &nodemap);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get nodemap from node %u\n",
+		fprintf(stderr,
+			"Failed to get nodemap from node %u\n",
 			current_node);
 		goto failed;
 	}
@@ -209,8 +215,9 @@ again:
 		do {
 			current_node = (current_node + 1) % nodemap->num;
 			node = get_node_by_pnn(nodemap, current_node);
-			if (! (node->flags &
-			      (NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED))) {
+			if (!(node->flags &
+			      (NODE_FLAGS_DELETED | NODE_FLAGS_DISCONNECTED)))
+			{
 				break;
 			}
 		} while (current_node != ctdb->pnn);
@@ -258,20 +265,23 @@ static bool verify_pnn(struct ctdb_context *ctdb, int pnn)
 	}
 
 	found = false;
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		if (nodemap->node[i].pnn == (uint32_t)pnn) {
 			found = true;
 			break;
 		}
 	}
-	if (! found) {
+	if (!found) {
 		fprintf(stderr, "Node %u does not exist\n", pnn);
 		return false;
 	}
 
 	if (nodemap->node[i].flags &
-	    (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED)) {
-		fprintf(stderr, "Node %u has status %s\n", pnn,
+	    (NODE_FLAGS_DISCONNECTED | NODE_FLAGS_DELETED))
+	{
+		fprintf(stderr,
+			"Node %u has status %s\n",
+			pnn,
 			pretty_print_flags(ctdb, nodemap->node[i].flags));
 		return false;
 	}
@@ -289,7 +299,8 @@ static struct ctdb_node_map *talloc_nodemap(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	nodemap2->node = talloc_array(nodemap2, struct ctdb_node_and_flags,
+	nodemap2->node = talloc_array(nodemap2,
+				      struct ctdb_node_and_flags,
 				      nodemap->num);
 	if (nodemap2->node == NULL) {
 		talloc_free(nodemap2);
@@ -306,7 +317,8 @@ static struct ctdb_node_map *talloc_nodemap(TALLOC_CTX *mem_ctx,
  *
  * If nodestring is NULL, use the current node.
  */
-static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+static bool parse_nodestring(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
 			     const char *nodestring,
 			     struct ctdb_node_map **out)
 {
@@ -325,7 +337,7 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (nodestring == NULL) {
-		for (i=0; i<nodemap->num; i++) {
+		for (i = 0; i < nodemap->num; i++) {
 			if (nodemap->node[i].pnn == ctdb->cmd_pnn) {
 				nodemap2->node[0] = nodemap->node[i];
 				break;
@@ -337,7 +349,7 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (strcmp(nodestring, "all") == 0) {
-		for (i=0; i<nodemap->num; i++) {
+		for (i = 0; i < nodemap->num; i++) {
 			nodemap2->node[i] = nodemap->node[i];
 		}
 		nodemap2->num = nodemap->num;
@@ -356,19 +368,17 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		while (tok != NULL) {
 			uint32_t pnn;
 
-			pnn = (uint32_t)smb_strtoul(tok,
-						    NULL,
-						    0,
-						    &error,
-						    SMB_STR_STANDARD);
+			pnn = (uint32_t)smb_strtoul(
+				tok, NULL, 0, &error, SMB_STR_STANDARD);
 			if (error != 0) {
 				fprintf(stderr, "Invalid node %s\n", tok);
-					return false;
+				return false;
 			}
 
 			node = get_node_by_pnn(nodemap, pnn);
 			if (node == NULL) {
-				fprintf(stderr, "Node %u does not exist\n",
+				fprintf(stderr,
+					"Node %u does not exist\n",
 					pnn);
 				return false;
 			}
@@ -411,7 +421,7 @@ static struct ctdb_node_map *get_nodemap_unknown(
 				     ctdb->cmd_pnn,
 				     TIMEOUT(),
 				     &runstate);
-	if (ret != 0 ) {
+	if (ret != 0) {
 		printf("Unable to get runstate");
 		return NULL;
 	}
@@ -423,7 +433,7 @@ static struct ctdb_node_map *get_nodemap_unknown(
 	}
 
 	nodemap->num = nodemap_in->num;
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		struct ctdb_node_and_flags *node_in = &nodemap_in->node[i];
 		struct ctdb_node_and_flags *node = &nodemap->node[i];
 
@@ -435,7 +445,8 @@ static struct ctdb_node_map *get_nodemap_unknown(
 
 		if ((runstate <= CTDB_RUNSTATE_FIRST_RECOVERY) &&
 		    !(node->flags & NODE_FLAGS_DISCONNECTED) &&
-		    (node->pnn != ctdb->cmd_pnn)) {
+		    (node->pnn != ctdb->cmd_pnn))
+		{
 			node->flags = NODE_FLAGS_UNKNOWN;
 		}
 	}
@@ -454,12 +465,14 @@ static bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 
 	switch (ip1->sa.sa_family) {
 	case AF_INET:
-		ret = (memcmp(&ip1->ip.sin_addr, &ip2->ip.sin_addr,
+		ret = (memcmp(&ip1->ip.sin_addr,
+			      &ip2->ip.sin_addr,
 			      sizeof(struct in_addr)) == 0);
 		break;
 
 	case AF_INET6:
-		ret = (memcmp(&ip1->ip6.sin6_addr, &ip2->ip6.sin6_addr,
+		ret = (memcmp(&ip1->ip6.sin6_addr,
+			      &ip2->ip6.sin6_addr,
 			      sizeof(struct in6_addr)) == 0);
 		break;
 	}
@@ -478,7 +491,8 @@ static struct ctdb_node_map *read_nodes(TALLOC_CTX *mem_ctx, uint32_t pnn)
 
 	nodemap = ctdb_read_nodes(mem_ctx, nodes_source);
 	if (nodemap == NULL) {
-		fprintf(stderr, "Failed to read nodes from \"%s\"\n",
+		fprintf(stderr,
+			"Failed to read nodes from \"%s\"\n",
 			nodes_source);
 		return NULL;
 	}
@@ -496,10 +510,14 @@ static struct ctdb_dbid *db_find(TALLOC_CTX *mem_ctx,
 	unsigned int i;
 	int ret;
 
-	for (i=0; i<dbmap->num; i++) {
-		ret = ctdb_ctrl_get_dbname(mem_ctx, ctdb->ev, ctdb->client,
-					   ctdb->pnn, TIMEOUT(),
-					   dbmap->dbs[i].db_id, &name);
+	for (i = 0; i < dbmap->num; i++) {
+		ret = ctdb_ctrl_get_dbname(mem_ctx,
+					   ctdb->ev,
+					   ctdb->client,
+					   ctdb->pnn,
+					   TIMEOUT(),
+					   dbmap->dbs[i].db_id,
+					   &name);
 		if (ret != 0) {
 			return false;
 		}
@@ -514,9 +532,12 @@ static struct ctdb_dbid *db_find(TALLOC_CTX *mem_ctx,
 	return db;
 }
 
-static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		      const char *db_arg, uint32_t *db_id,
-		      const char **db_name, uint8_t *db_flags)
+static bool db_exists(TALLOC_CTX *mem_ctx,
+		      struct ctdb_context *ctdb,
+		      const char *db_arg,
+		      uint32_t *db_id,
+		      const char **db_name,
+		      uint8_t *db_flags)
 {
 	struct ctdb_dbid_map *dbmap;
 	struct ctdb_dbid *db = NULL;
@@ -525,8 +546,8 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	unsigned int i;
 	int ret = 0;
 
-	ret = ctdb_ctrl_get_dbmap(mem_ctx, ctdb->ev, ctdb->client,
-				  ctdb->pnn, TIMEOUT(), &dbmap);
+	ret = ctdb_ctrl_get_dbmap(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->pnn, TIMEOUT(), &dbmap);
 	if (ret != 0) {
 		return false;
 	}
@@ -536,7 +557,7 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		if (ret != 0) {
 			return false;
 		}
-		for (i=0; i<dbmap->num; i++) {
+		for (i = 0; i < dbmap->num; i++) {
 			if (id == dbmap->dbs[i].db_id) {
 				db = &dbmap->dbs[i];
 				break;
@@ -553,8 +574,13 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (name == NULL) {
-		ret = ctdb_ctrl_get_dbname(mem_ctx, ctdb->ev, ctdb->client,
-					   ctdb->pnn, TIMEOUT(), id, &name);
+		ret = ctdb_ctrl_get_dbname(mem_ctx,
+					   ctdb->ev,
+					   ctdb->client,
+					   ctdb->pnn,
+					   TIMEOUT(),
+					   id,
+					   &name);
 		if (ret != 0) {
 			return false;
 		}
@@ -572,14 +598,17 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return true;
 }
 
-static int hex_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
+static int hex_to_data(const char *str,
+		       size_t len,
+		       TALLOC_CTX *mem_ctx,
 		       TDB_DATA *out)
 {
 	unsigned int i;
 	TDB_DATA data;
 
 	if (len & 0x01) {
-		fprintf(stderr, "Key (%s) contains odd number of hex digits\n",
+		fprintf(stderr,
+			"Key (%s) contains odd number of hex digits\n",
 			str);
 		return EINVAL;
 	}
@@ -590,10 +619,10 @@ static int hex_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	for (i=0; i<data.dsize; i++) {
-		bool ok = hex_byte(&str[i*2], &data.dptr[i]);
+	for (i = 0; i < data.dsize; i++) {
+		bool ok = hex_byte(&str[i * 2], &data.dptr[i]);
 		if (!ok) {
-			fprintf(stderr, "Invalid hex: %s\n", &str[i*2]);
+			fprintf(stderr, "Invalid hex: %s\n", &str[i * 2]);
 			return EINVAL;
 		}
 	}
@@ -602,14 +631,16 @@ static int hex_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int str_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
+static int str_to_data(const char *str,
+		       size_t len,
+		       TALLOC_CTX *mem_ctx,
 		       TDB_DATA *out)
 {
 	TDB_DATA data;
 	int ret = 0;
 
 	if (strncmp(str, "0x", 2) == 0) {
-		ret = hex_to_data(str+2, len-2, mem_ctx, &data);
+		ret = hex_to_data(str + 2, len - 2, mem_ctx, &data);
 		if (ret != 0) {
 			return ret;
 		}
@@ -625,8 +656,11 @@ static int str_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
-		      const char *path, int argc, const char **argv)
+static int run_helper(TALLOC_CTX *mem_ctx,
+		      const char *command,
+		      const char *path,
+		      int argc,
+		      const char **argv)
 {
 	pid_t pid;
 	int save_errno, status, ret;
@@ -639,27 +673,30 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 	}
 
 	new_argv[0] = path;
-	for (i=0; i<argc; i++) {
-		new_argv[i+1] = argv[i];
+	for (i = 0; i < argc; i++) {
+		new_argv[i + 1] = argv[i];
 	}
-	new_argv[argc+1] = NULL;
+	new_argv[argc + 1] = NULL;
 
 	pid = fork();
 	if (pid < 0) {
 		save_errno = errno;
 		talloc_free(new_argv);
-		fprintf(stderr, "Failed to fork %s (%s) - %s\n",
-			command, path, strerror(save_errno));
+		fprintf(stderr,
+			"Failed to fork %s (%s) - %s\n",
+			command,
+			path,
+			strerror(save_errno));
 		return save_errno;
 	}
 
 	if (pid == 0) {
 		ret = execv(path, discard_const(new_argv));
 		if (ret == -1) {
-			_exit(64+errno);
+			_exit(64 + errno);
 		}
 		/* Should not happen */
-		_exit(64+ENOEXEC);
+		_exit(64 + ENOEXEC);
 	}
 
 	talloc_free(new_argv);
@@ -667,40 +704,46 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 	ret = waitpid(pid, &status, 0);
 	if (ret == -1) {
 		save_errno = errno;
-		fprintf(stderr, "waitpid() failed for %s - %s\n",
-			command, strerror(save_errno));
+		fprintf(stderr,
+			"waitpid() failed for %s - %s\n",
+			command,
+			strerror(save_errno));
 		return save_errno;
 	}
 
 	if (WIFEXITED(status)) {
 		int pstatus = WEXITSTATUS(status);
 		if (WIFSIGNALED(status)) {
-			fprintf(stderr, "%s terminated with signal %d\n",
-				command, WTERMSIG(status));
+			fprintf(stderr,
+				"%s terminated with signal %d\n",
+				command,
+				WTERMSIG(status));
 			ret = EINTR;
 		} else if (pstatus >= 64 && pstatus < 255) {
-			fprintf(stderr, "%s failed with error %d\n",
-				command, pstatus-64);
+			fprintf(stderr,
+				"%s failed with error %d\n",
+				command,
+				pstatus - 64);
 			ret = pstatus - 64;
 		} else {
 			ret = pstatus;
 		}
 		return ret;
 	} else if (WIFSIGNALED(status)) {
-		fprintf(stderr, "%s terminated with signal %d\n",
-			command, WTERMSIG(status));
+		fprintf(stderr,
+			"%s terminated with signal %d\n",
+			command,
+			WTERMSIG(status));
 		return EINTR;
 	}
 
 	return 0;
 }
 
-static void leader_handler(uint64_t srvid,
-			   TDB_DATA data,
-			   void *private_data)
+static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	struct ctdb_context *ctdb = talloc_get_type_abort(
-		private_data, struct ctdb_context);
+	struct ctdb_context *ctdb = talloc_get_type_abort(private_data,
+							  struct ctdb_context);
 	uint32_t leader_pnn;
 	size_t np;
 	int ret;
@@ -716,15 +759,15 @@ static void leader_handler(uint64_t srvid,
 
 static bool get_leader_done(void *private_data)
 {
-	struct ctdb_context *ctdb = talloc_get_type_abort(
-		private_data, struct ctdb_context);
+	struct ctdb_context *ctdb = talloc_get_type_abort(private_data,
+							  struct ctdb_context);
 
 	return ctdb->leader_pnn != CTDB_UNKNOWN_PNN;
 }
 
 static int get_leader(TALLOC_CTX *mem_ctx,
-			 struct ctdb_context *ctdb,
-			 uint32_t *leader)
+		      struct ctdb_context *ctdb,
+		      uint32_t *leader)
 {
 	int ret;
 
@@ -751,8 +794,10 @@ static int get_leader(TALLOC_CTX *mem_ctx,
  * Command Functions
  */
 
-static int control_version(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_version(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   int argc,
+			   const char **argv)
 {
 	printf("%s\n", SAMBA_VERSION_STRING);
 	return 0;
@@ -771,14 +816,18 @@ static bool partially_online(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	ret = ctdb_ctrl_get_ifaces(mem_ctx, ctdb->ev, ctdb->client,
-				   node->pnn, TIMEOUT(), &iface_list);
+	ret = ctdb_ctrl_get_ifaces(mem_ctx,
+				   ctdb->ev,
+				   ctdb->client,
+				   node->pnn,
+				   TIMEOUT(),
+				   &iface_list);
 	if (ret != 0) {
 		return false;
 	}
 
 	status = false;
-	for (i=0; i < iface_list->num; i++) {
+	for (i = 0; i < iface_list->num; i++) {
 		if (iface_list->iface[i].link_state == 0) {
 			status = true;
 			break;
@@ -798,19 +847,30 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 
 	printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 	       options.sep,
-	       "Node", options.sep,
-	       "IP", options.sep,
-	       "Disconnected", options.sep,
-	       "Unknown", options.sep,
-	       "Banned", options.sep,
-	       "Disabled", options.sep,
-	       "Unhealthy", options.sep,
-	       "Stopped", options.sep,
-	       "Inactive", options.sep,
-	       "PartiallyOnline", options.sep,
-	       "ThisNode", options.sep);
+	       "Node",
+	       options.sep,
+	       "IP",
+	       options.sep,
+	       "Disconnected",
+	       options.sep,
+	       "Unknown",
+	       options.sep,
+	       "Banned",
+	       options.sep,
+	       "Disabled",
+	       options.sep,
+	       "Unhealthy",
+	       options.sep,
+	       "Stopped",
+	       options.sep,
+	       "Inactive",
+	       options.sep,
+	       "PartiallyOnline",
+	       options.sep,
+	       "ThisNode",
+	       options.sep);
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		node = &nodemap->node[i];
 		if (node->flags & NODE_FLAGS_DELETED) {
 			continue;
@@ -818,32 +878,42 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 
 		printf("%s%u%s%s%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%c%s\n",
 		       options.sep,
-		       node->pnn, options.sep,
+		       node->pnn,
+		       options.sep,
 		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
 		       options.sep,
-		       !! (node->flags & NODE_FLAGS_DISCONNECTED), options.sep,
-		       !! (node->flags & NODE_FLAGS_UNKNOWN), options.sep,
-		       !! (node->flags & NODE_FLAGS_BANNED), options.sep,
-		       !! (node->flags & NODE_FLAGS_PERMANENTLY_DISABLED),
+		       !!(node->flags & NODE_FLAGS_DISCONNECTED),
 		       options.sep,
-		       !! (node->flags & NODE_FLAGS_UNHEALTHY), options.sep,
-		       !! (node->flags & NODE_FLAGS_STOPPED), options.sep,
-		       !! (node->flags & NODE_FLAGS_INACTIVE), options.sep,
-		       partially_online(mem_ctx, ctdb, node), options.sep,
-		       (node->pnn == mypnn)?'Y':'N', options.sep);
+		       !!(node->flags & NODE_FLAGS_UNKNOWN),
+		       options.sep,
+		       !!(node->flags & NODE_FLAGS_BANNED),
+		       options.sep,
+		       !!(node->flags & NODE_FLAGS_PERMANENTLY_DISABLED),
+		       options.sep,
+		       !!(node->flags & NODE_FLAGS_UNHEALTHY),
+		       options.sep,
+		       !!(node->flags & NODE_FLAGS_STOPPED),
+		       options.sep,
+		       !!(node->flags & NODE_FLAGS_INACTIVE),
+		       options.sep,
+		       partially_online(mem_ctx, ctdb, node),
+		       options.sep,
+		       (node->pnn == mypnn) ? 'Y' : 'N',
+		       options.sep);
 	}
-
 }
 
-static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  struct ctdb_node_map *nodemap, uint32_t mypnn,
+static void print_nodemap(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  struct ctdb_node_map *nodemap,
+			  uint32_t mypnn,
 			  bool print_header)
 {
 	struct ctdb_node_and_flags *node;
 	int num_deleted_nodes = 0;
 	unsigned int i;
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
 			num_deleted_nodes++;
 		}
@@ -855,11 +925,12 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		} else {
 			printf("Number of nodes:%d "
 			       "(including %d deleted nodes)\n",
-			       nodemap->num, num_deleted_nodes);
+			       nodemap->num,
+			       num_deleted_nodes);
 		}
 	}
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		node = &nodemap->node[i];
 		if (node->flags & NODE_FLAGS_DELETED) {
 			continue;
@@ -868,9 +939,9 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		printf("pnn:%u %-16s %s%s\n",
 		       node->pnn,
 		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
-		       partially_online(mem_ctx, ctdb, node) ?
-				"PARTIALLYONLINE" :
-				pretty_print_flags(mem_ctx, node->flags),
+		       partially_online(mem_ctx, ctdb, node)
+			       ? "PARTIALLYONLINE"
+			       : pretty_print_flags(mem_ctx, node->flags),
 		       node->pnn == mypnn ? " (THIS NODE)" : "");
 	}
 }
@@ -893,7 +964,7 @@ static void print_status(TALLOC_CTX *mem_ctx,
 		printf("Generation:%u\n", vnnmap->generation);
 	}
 	printf("Size:%d\n", vnnmap->size);
-	for (i=0; i<vnnmap->size; i++) {
+	for (i = 0; i < vnnmap->size; i++) {
 		printf("hash:%d lmaster:%d\n", i, vnnmap->map[i]);
 	}
 
@@ -904,8 +975,10 @@ static void print_status(TALLOC_CTX *mem_ctx,
 	print_pnn(leader);
 }
 
-static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_status(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_node_map *nodemap_in;
 	struct ctdb_node_map *nodemap;
@@ -933,14 +1006,22 @@ static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	ret = ctdb_ctrl_getvnnmap(mem_ctx, ctdb->ev, ctdb->client,
-				  ctdb->cmd_pnn, TIMEOUT(), &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(mem_ctx,
+				  ctdb->ev,
+				  ctdb->client,
+				  ctdb->cmd_pnn,
+				  TIMEOUT(),
+				  &vnnmap);
 	if (ret != 0) {
 		return ret;
 	}
 
-	ret = ctdb_ctrl_get_recmode(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), &recmode);
+	ret = ctdb_ctrl_get_recmode(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    ctdb->cmd_pnn,
+				    TIMEOUT(),
+				    &recmode);
 	if (ret != 0) {
 		return ret;
 	}
@@ -950,49 +1031,64 @@ static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	print_status(mem_ctx,
-		     ctdb,
-		     nodemap,
-		     ctdb->cmd_pnn,
-		     vnnmap,
-		     recmode,
-		     leader);
+	print_status(
+		mem_ctx, ctdb, nodemap, ctdb->cmd_pnn, vnnmap, recmode, leader);
 	return 0;
 }
 
-static int control_uptime(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_uptime(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_uptime *uptime;
 	int ret, tmp, days, hours, minutes, seconds;
 
-	ret = ctdb_ctrl_uptime(mem_ctx, ctdb->ev, ctdb->client,
-			       ctdb->cmd_pnn, TIMEOUT(), &uptime);
+	ret = ctdb_ctrl_uptime(mem_ctx,
+			       ctdb->ev,
+			       ctdb->client,
+			       ctdb->cmd_pnn,
+			       TIMEOUT(),
+			       &uptime);
 	if (ret != 0) {
 		return ret;
 	}
 
 	printf("Current time of node %-4u     :                %s",
-	       ctdb->cmd_pnn, ctime(&uptime->current_time.tv_sec));
+	       ctdb->cmd_pnn,
+	       ctime(&uptime->current_time.tv_sec));
 
 	tmp = uptime->current_time.tv_sec - uptime->ctdbd_start_time.tv_sec;
-	seconds = tmp % 60; tmp /= 60;
-	minutes = tmp % 60; tmp /= 60;
-	hours = tmp % 24; tmp /= 24;
+	seconds = tmp % 60;
+	tmp /= 60;
+	minutes = tmp % 60;
+	tmp /= 60;
+	hours = tmp % 24;
+	tmp /= 24;
 	days = tmp;
 
 	printf("Ctdbd start time              : (%03d %02d:%02d:%02d) %s",
-	       days, hours, minutes, seconds,
+	       days,
+	       hours,
+	       minutes,
+	       seconds,
 	       ctime(&uptime->ctdbd_start_time.tv_sec));
 
-	tmp = uptime->current_time.tv_sec - uptime->last_recovery_finished.tv_sec;
-	seconds = tmp % 60; tmp /= 60;
-	minutes = tmp % 60; tmp /= 60;
-	hours = tmp % 24; tmp /= 24;
+	tmp = uptime->current_time.tv_sec -
+	      uptime->last_recovery_finished.tv_sec;
+	seconds = tmp % 60;
+	tmp /= 60;
+	minutes = tmp % 60;
+	tmp /= 60;
+	hours = tmp % 24;
+	tmp /= 24;
 	days = tmp;
 
 	printf("Time of last recovery/failover: (%03d %02d:%02d:%02d) %s",
-	       days, hours, minutes, seconds,
+	       days,
+	       hours,
+	       minutes,
+	       seconds,
 	       ctime(&uptime->last_recovery_finished.tv_sec));
 
 	printf("Duration of last recovery/failover: %lf seconds\n",
@@ -1002,39 +1098,53 @@ static int control_uptime(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_ping(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			int argc, const char **argv)
+static int control_ping(TALLOC_CTX *mem_ctx,
+			struct ctdb_context *ctdb,
+			int argc,
+			const char **argv)
 {
 	struct timeval tv;
 	int ret, num_clients;
 
 	tv = timeval_current();
-	ret = ctdb_ctrl_ping(mem_ctx, ctdb->ev, ctdb->client,
-			     ctdb->cmd_pnn, TIMEOUT(), &num_clients);
+	ret = ctdb_ctrl_ping(mem_ctx,
+			     ctdb->ev,
+			     ctdb->client,
+			     ctdb->cmd_pnn,
+			     TIMEOUT(),
+			     &num_clients);
 	if (ret != 0) {
 		return ret;
 	}
 
 	printf("response from %u time=%.6f sec  (%d clients)\n",
-	       ctdb->cmd_pnn, timeval_elapsed(&tv), num_clients);
+	       ctdb->cmd_pnn,
+	       timeval_elapsed(&tv),
+	       num_clients);
 	return 0;
 }
 
-static int control_runstate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_runstate(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	enum ctdb_runstate runstate;
 	bool found;
 	int ret, i;
 
-	ret = ctdb_ctrl_get_runstate(mem_ctx, ctdb->ev, ctdb->client,
-				     ctdb->cmd_pnn, TIMEOUT(), &runstate);
+	ret = ctdb_ctrl_get_runstate(mem_ctx,
+				     ctdb->ev,
+				     ctdb->client,
+				     ctdb->cmd_pnn,
+				     TIMEOUT(),
+				     &runstate);
 	if (ret != 0) {
 		return ret;
 	}
 
 	found = true;
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		enum ctdb_runstate t;
 
 		found = false;
@@ -1050,7 +1160,7 @@ static int control_runstate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	if (! found) {
+	if (!found) {
 		printf("CTDB not in required run state (got %s)\n",
 		       ctdb_runstate_to_string(runstate));
 		return 1;
@@ -1060,8 +1170,10 @@ static int control_runstate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_getvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_getvar(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_var_list *tun_var_list;
 	uint32_t value;
@@ -1072,8 +1184,12 @@ static int control_getvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("getvar");
 	}
 
-	ret = ctdb_ctrl_list_tunables(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &tun_var_list);
+	ret = ctdb_ctrl_list_tunables(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &tun_var_list);
 	if (ret != 0) {
 		fprintf(stderr,
 			"Failed to get list of variables from node %u\n",
@@ -1082,20 +1198,25 @@ static int control_getvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	found = false;
-	for (i=0; i<tun_var_list->count; i++) {
+	for (i = 0; i < tun_var_list->count; i++) {
 		if (strcasecmp(tun_var_list->var[i], argv[0]) == 0) {
 			found = true;
 			break;
 		}
 	}
 
-	if (! found) {
+	if (!found) {
 		printf("No such tunable %s\n", argv[0]);
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_tunable(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), argv[0], &value);
+	ret = ctdb_ctrl_get_tunable(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    ctdb->cmd_pnn,
+				    TIMEOUT(),
+				    argv[0],
+				    &value);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1104,8 +1225,10 @@ static int control_getvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_setvar(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_var_list *tun_var_list;
 	struct ctdb_tunable tunable;
@@ -1117,8 +1240,12 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("setvar");
 	}
 
-	ret = ctdb_ctrl_list_tunables(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &tun_var_list);
+	ret = ctdb_ctrl_list_tunables(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &tun_var_list);
 	if (ret != 0) {
 		fprintf(stderr,
 			"Failed to get list of variables from node %u\n",
@@ -1127,14 +1254,14 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	found = false;
-	for (i=0; i<tun_var_list->count; i++) {
+	for (i = 0; i < tun_var_list->count; i++) {
 		if (strcasecmp(tun_var_list->var[i], argv[0]) == 0) {
 			found = true;
 			break;
 		}
 	}
 
-	if (! found) {
+	if (!found) {
 		printf("No such tunable %s\n", argv[0]);
 		return 1;
 	}
@@ -1145,13 +1272,17 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_ctrl_set_tunable(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), &tunable);
+	ret = ctdb_ctrl_set_tunable(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    ctdb->cmd_pnn,
+				    TIMEOUT(),
+				    &tunable);
 	if (ret != 0) {
 		if (ret == 1) {
 			fprintf(stderr,
-			        "Setting obsolete tunable variable '%s'\n",
-			       tunable.name);
+				"Setting obsolete tunable variable '%s'\n",
+				tunable.name);
 			return 0;
 		}
 	}
@@ -1159,8 +1290,10 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ret;
 }
 
-static int control_listvars(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_listvars(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	struct ctdb_var_list *tun_var_list;
 	int ret, i;
@@ -1169,13 +1302,17 @@ static int control_listvars(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("listvars");
 	}
 
-	ret = ctdb_ctrl_list_tunables(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &tun_var_list);
+	ret = ctdb_ctrl_list_tunables(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &tun_var_list);
 	if (ret != 0) {
 		return ret;
 	}
 
-	for (i=0; i<tun_var_list->count; i++) {
+	for (i = 0; i < tun_var_list->count; i++) {
 		control_getvar(mem_ctx, ctdb, 1, &tun_var_list->var[i]);
 	}
 
@@ -1186,7 +1323,7 @@ const struct {
 	const char *name;
 	uint32_t offset;
 } stats_fields[] = {
-#define STATISTICS_FIELD(n) { #n, offsetof(struct ctdb_statistics, n) }
+#define STATISTICS_FIELD(n) {#n, offsetof(struct ctdb_statistics, n)}
 	STATISTICS_FIELD(num_clients),
 	STATISTICS_FIELD(frozen),
 	STATISTICS_FIELD(recovering),
@@ -1227,7 +1364,7 @@ const struct {
 	STATISTICS_FIELD(total_ro_revokes),
 };
 
-#define LATENCY_AVG(v)	((v).num ? (v).total / (v).num : 0.0 )
+#define LATENCY_AVG(v) ((v).num ? (v).total / (v).num : 0.0)
 
 static void print_statistics_machine(struct ctdb_statistics *s,
 				     bool show_header)
@@ -1238,7 +1375,7 @@ static void print_statistics_machine(struct ctdb_statistics *s,
 		printf("CTDB version%s", options.sep);
 		printf("Current time of statistics%s", options.sep);
 		printf("Statistics collected since%s", options.sep);
-		for (i=0; i<ARRAY_SIZE(stats_fields); i++) {
+		for (i = 0; i < ARRAY_SIZE(stats_fields); i++) {
 			printf("%s%s", stats_fields[i].name, options.sep);
 		}
 		printf("num_reclock_ctdbd_latency%s", options.sep);
@@ -1269,11 +1406,13 @@ static void print_statistics_machine(struct ctdb_statistics *s,
 	}
 
 	printf("%u%s", CTDB_PROTOCOL, options.sep);
-	printf("%u%s", (uint32_t)s->statistics_current_time.tv_sec, options.sep);
+	printf("%u%s",
+	       (uint32_t)s->statistics_current_time.tv_sec,
+	       options.sep);
 	printf("%u%s", (uint32_t)s->statistics_start_time.tv_sec, options.sep);
-	for (i=0;i<ARRAY_SIZE(stats_fields);i++) {
+	for (i = 0; i < ARRAY_SIZE(stats_fields); i++) {
 		printf("%u%s",
-		       *(uint32_t *)(stats_fields[i].offset+(uint8_t *)s),
+		       *(uint32_t *)(stats_fields[i].offset + (uint8_t *)s),
 		       options.sep);
 	}
 	printf("%u%s", s->reclock.ctdbd.num, options.sep);
@@ -1312,74 +1451,98 @@ static void print_statistics(struct ctdb_statistics *s)
 
 	tmp = s->statistics_current_time.tv_sec -
 	      s->statistics_start_time.tv_sec;
-	seconds = tmp % 60; tmp /= 60;
-	minutes = tmp % 60; tmp /= 60;
-	hours   = tmp % 24; tmp /= 24;
-	days    = tmp;
+	seconds = tmp % 60;
+	tmp /= 60;
+	minutes = tmp % 60;
+	tmp /= 60;
+	hours = tmp % 24;
+	tmp /= 24;
+	days = tmp;
 
 	printf("CTDB version %u\n", CTDB_PROTOCOL);
 	printf("Current time of statistics  :                %s",
 	       ctime(&s->statistics_current_time.tv_sec));
 	printf("Statistics collected since  : (%03d %02d:%02d:%02d) %s",
-	       days, hours, minutes, seconds,
+	       days,
+	       hours,
+	       minutes,
+	       seconds,
 	       ctime(&s->statistics_start_time.tv_sec));
 
-	for (i=0; i<ARRAY_SIZE(stats_fields); i++) {
+	for (i = 0; i < ARRAY_SIZE(stats_fields); i++) {
 		if (strchr(stats_fields[i].name, '.') != NULL) {
 			preflen = strcspn(stats_fields[i].name, ".") + 1;
-			if (! prefix ||
-			    strncmp(prefix, stats_fields[i].name, preflen) != 0) {
+			if (!prefix ||
+			    strncmp(prefix, stats_fields[i].name, preflen) != 0)
+			{
 				prefix = stats_fields[i].name;
-				printf(" %*.*s\n", preflen-1, preflen-1,
+				printf(" %*.*s\n",
+				       preflen - 1,
+				       preflen - 1,
 				       stats_fields[i].name);
 			}
 		} else {
 			preflen = 0;
 		}
-		printf(" %*s%-22s%*s%10u\n", preflen ? 4 : 0, "",
-		       stats_fields[i].name+preflen, preflen ? 0 : 4, "",
-		       *(uint32_t *)(stats_fields[i].offset+(uint8_t *)s));
+		printf(" %*s%-22s%*s%10u\n",
+		       preflen ? 4 : 0,
+		       "",
+		       stats_fields[i].name + preflen,
+		       preflen ? 0 : 4,
+		       "",
+		       *(uint32_t *)(stats_fields[i].offset + (uint8_t *)s));
 	}
 
 	printf(" hop_count_buckets:");
-	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+	for (i = 0; i < MAX_COUNT_BUCKETS; i++) {
 		printf(" %d", s->hop_count_bucket[i]);
 	}
 	printf("\n");
 	printf(" lock_buckets:");
-	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+	for (i = 0; i < MAX_COUNT_BUCKETS; i++) {
 		printf(" %d", s->locks.buckets[i]);
 	}
 	printf("\n");
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "locks_latency      MIN/AVG/MAX",
-	       s->locks.latency.min, LATENCY_AVG(s->locks.latency),
-	       s->locks.latency.max, s->locks.latency.num);
+	       s->locks.latency.min,
+	       LATENCY_AVG(s->locks.latency),
+	       s->locks.latency.max,
+	       s->locks.latency.num);
 
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "reclock_ctdbd      MIN/AVG/MAX",
-	       s->reclock.ctdbd.min, LATENCY_AVG(s->reclock.ctdbd),
-	       s->reclock.ctdbd.max, s->reclock.ctdbd.num);
+	       s->reclock.ctdbd.min,
+	       LATENCY_AVG(s->reclock.ctdbd),
+	       s->reclock.ctdbd.max,
+	       s->reclock.ctdbd.num);
 
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "reclock_recd       MIN/AVG/MAX",
-	       s->reclock.recd.min, LATENCY_AVG(s->reclock.recd),
-	       s->reclock.recd.max, s->reclock.recd.num);
+	       s->reclock.recd.min,
+	       LATENCY_AVG(s->reclock.recd),
+	       s->reclock.recd.max,
+	       s->reclock.recd.num);
 
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "call_latency       MIN/AVG/MAX",
-	       s->call_latency.min, LATENCY_AVG(s->call_latency),
-	       s->call_latency.max, s->call_latency.num);
+	       s->call_latency.min,
+	       LATENCY_AVG(s->call_latency),
+	       s->call_latency.max,
+	       s->call_latency.num);
 
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "childwrite_latency MIN/AVG/MAX",
 	       s->childwrite_latency.min,
 	       LATENCY_AVG(s->childwrite_latency),
-	       s->childwrite_latency.max, s->childwrite_latency.num);
+	       s->childwrite_latency.max,
+	       s->childwrite_latency.num);
 }
 
-static int control_statistics(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
+static int control_statistics(TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      int argc,
+			      const char **argv)
 {
 	struct ctdb_statistics *stats;
 	int ret;
@@ -1388,8 +1551,12 @@ static int control_statistics(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("statistics");
 	}
 
-	ret = ctdb_ctrl_statistics(mem_ctx, ctdb->ev, ctdb->client,
-				   ctdb->cmd_pnn, TIMEOUT(), &stats);
+	ret = ctdb_ctrl_statistics(mem_ctx,
+				   ctdb->ev,
+				   ctdb->client,
+				   ctdb->cmd_pnn,
+				   TIMEOUT(),
+				   &stats);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1405,7 +1572,8 @@ static int control_statistics(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 static int control_statistics_reset(TALLOC_CTX *mem_ctx,
 				    struct ctdb_context *ctdb,
-				    int argc, const char **argv)
+				    int argc,
+				    const char **argv)
 {
 	int ret;
 
@@ -1413,8 +1581,8 @@ static int control_statistics_reset(TALLOC_CTX *mem_ctx,
 		usage("statisticsreset");
 	}
 
-	ret = ctdb_ctrl_statistics_reset(mem_ctx, ctdb->ev, ctdb->client,
-					 ctdb->cmd_pnn, TIMEOUT());
+	ret = ctdb_ctrl_statistics_reset(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, TIMEOUT());
 	if (ret != 0) {
 		return ret;
 	}
@@ -1422,8 +1590,10 @@ static int control_statistics_reset(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int control_stats(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_stats(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	struct ctdb_statistics_list *slist;
 	int ret, count = 0, i;
@@ -1437,19 +1607,22 @@ static int control_stats(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		count = atoi(argv[0]);
 	}
 
-	ret = ctdb_ctrl_get_stat_history(mem_ctx, ctdb->ev, ctdb->client,
-					 ctdb->cmd_pnn, TIMEOUT(), &slist);
+	ret = ctdb_ctrl_get_stat_history(mem_ctx,
+					 ctdb->ev,
+					 ctdb->client,
+					 ctdb->cmd_pnn,
+					 TIMEOUT(),
+					 &slist);
 	if (ret != 0) {
 		return ret;
 	}
 
-	for (i=0; i<slist->num; i++) {
+	for (i = 0; i < slist->num; i++) {
 		if (slist->stats[i].statistics_start_time.tv_sec == 0) {
 			continue;
 		}
 		if (options.machinereadable == 1) {
-			print_statistics_machine(&slist->stats[i],
-						 show_header);
+			print_statistics_machine(&slist->stats[i], show_header);
 			show_header = false;
 		} else {
 			print_statistics(&slist->stats[i]);
@@ -1470,7 +1643,8 @@ static int ctdb_public_ip_cmp(const void *a, const void *b)
 	return ctdb_sock_addr_cmp(&ip_a->addr, &ip_b->addr);
 }
 
-static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+static void print_ip(TALLOC_CTX *mem_ctx,
+		     struct ctdb_context *ctdb,
 		     struct ctdb_public_ip_list *ips,
 		     struct ctdb_public_ip_info **ipinfo,
 		     bool all_nodes)
@@ -1479,14 +1653,20 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	char *conf, *avail, *active;
 
 	if (options.machinereadable == 1) {
-		printf("%s%s%s%s%s", options.sep,
-		       "Public IP", options.sep,
-		       "Node", options.sep);
+		printf("%s%s%s%s%s",
+		       options.sep,
+		       "Public IP",
+		       options.sep,
+		       "Node",
+		       options.sep);
 		if (options.verbose == 1) {
 			printf("%s%s%s%s%s%s\n",
-			       "ActiveInterfaces", options.sep,
-			       "AvailableInterfaces", options.sep,
-			       "ConfiguredInterfaces", options.sep);
+			       "ActiveInterfaces",
+			       options.sep,
+			       "AvailableInterfaces",
+			       options.sep,
+			       "ConfiguredInterfaces",
+			       options.sep);
 		} else {
 			printf("\n");
 		}
@@ -1501,14 +1681,19 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	for (i = 0; i < ips->num; i++) {
 
 		if (options.machinereadable == 1) {
-			printf("%s%s%s%d%s", options.sep,
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &ips->ip[i].addr, false),
+			printf("%s%s%s%d%s",
 			       options.sep,
-			       (int)ips->ip[i].pnn, options.sep);
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&ips->ip[i].addr,
+							false),
+			       options.sep,
+			       (int)ips->ip[i].pnn,
+			       options.sep);
 		} else {
-			printf("%s", ctdb_sock_addr_to_string(
-				       mem_ctx, &ips->ip[i].addr, false));
+			printf("%s",
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&ips->ip[i].addr,
+							false));
 		}
 
 		if (options.verbose == 0) {
@@ -1528,15 +1713,16 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			goto skip_ipinfo;
 		}
 
-		for (j=0; j<ipinfo[i]->ifaces->num; j++) {
+		for (j = 0; j < ipinfo[i]->ifaces->num; j++) {
 			struct ctdb_iface *iface;
 
 			iface = &ipinfo[i]->ifaces->iface[j];
 			if (conf == NULL) {
 				conf = talloc_strdup(mem_ctx, iface->name);
 			} else {
-				conf = talloc_asprintf_append(
-						conf, ",%s", iface->name);
+				conf = talloc_asprintf_append(conf,
+							      ",%s",
+							      iface->name);
 			}
 
 			if (ipinfo[i]->active_idx == j) {
@@ -1550,29 +1736,38 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			if (avail == NULL) {
 				avail = talloc_strdup(mem_ctx, iface->name);
 			} else {
-				avail = talloc_asprintf_append(
-						avail, ",%s", iface->name);
+				avail = talloc_asprintf_append(avail,
+							       ",%s",
+							       iface->name);
 			}
 		}
 
-	skip_ipinfo:
+skip_ipinfo:
 
 		if (options.machinereadable == 1) {
 			printf("%s%s%s%s%s%s\n",
-			       active ? active : "", options.sep,
-			       avail ? avail : "", options.sep,
-			       conf ? conf : "", options.sep);
+			       active ? active : "",
+			       options.sep,
+			       avail ? avail : "",
+			       options.sep,
+			       conf ? conf : "",
+			       options.sep);
 		} else {
 			printf(" node[%d] active[%s] available[%s]"
 			       " configured[%s]\n",
-			       (int)ips->ip[i].pnn, active ? active : "",
-			       avail ? avail : "", conf ? conf : "");
+			       (int)ips->ip[i].pnn,
+			       active ? active : "",
+			       avail ? avail : "",
+			       conf ? conf : "");
 		}
 	}
 }
 
-static int collect_ips(uint8_t *keybuf, size_t keylen, uint8_t *databuf,
-		       size_t datalen, void *private_data)
+static int collect_ips(uint8_t *keybuf,
+		       size_t keylen,
+		       uint8_t *databuf,
+		       size_t datalen,
+		       void *private_data)
 {
 	struct ctdb_public_ip_list *ips = talloc_get_type_abort(
 		private_data, struct ctdb_public_ip_list);
@@ -1585,7 +1780,8 @@ static int collect_ips(uint8_t *keybuf, size_t keylen, uint8_t *databuf,
 	return 0;
 }
 
-static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+static int get_all_public_ips(struct ctdb_context *ctdb,
+			      TALLOC_CTX *mem_ctx,
 			      struct ctdb_public_ip_list **out)
 {
 	struct ctdb_node_map *nodemap;
@@ -1605,21 +1801,27 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	count = list_of_active_nodes(nodemap, CTDB_UNKNOWN_PNN, mem_ctx,
+	count = list_of_active_nodes(nodemap,
+				     CTDB_UNKNOWN_PNN,
+				     mem_ctx,
 				     &pnn_list);
 	if (count <= 0) {
 		goto failed;
 	}
 
-	for (i=0; i<count; i++) {
-		ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-					       pnn_list[i], TIMEOUT(),
-					       false, &ips);
+	for (i = 0; i < count; i++) {
+		ret = ctdb_ctrl_get_public_ips(mem_ctx,
+					       ctdb->ev,
+					       ctdb->client,
+					       pnn_list[i],
+					       TIMEOUT(),
+					       false,
+					       &ips);
 		if (ret != 0) {
 			goto failed;
 		}
 
-		for (j=0; j<ips->num; j++) {
+		for (j = 0; j < ips->num; j++) {
 			struct ctdb_public_ip ip;
 
 			ip.pnn = ips->ip[j].pnn;
@@ -1629,9 +1831,11 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 				/* Node claims IP is hosted on it, so
 				 * save that information
 				 */
-				ret = db_hash_add(ipdb, (uint8_t *)&ip.addr,
+				ret = db_hash_add(ipdb,
+						  (uint8_t *)&ip.addr,
 						  sizeof(ip.addr),
-						  (uint8_t *)&ip, sizeof(ip));
+						  (uint8_t *)&ip,
+						  sizeof(ip));
 				if (ret != 0) {
 					goto failed;
 				}
@@ -1640,7 +1844,8 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 				 * so overwrite with CTDB_UNKNOWN_PNN
 				 * if there's no existing entry
 				 */
-				ret = db_hash_exists(ipdb, (uint8_t *)&ip.addr,
+				ret = db_hash_exists(ipdb,
+						     (uint8_t *)&ip.addr,
 						     sizeof(ip.addr));
 				if (ret == ENOENT) {
 					ip.pnn = CTDB_UNKNOWN_PNN;
@@ -1695,8 +1900,10 @@ failed:
 	return 1;
 }
 
-static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		      int argc, const char **argv)
+static int control_ip(TALLOC_CTX *mem_ctx,
+		      struct ctdb_context *ctdb,
+		      int argc,
+		      const char **argv)
 {
 	struct ctdb_public_ip_list *ips;
 	struct ctdb_public_ip_info **ipinfo;
@@ -1719,15 +1926,21 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (do_all) {
 		ret = get_all_public_ips(ctdb, mem_ctx, &ips);
 	} else {
-		ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-					       ctdb->cmd_pnn, TIMEOUT(),
-					       false, &ips);
+		ret = ctdb_ctrl_get_public_ips(mem_ctx,
+					       ctdb->ev,
+					       ctdb->client,
+					       ctdb->cmd_pnn,
+					       TIMEOUT(),
+					       false,
+					       &ips);
 	}
 	if (ret != 0) {
 		return ret;
 	}
 
-	qsort(ips->ip, ips->num, sizeof(struct ctdb_public_ip),
+	qsort(ips->ip,
+	      ips->num,
+	      sizeof(struct ctdb_public_ip),
 	      ctdb_public_ip_cmp);
 
 	ipinfo = talloc_array(mem_ctx, struct ctdb_public_ip_info *, ips->num);
@@ -1735,7 +1948,7 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	for (i=0; i<ips->num; i++) {
+	for (i = 0; i < ips->num; i++) {
 		uint32_t pnn;
 		if (do_all) {
 			pnn = ips->ip[i].pnn;
@@ -1746,9 +1959,12 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			ipinfo[i] = NULL;
 			continue;
 		}
-		ret = ctdb_ctrl_get_public_ip_info(mem_ctx, ctdb->ev,
-						   ctdb->client, pnn,
-						   TIMEOUT(), &ips->ip[i].addr,
+		ret = ctdb_ctrl_get_public_ip_info(mem_ctx,
+						   ctdb->ev,
+						   ctdb->client,
+						   pnn,
+						   TIMEOUT(),
+						   &ips->ip[i].addr,
 						   &ipinfo[i]);
 		if (ret != 0) {
 			return ret;
@@ -1759,8 +1975,10 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_ipinfo(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_public_ip_info *ipinfo;
 	ctdb_sock_addr addr;
@@ -1777,32 +1995,39 @@ static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_public_ip_info(mem_ctx, ctdb->ev, ctdb->client,
-					   ctdb->cmd_pnn, TIMEOUT(), &addr,
+	ret = ctdb_ctrl_get_public_ip_info(mem_ctx,
+					   ctdb->ev,
+					   ctdb->client,
+					   ctdb->cmd_pnn,
+					   TIMEOUT(),
+					   &addr,
 					   &ipinfo);
 	if (ret != 0) {
 		if (ret == -1) {
 			printf("Node %u does not know about IP %s\n",
-			       ctdb->cmd_pnn, argv[0]);
+			       ctdb->cmd_pnn,
+			       argv[0]);
 		}
 		return ret;
 	}
 
 	printf("Public IP[%s] info on node %u\n",
 	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr, false),
-					ctdb->cmd_pnn);
+	       ctdb->cmd_pnn);
 
 	printf("IP:%s\nCurrentNode:%u\nNumInterfaces:%u\n",
 	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr, false),
-	       ipinfo->ip.pnn, ipinfo->ifaces->num);
+	       ipinfo->ip.pnn,
+	       ipinfo->ifaces->num);
 
-	for (i=0; i<ipinfo->ifaces->num; i++) {
+	for (i = 0; i < ipinfo->ifaces->num; i++) {
 		struct ctdb_iface *iface;
 
 		iface = &ipinfo->ifaces->iface[i];
 		iface->name[CTDB_IFACE_SIZE] = '\0';
 		printf("Interface[%u]: Name:%s Link:%s References:%u%s\n",
-		       i+1, iface->name,
+		       i + 1,
+		       iface->name,
 		       iface->link_state == 0 ? "down" : "up",
 		       iface->references,
 		       (i == ipinfo->active_idx) ? " (active)" : "");
@@ -1811,8 +2036,10 @@ static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_ifaces(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_ifaces(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_iface_list *ifaces;
 	unsigned int i;
@@ -1822,33 +2049,44 @@ static int control_ifaces(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("ifaces");
 	}
 
-	ret = ctdb_ctrl_get_ifaces(mem_ctx, ctdb->ev, ctdb->client,
-				   ctdb->cmd_pnn, TIMEOUT(), &ifaces);
+	ret = ctdb_ctrl_get_ifaces(mem_ctx,
+				   ctdb->ev,
+				   ctdb->client,
+				   ctdb->cmd_pnn,
+				   TIMEOUT(),
+				   &ifaces);
 	if (ret != 0) {
 		return ret;
 	}
 
 	if (ifaces->num == 0) {
-		printf("No interfaces configured on node %u\n",
-		       ctdb->cmd_pnn);
+		printf("No interfaces configured on node %u\n", ctdb->cmd_pnn);
 		return 0;
 	}
 
 	if (options.machinereadable) {
-		printf("%s%s%s%s%s%s%s\n", options.sep,
-		       "Name", options.sep,
-		       "LinkStatus", options.sep,
-		       "References", options.sep);
+		printf("%s%s%s%s%s%s%s\n",
+		       options.sep,
+		       "Name",
+		       options.sep,
+		       "LinkStatus",
+		       options.sep,
+		       "References",
+		       options.sep);
 	} else {
 		printf("Interfaces on node %u\n", ctdb->cmd_pnn);
 	}
 
-	for (i=0; i<ifaces->num; i++) {
+	for (i = 0; i < ifaces->num; i++) {
 		if (options.machinereadable) {
-			printf("%s%s%s%u%s%u%s\n", options.sep,
-			       ifaces->iface[i].name, options.sep,
-			       ifaces->iface[i].link_state, options.sep,
-			       ifaces->iface[i].references, options.sep);
+			printf("%s%s%s%u%s%u%s\n",
+			       options.sep,
+			       ifaces->iface[i].name,
+			       options.sep,
+			       ifaces->iface[i].link_state,
+			       options.sep,
+			       ifaces->iface[i].references,
+			       options.sep);
 		} else {
 			printf("name:%s link:%s references:%u\n",
 			       ifaces->iface[i].name,
@@ -1860,8 +2098,10 @@ static int control_ifaces(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
+static int control_setifacelink(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
 	struct ctdb_iface_list *ifaces;
 	struct ctdb_iface *iface;
@@ -1877,8 +2117,12 @@ static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_ifaces(mem_ctx, ctdb->ev, ctdb->client,
-				   ctdb->cmd_pnn, TIMEOUT(), &ifaces);
+	ret = ctdb_ctrl_get_ifaces(mem_ctx,
+				   ctdb->ev,
+				   ctdb->client,
+				   ctdb->cmd_pnn,
+				   TIMEOUT(),
+				   &ifaces);
 	if (ret != 0) {
 		fprintf(stderr,
 			"Failed to get interface information from node %u\n",
@@ -1887,7 +2131,7 @@ static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	iface = NULL;
-	for (i=0; i<ifaces->num; i++) {
+	for (i = 0; i < ifaces->num; i++) {
 		if (strcmp(ifaces->iface[i].name, argv[0]) == 0) {
 			iface = &ifaces->iface[i];
 			break;
@@ -1896,7 +2140,8 @@ static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (iface == NULL) {
 		printf("Interface %s not configured on node %u\n",
-		       argv[0], ctdb->cmd_pnn);
+		       argv[0],
+		       ctdb->cmd_pnn);
 		return 1;
 	}
 
@@ -1911,8 +2156,12 @@ static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	iface->references = 0;
 
-	ret = ctdb_ctrl_set_iface_link_state(mem_ctx, ctdb->ev, ctdb->client,
-					     ctdb->cmd_pnn, TIMEOUT(), iface);
+	ret = ctdb_ctrl_set_iface_link_state(mem_ctx,
+					     ctdb->ev,
+					     ctdb->client,
+					     ctdb->cmd_pnn,
+					     TIMEOUT(),
+					     iface);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1922,7 +2171,8 @@ static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 static int control_process_exists(TALLOC_CTX *mem_ctx,
 				  struct ctdb_context *ctdb,
-				  int argc, const char **argv)
+				  int argc,
+				  const char **argv)
 {
 	pid_t pid;
 	uint64_t srvid = 0;
@@ -1942,17 +2192,25 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 	}
 
 	if (srvid == 0) {
-		ret = ctdb_ctrl_process_exists(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT(), pid, &status);
+		ret = ctdb_ctrl_process_exists(mem_ctx,
+					       ctdb->ev,
+					       ctdb->client,
+					       ctdb->cmd_pnn,
+					       TIMEOUT(),
+					       pid,
+					       &status);
 	} else {
 		struct ctdb_pid_srvid pid_srvid;
 
 		pid_srvid.pid = pid;
 		pid_srvid.srvid = srvid;
 
-		ret = ctdb_ctrl_check_pid_srvid(mem_ctx, ctdb->ev,
-						ctdb->client, ctdb->cmd_pnn,
-						TIMEOUT(), &pid_srvid,
+		ret = ctdb_ctrl_check_pid_srvid(mem_ctx,
+						ctdb->ev,
+						ctdb->client,
+						ctdb->cmd_pnn,
+						TIMEOUT(),
+						&pid_srvid,
 						&status);
 	}
 
@@ -1961,17 +2219,22 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 	}
 
 	if (srvid == 0) {
-		printf("PID %d %s\n", pid,
+		printf("PID %d %s\n",
+		       pid,
 		       (status == 0 ? "exists" : "does not exist"));
 	} else {
-		printf("PID %d with SRVID 0x%"PRIx64" %s\n", pid, srvid,
+		printf("PID %d with SRVID 0x%" PRIx64 " %s\n",
+		       pid,
+		       srvid,
 		       (status == 0 ? "exists" : "does not exist"));
 	}
 	return status;
 }
 
-static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_getdbmap(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	struct ctdb_dbid_map *dbmap;
 	unsigned int i;
@@ -1981,8 +2244,12 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("getdbmap");
 	}
 
-	ret = ctdb_ctrl_get_dbmap(mem_ctx, ctdb->ev, ctdb->client,
-				  ctdb->cmd_pnn, TIMEOUT(), &dbmap);
+	ret = ctdb_ctrl_get_dbmap(mem_ctx,
+				  ctdb->ev,
+				  ctdb->client,
+				  ctdb->cmd_pnn,
+				  TIMEOUT(),
+				  &dbmap);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1990,19 +2257,27 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (options.machinereadable == 1) {
 		printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 		       options.sep,
-		       "ID", options.sep,
-		       "Name", options.sep,
-		       "Path", options.sep,
-		       "Persistent", options.sep,
-		       "Sticky", options.sep,
-		       "Unhealthy", options.sep,
-		       "Readonly", options.sep,
-		       "Replicated", options.sep);
+		       "ID",
+		       options.sep,
+		       "Name",
+		       options.sep,
+		       "Path",
+		       options.sep,
+		       "Persistent",
+		       options.sep,
+		       "Sticky",
+		       options.sep,
+		       "Unhealthy",
+		       options.sep,
+		       "Readonly",
+		       options.sep,
+		       "Replicated",
+		       options.sep);
 	} else {
 		printf("Number of databases:%d\n", dbmap->num);
 	}
 
-	for (i=0; i<dbmap->num; i++) {
+	for (i = 0; i < dbmap->num; i++) {
 		const char *name;
 		const char *path;
 		const char *health;
@@ -2014,22 +2289,34 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 		db_id = dbmap->dbs[i].db_id;
 
-		ret = ctdb_ctrl_get_dbname(mem_ctx, ctdb->ev, ctdb->client,
-					   ctdb->cmd_pnn, TIMEOUT(), db_id,
+		ret = ctdb_ctrl_get_dbname(mem_ctx,
+					   ctdb->ev,
+					   ctdb->client,
+					   ctdb->cmd_pnn,
+					   TIMEOUT(),
+					   db_id,
 					   &name);
 		if (ret != 0) {
 			return ret;
 		}
 
-		ret = ctdb_ctrl_getdbpath(mem_ctx, ctdb->ev, ctdb->client,
-					  ctdb->cmd_pnn, TIMEOUT(), db_id,
+		ret = ctdb_ctrl_getdbpath(mem_ctx,
+					  ctdb->ev,
+					  ctdb->client,
+					  ctdb->cmd_pnn,
+					  TIMEOUT(),
+					  db_id,
 					  &path);
 		if (ret != 0) {
 			return ret;
 		}
 
-		ret = ctdb_ctrl_db_get_health(mem_ctx, ctdb->ev, ctdb->client,
-					      ctdb->cmd_pnn, TIMEOUT(), db_id,
+		ret = ctdb_ctrl_db_get_health(mem_ctx,
+					      ctdb->ev,
+					      ctdb->client,
+					      ctdb->cmd_pnn,
+					      TIMEOUT(),
+					      db_id,
 					      &health);
 		if (ret != 0) {
 			return ret;
@@ -2043,17 +2330,27 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		if (options.machinereadable == 1) {
 			printf("%s0x%08X%s%s%s%s%s%d%s%d%s%d%s%d%s%d%s\n",
 			       options.sep,
-			       db_id, options.sep,
-			       name, options.sep,
-			       path, options.sep,
-			       !! (persistent), options.sep,
-			       !! (sticky), options.sep,
-			       !! (health), options.sep,
-			       !! (readonly), options.sep,
-			       !! (replicated), options.sep);
+			       db_id,
+			       options.sep,
+			       name,
+			       options.sep,
+			       path,
+			       options.sep,
+			       !!(persistent),
+			       options.sep,
+			       !!(sticky),
+			       options.sep,
+			       !!(health),
+			       options.sep,
+			       !!(readonly),
+			       options.sep,
+			       !!(replicated),
+			       options.sep);
 		} else {
 			printf("dbid:0x%08x name:%s path:%s%s%s%s%s%s\n",
-			       db_id, name, path,
+			       db_id,
+			       name,
+			       path,
 			       persistent ? " PERSISTENT" : "",
 			       sticky ? " STICKY" : "",
 			       readonly ? " READONLY" : "",
@@ -2069,8 +2366,10 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_getdbstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			       int argc, const char **argv)
+static int control_getdbstatus(TALLOC_CTX *mem_ctx,
+			       struct ctdb_context *ctdb,
+			       int argc,
+			       const char **argv)
 {
 	uint32_t db_id;
 	const char *db_name, *db_path, *db_health;
@@ -2081,19 +2380,27 @@ static int control_getdbstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("getdbstatus");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	ret = ctdb_ctrl_getdbpath(mem_ctx, ctdb->ev, ctdb->client,
-				  ctdb->cmd_pnn, TIMEOUT(), db_id,
+	ret = ctdb_ctrl_getdbpath(mem_ctx,
+				  ctdb->ev,
+				  ctdb->client,
+				  ctdb->cmd_pnn,
+				  TIMEOUT(),
+				  db_id,
 				  &db_path);
 	if (ret != 0) {
 		return ret;
 	}
 
-	ret = ctdb_ctrl_db_get_health(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), db_id,
+	ret = ctdb_ctrl_db_get_health(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      db_id,
 				      &db_health);
 	if (ret != 0) {
 		return ret;
@@ -2113,14 +2420,14 @@ struct dump_record_state {
 	uint32_t count;
 };
 
-#define ISASCII(x) (isprint(x) && ! strchr("\"\\", (x)))
+#define ISASCII(x) (isprint(x) && !strchr("\"\\", (x)))
 
 static void dump_tdb_data(const char *name, TDB_DATA val)
 {
 	size_t i;
 
 	fprintf(stdout, "%s(%zu) = \"", name, val.dsize);
-	for (i=0; i<val.dsize; i++) {
+	for (i = 0; i < val.dsize; i++) {
 		if (ISASCII(val.dptr[i])) {
 			fprintf(stdout, "%c", val.dptr[i]);
 		} else {
@@ -2157,14 +2464,16 @@ static void dump_ltdb_header(struct ctdb_ltdb_header *header)
 		fprintf(stdout, " RO_REVOKE_COMPLETE");
 	}
 	fprintf(stdout, "\n");
-
 }
 
-static int dump_record(uint32_t reqid, struct ctdb_ltdb_header *header,
-		       TDB_DATA key, TDB_DATA data, void *private_data)
+static int dump_record(uint32_t reqid,
+		       struct ctdb_ltdb_header *header,
+		       TDB_DATA key,
+		       TDB_DATA data,
+		       void *private_data)
 {
-	struct dump_record_state *state =
-		(struct dump_record_state *)private_data;
+	struct dump_record_state *state = (struct dump_record_state *)
+		private_data;
 
 	state->count += 1;
 
@@ -2176,8 +2485,10 @@ static int dump_record(uint32_t reqid, struct ctdb_ltdb_header *header,
 	return 0;
 }
 
-static int control_catdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_catdb(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	struct ctdb_db_context *db;
 	const char *db_name;
@@ -2190,12 +2501,12 @@ static int control_catdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("catdb");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -2203,17 +2514,24 @@ static int control_catdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	state.count = 0;
 
-	ret = ctdb_db_traverse(mem_ctx, ctdb->ev, ctdb->client, db,
-			       ctdb->cmd_pnn, TIMEOUT(),
-			       dump_record, &state);
+	ret = ctdb_db_traverse(mem_ctx,
+			       ctdb->ev,
+			       ctdb->client,
+			       db,
+			       ctdb->cmd_pnn,
+			       TIMEOUT(),
+			       dump_record,
+			       &state);
 
 	printf("Dumped %u records\n", state.count);
 
 	return ret;
 }
 
-static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_cattdb(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct ctdb_db_context *db;
 	const char *db_name;
@@ -2226,12 +2544,12 @@ static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("cattdb");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -2247,7 +2565,8 @@ static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 				   struct ctdb_context *ctdb,
-				   int argc, const char **argv)
+				   int argc,
+				   const char **argv)
 {
 	uint32_t caps;
 	int ret;
@@ -2256,8 +2575,12 @@ static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 		usage("getcapabilities");
 	}
 
-	ret = ctdb_ctrl_get_capabilities(mem_ctx, ctdb->ev, ctdb->client,
-					 ctdb->cmd_pnn, TIMEOUT(), &caps);
+	ret = ctdb_ctrl_get_capabilities(mem_ctx,
+					 ctdb->ev,
+					 ctdb->client,
+					 ctdb->cmd_pnn,
+					 TIMEOUT(),
+					 &caps);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2265,11 +2588,16 @@ static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 	if (options.machinereadable == 1) {
 		printf("%s%s%s%s%s\n",
 		       options.sep,
-		       "LEADER", options.sep,
-		       "LMASTER", options.sep);
-		printf("%s%d%s%d%s\n", options.sep,
-		       !! (caps & CTDB_CAP_RECMASTER), options.sep,
-		       !! (caps & CTDB_CAP_LMASTER), options.sep);
+		       "LEADER",
+		       options.sep,
+		       "LMASTER",
+		       options.sep);
+		printf("%s%d%s%d%s\n",
+		       options.sep,
+		       !!(caps & CTDB_CAP_RECMASTER),
+		       options.sep,
+		       !!(caps & CTDB_CAP_LMASTER),
+		       options.sep);
 	} else {
 		printf("LEADER: %s\n",
 		       (caps & CTDB_CAP_RECMASTER) ? "YES" : "NO");
@@ -2280,15 +2608,19 @@ static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int control_pnn(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		       int argc, const char **argv)
+static int control_pnn(TALLOC_CTX *mem_ctx,
+		       struct ctdb_context *ctdb,
+		       int argc,
+		       const char **argv)
 {
 	printf("%u\n", ctdb_client_pnn(ctdb->client));
 	return 0;
 }
 
-static int control_lvs(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		       int argc, const char **argv)
+static int control_lvs(TALLOC_CTX *mem_ctx,
+		       struct ctdb_context *ctdb,
+		       int argc,
+		       const char **argv)
 {
 	char *t, *lvs_helper = NULL;
 
@@ -2300,7 +2632,8 @@ static int control_lvs(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (t != NULL) {
 		lvs_helper = talloc_strdup(mem_ctx, t);
 	} else {
-		lvs_helper = talloc_asprintf(mem_ctx, "%s/ctdb_lvs",
+		lvs_helper = talloc_asprintf(mem_ctx,
+					     "%s/ctdb_lvs",
 					     CTDB_HELPER_BINDIR);
 	}
 
@@ -2312,8 +2645,10 @@ static int control_lvs(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return run_helper(mem_ctx, "LVS helper", lvs_helper, argc, argv);
 }
 
-static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_setdebug(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	int log_level;
 	int ret;
@@ -2324,7 +2659,7 @@ static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	found = debug_level_parse(argv[0], &log_level);
-	if (! found) {
+	if (!found) {
 		fprintf(stderr,
 			"Invalid debug level '%s'. Valid levels are:\n",
 			argv[0]);
@@ -2332,8 +2667,12 @@ static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_setdebug(mem_ctx, ctdb->ev, ctdb->client,
-				 ctdb->cmd_pnn, TIMEOUT(), log_level);
+	ret = ctdb_ctrl_setdebug(mem_ctx,
+				 ctdb->ev,
+				 ctdb->client,
+				 ctdb->cmd_pnn,
+				 TIMEOUT(),
+				 log_level);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2341,8 +2680,10 @@ static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_getdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_getdebug(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	int loglevel;
 	const char *log_str;
@@ -2352,8 +2693,12 @@ static int control_getdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("getdebug");
 	}
 
-	ret = ctdb_ctrl_getdebug(mem_ctx, ctdb->ev, ctdb->client,
-				 ctdb->cmd_pnn, TIMEOUT(), &loglevel);
+	ret = ctdb_ctrl_getdebug(mem_ctx,
+				 ctdb->ev,
+				 ctdb->client,
+				 ctdb->cmd_pnn,
+				 TIMEOUT(),
+				 &loglevel);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2364,8 +2709,10 @@ static int control_getdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_attach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_attach(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	const char *db_name;
 	uint8_t db_flags = 0;
@@ -2390,8 +2737,8 @@ static int control_attach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, NULL);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, NULL);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2399,8 +2746,10 @@ static int control_attach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_detach(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	const char *db_name;
 	uint32_t db_id;
@@ -2414,15 +2763,20 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("detach");
 	}
 
-	ret = ctdb_ctrl_get_recmode(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), &recmode);
+	ret = ctdb_ctrl_get_recmode(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    ctdb->cmd_pnn,
+				    TIMEOUT(),
+				    &recmode);
 	if (ret != 0) {
 		return ret;
 	}
 
 	if (recmode == CTDB_RECOVERY_ACTIVE) {
-		fprintf(stderr, "Database cannot be detached"
-				" when recovery is active\n");
+		fprintf(stderr,
+			"Database cannot be detached"
+			" when recovery is active\n");
 		return 1;
 	}
 
@@ -2431,7 +2785,7 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	for (j=0; j<nodemap->num; j++) {
+	for (j = 0; j < nodemap->num; j++) {
 		uint32_t value;
 
 		if (nodemap->node[j].flags & NODE_FLAGS_DISCONNECTED) {
@@ -2441,42 +2795,54 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			continue;
 		}
 		if (nodemap->node[j].flags & NODE_FLAGS_INACTIVE) {
-			fprintf(stderr, "Database cannot be detached on"
+			fprintf(stderr,
+				"Database cannot be detached on"
 				" inactive (stopped or banned) node %u\n",
 				nodemap->node[j].pnn);
 			return 1;
 		}
 
-		ret = ctdb_ctrl_get_tunable(mem_ctx, ctdb->ev, ctdb->client,
-					    nodemap->node[j].pnn, TIMEOUT(),
-					    "AllowClientDBAttach", &value);
+		ret = ctdb_ctrl_get_tunable(mem_ctx,
+					    ctdb->ev,
+					    ctdb->client,
+					    nodemap->node[j].pnn,
+					    TIMEOUT(),
+					    "AllowClientDBAttach",
+					    &value);
 		if (ret != 0) {
 			fprintf(stderr,
 				"Unable to get tunable AllowClientDBAttach"
-			        " from node %u\n", nodemap->node[j].pnn);
+				" from node %u\n",
+				nodemap->node[j].pnn);
 			return ret;
 		}
 
 		if (value == 1) {
 			fprintf(stderr,
 				"Database access is still active on node %u."
-			        " Set AllowclientDBAttach=0 on all nodes.\n",
+				" Set AllowclientDBAttach=0 on all nodes.\n",
 				nodemap->node[j].pnn);
 			return 1;
 		}
 	}
 
 	ret2 = 0;
-	for (i=0; i<argc; i++) {
-		if (! db_exists(mem_ctx, ctdb, argv[i], &db_id, &db_name,
-				&db_flags)) {
+	for (i = 0; i < argc; i++) {
+		if (!db_exists(mem_ctx,
+			       ctdb,
+			       argv[i],
+			       &db_id,
+			       &db_name,
+			       &db_flags))
+		{
 			continue;
 		}
 
 		if (db_flags &
-		    (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
+		    (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))
+		{
 			fprintf(stderr,
-			        "Only volatile databases can be detached\n");
+				"Only volatile databases can be detached\n");
 			return 1;
 		}
 
@@ -2490,15 +2856,21 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ret2;
 }
 
-static int control_dumpmemory(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
+static int control_dumpmemory(TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      int argc,
+			      const char **argv)
 {
 	const char *mem_str;
 	ssize_t n;
 	int ret;
 
-	ret = ctdb_ctrl_dump_memory(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), &mem_str);
+	ret = ctdb_ctrl_dump_memory(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    ctdb->cmd_pnn,
+				    TIMEOUT(),
+				    &mem_str);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2527,24 +2899,26 @@ static void dump_memory(uint64_t srvid, TDB_DATA data, void *private_data)
 	*done = true;
 }
 
-static int control_rddumpmemory(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
+static int control_rddumpmemory(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
-	struct ctdb_srvid_message msg = { 0 };
+	struct ctdb_srvid_message msg = {0};
 	int ret;
 	bool done = false;
 
 	msg.pnn = ctdb->pnn;
 	msg.srvid = next_srvid(ctdb);
 
-	ret = ctdb_client_set_message_handler(ctdb->ev, ctdb->client,
-					      msg.srvid, dump_memory, &done);
+	ret = ctdb_client_set_message_handler(
+		ctdb->ev, ctdb->client, msg.srvid, dump_memory, &done);
 	if (ret != 0) {
 		return ret;
 	}
 
-	ret = ctdb_message_mem_dump(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, &msg);
+	ret = ctdb_message_mem_dump(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, &msg);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2553,14 +2927,20 @@ static int control_rddumpmemory(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_getpid(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_getpid(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	pid_t pid;
 	int ret;
 
-	ret = ctdb_ctrl_get_pid(mem_ctx, ctdb->ev, ctdb->client,
-				ctdb->cmd_pnn, TIMEOUT(), &pid);
+	ret = ctdb_ctrl_get_pid(mem_ctx,
+				ctdb->ev,
+				ctdb->client,
+				ctdb->cmd_pnn,
+				TIMEOUT(),
+				&pid);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2569,8 +2949,11 @@ static int control_getpid(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int check_flags(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		       const char *desc, uint32_t flag, bool set_flag)
+static int check_flags(TALLOC_CTX *mem_ctx,
+		       struct ctdb_context *ctdb,
+		       const char *desc,
+		       uint32_t flag,
+		       bool set_flag)
 {
 	struct ctdb_node_map *nodemap;
 	bool flag_is_set;
@@ -2583,11 +2966,15 @@ static int check_flags(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	flag_is_set = nodemap->node[ctdb->cmd_pnn].flags & flag;
 	if (set_flag == flag_is_set) {
 		if (set_flag) {
-			fprintf(stderr, "Node %u is already %s\n",
-				ctdb->cmd_pnn, desc);
+			fprintf(stderr,
+				"Node %u is already %s\n",
+				ctdb->cmd_pnn,
+				desc);
 		} else {
-			fprintf(stderr, "Node %u is not %s\n",
-				ctdb->cmd_pnn, desc);
+			fprintf(stderr,
+				"Node %u is not %s\n",
+				ctdb->cmd_pnn,
+				desc);
 		}
 		return 0;
 	}
@@ -2595,8 +2982,10 @@ static int check_flags(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 1;
 }
 
-static void wait_for_flags(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   uint32_t flag, bool set_flag)
+static void wait_for_flags(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   uint32_t flag,
+			   bool set_flag)
 {
 	struct ctdb_node_map *nodemap;
 	bool flag_is_set;
@@ -2624,11 +3013,12 @@ struct ipreallocate_state {
 	bool done;
 };
 
-static void ipreallocate_handler(uint64_t srvid, TDB_DATA data,
+static void ipreallocate_handler(uint64_t srvid,
+				 TDB_DATA data,
 				 void *private_data)
 {
-	struct ipreallocate_state *state =
-		(struct ipreallocate_state *)private_data;
+	struct ipreallocate_state *state = (struct ipreallocate_state *)
+		private_data;
 
 	if (data.dsize != sizeof(int)) {
 		/* Ignore packet */
@@ -2641,7 +3031,7 @@ static void ipreallocate_handler(uint64_t srvid, TDB_DATA data,
 
 static int ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb)
 {
-	struct ctdb_srvid_message msg = { 0 };
+	struct ctdb_srvid_message msg = {0};
 	struct ipreallocate_state state;
 	int ret;
 
@@ -2649,15 +3039,18 @@ static int ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb)
 	msg.srvid = next_srvid(ctdb);
 
 	state.done = false;
-	ret = ctdb_client_set_message_handler(ctdb->ev, ctdb->client,
+	ret = ctdb_client_set_message_handler(ctdb->ev,
+					      ctdb->client,
 					      msg.srvid,
-					      ipreallocate_handler, &state);
+					      ipreallocate_handler,
+					      &state);
 	if (ret != 0) {
 		return ret;
 	}
 
 	while (true) {
-		ret = ctdb_message_takeover_run(mem_ctx, ctdb->ev,
+		ret = ctdb_message_takeover_run(mem_ctx,
+						ctdb->ev,
 						ctdb->client,
 						CTDB_BROADCAST_CONNECTED,
 						&msg);
@@ -2665,7 +3058,8 @@ static int ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb)
 			goto fail;
 		}
 
-		ret = ctdb_client_wait_timeout(ctdb->ev, &state.done,
+		ret = ctdb_client_wait_timeout(ctdb->ev,
+					       &state.done,
 					       TIMEOUT());
 		if (ret != 0) {
 			continue;
@@ -2680,13 +3074,17 @@ static int ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb)
 	}
 
 fail:
-	ctdb_client_remove_message_handler(ctdb->ev, ctdb->client,
-					   msg.srvid, &state);
+	ctdb_client_remove_message_handler(ctdb->ev,
+					   ctdb->client,
+					   msg.srvid,
+					   &state);
 	return ret;
 }
 
-static int control_disable(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_disable(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   int argc,
+			   const char **argv)
 {
 	int ret;
 
@@ -2694,17 +3092,17 @@ static int control_disable(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("disable");
 	}
 
-	ret = check_flags(mem_ctx, ctdb, "disabled",
-			  NODE_FLAGS_PERMANENTLY_DISABLED, true);
+	ret = check_flags(mem_ctx,
+			  ctdb,
+			  "disabled",
+			  NODE_FLAGS_PERMANENTLY_DISABLED,
+			  true);
 	if (ret == 0) {
 		return 0;
 	}
 
-	ret = ctdb_ctrl_disable_node(mem_ctx,
-				     ctdb->ev,
-				     ctdb->client,
-				     ctdb->cmd_pnn,
-				     TIMEOUT());
+	ret = ctdb_ctrl_disable_node(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, TIMEOUT());
 	if (ret != 0) {
 		fprintf(stderr, "Failed to disable node %u\n", ctdb->cmd_pnn);
 		return ret;
@@ -2714,8 +3112,10 @@ static int control_disable(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_enable(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_enable(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	int ret;
 
@@ -2723,17 +3123,17 @@ static int control_enable(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("enable");
 	}
 
-	ret = check_flags(mem_ctx, ctdb, "disabled",
-			  NODE_FLAGS_PERMANENTLY_DISABLED, false);
+	ret = check_flags(mem_ctx,
+			  ctdb,
+			  "disabled",
+			  NODE_FLAGS_PERMANENTLY_DISABLED,
+			  false);
 	if (ret == 0) {
 		return 0;
 	}
 
-	ret = ctdb_ctrl_enable_node(mem_ctx,
-				    ctdb->ev,
-				    ctdb->client,
-				    ctdb->cmd_pnn,
-				    TIMEOUT());
+	ret = ctdb_ctrl_enable_node(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, TIMEOUT());
 	if (ret != 0) {
 		fprintf(stderr, "Failed to enable node %u\n", ctdb->cmd_pnn);
 		return ret;
@@ -2743,8 +3143,10 @@ static int control_enable(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_stop(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			int argc, const char **argv)
+static int control_stop(TALLOC_CTX *mem_ctx,
+			struct ctdb_context *ctdb,
+			int argc,
+			const char **argv)
 {
 	int ret;
 
@@ -2752,14 +3154,13 @@ static int control_stop(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("stop");
 	}
 
-	ret = check_flags(mem_ctx, ctdb, "stopped",
-			  NODE_FLAGS_STOPPED, true);
+	ret = check_flags(mem_ctx, ctdb, "stopped", NODE_FLAGS_STOPPED, true);
 	if (ret == 0) {
 		return 0;
 	}
 
-	ret = ctdb_ctrl_stop_node(mem_ctx, ctdb->ev, ctdb->client,
-				  ctdb->cmd_pnn, TIMEOUT());
+	ret = ctdb_ctrl_stop_node(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, TIMEOUT());
 	if (ret != 0) {
 		fprintf(stderr, "Failed to stop node %u\n", ctdb->cmd_pnn);
 		return ret;
@@ -2769,8 +3170,10 @@ static int control_stop(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_continue(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_continue(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	int ret;
 
@@ -2778,16 +3181,16 @@ static int control_continue(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("continue");
 	}
 
-	ret = check_flags(mem_ctx, ctdb, "stopped",
-			  NODE_FLAGS_STOPPED, false);
+	ret = check_flags(mem_ctx, ctdb, "stopped", NODE_FLAGS_STOPPED, false);
 	if (ret == 0) {
 		return 0;
 	}
 
-	ret = ctdb_ctrl_continue_node(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT());
+	ret = ctdb_ctrl_continue_node(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, TIMEOUT());
 	if (ret != 0) {
-		fprintf(stderr, "Failed to continue stopped node %u\n",
+		fprintf(stderr,
+			"Failed to continue stopped node %u\n",
 			ctdb->cmd_pnn);
 		return ret;
 	}
@@ -2796,8 +3199,10 @@ static int control_continue(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		       int argc, const char **argv)
+static int control_ban(TALLOC_CTX *mem_ctx,
+		       struct ctdb_context *ctdb,
+		       int argc,
+		       const char **argv)
 {
 	struct ctdb_ban_state ban_state;
 	int ret = 0;
@@ -2806,8 +3211,7 @@ static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("ban");
 	}
 
-	ret = check_flags(mem_ctx, ctdb, "banned",
-			  NODE_FLAGS_BANNED, true);
+	ret = check_flags(mem_ctx, ctdb, "banned", NODE_FLAGS_BANNED, true);
 	if (ret == 0) {
 		return 0;
 	}
@@ -2823,8 +3227,12 @@ static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return EINVAL;
 	}
 
-	ret = ctdb_ctrl_set_ban_state(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &ban_state);
+	ret = ctdb_ctrl_set_ban_state(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &ban_state);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to ban node %u\n", ctdb->cmd_pnn);
 		return ret;
@@ -2832,11 +3240,12 @@ static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	wait_for_flags(mem_ctx, ctdb, NODE_FLAGS_BANNED, true);
 	return ipreallocate(mem_ctx, ctdb);
-
 }
 
-static int control_unban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_unban(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	struct ctdb_ban_state ban_state;
 	int ret;
@@ -2845,8 +3254,7 @@ static int control_unban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("unban");
 	}
 
-	ret = check_flags(mem_ctx, ctdb, "banned",
-			  NODE_FLAGS_BANNED, false);
+	ret = check_flags(mem_ctx, ctdb, "banned", NODE_FLAGS_BANNED, false);
 	if (ret == 0) {
 		return 0;
 	}
@@ -2854,8 +3262,12 @@ static int control_unban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ban_state.pnn = ctdb->cmd_pnn;
 	ban_state.time = 0;
 
-	ret = ctdb_ctrl_set_ban_state(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &ban_state);
+	ret = ctdb_ctrl_set_ban_state(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &ban_state);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to unban node %u\n", ctdb->cmd_pnn);
 		return ret;
@@ -2863,7 +3275,6 @@ static int control_unban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	wait_for_flags(mem_ctx, ctdb, NODE_FLAGS_BANNED, false);
 	return ipreallocate(mem_ctx, ctdb);
-
 }
 
 static void wait_for_shutdown(void *private_data)
@@ -2873,8 +3284,10 @@ static void wait_for_shutdown(void *private_data)
 	*done = true;
 }
 
-static int control_shutdown(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_shutdown(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	int ret;
 	bool done = false;
@@ -2889,8 +3302,8 @@ static int control_shutdown(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 						    &done);
 	}
 
-	ret = ctdb_ctrl_shutdown(mem_ctx, ctdb->ev, ctdb->client,
-				 ctdb->cmd_pnn, TIMEOUT());
+	ret = ctdb_ctrl_shutdown(
+		mem_ctx, ctdb->ev, ctdb->client, ctdb->cmd_pnn, TIMEOUT());
 	if (ret != 0) {
 		fprintf(stderr, "Unable to shutdown node %u\n", ctdb->cmd_pnn);
 		return ret;
@@ -2903,7 +3316,8 @@ static int control_shutdown(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int get_generation(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+static int get_generation(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
 			  uint32_t *generation)
 {
 	uint32_t leader;
@@ -2918,12 +3332,8 @@ again:
 		return ret;
 	}
 
-	ret = ctdb_ctrl_get_recmode(mem_ctx,
-				    ctdb->ev,
-				    ctdb->client,
-				    leader,
-				    TIMEOUT(),
-				    &recmode);
+	ret = ctdb_ctrl_get_recmode(
+		mem_ctx, ctdb->ev, ctdb->client, leader, TIMEOUT(), &recmode);
 	if (ret != 0) {
 		fprintf(stderr,
 			"Failed to get recovery mode from node %u\n",
@@ -2936,12 +3346,8 @@ again:
 		goto again;
 	}
 
-	ret = ctdb_ctrl_getvnnmap(mem_ctx,
-				  ctdb->ev,
-				  ctdb->client,
-				  leader,
-				  TIMEOUT(),
-				  &vnnmap);
+	ret = ctdb_ctrl_getvnnmap(
+		mem_ctx, ctdb->ev, ctdb->client, leader, TIMEOUT(), &vnnmap);
 	if (ret != 0) {
 		fprintf(stderr,
 			"Failed to get generation from node %u\n",
@@ -2960,9 +3366,10 @@ again:
 	return 0;
 }
 
-
-static int control_recover(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_recover(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   int argc,
+			   const char **argv)
 {
 	uint32_t generation, next_generation;
 	int ret;
@@ -2976,8 +3383,11 @@ static int control_recover(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_ctrl_set_recmode(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(),
+	ret = ctdb_ctrl_set_recmode(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    ctdb->cmd_pnn,
+				    TIMEOUT(),
 				    CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to set recovery mode active\n");
@@ -2987,8 +3397,7 @@ static int control_recover(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	while (1) {
 		ret = get_generation(mem_ctx, ctdb, &next_generation);
 		if (ret != 0) {
-			fprintf(stderr,
-				"Failed to confirm end of recovery\n");
+			fprintf(stderr, "Failed to confirm end of recovery\n");
 			return ret;
 		}
 
@@ -2996,14 +3405,16 @@ static int control_recover(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			break;
 		}
 
-		sleep (1);
+		sleep(1);
 	}
 
 	return 0;
 }
 
-static int control_ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
+static int control_ipreallocate(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
 	if (argc != 0) {
 		usage("ipreallocate");
@@ -3012,8 +3423,10 @@ static int control_ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_gratarp(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_gratarp(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   int argc,
+			   const char **argv)
 {
 	struct ctdb_addr_info addr_info;
 	int ret;
@@ -3029,11 +3442,15 @@ static int control_gratarp(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 	addr_info.iface = argv[1];
 
-	ret = ctdb_ctrl_send_gratuitous_arp(mem_ctx, ctdb->ev, ctdb->client,
-					    ctdb->cmd_pnn, TIMEOUT(),
+	ret = ctdb_ctrl_send_gratuitous_arp(mem_ctx,
+					    ctdb->ev,
+					    ctdb->client,
+					    ctdb->cmd_pnn,
+					    TIMEOUT(),
 					    &addr_info);
 	if (ret != 0) {
-		fprintf(stderr, "Unable to send gratuitous arp from node %u\n",
+		fprintf(stderr,
+			"Unable to send gratuitous arp from node %u\n",
 			ctdb->cmd_pnn);
 		return ret;
 	}
@@ -3041,8 +3458,10 @@ static int control_gratarp(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_tickle(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	ctdb_sock_addr src, dst;
 	int ret;
@@ -3066,7 +3485,9 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		for (i = 0; i < clist->num; i++) {
 			ret = ctdb_sys_send_tcp(&clist->conn[i].src,
 						&clist->conn[i].dst,
-						0, 0, 0);
+						0,
+						0,
+						0);
 			if (ret != 0) {
 				num_failed += 1;
 			}
@@ -3075,14 +3496,14 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		TALLOC_FREE(clist);
 
 		if (num_failed > 0) {
-			fprintf(stderr, "Failed to send %d tickles\n",
+			fprintf(stderr,
+				"Failed to send %d tickles\n",
 				num_failed);
 			return 1;
 		}
 
 		return 0;
 	}
-
 
 	ret = ctdb_sock_addr_from_string(argv[0], &src, true);
 	if (ret != 0) {
@@ -3105,8 +3526,10 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
+static int control_gettickles(TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      int argc,
+			      const char **argv)
 {
 	ctdb_sock_addr addr;
 	struct ctdb_tickle_list *tickles;
@@ -3132,8 +3555,12 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 	ctdb_sock_addr_set_port(&addr, port);
 
-	ret = ctdb_ctrl_get_tcp_tickle_list(mem_ctx, ctdb->ev, ctdb->client,
-					    ctdb->cmd_pnn, TIMEOUT(), &addr,
+	ret = ctdb_ctrl_get_tcp_tickle_list(mem_ctx,
+					    ctdb->ev,
+					    ctdb->client,
+					    ctdb->cmd_pnn,
+					    TIMEOUT(),
+					    &addr,
 					    &tickles);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to get list of connections\n");
@@ -3143,19 +3570,26 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (options.machinereadable) {
 		printf("%s%s%s%s%s%s%s%s%s\n",
 		       options.sep,
-		       "Source IP", options.sep,
-		       "Port", options.sep,
-		       "Destination IP", options.sep,
-		       "Port", options.sep);
-		for (i=0; i<tickles->num; i++) {
-			printf("%s%s%s%u%s%s%s%u%s\n", options.sep,
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].src, false),
+		       "Source IP",
+		       options.sep,
+		       "Port",
+		       options.sep,
+		       "Destination IP",
+		       options.sep,
+		       "Port",
+		       options.sep);
+		for (i = 0; i < tickles->num; i++) {
+			printf("%s%s%s%u%s%s%s%u%s\n",
+			       options.sep,
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&tickles->conn[i].src,
+							false),
 			       options.sep,
 			       ntohs(tickles->conn[i].src.ip.sin_port),
 			       options.sep,
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].dst, false),
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&tickles->conn[i].dst,
+							false),
 			       options.sep,
 			       ntohs(tickles->conn[i].dst.ip.sin_port),
 			       options.sep);
@@ -3163,14 +3597,17 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	} else {
 		printf("Connections for IP: %s\n",
 		       ctdb_sock_addr_to_string(mem_ctx,
-						&tickles->addr, false));
+						&tickles->addr,
+						false));
 		printf("Num connections: %u\n", tickles->num);
-		for (i=0; i<tickles->num; i++) {
+		for (i = 0; i < tickles->num; i++) {
 			printf("SRC: %s   DST: %s\n",
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].src, true),
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].dst, true));
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&tickles->conn[i].src,
+							true),
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&tickles->conn[i].dst,
+							true));
 		}
 	}
 
@@ -3192,12 +3629,11 @@ struct process_clist_state {
 
 static void process_clist_done(struct tevent_req *subreq);
 
-static struct tevent_req *process_clist_send(
-					TALLOC_CTX *mem_ctx,
-					struct ctdb_context *ctdb,
-					struct ctdb_connection_list *clist,
-					clist_request_func request_func,
-					clist_reply_func reply_func)
+static struct tevent_req *process_clist_send(TALLOC_CTX *mem_ctx,
+					     struct ctdb_context *ctdb,
+					     struct ctdb_connection_list *clist,
+					     clist_request_func request_func,
+					     clist_reply_func reply_func)
 {
 	struct tevent_req *req, *subreq;
 	struct process_clist_state *state;
@@ -3214,9 +3650,12 @@ static struct tevent_req *process_clist_send(
 
 	for (i = 0; i < clist->num; i++) {
 		request_func(&request, &clist->conn[i]);
-		subreq = ctdb_client_control_send(state, ctdb->ev,
-						  ctdb->client, ctdb->cmd_pnn,
-						  TIMEOUT(), &request);
+		subreq = ctdb_client_control_send(state,
+						  ctdb->ev,
+						  ctdb->client,
+						  ctdb->cmd_pnn,
+						  TIMEOUT(),
+						  &request);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ctdb->ev);
 		}
@@ -3228,8 +3667,8 @@ static struct tevent_req *process_clist_send(
 
 static void process_clist_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
 	struct process_clist_state *state = tevent_req_data(
 		req, struct process_clist_state);
 	struct ctdb_reply_control *reply;
@@ -3238,7 +3677,7 @@ static void process_clist_done(struct tevent_req *subreq)
 
 	status = ctdb_client_control_recv(subreq, NULL, state, &reply);
 	TALLOC_FREE(subreq);
-	if (! status) {
+	if (!status) {
 		state->num_failed += 1;
 		goto done;
 	}
@@ -3264,8 +3703,10 @@ static int process_clist_recv(struct tevent_req *req)
 	return state->num_failed;
 }
 
-static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_addtickle(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     int argc,
+			     const char **argv)
 {
 	struct ctdb_connection conn;
 	int ret;
@@ -3287,9 +3728,12 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			return 0;
 		}
 
-		req = process_clist_send(mem_ctx, ctdb, clist,
-				 ctdb_req_control_tcp_add_delayed_update,
-				 ctdb_reply_control_tcp_add_delayed_update);
+		req = process_clist_send(
+			mem_ctx,
+			ctdb,
+			clist,
+			ctdb_req_control_tcp_add_delayed_update,
+			ctdb_reply_control_tcp_add_delayed_update);
 		if (req == NULL) {
 			talloc_free(clist);
 			return ENOMEM;
@@ -3318,9 +3762,12 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_tcp_add_delayed_update(mem_ctx, ctdb->ev,
-					       ctdb->client, ctdb->cmd_pnn,
-					       TIMEOUT(), &conn);
+	ret = ctdb_ctrl_tcp_add_delayed_update(mem_ctx,
+					       ctdb->ev,
+					       ctdb->client,
+					       ctdb->cmd_pnn,
+					       TIMEOUT(),
+					       &conn);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to register connection\n");
 		return ret;
@@ -3329,8 +3776,10 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_deltickle(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     int argc,
+			     const char **argv)
 {
 	struct ctdb_connection conn;
 	int ret;
@@ -3352,7 +3801,9 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			return 0;
 		}
 
-		req = process_clist_send(mem_ctx, ctdb, clist,
+		req = process_clist_send(mem_ctx,
+					 ctdb,
+					 clist,
 					 ctdb_req_control_tcp_remove,
 					 ctdb_reply_control_tcp_remove);
 		if (req == NULL) {
@@ -3383,8 +3834,12 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_tcp_remove(mem_ctx, ctdb->ev, ctdb->client,
-				   ctdb->cmd_pnn, TIMEOUT(), &conn);
+	ret = ctdb_ctrl_tcp_remove(mem_ctx,
+				   ctdb->ev,
+				   ctdb->client,
+				   ctdb->cmd_pnn,
+				   TIMEOUT(),
+				   &conn);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to unregister connection\n");
 		return ret;
@@ -3393,8 +3848,10 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_listnodes(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     int argc,
+			     const char **argv)
 {
 	struct ctdb_node_map *nodemap;
 	unsigned int i;
@@ -3408,21 +3865,25 @@ static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
 
 		if (options.machinereadable) {
-			printf("%s%u%s%s%s\n", options.sep,
-			       nodemap->node[i].pnn, options.sep,
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &nodemap->node[i].addr, false),
+			printf("%s%u%s%s%s\n",
+			       options.sep,
+			       nodemap->node[i].pnn,
+			       options.sep,
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&nodemap->node[i].addr,
+							false),
 			       options.sep);
 		} else {
 			printf("%s\n",
-			       ctdb_sock_addr_to_string(
-				       mem_ctx, &nodemap->node[i].addr, false));
+			       ctdb_sock_addr_to_string(mem_ctx,
+							&nodemap->node[i].addr,
+							false));
 		}
 	}
 
@@ -3438,15 +3899,15 @@ static bool nodemap_identical(struct ctdb_node_map *nodemap1,
 		return false;
 	}
 
-	for (i=0; i<nodemap1->num; i++) {
+	for (i = 0; i < nodemap1->num; i++) {
 		struct ctdb_node_and_flags *n1, *n2;
 
 		n1 = &nodemap1->node[i];
 		n2 = &nodemap2->node[i];
 
-		if ((n1->pnn != n2->pnn) ||
-		    (n1->flags != n2->flags) ||
-		    ! ctdb_sock_addr_same_ip(&n1->addr, &n2->addr)) {
+		if ((n1->pnn != n2->pnn) || (n1->flags != n2->flags) ||
+		    !ctdb_sock_addr_same_ip(&n1->addr, &n2->addr))
+		{
 			return false;
 		}
 	}
@@ -3464,43 +3925,52 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 
 	*reload = false;
 
-	for (i=0; i<nm->num; i++) {
+	for (i = 0; i < nm->num; i++) {
 		if (i >= fnm->num) {
 			fprintf(stderr,
 				"Node %u (%s) missing from nodes file\n",
 				nm->node[i].pnn,
-				ctdb_sock_addr_to_string(
-					mem_ctx, &nm->node[i].addr, false));
+				ctdb_sock_addr_to_string(mem_ctx,
+							 &nm->node[i].addr,
+							 false));
 			check_failed = true;
 			continue;
 		}
 		if (nm->node[i].flags & NODE_FLAGS_DELETED &&
-		    fnm->node[i].flags & NODE_FLAGS_DELETED) {
+		    fnm->node[i].flags & NODE_FLAGS_DELETED)
+		{
 			/* Node remains deleted */
 			continue;
 		}
 
-		if (! (nm->node[i].flags & NODE_FLAGS_DELETED) &&
-		    ! (fnm->node[i].flags & NODE_FLAGS_DELETED)) {
+		if (!(nm->node[i].flags & NODE_FLAGS_DELETED) &&
+		    !(fnm->node[i].flags & NODE_FLAGS_DELETED))
+		{
 			/* Node not newly nor previously deleted */
-			if (! ctdb_same_ip(&nm->node[i].addr,
-					   &fnm->node[i].addr)) {
+			if (!ctdb_same_ip(&nm->node[i].addr,
+					  &fnm->node[i].addr))
+			{
 				fprintf(stderr,
 					"Node %u has changed IP address"
 					" (was %s, now %s)\n",
 					nm->node[i].pnn,
 					ctdb_sock_addr_to_string(
 						mem_ctx,
-						&nm->node[i].addr, false),
+						&nm->node[i].addr,
+						false),
 					ctdb_sock_addr_to_string(
 						mem_ctx,
-						&fnm->node[i].addr, false));
+						&fnm->node[i].addr,
+						false));
 				check_failed = true;
 			} else {
-				if (nm->node[i].flags & NODE_FLAGS_DISCONNECTED) {
+				if (nm->node[i].flags & NODE_FLAGS_DISCONNECTED)
+				{
 					fprintf(stderr,
-						"WARNING: Node %u is disconnected."
-						" You MUST fix this node manually!\n",
+						"WARNING: Node %u is "
+						"disconnected."
+						" You MUST fix this node "
+						"manually!\n",
 						nm->node[i].pnn);
 				}
 			}
@@ -3511,7 +3981,7 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 			/* Node is being deleted */
 			printf("Node %u is DELETED\n", nm->node[i].pnn);
 			*reload = true;
-			if (! (nm->node[i].flags & NODE_FLAGS_DISCONNECTED)) {
+			if (!(nm->node[i].flags & NODE_FLAGS_DISCONNECTED)) {
 				fprintf(stderr,
 					"ERROR: Node %u is still connected\n",
 					nm->node[i].pnn);
@@ -3529,7 +3999,8 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 
 	if (check_failed) {
 		fprintf(stderr,
-			"ERROR: Nodes will not be reloaded due to previous error\n");
+			"ERROR: Nodes will not be reloaded due to previous "
+			"error\n");
 		return 1;
 	}
 
@@ -3550,11 +4021,12 @@ struct disable_recoveries_state {
 	bool done;
 };
 
-static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
+static void disable_recoveries_handler(uint64_t srvid,
+				       TDB_DATA data,
 				       void *private_data)
 {
-	struct disable_recoveries_state *state =
-		(struct disable_recoveries_state *)private_data;
+	struct disable_recoveries_state
+		*state = (struct disable_recoveries_state *)private_data;
 	unsigned int i;
 	int ret;
 
@@ -3570,7 +4042,7 @@ static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 		state->done = true;
 		return;
 	}
-	for (i=0; i<state->node_count; i++) {
+	for (i = 0; i < state->node_count; i++) {
 		if (state->pnn_list[i] == (uint32_t)ret) {
 			state->reply[i] = true;
 			break;
@@ -3578,18 +4050,21 @@ static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 	}
 
 	state->done = true;
-	for (i=0; i<state->node_count; i++) {
-		if (! state->reply[i]) {
+	for (i = 0; i < state->node_count; i++) {
+		if (!state->reply[i]) {
 			state->done = false;
 			break;
 		}
 	}
 }
 
-static int disable_recoveries(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      uint32_t timeout, uint32_t *pnn_list, int count)
+static int disable_recoveries(TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      uint32_t timeout,
+			      uint32_t *pnn_list,
+			      int count)
 {
-	struct ctdb_disable_message disable = { 0 };
+	struct ctdb_disable_message disable = {0};
 	struct disable_recoveries_state state;
 	int ret, i;
 
@@ -3606,7 +4081,8 @@ static int disable_recoveries(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ENOMEM;
 	}
 
-	ret = ctdb_client_set_message_handler(ctdb->ev, ctdb->client,
+	ret = ctdb_client_set_message_handler(ctdb->ev,
+					      ctdb->client,
 					      disable.srvid,
 					      disable_recoveries_handler,
 					      &state);
@@ -3614,11 +4090,9 @@ static int disable_recoveries(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	for (i=0; i<count; i++) {
-		ret = ctdb_message_disable_recoveries(mem_ctx, ctdb->ev,
-						      ctdb->client,
-						      pnn_list[i],
-						      &disable);
+	for (i = 0; i < count; i++) {
+		ret = ctdb_message_disable_recoveries(
+			mem_ctx, ctdb->ev, ctdb->client, pnn_list[i], &disable);
 		if (ret != 0) {
 			goto fail;
 		}
@@ -3632,13 +4106,17 @@ static int disable_recoveries(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 fail:
-	ctdb_client_remove_message_handler(ctdb->ev, ctdb->client,
-					   disable.srvid, &state);
+	ctdb_client_remove_message_handler(ctdb->ev,
+					   ctdb->client,
+					   disable.srvid,
+					   &state);
 	return ret;
 }
 
-static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			       int argc, const char **argv)
+static int control_reloadnodes(TALLOC_CTX *mem_ctx,
+			       struct ctdb_context *ctdb,
+			       int argc,
+			       const char **argv)
 {
 	struct ctdb_node_map *nodemap = NULL;
 	struct ctdb_node_map *file_nodemap;
@@ -3661,26 +4139,31 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		if (nodemap->node[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 
-		ret = ctdb_ctrl_get_nodes_file(mem_ctx, ctdb->ev, ctdb->client,
-					       nodemap->node[i].pnn, TIMEOUT(),
+		ret = ctdb_ctrl_get_nodes_file(mem_ctx,
+					       ctdb->ev,
+					       ctdb->client,
+					       nodemap->node[i].pnn,
+					       TIMEOUT(),
 					       &remote_nodemap);
 		if (ret != 0) {
 			fprintf(stderr,
-				"ERROR: Failed to get nodes file from node %u\n",
+				"ERROR: Failed to get nodes file from node "
+				"%u\n",
 				nodemap->node[i].pnn);
 			return ret;
 		}
 
-		if (! nodemap_identical(file_nodemap, remote_nodemap)) {
+		if (!nodemap_identical(file_nodemap, remote_nodemap)) {
 			fprintf(stderr,
 				"ERROR: Nodes file on node %u differs"
-				 " from current node (%u)\n",
-				 nodemap->node[i].pnn, ctdb->pnn);
+				" from current node (%u)\n",
+				nodemap->node[i].pnn,
+				ctdb->pnn);
 			return 1;
 		}
 	}
@@ -3690,35 +4173,44 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	if (! reload) {
-		fprintf(stderr, "No change in nodes file,"
-				" skipping unnecessary reload\n");
+	if (!reload) {
+		fprintf(stderr,
+			"No change in nodes file,"
+			" skipping unnecessary reload\n");
 		return 0;
 	}
 
-	count = list_of_connected_nodes(nodemap, CTDB_UNKNOWN_PNN,
-					mem_ctx, &pnn_list);
+	count = list_of_connected_nodes(nodemap,
+					CTDB_UNKNOWN_PNN,
+					mem_ctx,
+					&pnn_list);
 	if (count <= 0) {
 		fprintf(stderr, "Memory allocation error\n");
 		return 1;
 	}
 
-	ret = disable_recoveries(mem_ctx, ctdb, 2*options.timelimit,
-				 pnn_list, count);
+	ret = disable_recoveries(
+		mem_ctx, ctdb, 2 * options.timelimit, pnn_list, count);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to disable recoveries\n");
 		return ret;
 	}
 
 	ctdb_req_control_reload_nodes_file(&request);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, &reply);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					&reply);
 	if (ret != 0) {
 		bool failed = false;
 		int j;
 
-		for (j=0; j<count; j++) {
+		for (j = 0; j < count; j++) {
 			ret = ctdb_reply_control_reload_nodes_file(reply[j]);
 			if (ret != 0) {
 				fprintf(stderr,
@@ -3742,8 +4234,10 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		  ctdb_sock_addr *addr, uint32_t pnn)
+static int moveip(TALLOC_CTX *mem_ctx,
+		  struct ctdb_context *ctdb,
+		  ctdb_sock_addr *addr,
+		  uint32_t pnn)
 {
 	struct ctdb_public_ip_list *pubip_list;
 	struct ctdb_public_ip pubip;
@@ -3755,23 +4249,29 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint32_t *connected_pnn = NULL;
 	int connected_count;
 
-	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-				       pnn, TIMEOUT(), false, &pubip_list);
+	ret = ctdb_ctrl_get_public_ips(mem_ctx,
+				       ctdb->ev,
+				       ctdb->client,
+				       pnn,
+				       TIMEOUT(),
+				       false,
+				       &pubip_list);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get Public IPs from node %u\n",
-			pnn);
+		fprintf(stderr, "Failed to get Public IPs from node %u\n", pnn);
 		return ret;
 	}
 
-	for (i=0; i<pubip_list->num; i++) {
+	for (i = 0; i < pubip_list->num; i++) {
 		if (ctdb_same_ip(addr, &pubip_list->ip[i].addr)) {
 			break;
 		}
 	}
 
 	if (i == pubip_list->num) {
-		fprintf(stderr, "Node %u CANNOT host IP address %s\n",
-			pnn, ctdb_sock_addr_to_string(mem_ctx, addr, false));
+		fprintf(stderr,
+			"Node %u CANNOT host IP address %s\n",
+			pnn,
+			ctdb_sock_addr_to_string(mem_ctx, addr, false));
 		return 1;
 	}
 
@@ -3806,7 +4306,7 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	 */
 	ret = disable_takeover_runs(mem_ctx,
 				    ctdb,
-				    2*options.timelimit,
+				    2 * options.timelimit,
 				    connected_pnn,
 				    connected_count);
 	if (ret != 0) {
@@ -3818,16 +4318,22 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	pubip.addr = *addr;
 	ctdb_req_control_release_ip(&request, &pubip);
 
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to release IP on nodes\n");
 		return ret;
 	}
 
-	ret = ctdb_ctrl_takeover_ip(mem_ctx, ctdb->ev, ctdb->client,
-				    pnn, TIMEOUT(), &pubip);
+	ret = ctdb_ctrl_takeover_ip(
+		mem_ctx, ctdb->ev, ctdb->client, pnn, TIMEOUT(), &pubip);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to takeover IP on node %u\n", pnn);
 		return ret;
@@ -3837,11 +4343,8 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	 * It isn't strictly necessary to wait until takeover runs are
 	 * re-enabled but doing so can't hurt.
 	 */
-	ret = disable_takeover_runs(mem_ctx,
-				    ctdb,
-				    0,
-				    connected_pnn,
-				    connected_count);
+	ret = disable_takeover_runs(
+		mem_ctx, ctdb, 0, connected_pnn, connected_count);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to enable takeover runs\n");
 		return ret;
@@ -3853,8 +4356,10 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 						   connected_count);
 }
 
-static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_moveip(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	ctdb_sock_addr addr;
 	uint32_t pnn;
@@ -3888,32 +4393,36 @@ static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (ret != 0) {
-		fprintf(stderr, "Failed to move IP %s to node %u\n",
-			argv[0], pnn);
+		fprintf(stderr,
+			"Failed to move IP %s to node %u\n",
+			argv[0],
+			pnn);
 		return ret;
 	}
 
 	return 0;
 }
 
-static int rebalancenode(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+static int rebalancenode(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
 			 uint32_t pnn)
 {
 	int ret;
 
-	ret = ctdb_message_rebalance_node(mem_ctx, ctdb->ev, ctdb->client,
-					  CTDB_BROADCAST_CONNECTED, pnn);
+	ret = ctdb_message_rebalance_node(
+		mem_ctx, ctdb->ev, ctdb->client, CTDB_BROADCAST_CONNECTED, pnn);
 	if (ret != 0) {
-		fprintf(stderr,
-			"Failed to ask leader to distribute IPs\n");
+		fprintf(stderr, "Failed to ask leader to distribute IPs\n");
 		return ret;
 	}
 
 	return 0;
 }
 
-static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_addip(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	ctdb_sock_addr addr;
 	struct ctdb_public_ip_list *pubip_list;
@@ -3931,20 +4440,27 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT(),
-				       false, &pubip_list);
+	ret = ctdb_ctrl_get_public_ips(mem_ctx,
+				       ctdb->ev,
+				       ctdb->client,
+				       ctdb->cmd_pnn,
+				       TIMEOUT(),
+				       false,
+				       &pubip_list);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get Public IPs from node %u\n",
+		fprintf(stderr,
+			"Failed to get Public IPs from node %u\n",
 			ctdb->cmd_pnn);
 		return 1;
 	}
 
-	for (i=0; i<pubip_list->num; i++) {
+	for (i = 0; i < pubip_list->num; i++) {
 		if (ctdb_same_ip(&addr, &pubip_list->ip[i].addr)) {
-			fprintf(stderr, "Node already knows about IP %s\n",
+			fprintf(stderr,
+				"Node already knows about IP %s\n",
 				ctdb_sock_addr_to_string(mem_ctx,
-							 &addr, false));
+							 &addr,
+							 false));
 			return 0;
 		}
 	}
@@ -3954,8 +4470,11 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	addr_info.iface = argv[1];
 
 	while (retries < 5) {
-		ret = ctdb_ctrl_add_public_ip(mem_ctx, ctdb->ev, ctdb->client,
-					      ctdb->cmd_pnn, TIMEOUT(),
+		ret = ctdb_ctrl_add_public_ip(mem_ctx,
+					      ctdb->ev,
+					      ctdb->client,
+					      ctdb->cmd_pnn,
+					      TIMEOUT(),
 					      &addr_info);
 		if (ret == 0) {
 			break;
@@ -3966,8 +4485,10 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (ret != 0) {
-		fprintf(stderr, "Failed to add public IP to node %u."
-				" Giving up\n", ctdb->cmd_pnn);
+		fprintf(stderr,
+			"Failed to add public IP to node %u."
+			" Giving up\n",
+			ctdb->cmd_pnn);
 		return ret;
 	}
 
@@ -3990,8 +4511,10 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_delip(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	ctdb_sock_addr addr;
 	struct ctdb_public_ip_list *pubip_list;
@@ -4009,23 +4532,29 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT(),
-				       false, &pubip_list);
+	ret = ctdb_ctrl_get_public_ips(mem_ctx,
+				       ctdb->ev,
+				       ctdb->client,
+				       ctdb->cmd_pnn,
+				       TIMEOUT(),
+				       false,
+				       &pubip_list);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get Public IPs from node %u\n",
+		fprintf(stderr,
+			"Failed to get Public IPs from node %u\n",
 			ctdb->cmd_pnn);
 		return 1;
 	}
 
-	for (i=0; i<pubip_list->num; i++) {
+	for (i = 0; i < pubip_list->num; i++) {
 		if (ctdb_same_ip(&addr, &pubip_list->ip[i].addr)) {
 			break;
 		}
 	}
 
 	if (i == pubip_list->num) {
-		fprintf(stderr, "Node does not know about IP address %s\n",
+		fprintf(stderr,
+			"Node does not know about IP address %s\n",
 			ctdb_sock_addr_to_string(mem_ctx, &addr, false));
 		return 0;
 	}
@@ -4034,10 +4563,15 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	addr_info.mask = 0;
 	addr_info.iface = NULL;
 
-	ret = ctdb_ctrl_del_public_ip(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &addr_info);
+	ret = ctdb_ctrl_del_public_ip(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &addr_info);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to delete public IP from node %u\n",
+		fprintf(stderr,
+			"Failed to delete public IP from node %u\n",
 			ctdb->cmd_pnn);
 		return ret;
 	}
@@ -4060,9 +4594,9 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-#define DB_VERSION	3
-#define MAX_DB_NAME	64
-#define MAX_REC_BUFFER_SIZE	(100*1000)
+#define DB_VERSION 3
+#define MAX_DB_NAME 64
+#define MAX_REC_BUFFER_SIZE (100 * 1000)
 
 struct db_header {
 	unsigned long version;
@@ -4081,8 +4615,11 @@ struct backup_state {
 	unsigned int nbuf, nrec;
 };
 
-static int backup_handler(uint32_t reqid, struct ctdb_ltdb_header *header,
-			  TDB_DATA key, TDB_DATA data, void *private_data)
+static int backup_handler(uint32_t reqid,
+			  struct ctdb_ltdb_header *header,
+			  TDB_DATA key,
+			  TDB_DATA data,
+			  void *private_data)
 {
 	struct backup_state *state = (struct backup_state *)private_data;
 	size_t len;
@@ -4096,8 +4633,8 @@ static int backup_handler(uint32_t reqid, struct ctdb_ltdb_header *header,
 		}
 	}
 
-	ret = ctdb_rec_buffer_add(state->recbuf, state->recbuf, reqid,
-				  header, key, data);
+	ret = ctdb_rec_buffer_add(
+		state->recbuf, state->recbuf, reqid, header, key, data);
 	if (ret != 0) {
 		return ret;
 	}
@@ -4120,8 +4657,10 @@ static int backup_handler(uint32_t reqid, struct ctdb_ltdb_header *header,
 	return 0;
 }
 
-static int control_backupdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_backupdb(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -4135,21 +4674,22 @@ static int control_backupdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("backupdb");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
 	}
 
-	fd = open(argv[1], O_RDWR|O_CREAT, 0600);
+	fd = open(argv[1], O_RDWR | O_CREAT, 0600);
 	if (fd == -1) {
 		ret = errno;
-		fprintf(stderr, "Failed to open file %s for writing\n",
+		fprintf(stderr,
+			"Failed to open file %s for writing\n",
 			argv[1]);
 		return ret;
 	}
@@ -4172,7 +4712,8 @@ static int control_backupdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	ret = ctdb_db_traverse_local(db, true, false, backup_handler, &state);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to collect records from DB %s\n",
+		fprintf(stderr,
+			"Failed to collect records from DB %s\n",
 			db_name);
 		close(fd);
 		return ret;
@@ -4197,7 +4738,7 @@ static int control_backupdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	db_hdr.flags = db_flags;
 	db_hdr.nbuf = state.nbuf;
 	db_hdr.nrec = state.nrec;
-	strncpy(db_hdr.name, db_name, MAX_DB_NAME-1);
+	strncpy(db_hdr.name, db_name, MAX_DB_NAME - 1);
 
 	lseek(fd, 0, SEEK_SET);
 	ret = write(fd, &db_hdr, sizeof(struct db_header));
@@ -4213,8 +4754,10 @@ static int control_backupdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_restoredb(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     int argc,
+			     const char **argv)
 {
 	const char *db_name = NULL;
 	struct ctdb_db_context *db;
@@ -4241,7 +4784,8 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	fd = open(argv[0], O_RDONLY, 0600);
 	if (fd == -1) {
 		ret = errno;
-		fprintf(stderr, "Failed to open file %s for reading\n",
+		fprintf(stderr,
+			"Failed to open file %s for reading\n",
 			argv[0]);
 		return ret;
 	}
@@ -4254,16 +4798,18 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (n == -1) {
 		ret = errno;
 		close(fd);
-		fprintf(stderr, "Failed to read db header from file %s\n",
+		fprintf(stderr,
+			"Failed to read db header from file %s\n",
 			argv[0]);
 		return ret;
 	}
-	db_hdr.name[sizeof(db_hdr.name)-1] = '\0';
+	db_hdr.name[sizeof(db_hdr.name) - 1] = '\0';
 
 	if (db_hdr.version != DB_VERSION) {
 		fprintf(stderr,
 			"Wrong version of backup file, expected %u, got %lu\n",
-			DB_VERSION, db_hdr.version);
+			DB_VERSION,
+			db_hdr.version);
 		close(fd);
 		return EINVAL;
 	}
@@ -4272,13 +4818,15 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		db_name = db_hdr.name;
 	}
 
-	strftime(timebuf, sizeof(timebuf)-1, "%Y/%m/%d %H:%M:%S",
+	strftime(timebuf,
+		 sizeof(timebuf) - 1,
+		 "%Y/%m/%d %H:%M:%S",
 		 localtime(&db_hdr.timestamp));
 	printf("Restoring database %s from backup @ %s\n", db_name, timebuf);
 
 	db_flags = db_hdr.flags & 0xff;
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		close(fd);
@@ -4299,7 +4847,9 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	count = list_of_active_nodes(nodemap, CTDB_UNKNOWN_PNN, mem_ctx,
+	count = list_of_active_nodes(nodemap,
+				     CTDB_UNKNOWN_PNN,
+				     mem_ctx,
 				     &pnn_list);
 	if (count <= 0) {
 		close(fd);
@@ -4310,26 +4860,43 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	wipedb.tid = generation;
 
 	ctdb_req_control_db_freeze(&request, wipedb.db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev,
-					ctdb->client, pnn_list, count,
-					TIMEOUT(), &request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
-
 	ctdb_req_control_db_transaction_start(&request, &wipedb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_wipe_database(&request, &wipedb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
@@ -4339,14 +4906,20 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	pulldb.srvid = SRVID_CTDB_PUSHDB;
 
 	ctdb_req_control_db_push_start(&request, &pulldb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
-	for (i=0; i<db_hdr.nbuf; i++) {
+	for (i = 0; i < db_hdr.nbuf; i++) {
 		struct ctdb_req_message message;
 		TDB_DATA data;
 		size_t np;
@@ -4367,10 +4940,13 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		message.srvid = pulldb.srvid;
 		message.data.data = data;
 
-		ret = ctdb_client_message_multi(mem_ctx, ctdb->ev,
+		ret = ctdb_client_message_multi(mem_ctx,
+						ctdb->ev,
 						ctdb->client,
-						pnn_list, count,
-						&message, NULL);
+						pnn_list,
+						count,
+						&message,
+						NULL);
 		if (ret != 0) {
 			goto failed;
 		}
@@ -4380,51 +4956,79 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ctdb_req_control_db_push_confirm(&request, pulldb.db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, &reply);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					&reply);
 	if (ret != 0) {
 		goto failed;
 	}
 
-	for (i=0; i<count; i++) {
+	for (i = 0; i < count; i++) {
 		uint32_t num_records;
 
 		ret = ctdb_reply_control_db_push_confirm(reply[i],
 							 &num_records);
 		if (ret != 0) {
-			fprintf(stderr, "Invalid response from node %u\n",
+			fprintf(stderr,
+				"Invalid response from node %u\n",
 				pnn_list[i]);
 			goto failed;
 		}
 
 		if (num_records != db_hdr.nrec) {
-			fprintf(stderr, "Node %u received %u of %lu records\n",
-				pnn_list[i], num_records, db_hdr.nrec);
+			fprintf(stderr,
+				"Node %u received %u of %lu records\n",
+				pnn_list[i],
+				num_records,
+				db_hdr.nrec);
 			goto failed;
 		}
 	}
 
 	ctdb_req_control_db_set_healthy(&request, wipedb.db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_db_transaction_commit(&request, &wipedb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_db_thaw(&request, wipedb.db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev,
-					ctdb->client, pnn_list, count,
-					TIMEOUT(), &request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
@@ -4433,11 +5037,14 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	close(fd);
 	return 0;
 
-
 failed:
 	close(fd);
-	ctdb_ctrl_set_recmode(mem_ctx, ctdb->ev, ctdb->client,
-			      ctdb->pnn, TIMEOUT(), CTDB_RECOVERY_ACTIVE);
+	ctdb_ctrl_set_recmode(mem_ctx,
+			      ctdb->ev,
+			      ctdb->client,
+			      ctdb->pnn,
+			      TIMEOUT(),
+			      CTDB_RECOVERY_ACTIVE);
 	return ret;
 }
 
@@ -4448,11 +5055,12 @@ struct dumpdbbackup_state {
 
 static int dumpdbbackup_handler(uint32_t reqid,
 				struct ctdb_ltdb_header *header,
-				TDB_DATA key, TDB_DATA data,
+				TDB_DATA key,
+				TDB_DATA data,
 				void *private_data)
 {
-	struct dumpdbbackup_state *state =
-		(struct dumpdbbackup_state *)private_data;
+	struct dumpdbbackup_state *state = (struct dumpdbbackup_state *)
+		private_data;
 	struct ctdb_ltdb_header hdr;
 	int ret;
 
@@ -4464,8 +5072,10 @@ static int dumpdbbackup_handler(uint32_t reqid,
 	return state->parser(reqid, &hdr, key, data, &state->sub_state);
 }
 
-static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
+static int control_dumpdbbackup(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
 	struct db_header db_hdr;
 	char timebuf[128];
@@ -4481,7 +5091,8 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	fd = open(argv[0], O_RDONLY, 0600);
 	if (fd == -1) {
 		ret = errno;
-		fprintf(stderr, "Failed to open file %s for reading\n",
+		fprintf(stderr,
+			"Failed to open file %s for reading\n",
 			argv[0]);
 		return ret;
 	}
@@ -4490,29 +5101,32 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (n == -1) {
 		ret = errno;
 		close(fd);
-		fprintf(stderr, "Failed to read db header from file %s\n",
+		fprintf(stderr,
+			"Failed to read db header from file %s\n",
 			argv[0]);
 		return ret;
 	}
-	db_hdr.name[sizeof(db_hdr.name)-1] = '\0';
+	db_hdr.name[sizeof(db_hdr.name) - 1] = '\0';
 
 	if (db_hdr.version != DB_VERSION) {
 		fprintf(stderr,
 			"Wrong version of backup file, expected %u, got %lu\n",
-			DB_VERSION, db_hdr.version);
+			DB_VERSION,
+			db_hdr.version);
 		close(fd);
 		return EINVAL;
 	}
 
-	strftime(timebuf, sizeof(timebuf)-1, "%Y/%m/%d %H:%M:%S",
+	strftime(timebuf,
+		 sizeof(timebuf) - 1,
+		 "%Y/%m/%d %H:%M:%S",
 		 localtime(&db_hdr.timestamp));
-	printf("Dumping database %s from backup @ %s\n",
-	       db_hdr.name, timebuf);
+	printf("Dumping database %s from backup @ %s\n", db_hdr.name, timebuf);
 
 	state.parser = dump_record;
 	state.sub_state.count = 0;
 
-	for (i=0; i<db_hdr.nbuf; i++) {
+	for (i = 0; i < db_hdr.nbuf; i++) {
 		struct ctdb_rec_buffer *recbuf;
 
 		ret = ctdb_rec_buffer_read(fd, mem_ctx, &recbuf);
@@ -4522,7 +5136,8 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			return ret;
 		}
 
-		ret = ctdb_rec_buffer_traverse(recbuf, dumpdbbackup_handler,
+		ret = ctdb_rec_buffer_traverse(recbuf,
+					       dumpdbbackup_handler,
 					       &state);
 		if (ret != 0) {
 			fprintf(stderr, "Failed to dump records\n");
@@ -4536,8 +5151,10 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_wipedb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_wipedb(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -4554,12 +5171,12 @@ static int control_wipedb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("wipedb");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -4577,16 +5194,24 @@ static int control_wipedb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	count = list_of_active_nodes(nodemap, CTDB_UNKNOWN_PNN, mem_ctx,
+	count = list_of_active_nodes(nodemap,
+				     CTDB_UNKNOWN_PNN,
+				     mem_ctx,
 				     &pnn_list);
 	if (count <= 0) {
 		return ENOMEM;
 	}
 
 	ctdb_req_control_db_freeze(&request, db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev,
-					ctdb->client, pnn_list, count,
-					TIMEOUT(), &request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
@@ -4595,41 +5220,71 @@ static int control_wipedb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	wipedb.tid = generation;
 
 	ctdb_req_control_db_transaction_start(&request, &wipedb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_wipe_database(&request, &wipedb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_db_set_healthy(&request, db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_db_transaction_commit(&request, &wipedb);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
 
 	ctdb_req_control_db_thaw(&request, db_id);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev,
-					ctdb->client, pnn_list, count,
-					TIMEOUT(), &request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		goto failed;
 	}
@@ -4637,10 +5292,13 @@ static int control_wipedb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	printf("Database %s wiped\n", db_name);
 	return 0;
 
-
 failed:
-	ctdb_ctrl_set_recmode(mem_ctx, ctdb->ev, ctdb->client,
-			      ctdb->pnn, TIMEOUT(), CTDB_RECOVERY_ACTIVE);
+	ctdb_ctrl_set_recmode(mem_ctx,
+			      ctdb->ev,
+			      ctdb->client,
+			      ctdb->pnn,
+			      TIMEOUT(),
+			      CTDB_RECOVERY_ACTIVE);
 	return ret;
 }
 
@@ -4662,8 +5320,10 @@ static int control_leader(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_event(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	char *t, *event_helper = NULL;
 
@@ -4671,7 +5331,8 @@ static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (t != NULL) {
 		event_helper = talloc_strdup(mem_ctx, t);
 	} else {
-		event_helper = talloc_asprintf(mem_ctx, "%s/ctdb-event",
+		event_helper = talloc_asprintf(mem_ctx,
+					       "%s/ctdb-event",
 					       CTDB_HELPER_BINDIR);
 	}
 
@@ -4680,12 +5341,14 @@ static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	return run_helper(mem_ctx, "event daemon helper", event_helper,
-			  argc, argv);
+	return run_helper(
+		mem_ctx, "event daemon helper", event_helper, argc, argv);
 }
 
-static int control_scriptstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
+static int control_scriptstatus(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
 	const char *new_argv[4];
 
@@ -4698,12 +5361,14 @@ static int control_scriptstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	new_argv[2] = (argc == 0) ? "monitor" : argv[0];
 	new_argv[3] = NULL;
 
-	(void) control_event(mem_ctx, ctdb, 3, new_argv);
+	(void)control_event(mem_ctx, ctdb, 3, new_argv);
 	return 0;
 }
 
-static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			 int argc, const char **argv)
+static int control_natgw(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 int argc,
+			 const char **argv)
 {
 	char *t, *natgw_helper = NULL;
 
@@ -4715,7 +5380,8 @@ static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (t != NULL) {
 		natgw_helper = talloc_strdup(mem_ctx, t);
 	} else {
-		natgw_helper = talloc_asprintf(mem_ctx, "%s/ctdb_natgw",
+		natgw_helper = talloc_asprintf(mem_ctx,
+					       "%s/ctdb_natgw",
 					       CTDB_HELPER_BINDIR);
 	}
 
@@ -4724,8 +5390,8 @@ static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	return run_helper(mem_ctx, "NAT gateway helper", natgw_helper,
-			  argc, argv);
+	return run_helper(
+		mem_ctx, "NAT gateway helper", natgw_helper, argc, argv);
 }
 
 /*
@@ -4743,7 +5409,7 @@ static bool find_node_xpnn(TALLOC_CTX *mem_ctx, uint32_t *pnn)
 		return false;
 	}
 
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
@@ -4761,8 +5427,10 @@ static bool find_node_xpnn(TALLOC_CTX *mem_ctx, uint32_t *pnn)
 	return false;
 }
 
-static int control_getreclock(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
+static int control_getreclock(TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      int argc,
+			      const char **argv)
 {
 	const char *reclock;
 	int ret;
@@ -4771,8 +5439,12 @@ static int control_getreclock(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("getreclock");
 	}
 
-	ret = ctdb_ctrl_get_reclock_file(mem_ctx, ctdb->ev, ctdb->client,
-					 ctdb->cmd_pnn, TIMEOUT(), &reclock);
+	ret = ctdb_ctrl_get_reclock_file(mem_ctx,
+					 ctdb->ev,
+					 ctdb->client,
+					 ctdb->cmd_pnn,
+					 TIMEOUT(),
+					 &reclock);
 	if (ret != 0) {
 		return ret;
 	}
@@ -4786,7 +5458,8 @@ static int control_getreclock(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 static int control_setlmasterrole(TALLOC_CTX *mem_ctx,
 				  struct ctdb_context *ctdb,
-				  int argc, const char **argv)
+				  int argc,
+				  const char **argv)
 {
 	uint32_t lmasterrole = 0;
 	int ret;
@@ -4803,8 +5476,12 @@ static int control_setlmasterrole(TALLOC_CTX *mem_ctx,
 		usage("setlmasterrole");
 	}
 
-	ret = ctdb_ctrl_set_lmasterrole(mem_ctx, ctdb->ev, ctdb->client,
-					ctdb->cmd_pnn, TIMEOUT(), lmasterrole);
+	ret = ctdb_ctrl_set_lmasterrole(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					ctdb->cmd_pnn,
+					TIMEOUT(),
+					lmasterrole);
 	if (ret != 0) {
 		return ret;
 	}
@@ -4847,7 +5524,8 @@ static int control_setleaderrole(TALLOC_CTX *mem_ctx,
 
 static int control_setdbreadonly(TALLOC_CTX *mem_ctx,
 				 struct ctdb_context *ctdb,
-				 int argc, const char **argv)
+				 int argc,
+				 const char **argv)
 {
 	uint32_t db_id;
 	uint8_t db_flags;
@@ -4857,7 +5535,7 @@ static int control_setdbreadonly(TALLOC_CTX *mem_ctx,
 		usage("setdbreadonly");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, NULL, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, NULL, &db_flags)) {
 		return 1;
 	}
 
@@ -4866,8 +5544,12 @@ static int control_setdbreadonly(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_set_db_readonly(mem_ctx, ctdb->ev, ctdb->client,
-					ctdb->cmd_pnn, TIMEOUT(), db_id);
+	ret = ctdb_ctrl_set_db_readonly(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					ctdb->cmd_pnn,
+					TIMEOUT(),
+					db_id);
 	if (ret != 0) {
 		return ret;
 	}
@@ -4875,8 +5557,10 @@ static int control_setdbreadonly(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int control_setdbsticky(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			       int argc, const char **argv)
+static int control_setdbsticky(TALLOC_CTX *mem_ctx,
+			       struct ctdb_context *ctdb,
+			       int argc,
+			       const char **argv)
 {
 	uint32_t db_id;
 	uint8_t db_flags;
@@ -4886,7 +5570,7 @@ static int control_setdbsticky(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("setdbsticky");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, NULL, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, NULL, &db_flags)) {
 		return 1;
 	}
 
@@ -4895,8 +5579,12 @@ static int control_setdbsticky(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	ret = ctdb_ctrl_set_db_sticky(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), db_id);
+	ret = ctdb_ctrl_set_db_sticky(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      db_id);
 	if (ret != 0) {
 		return ret;
 	}
@@ -4904,8 +5592,10 @@ static int control_setdbsticky(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_pfetch(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -4918,19 +5608,20 @@ static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("pfetch");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	if (! (db_flags &
-	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
-		fprintf(stderr, "Transactions not supported on DB %s\n",
+	if (!(db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)))
+	{
+		fprintf(stderr,
+			"Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -4942,18 +5633,18 @@ static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_transaction_start(mem_ctx, ctdb->ev, ctdb->client,
-				     TIMEOUT(), db, true, &h);
+	ret = ctdb_transaction_start(
+		mem_ctx, ctdb->ev, ctdb->client, TIMEOUT(), db, true, &h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to start transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to start transaction on db %s\n",
 			db_name);
 		return ret;
 	}
 
 	ret = ctdb_transaction_fetch_record(h, key, mem_ctx, &data);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to read record for key %s\n",
-			argv[1]);
+		fprintf(stderr, "Failed to read record for key %s\n", argv[1]);
 		ctdb_transaction_cancel(h);
 		return ret;
 	}
@@ -4964,8 +5655,10 @@ static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_pstore(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -4978,19 +5671,20 @@ static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("pstore");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	if (! (db_flags &
-	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
-		fprintf(stderr, "Transactions not supported on DB %s\n",
+	if (!(db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)))
+	{
+		fprintf(stderr,
+			"Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -5008,25 +5702,26 @@ static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_transaction_start(mem_ctx, ctdb->ev, ctdb->client,
-				     TIMEOUT(), db, false, &h);
+	ret = ctdb_transaction_start(
+		mem_ctx, ctdb->ev, ctdb->client, TIMEOUT(), db, false, &h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to start transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to start transaction on db %s\n",
 			db_name);
 		return ret;
 	}
 
 	ret = ctdb_transaction_store_record(h, key, data);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to store record for key %s\n",
-			argv[1]);
+		fprintf(stderr, "Failed to store record for key %s\n", argv[1]);
 		ctdb_transaction_cancel(h);
 		return ret;
 	}
 
 	ret = ctdb_transaction_commit(h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to commit transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to commit transaction on db %s\n",
 			db_name);
 		ctdb_transaction_cancel(h);
 		return ret;
@@ -5035,8 +5730,10 @@ static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_pdelete(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   int argc,
+			   const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -5049,19 +5746,20 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("pdelete");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	if (! (db_flags &
-	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
-		fprintf(stderr, "Transactions not supported on DB %s\n",
+	if (!(db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)))
+	{
+		fprintf(stderr,
+			"Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -5073,17 +5771,19 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_transaction_start(mem_ctx, ctdb->ev, ctdb->client,
-				     TIMEOUT(), db, false, &h);
+	ret = ctdb_transaction_start(
+		mem_ctx, ctdb->ev, ctdb->client, TIMEOUT(), db, false, &h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to start transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to start transaction on db %s\n",
 			db_name);
 		return ret;
 	}
 
 	ret = ctdb_transaction_delete_record(h, key);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to delete record for key %s\n",
+		fprintf(stderr,
+			"Failed to delete record for key %s\n",
 			argv[1]);
 		ctdb_transaction_cancel(h);
 		return ret;
@@ -5091,7 +5791,8 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	ret = ctdb_transaction_commit(h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to commit transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to commit transaction on db %s\n",
 			db_name);
 		ctdb_transaction_cancel(h);
 		return ret;
@@ -5100,7 +5801,9 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int ptrans_parse_string(TALLOC_CTX *mem_ctx, const char **ptr, TDB_DATA *data)
+static int ptrans_parse_string(TALLOC_CTX *mem_ctx,
+			       const char **ptr,
+			       TDB_DATA *data)
 {
 	const char *t;
 	size_t n;
@@ -5136,12 +5839,14 @@ static int ptrans_parse_string(TALLOC_CTX *mem_ctx, const char **ptr, TDB_DATA *
 	return 0;
 }
 
-#define MAX_LINE_SIZE	1024
+#define MAX_LINE_SIZE 1024
 
-static bool ptrans_get_key_value(TALLOC_CTX *mem_ctx, FILE *file,
-				 TDB_DATA *key, TDB_DATA *value)
+static bool ptrans_get_key_value(TALLOC_CTX *mem_ctx,
+				 FILE *file,
+				 TDB_DATA *key,
+				 TDB_DATA *value)
 {
-	char line [MAX_LINE_SIZE]; /* FIXME: make this more flexible? */
+	char line[MAX_LINE_SIZE]; /* FIXME: make this more flexible? */
 	const char *ptr;
 	int ret;
 
@@ -5170,8 +5875,10 @@ static bool ptrans_get_key_value(TALLOC_CTX *mem_ctx, FILE *file,
 	return true;
 }
 
-static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_ptrans(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -5185,13 +5892,14 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("ptrans");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
-	if (! (db_flags &
-	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
-		fprintf(stderr, "Transactions not supported on DB %s\n",
+	if (!(db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)))
+	{
+		fprintf(stderr,
+			"Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
@@ -5206,17 +5914,18 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		file = stdin;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		goto done;
 	}
 
-	ret = ctdb_transaction_start(mem_ctx, ctdb->ev, ctdb->client,
-				     TIMEOUT(), db, false, &h);
+	ret = ctdb_transaction_start(
+		mem_ctx, ctdb->ev, ctdb->client, TIMEOUT(), db, false, &h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to start transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to start transaction on db %s\n",
 			db_name);
 		goto done;
 	}
@@ -5236,7 +5945,8 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	ret = ctdb_transaction_commit(h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to commit transaction on db %s\n",
+		fprintf(stderr,
+			"Failed to commit transaction on db %s\n",
 			db_name);
 		ctdb_transaction_cancel(h);
 	}
@@ -5248,8 +5958,10 @@ done:
 	return ret;
 }
 
-static int control_tfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_tfetch(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct tdb_context *tdb;
 	TDB_DATA key, data;
@@ -5292,16 +6004,16 @@ static int control_tfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		int fd;
 		ssize_t nwritten;
 
-		fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0600);
+		fd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0600);
 		if (fd == -1) {
-			fprintf(stderr, "Failed to open output file %s\n",
+			fprintf(stderr,
+				"Failed to open output file %s\n",
 				argv[2]);
 			goto fail;
 		}
 
 		nwritten = sys_write(fd, data.dptr, data.dsize);
-		if (nwritten == -1 ||
-		    (size_t)nwritten != data.dsize) {
+		if (nwritten == -1 || (size_t)nwritten != data.dsize) {
 			fprintf(stderr, "Failed to write record to file\n");
 			close(fd);
 			goto fail;
@@ -5323,8 +6035,10 @@ fail:
 	return 0;
 }
 
-static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  int argc, const char **argv)
+static int control_tstore(TALLOC_CTX *mem_ctx,
+			  struct ctdb_context *ctdb,
+			  int argc,
+			  const char **argv)
 {
 	struct tdb_context *tdb;
 	TDB_DATA key, data[2], value;
@@ -5360,11 +6074,8 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ZERO_STRUCT(header);
 
 	if (argc > 3) {
-		header.rsn = (uint64_t)smb_strtoull(argv[3],
-						    NULL,
-						    0,
-						    &ret,
-						    SMB_STR_STANDARD);
+		header.rsn = (uint64_t)
+			smb_strtoull(argv[3], NULL, 0, &ret, SMB_STR_STANDARD);
 		if (ret != 0) {
 			return ret;
 		}
@@ -5386,8 +6097,10 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	ret = tdb_storev(tdb, key, data, 2, TDB_REPLACE);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to write record %s to file %s\n",
-			argv[1], argv[0]);
+		fprintf(stderr,
+			"Failed to write record %s to file %s\n",
+			argv[1],
+			argv[0]);
 	}
 
 	tdb_close(tdb);
@@ -5395,8 +6108,10 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ret;
 }
 
-static int control_readkey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			   int argc, const char **argv)
+static int control_readkey(TALLOC_CTX *mem_ctx,
+			   struct ctdb_context *ctdb,
+			   int argc,
+			   const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -5418,18 +6133,17 @@ static int control_readkey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
 	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
-		fprintf(stderr, "DB %s is not a volatile database\n",
-			db_name);
+		fprintf(stderr, "DB %s is not a volatile database\n", db_name);
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -5441,22 +6155,32 @@ static int control_readkey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_fetch_lock(mem_ctx, ctdb->ev, ctdb->client,
-			      db, key, readonly, &h, NULL, &data);
+	ret = ctdb_fetch_lock(mem_ctx,
+			      ctdb->ev,
+			      ctdb->client,
+			      db,
+			      key,
+			      readonly,
+			      &h,
+			      NULL,
+			      &data);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to read record for key %s\n",
-			argv[1]);
+		fprintf(stderr, "Failed to read record for key %s\n", argv[1]);
 	} else {
-		printf("Data: size:%zu ptr:[%.*s]\n", data.dsize,
-		       (int)data.dsize, data.dptr);
+		printf("Data: size:%zu ptr:[%.*s]\n",
+		       data.dsize,
+		       (int)data.dsize,
+		       data.dptr);
 	}
 
 	talloc_free(h);
 	return ret;
 }
 
-static int control_writekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			    int argc, const char **argv)
+static int control_writekey(TALLOC_CTX *mem_ctx,
+			    struct ctdb_context *ctdb,
+			    int argc,
+			    const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -5469,18 +6193,17 @@ static int control_writekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("writekey");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
 	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
-		fprintf(stderr, "DB %s is not a volatile database\n",
-			db_name);
+		fprintf(stderr, "DB %s is not a volatile database\n", db_name);
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -5498,8 +6221,15 @@ static int control_writekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_fetch_lock(mem_ctx, ctdb->ev, ctdb->client,
-			      db, key, false, &h, NULL, NULL);
+	ret = ctdb_fetch_lock(mem_ctx,
+			      ctdb->ev,
+			      ctdb->client,
+			      db,
+			      key,
+			      false,
+			      &h,
+			      NULL,
+			      NULL);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to lock record for key %s\n", argv[0]);
 		return ret;
@@ -5507,16 +6237,17 @@ static int control_writekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	ret = ctdb_store_record(h, data);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to store record for key %s\n",
-			argv[1]);
+		fprintf(stderr, "Failed to store record for key %s\n", argv[1]);
 	}
 
 	talloc_free(h);
 	return ret;
 }
 
-static int control_deletekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_deletekey(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     int argc,
+			     const char **argv)
 {
 	const char *db_name;
 	struct ctdb_db_context *db;
@@ -5529,18 +6260,17 @@ static int control_deletekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("deletekey");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
 		return 1;
 	}
 
 	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
-		fprintf(stderr, "DB %s is not a volatile database\n",
-			db_name);
+		fprintf(stderr, "DB %s is not a volatile database\n", db_name);
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(
+		ctdb->ev, ctdb->client, TIMEOUT(), db_name, db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -5552,17 +6282,24 @@ static int control_deletekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_fetch_lock(mem_ctx, ctdb->ev, ctdb->client,
-			      db, key, false, &h, NULL, &data);
+	ret = ctdb_fetch_lock(mem_ctx,
+			      ctdb->ev,
+			      ctdb->client,
+			      db,
+			      key,
+			      false,
+			      &h,
+			      NULL,
+			      &data);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to fetch record for key %s\n",
-			argv[1]);
+		fprintf(stderr, "Failed to fetch record for key %s\n", argv[1]);
 		return ret;
 	}
 
 	ret = ctdb_delete_record(h);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to delete record for key %s\n",
+		fprintf(stderr,
+			"Failed to delete record for key %s\n",
 			argv[1]);
 	}
 
@@ -5570,8 +6307,10 @@ static int control_deletekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ret;
 }
 
-static int control_checktcpport(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
+static int control_checktcpport(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
 	struct sockaddr_in sin;
 	unsigned int port;
@@ -5610,8 +6349,10 @@ static int control_checktcpport(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_getdbseqnum(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			       int argc, const char **argv)
+static int control_getdbseqnum(TALLOC_CTX *mem_ctx,
+			       struct ctdb_context *ctdb,
+			       int argc,
+			       const char **argv)
 {
 	uint32_t db_id;
 	const char *db_name;
@@ -5622,25 +6363,32 @@ static int control_getdbseqnum(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("getdbseqnum");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, NULL)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, NULL)) {
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_db_seqnum(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), db_id,
+	ret = ctdb_ctrl_get_db_seqnum(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      db_id,
 				      &seqnum);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get sequence number for DB %s\n",
+		fprintf(stderr,
+			"Failed to get sequence number for DB %s\n",
 			db_name);
 		return ret;
 	}
 
-	printf("0x%"PRIx64"\n", seqnum);
+	printf("0x%" PRIx64 "\n", seqnum);
 	return 0;
 }
 
-static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
+static int control_nodestatus(TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      int argc,
+			      const char **argv)
 {
 	const char *nodestring = NULL;
 	struct ctdb_node_map *nodemap_in;
@@ -5660,7 +6408,7 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	if (! parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap_in)) {
+	if (!parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap_in)) {
 		return 1;
 	}
 
@@ -5676,7 +6424,7 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ret = 0;
-	for (i=0; i<nodemap->num; i++) {
+	for (i = 0; i < nodemap->num; i++) {
 		uint32_t flags = nodemap->node[i].flags;
 
 		if ((flags & NODE_FLAGS_DELETED) != 0) {
@@ -5693,7 +6441,7 @@ const struct {
 	const char *name;
 	uint32_t offset;
 } db_stats_fields[] = {
-#define DBSTATISTICS_FIELD(n) { #n, offsetof(struct ctdb_db_statistics, n) }
+#define DBSTATISTICS_FIELD(n) {#n, offsetof(struct ctdb_db_statistics, n)}
 	DBSTATISTICS_FIELD(db_ro_delegations),
 	DBSTATISTICS_FIELD(db_ro_revokes),
 	DBSTATISTICS_FIELD(locks.num_calls),
@@ -5711,58 +6459,72 @@ static void print_dbstatistics(const char *db_name,
 
 	printf("DB Statistics %s\n", db_name);
 
-	for (i=0; i<ARRAY_SIZE(db_stats_fields); i++) {
+	for (i = 0; i < ARRAY_SIZE(db_stats_fields); i++) {
 		if (strchr(db_stats_fields[i].name, '.') != NULL) {
 			preflen = strcspn(db_stats_fields[i].name, ".") + 1;
-			if (! prefix ||
-			    strncmp(prefix, db_stats_fields[i].name, preflen) != 0) {
+			if (!prefix ||
+			    strncmp(prefix, db_stats_fields[i].name, preflen) !=
+				    0)
+			{
 				prefix = db_stats_fields[i].name;
-				printf(" %*.*s\n", preflen-1, preflen-1,
+				printf(" %*.*s\n",
+				       preflen - 1,
+				       preflen - 1,
 				       db_stats_fields[i].name);
 			}
 		} else {
 			preflen = 0;
 		}
-		printf(" %*s%-22s%*s%10u\n", preflen ? 4 : 0, "",
-		       db_stats_fields[i].name+preflen, preflen ? 0 : 4, "",
-		       *(uint32_t *)(db_stats_fields[i].offset+(uint8_t *)s));
+		printf(" %*s%-22s%*s%10u\n",
+		       preflen ? 4 : 0,
+		       "",
+		       db_stats_fields[i].name + preflen,
+		       preflen ? 0 : 4,
+		       "",
+		       *(uint32_t *)(db_stats_fields[i].offset + (uint8_t *)s));
 	}
 
 	printf(" hop_count_buckets:");
-	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+	for (i = 0; i < MAX_COUNT_BUCKETS; i++) {
 		printf(" %d", s->hop_count_bucket[i]);
 	}
 	printf("\n");
 
 	printf(" lock_buckets:");
-	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+	for (i = 0; i < MAX_COUNT_BUCKETS; i++) {
 		printf(" %d", s->locks.buckets[i]);
 	}
 	printf("\n");
 
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "locks_latency      MIN/AVG/MAX",
-	       s->locks.latency.min, LATENCY_AVG(s->locks.latency),
-	       s->locks.latency.max, s->locks.latency.num);
+	       s->locks.latency.min,
+	       LATENCY_AVG(s->locks.latency),
+	       s->locks.latency.max,
+	       s->locks.latency.num);
 
 	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
 	       "vacuum_latency     MIN/AVG/MAX",
-	       s->vacuum.latency.min, LATENCY_AVG(s->vacuum.latency),
-	       s->vacuum.latency.max, s->vacuum.latency.num);
+	       s->vacuum.latency.min,
+	       LATENCY_AVG(s->vacuum.latency),
+	       s->vacuum.latency.max,
+	       s->vacuum.latency.num);
 
 	printf(" Num Hot Keys:     %d\n", s->num_hot_keys);
-	for (i=0; i<s->num_hot_keys; i++) {
+	for (i = 0; i < s->num_hot_keys; i++) {
 		size_t j;
 		printf("     Count:%d Key:", s->hot_keys[i].count);
-		for (j=0; j<s->hot_keys[i].key.dsize; j++) {
+		for (j = 0; j < s->hot_keys[i].key.dsize; j++) {
 			printf("%02x", s->hot_keys[i].key.dptr[j] & 0xff);
 		}
 		printf("\n");
 	}
 }
 
-static int control_dbstatistics(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			        int argc, const char **argv)
+static int control_dbstatistics(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				int argc,
+				const char **argv)
 {
 	uint32_t db_id;
 	const char *db_name;
@@ -5773,15 +6535,20 @@ static int control_dbstatistics(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("dbstatistics");
 	}
 
-	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, NULL)) {
+	if (!db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, NULL)) {
 		return 1;
 	}
 
-	ret = ctdb_ctrl_get_db_statistics(mem_ctx, ctdb->ev, ctdb->client,
-					  ctdb->cmd_pnn, TIMEOUT(), db_id,
+	ret = ctdb_ctrl_get_db_statistics(mem_ctx,
+					  ctdb->ev,
+					  ctdb->client,
+					  ctdb->cmd_pnn,
+					  TIMEOUT(),
+					  db_id,
 					  &dbstats);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to get statistics for DB %s\n",
+		fprintf(stderr,
+			"Failed to get statistics for DB %s\n",
 			db_name);
 		return ret;
 	}
@@ -5798,11 +6565,12 @@ struct disable_takeover_runs_state {
 	bool done;
 };
 
-static void disable_takeover_run_handler(uint64_t srvid, TDB_DATA data,
+static void disable_takeover_run_handler(uint64_t srvid,
+					 TDB_DATA data,
 					 void *private_data)
 {
-	struct disable_takeover_runs_state *state =
-		(struct disable_takeover_runs_state *)private_data;
+	struct disable_takeover_runs_state
+		*state = (struct disable_takeover_runs_state *)private_data;
 	unsigned int i;
 	int ret;
 
@@ -5818,7 +6586,7 @@ static void disable_takeover_run_handler(uint64_t srvid, TDB_DATA data,
 		state->done = true;
 		return;
 	}
-	for (i=0; i<state->node_count; i++) {
+	for (i = 0; i < state->node_count; i++) {
 		if (state->pnn_list[i] == (uint32_t)ret) {
 			state->reply[i] = true;
 			break;
@@ -5826,8 +6594,8 @@ static void disable_takeover_run_handler(uint64_t srvid, TDB_DATA data,
 	}
 
 	state->done = true;
-	for (i=0; i<state->node_count; i++) {
-		if (! state->reply[i]) {
+	for (i = 0; i < state->node_count; i++) {
+		if (!state->reply[i]) {
 			state->done = false;
 			break;
 		}
@@ -5835,10 +6603,12 @@ static void disable_takeover_run_handler(uint64_t srvid, TDB_DATA data,
 }
 
 static int disable_takeover_runs(TALLOC_CTX *mem_ctx,
-				 struct ctdb_context *ctdb, uint32_t timeout,
-				 uint32_t *pnn_list, int count)
+				 struct ctdb_context *ctdb,
+				 uint32_t timeout,
+				 uint32_t *pnn_list,
+				 int count)
 {
-	struct ctdb_disable_message disable = { 0 };
+	struct ctdb_disable_message disable = {0};
 	struct disable_takeover_runs_state state;
 	int ret, i;
 
@@ -5855,7 +6625,8 @@ static int disable_takeover_runs(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	ret = ctdb_client_set_message_handler(ctdb->ev, ctdb->client,
+	ret = ctdb_client_set_message_handler(ctdb->ev,
+					      ctdb->client,
 					      disable.srvid,
 					      disable_takeover_run_handler,
 					      &state);
@@ -5863,11 +6634,9 @@ static int disable_takeover_runs(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	for (i=0; i<count; i++) {
-		ret = ctdb_message_disable_takeover_runs(mem_ctx, ctdb->ev,
-							 ctdb->client,
-							 pnn_list[i],
-							 &disable);
+	for (i = 0; i < count; i++) {
+		ret = ctdb_message_disable_takeover_runs(
+			mem_ctx, ctdb->ev, ctdb->client, pnn_list[i], &disable);
 		if (ret != 0) {
 			goto fail;
 		}
@@ -5881,8 +6650,10 @@ static int disable_takeover_runs(TALLOC_CTX *mem_ctx,
 	}
 
 fail:
-	ctdb_client_remove_message_handler(ctdb->ev, ctdb->client,
-					   disable.srvid, &state);
+	ctdb_client_remove_message_handler(ctdb->ev,
+					   ctdb->client,
+					   disable.srvid,
+					   &state);
 	return ret;
 }
 
@@ -5912,8 +6683,10 @@ static int send_ipreallocated_control_to_nodes(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
+static int control_reloadips(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     int argc,
+			     const char **argv)
 {
 	const char *nodestring = NULL;
 	struct ctdb_node_map *nodemap, *nodemap2;
@@ -5934,19 +6707,23 @@ static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (! parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap2)) {
+	if (!parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap2)) {
 		return 1;
 	}
 
-	count = list_of_connected_nodes(nodemap, CTDB_UNKNOWN_PNN,
-					mem_ctx, &pnn_list);
+	count = list_of_connected_nodes(nodemap,
+					CTDB_UNKNOWN_PNN,
+					mem_ctx,
+					&pnn_list);
 	if (count <= 0) {
 		fprintf(stderr, "Memory allocation error\n");
 		return 1;
 	}
 
-	count2 = list_of_active_nodes(nodemap2, CTDB_UNKNOWN_PNN,
-				      mem_ctx, &pnn_list2);
+	count2 = list_of_active_nodes(nodemap2,
+				      CTDB_UNKNOWN_PNN,
+				      mem_ctx,
+				      &pnn_list2);
 	if (count2 <= 0) {
 		fprintf(stderr, "Memory allocation error\n");
 		return 1;
@@ -5960,8 +6737,8 @@ static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	 * there are disconnected nodes.  However, this should
 	 * probably be left up to the administrator.
 	 */
-	ret = disable_takeover_runs(mem_ctx, ctdb, 2*options.timelimit,
-				    pnn_list, count);
+	ret = disable_takeover_runs(
+		mem_ctx, ctdb, 2 * options.timelimit, pnn_list, count);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to disable takeover runs\n");
 		return ret;
@@ -5972,9 +6749,15 @@ static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	 * failures are transient, which might not be true...
 	 */
 	ctdb_req_control_reload_public_ips(&request);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list2, count2, TIMEOUT(),
-					&request, NULL, NULL);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list2,
+					count2,
+					TIMEOUT(),
+					&request,
+					NULL,
+					NULL);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to reload IPs on some nodes.\n");
 	}
@@ -5991,171 +6774,406 @@ static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-
 static const struct ctdb_cmd {
 	const char *name;
 	int (*fn)(TALLOC_CTX *, struct ctdb_context *, int, const char **);
 	bool without_daemon; /* can be run without daemon running ? */
-	bool remote; /* can be run on remote nodes */
+	bool remote;	     /* can be run on remote nodes */
 	const char *msg;
 	const char *args;
 } ctdb_commands[] = {
-	{ "version", control_version, true, false,
-		"show version of ctdb", NULL },
-	{ "status", control_status, false, true,
-		"show node status", NULL },
-	{ "uptime", control_uptime, false, true,
-		"show node uptime", NULL },
-	{ "ping", control_ping, false, true,
-		"ping a node", NULL },
-	{ "runstate", control_runstate, false, true,
-		"get/check runstate of a node",
-		"[setup|first_recovery|startup|running]" },
-	{ "getvar", control_getvar, false, true,
-		"get a tunable variable", "<name>" },
-	{ "setvar", control_setvar, false, true,
-		"set a tunable variable", "<name> <value>" },
-	{ "listvars", control_listvars, false, true,
-		"list tunable variables", NULL },
-	{ "statistics", control_statistics, false, true,
-		"show ctdb statistics", NULL },
-	{ "statisticsreset", control_statistics_reset, false, true,
-		"reset ctdb statistics", NULL },
-	{ "stats", control_stats, false, true,
-		"show rolling statistics", "[count]" },
-	{ "ip", control_ip, false, true,
-		"show public ips", "[all]" },
-	{ "ipinfo", control_ipinfo, false, true,
-		"show public ip details", "<ip>" },
-	{ "ifaces", control_ifaces, false, true,
-		"show interfaces", NULL },
-	{ "setifacelink", control_setifacelink, false, true,
-		"set interface link status", "<iface> up|down" },
-	{ "process-exists", control_process_exists, false, true,
-		"check if a process exists on a node",  "<pid> [<srvid>]" },
-	{ "getdbmap", control_getdbmap, false, true,
-		"show attached databases", NULL },
-	{ "getdbstatus", control_getdbstatus, false, true,
-		"show database status", "<dbname|dbid>" },
-	{ "catdb", control_catdb, false, false,
-		"dump cluster-wide ctdb database", "<dbname|dbid>" },
-	{ "cattdb", control_cattdb, false, false,
-		"dump local ctdb database", "<dbname|dbid>" },
-	{ "getcapabilities", control_getcapabilities, false, true,
-		"show node capabilities", NULL },
-	{ "pnn", control_pnn, false, false,
-		"show the pnn of the current node", NULL },
-	{ "lvs", control_lvs, false, false,
-		"show lvs configuration", "leader|list|status" },
-	{ "setdebug", control_setdebug, false, true,
-		"set debug level", "ERROR|WARNING|NOTICE|INFO|DEBUG" },
-	{ "getdebug", control_getdebug, false, true,
-		"get debug level", NULL },
-	{ "attach", control_attach, false, false,
-		"attach a database", "<dbname> [persistent|replicated]" },
-	{ "detach", control_detach, false, false,
-		"detach database(s)", "<dbname|dbid> ..." },
-	{ "dumpmemory", control_dumpmemory, false, true,
-		"dump ctdbd memory map", NULL },
-	{ "rddumpmemory", control_rddumpmemory, false, true,
-		"dump recoverd memory map", NULL },
-	{ "getpid", control_getpid, false, true,
-		"get ctdbd process ID", NULL },
-	{ "disable", control_disable, false, true,
-		"disable a node", NULL },
-	{ "enable", control_enable, false, true,
-		"enable a node", NULL },
-	{ "stop", control_stop, false, true,
-		"stop a node", NULL },
-	{ "continue", control_continue, false, true,
-		"continue a stopped node", NULL },
-	{ "ban", control_ban, false, true,
-		"ban a node", "<bantime>"},
-	{ "unban", control_unban, false, true,
-		"unban a node", NULL },
-	{ "shutdown", control_shutdown, false, true,
-		"shutdown ctdb daemon", NULL },
-	{ "recover", control_recover, false, true,
-		"force recovery", NULL },
-	{ "sync", control_ipreallocate, false, true,
-		"run ip reallocation (deprecated)", NULL },
-	{ "ipreallocate", control_ipreallocate, false, true,
-		"run ip reallocation", NULL },
-	{ "gratarp", control_gratarp, false, true,
-		"send a gratuitous arp", "<ip> <interface>" },
-	{ "tickle", control_tickle, true, false,
-		"send a tcp tickle ack", "<srcip:port> <dstip:port>" },
-	{ "gettickles", control_gettickles, false, true,
-		"get the list of tickles", "<ip> [<port>]" },
-	{ "addtickle", control_addtickle, false, true,
-		"add a tickle", "<ip>:<port> <ip>:<port>" },
-	{ "deltickle", control_deltickle, false, true,
-		"delete a tickle", "<ip>:<port> <ip>:<port>" },
-	{ "listnodes", control_listnodes, true, true,
-		"list nodes in the cluster", NULL },
-	{ "reloadnodes", control_reloadnodes, false, false,
-		"reload the nodes file all nodes", NULL },
-	{ "moveip", control_moveip, false, false,
-		"move an ip address to another node", "<ip> <node>" },
-	{ "addip", control_addip, false, true,
-		"add an ip address to a node", "<ip/mask> <iface>" },
-	{ "delip", control_delip, false, true,
-		"delete an ip address from a node", "<ip>" },
-	{ "backupdb", control_backupdb, false, false,
-		"backup a database into a file", "<dbname|dbid> <file>" },
-	{ "restoredb", control_restoredb, false, false,
-		"restore a database from a file", "<file> [dbname]" },
-	{ "dumpdbbackup", control_dumpdbbackup, true, false,
-		"dump database from a backup file", "<file>" },
-	{ "wipedb", control_wipedb, false, false,
-		"wipe the contents of a database.", "<dbname|dbid>"},
-	{ "leader", control_leader, false, true,
-		"show the pnn of the leader", NULL },
-	{ "event", control_event, true, false,
-		"event and event script commands", NULL },
-	{ "scriptstatus", control_scriptstatus, true, false,
-		"show event script status",
-		"[init|setup|startup|monitor|takeip|releaseip|ipreallocated]" },
-	{ "natgw", control_natgw, false, false,
-		"show natgw configuration", "leader|list|status" },
-	{ "getreclock", control_getreclock, false, true,
-		"get recovery lock file", NULL },
-	{ "setlmasterrole", control_setlmasterrole, false, true,
-		"set LMASTER role", "on|off" },
-	{ "setleaderrole", control_setleaderrole, false, true,
-		"set LEADER role", "on|off"},
-	{ "setdbreadonly", control_setdbreadonly, false, true,
-		"enable readonly records", "<dbname|dbid>" },
-	{ "setdbsticky", control_setdbsticky, false, true,
-		"enable sticky records", "<dbname|dbid>"},
-	{ "pfetch", control_pfetch, false, false,
-		"fetch record from persistent database", "<dbname|dbid> <key>" },
-	{ "pstore", control_pstore, false, false,
-		"write record to persistent database", "<dbname|dbid> <key> <value>" },
-	{ "pdelete", control_pdelete, false, false,
-		"delete record from persistent database", "<dbname|dbid> <key>" },
-	{ "ptrans", control_ptrans, false, false,
-		"update a persistent database (from file or stdin)", "<dbname|dbid> [<file>]" },
-	{ "tfetch", control_tfetch, false, true,
-		"fetch a record", "<tdb-file> <key> [<file>]" },
-	{ "tstore", control_tstore, false, true,
-		"store a record", "<tdb-file> <key> <data> [<rsn> <dmaster> <flags>]" },
-	{ "readkey", control_readkey, false, false,
-		"read value of a database key", "<dbname|dbid> <key> [readonly]" },
-	{ "writekey", control_writekey, false, false,
-		"write value for a database key", "<dbname|dbid> <key> <value>" },
-	{ "deletekey", control_deletekey, false, false,
-		"delete a database key", "<dbname|dbid> <key>" },
-	{ "checktcpport", control_checktcpport, true, false,
-		"check if a service is bound to a specific tcp port or not", "<port>" },
-	{ "getdbseqnum", control_getdbseqnum, false, false,
-		"get database sequence number", "<dbname|dbid>" },
-	{ "nodestatus", control_nodestatus, false, true,
-		"show and return node status", "[all|<pnn-list>]" },
-	{ "dbstatistics", control_dbstatistics, false, true,
-		"show database statistics", "<dbname|dbid>" },
-	{ "reloadips", control_reloadips, false, false,
-		"reload the public addresses file", "[all|<pnn-list>]" },
+	{"version", control_version, true, false, "show version of ctdb", NULL},
+	{"status", control_status, false, true, "show node status", NULL},
+	{"uptime", control_uptime, false, true, "show node uptime", NULL},
+	{"ping", control_ping, false, true, "ping a node", NULL},
+	{"runstate",
+	 control_runstate,
+	 false,
+	 true,
+	 "get/check runstate of a node",
+	 "[setup|first_recovery|startup|running]"},
+	{"getvar",
+	 control_getvar,
+	 false,
+	 true,
+	 "get a tunable variable",
+	 "<name>"},
+	{"setvar",
+	 control_setvar,
+	 false,
+	 true,
+	 "set a tunable variable",
+	 "<name> <value>"},
+	{"listvars",
+	 control_listvars,
+	 false,
+	 true,
+	 "list tunable variables",
+	 NULL},
+	{"statistics",
+	 control_statistics,
+	 false,
+	 true,
+	 "show ctdb statistics",
+	 NULL},
+	{"statisticsreset",
+	 control_statistics_reset,
+	 false,
+	 true,
+	 "reset ctdb statistics",
+	 NULL},
+	{"stats",
+	 control_stats,
+	 false,
+	 true,
+	 "show rolling statistics",
+	 "[count]"},
+	{"ip", control_ip, false, true, "show public ips", "[all]"},
+	{"ipinfo",
+	 control_ipinfo,
+	 false,
+	 true,
+	 "show public ip details",
+	 "<ip>"},
+	{"ifaces", control_ifaces, false, true, "show interfaces", NULL},
+	{"setifacelink",
+	 control_setifacelink,
+	 false,
+	 true,
+	 "set interface link status",
+	 "<iface> up|down"},
+	{"process-exists",
+	 control_process_exists,
+	 false,
+	 true,
+	 "check if a process exists on a node",
+	 "<pid> [<srvid>]"},
+	{"getdbmap",
+	 control_getdbmap,
+	 false,
+	 true,
+	 "show attached databases",
+	 NULL},
+	{"getdbstatus",
+	 control_getdbstatus,
+	 false,
+	 true,
+	 "show database status",
+	 "<dbname|dbid>"},
+	{"catdb",
+	 control_catdb,
+	 false,
+	 false,
+	 "dump cluster-wide ctdb database",
+	 "<dbname|dbid>"},
+	{"cattdb",
+	 control_cattdb,
+	 false,
+	 false,
+	 "dump local ctdb database",
+	 "<dbname|dbid>"},
+	{"getcapabilities",
+	 control_getcapabilities,
+	 false,
+	 true,
+	 "show node capabilities",
+	 NULL},
+	{"pnn",
+	 control_pnn,
+	 false,
+	 false,
+	 "show the pnn of the current node",
+	 NULL},
+	{"lvs",
+	 control_lvs,
+	 false,
+	 false,
+	 "show lvs configuration",
+	 "leader|list|status"},
+	{"setdebug",
+	 control_setdebug,
+	 false,
+	 true,
+	 "set debug level",
+	 "ERROR|WARNING|NOTICE|INFO|DEBUG"},
+	{"getdebug", control_getdebug, false, true, "get debug level", NULL},
+	{"attach",
+	 control_attach,
+	 false,
+	 false,
+	 "attach a database",
+	 "<dbname> [persistent|replicated]"},
+	{"detach",
+	 control_detach,
+	 false,
+	 false,
+	 "detach database(s)",
+	 "<dbname|dbid> ..."},
+	{"dumpmemory",
+	 control_dumpmemory,
+	 false,
+	 true,
+	 "dump ctdbd memory map",
+	 NULL},
+	{"rddumpmemory",
+	 control_rddumpmemory,
+	 false,
+	 true,
+	 "dump recoverd memory map",
+	 NULL},
+	{"getpid", control_getpid, false, true, "get ctdbd process ID", NULL},
+	{"disable", control_disable, false, true, "disable a node", NULL},
+	{"enable", control_enable, false, true, "enable a node", NULL},
+	{"stop", control_stop, false, true, "stop a node", NULL},
+	{"continue",
+	 control_continue,
+	 false,
+	 true,
+	 "continue a stopped node",
+	 NULL},
+	{"ban", control_ban, false, true, "ban a node", "<bantime>"},
+	{"unban", control_unban, false, true, "unban a node", NULL},
+	{"shutdown",
+	 control_shutdown,
+	 false,
+	 true,
+	 "shutdown ctdb daemon",
+	 NULL},
+	{"recover", control_recover, false, true, "force recovery", NULL},
+	{"sync",
+	 control_ipreallocate,
+	 false,
+	 true,
+	 "run ip reallocation (deprecated)",
+	 NULL},
+	{"ipreallocate",
+	 control_ipreallocate,
+	 false,
+	 true,
+	 "run ip reallocation",
+	 NULL},
+	{"gratarp",
+	 control_gratarp,
+	 false,
+	 true,
+	 "send a gratuitous arp",
+	 "<ip> <interface>"},
+	{"tickle",
+	 control_tickle,
+	 true,
+	 false,
+	 "send a tcp tickle ack",
+	 "<srcip:port> <dstip:port>"},
+	{"gettickles",
+	 control_gettickles,
+	 false,
+	 true,
+	 "get the list of tickles",
+	 "<ip> [<port>]"},
+	{"addtickle",
+	 control_addtickle,
+	 false,
+	 true,
+	 "add a tickle",
+	 "<ip>:<port> <ip>:<port>"},
+	{"deltickle",
+	 control_deltickle,
+	 false,
+	 true,
+	 "delete a tickle",
+	 "<ip>:<port> <ip>:<port>"},
+	{"listnodes",
+	 control_listnodes,
+	 true,
+	 true,
+	 "list nodes in the cluster",
+	 NULL},
+	{"reloadnodes",
+	 control_reloadnodes,
+	 false,
+	 false,
+	 "reload the nodes file all nodes",
+	 NULL},
+	{"moveip",
+	 control_moveip,
+	 false,
+	 false,
+	 "move an ip address to another node",
+	 "<ip> <node>"},
+	{"addip",
+	 control_addip,
+	 false,
+	 true,
+	 "add an ip address to a node",
+	 "<ip/mask> <iface>"},
+	{"delip",
+	 control_delip,
+	 false,
+	 true,
+	 "delete an ip address from a node",
+	 "<ip>"},
+	{"backupdb",
+	 control_backupdb,
+	 false,
+	 false,
+	 "backup a database into a file",
+	 "<dbname|dbid> <file>"},
+	{"restoredb",
+	 control_restoredb,
+	 false,
+	 false,
+	 "restore a database from a file",
+	 "<file> [dbname]"},
+	{"dumpdbbackup",
+	 control_dumpdbbackup,
+	 true,
+	 false,
+	 "dump database from a backup file",
+	 "<file>"},
+	{"wipedb",
+	 control_wipedb,
+	 false,
+	 false,
+	 "wipe the contents of a database.",
+	 "<dbname|dbid>"},
+	{"leader",
+	 control_leader,
+	 false,
+	 true,
+	 "show the pnn of the leader",
+	 NULL},
+	{"event",
+	 control_event,
+	 true,
+	 false,
+	 "event and event script commands",
+	 NULL},
+	{"scriptstatus",
+	 control_scriptstatus,
+	 true,
+	 false,
+	 "show event script status",
+	 "[init|setup|startup|monitor|takeip|releaseip|ipreallocated]"},
+	{"natgw",
+	 control_natgw,
+	 false,
+	 false,
+	 "show natgw configuration",
+	 "leader|list|status"},
+	{"getreclock",
+	 control_getreclock,
+	 false,
+	 true,
+	 "get recovery lock file",
+	 NULL},
+	{"setlmasterrole",
+	 control_setlmasterrole,
+	 false,
+	 true,
+	 "set LMASTER role",
+	 "on|off"},
+	{"setleaderrole",
+	 control_setleaderrole,
+	 false,
+	 true,
+	 "set LEADER role",
+	 "on|off"},
+	{"setdbreadonly",
+	 control_setdbreadonly,
+	 false,
+	 true,
+	 "enable readonly records",
+	 "<dbname|dbid>"},
+	{"setdbsticky",
+	 control_setdbsticky,
+	 false,
+	 true,
+	 "enable sticky records",
+	 "<dbname|dbid>"},
+	{"pfetch",
+	 control_pfetch,
+	 false,
+	 false,
+	 "fetch record from persistent database",
+	 "<dbname|dbid> <key>"},
+	{"pstore",
+	 control_pstore,
+	 false,
+	 false,
+	 "write record to persistent database",
+	 "<dbname|dbid> <key> <value>"},
+	{"pdelete",
+	 control_pdelete,
+	 false,
+	 false,
+	 "delete record from persistent database",
+	 "<dbname|dbid> <key>"},
+	{"ptrans",
+	 control_ptrans,
+	 false,
+	 false,
+	 "update a persistent database (from file or stdin)",
+	 "<dbname|dbid> [<file>]"},
+	{"tfetch",
+	 control_tfetch,
+	 false,
+	 true,
+	 "fetch a record",
+	 "<tdb-file> <key> [<file>]"},
+	{"tstore",
+	 control_tstore,
+	 false,
+	 true,
+	 "store a record",
+	 "<tdb-file> <key> <data> [<rsn> <dmaster> <flags>]"},
+	{"readkey",
+	 control_readkey,
+	 false,
+	 false,
+	 "read value of a database key",
+	 "<dbname|dbid> <key> [readonly]"},
+	{"writekey",
+	 control_writekey,
+	 false,
+	 false,
+	 "write value for a database key",
+	 "<dbname|dbid> <key> <value>"},
+	{"deletekey",
+	 control_deletekey,
+	 false,
+	 false,
+	 "delete a database key",
+	 "<dbname|dbid> <key>"},
+	{"checktcpport",
+	 control_checktcpport,
+	 true,
+	 false,
+	 "check if a service is bound to a specific tcp port or not",
+	 "<port>"},
+	{"getdbseqnum",
+	 control_getdbseqnum,
+	 false,
+	 false,
+	 "get database sequence number",
+	 "<dbname|dbid>"},
+	{"nodestatus",
+	 control_nodestatus,
+	 false,
+	 true,
+	 "show and return node status",
+	 "[all|<pnn-list>]"},
+	{"dbstatistics",
+	 control_dbstatistics,
+	 false,
+	 true,
+	 "show database statistics",
+	 "<dbname|dbid>"},
+	{"reloadips",
+	 control_reloadips,
+	 false,
+	 false,
+	 "reload the public addresses file",
+	 "[all|<pnn-list>]"},
 };
 
 static const struct ctdb_cmd *match_command(const char *command)
@@ -6163,7 +7181,7 @@ static const struct ctdb_cmd *match_command(const char *command)
 	const struct ctdb_cmd *cmd;
 	size_t i;
 
-	for (i=0; i<ARRAY_SIZE(ctdb_commands); i++) {
+	for (i = 0; i < ARRAY_SIZE(ctdb_commands); i++) {
 		cmd = &ctdb_commands[i];
 		if (strcmp(command, cmd->name) == 0) {
 			return cmd;
@@ -6172,7 +7190,6 @@ static const struct ctdb_cmd *match_command(const char *command)
 
 	return NULL;
 }
-
 
 /**
  * Show usage message
@@ -6183,7 +7200,7 @@ static void usage_full(void)
 
 	poptPrintHelp(pc, stdout, 0);
 	printf("\nCommands:\n");
-	for (i=0; i<ARRAY_SIZE(ctdb_commands); i++) {
+	for (i = 0; i < ARRAY_SIZE(ctdb_commands); i++) {
 		printf("  %-15s %-27s  %s\n",
 		       ctdb_commands[i].name,
 		       ctdb_commands[i].args ? ctdb_commands[i].args : "",
@@ -6207,82 +7224,83 @@ static void usage(const char *command)
 		poptPrintUsage(pc, stdout, 0);
 		printf("\nCommands:\n");
 		printf("  %-15s %-27s  %s\n",
-		       cmd->name, cmd->args ? cmd->args : "", cmd->msg);
+		       cmd->name,
+		       cmd->args ? cmd->args : "",
+		       cmd->msg);
 	}
 
 	exit(1);
 }
 
 struct poptOption cmdline_options[] = {
-	POPT_AUTOHELP
-	{
-		.longName   = "debug",
-		.shortName  = 'd',
-		.argInfo    = POPT_ARG_STRING,
-		.arg        = &options.debuglevelstr,
-		.val        = 0,
-		.descrip    = "debug level",
+	POPT_AUTOHELP{
+		.longName = "debug",
+		.shortName = 'd',
+		.argInfo = POPT_ARG_STRING,
+		.arg = &options.debuglevelstr,
+		.val = 0,
+		.descrip = "debug level",
 	},
 	{
-		.longName   = "timelimit",
-		.shortName  = 't',
-		.argInfo    = POPT_ARG_INT,
-		.arg        = &options.timelimit,
-		.val        = 0,
-		.descrip    = "timelimit (in seconds)",
+		.longName = "timelimit",
+		.shortName = 't',
+		.argInfo = POPT_ARG_INT,
+		.arg = &options.timelimit,
+		.val = 0,
+		.descrip = "timelimit (in seconds)",
 	},
 	{
-		.longName   = "node",
-		.shortName  = 'n',
-		.argInfo    = POPT_ARG_INT,
-		.arg        = &options.pnn,
-		.val        = 0,
-		.descrip    = "node specification - integer",
+		.longName = "node",
+		.shortName = 'n',
+		.argInfo = POPT_ARG_INT,
+		.arg = &options.pnn,
+		.val = 0,
+		.descrip = "node specification - integer",
 	},
 	{
-		.longName   = NULL,
-		.shortName  = 'Y',
-		.argInfo    = POPT_ARG_NONE,
-		.arg        = &options.machinereadable,
-		.val        = 0,
-		.descrip    = "enable machine readable output",
+		.longName = NULL,
+		.shortName = 'Y',
+		.argInfo = POPT_ARG_NONE,
+		.arg = &options.machinereadable,
+		.val = 0,
+		.descrip = "enable machine readable output",
 	},
 	{
-		.longName   = "separator",
-		.shortName  = 'x',
-		.argInfo    = POPT_ARG_STRING,
-		.arg        = &options.sep,
-		.val        = 0,
-		.descrip    = "specify separator for machine readable output",
+		.longName = "separator",
+		.shortName = 'x',
+		.argInfo = POPT_ARG_STRING,
+		.arg = &options.sep,
+		.val = 0,
+		.descrip = "specify separator for machine readable output",
 		.argDescrip = "CHAR",
 	},
 	{
-		.shortName  = 'X',
-		.argInfo    = POPT_ARG_NONE,
-		.arg        = &options.machineparsable,
-		.val        = 0,
-		.descrip    = "enable machine parsable output with separator |",
+		.shortName = 'X',
+		.argInfo = POPT_ARG_NONE,
+		.arg = &options.machineparsable,
+		.val = 0,
+		.descrip = "enable machine parsable output with separator |",
 	},
 	{
-		.longName   = "verbose",
-		.shortName  = 'v',
-		.argInfo    = POPT_ARG_NONE,
-		.arg        = &options.verbose,
-		.val        = 0,
-		.descrip    = "enable verbose output",
+		.longName = "verbose",
+		.shortName = 'v',
+		.argInfo = POPT_ARG_NONE,
+		.arg = &options.verbose,
+		.val = 0,
+		.descrip = "enable verbose output",
 	},
 	{
-		.longName   = "maxruntime",
-		.shortName  = 'T',
-		.argInfo    = POPT_ARG_INT,
-		.arg        = &options.maxruntime,
-		.val        = 0,
-		.descrip    = "die if runtime exceeds this limit (in seconds)",
+		.longName = "maxruntime",
+		.shortName = 'T',
+		.argInfo = POPT_ARG_INT,
+		.arg = &options.maxruntime,
+		.val = 0,
+		.descrip = "die if runtime exceeds this limit (in seconds)",
 	},
-	POPT_TABLEEND
-};
+	POPT_TABLEEND};
 
-static int process_command(const struct ctdb_cmd *cmd, int argc,
+static int process_command(const struct ctdb_cmd *cmd,
+			   int argc,
 			   const char **argv)
 {
 	TALLOC_CTX *tmp_ctx;
@@ -6312,7 +7330,7 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 			goto fail;
 		}
 
-		ret = cmd->fn(tmp_ctx, NULL, argc-1, argv+1);
+		ret = cmd->fn(tmp_ctx, NULL, argc - 1, argv + 1);
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -6337,7 +7355,8 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 
 	ret = ctdb_client_init(ctdb, ctdb->ev, ctdb_socket, &ctdb->client);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to CTDB daemon (%s)\n",
+		fprintf(stderr,
+			"Failed to connect to CTDB daemon (%s)\n",
 			ctdb_socket);
 
 		if (!find_node_xpnn(ctdb, NULL)) {
@@ -6352,7 +7371,7 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 
 	if (options.pnn != -1) {
 		status = verify_pnn(ctdb, options.pnn);
-		if (! status) {
+		if (!status) {
 			goto fail;
 		}
 
@@ -6361,8 +7380,9 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 		ctdb->cmd_pnn = ctdb->pnn;
 	}
 
-	if (! cmd->remote && ctdb->pnn != ctdb->cmd_pnn) {
-		fprintf(stderr, "Node cannot be specified for command %s\n",
+	if (!cmd->remote && ctdb->pnn != ctdb->cmd_pnn) {
+		fprintf(stderr,
+			"Node cannot be specified for command %s\n",
 			cmd->name);
 		goto fail;
 	}
@@ -6378,7 +7398,7 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 		goto fail;
 	}
 
-	ret = cmd->fn(tmp_ctx, ctdb, argc-1, argv+1);
+	ret = cmd->fn(tmp_ctx, ctdb, argc - 1, argv + 1);
 	config_ctx = NULL;
 	talloc_free(tmp_ctx);
 	return ret;
@@ -6423,11 +7443,13 @@ int main(int argc, const char *argv[])
 	options.maxruntime = 0;
 	options.pnn = -1;
 
-	pc = poptGetContext(argv[0], argc, argv, cmdline_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext(
+		argv[0], argc, argv, cmdline_options, POPT_CONTEXT_KEEP_FIRST);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
-		fprintf(stderr, "Invalid option %s: %s\n",
-			poptBadOption(pc, 0), poptStrerror(opt));
+		fprintf(stderr,
+			"Invalid option %s: %s\n",
+			poptBadOption(pc, 0),
+			poptStrerror(opt));
 		exit(1);
 	}
 
@@ -6436,11 +7458,8 @@ int main(int argc, const char *argv[])
 
 		ctdb_timeout = getenv("CTDB_TIMEOUT");
 		if (ctdb_timeout != NULL) {
-			options.maxruntime = smb_strtoul(ctdb_timeout,
-							 NULL,
-							 0,
-							 &ret,
-							 SMB_STR_STANDARD);
+			options.maxruntime = smb_strtoul(
+				ctdb_timeout, NULL, 0, &ret, SMB_STR_STANDARD);
 			if (ret != 0) {
 				fprintf(stderr, "Invalid value CTDB_TIMEOUT\n");
 				exit(1);
@@ -6459,7 +7478,8 @@ int main(int argc, const char *argv[])
 	extra_argv = poptGetArgs(pc);
 	if (extra_argv) {
 		extra_argv++;
-		while (extra_argv[extra_argc]) extra_argc++;
+		while (extra_argv[extra_argc])
+			extra_argc++;
 	}
 
 	if (extra_argc < 1) {
