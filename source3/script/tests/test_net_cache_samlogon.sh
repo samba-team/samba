@@ -40,4 +40,13 @@ tmp=$($BINDIR/net cache samlogon ndrdump $usersid | head -n 1 | grep "netr_SamIn
 retval=$?
 testit "net cache samlogon ndrdump returns netr_SamInfo3 structure" test $retval -eq 0 || failed=$(expr $failed + 1)
 
+# Test that we can expire a samlogon cache entry
+timeout=1
+sleep $(($timeout + 1 ))
+
+testit_expect_failure "net cache samlogon show $usersid --option=netsamlogoncache:timeout=$timeout" \
+	$BINDIR/net cache samlogon show $usersid \
+	--option=netsamlogoncache:timeout=$timeout ||
+	failed=$(expr $failed + 1)
+
 testok $0 $failed
