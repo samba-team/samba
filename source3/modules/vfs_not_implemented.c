@@ -66,8 +66,10 @@ int vfs_not_implemented_get_quota(vfs_handle_struct *handle,
 
 _PUBLIC_
 int vfs_not_implemented_set_quota(vfs_handle_struct *handle,
+				  struct files_struct *fsp,
 				  enum SMB_QUOTA_TYPE qtype,
-				  unid_t id, SMB_DISK_QUOTA *dq)
+				  unid_t id,
+				  SMB_DISK_QUOTA *dq)
 {
 	errno = ENOSYS;
 	return -1;

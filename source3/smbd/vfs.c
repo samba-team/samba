@@ -1462,11 +1462,13 @@ int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,
-			   enum SMB_QUOTA_TYPE qtype, unid_t id,
+			   struct files_struct *fsp,
+			   enum SMB_QUOTA_TYPE qtype,
+			   unid_t id,
 			   SMB_DISK_QUOTA *qt)
 {
 	VFS_FIND(set_quota);
-	return handle->fns->set_quota_fn(handle, qtype, id, qt);
+	return handle->fns->set_quota_fn(handle, fsp, qtype, id, qt);
 }
 
 int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,

@@ -52,10 +52,11 @@
 #define SMB_VFS_NEXT_GET_QUOTA(handle, fsp, qtype, id, qt) \
 	smb_vfs_call_get_quota((handle)->next, (fsp), (qtype), (id), (qt))
 
-#define SMB_VFS_SET_QUOTA(conn, qtype, id, qt) \
-	smb_vfs_call_set_quota((conn)->vfs_handles, (qtype), (id), (qt))
-#define SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt) \
-	smb_vfs_call_set_quota((handle)->next, (qtype), (id), (qt))
+#define SMB_VFS_SET_QUOTA(fsp, qtype, id, qt) \
+	smb_vfs_call_set_quota(               \
+		(fsp)->conn->vfs_handles, (fsp), (qtype), (id), (qt))
+#define SMB_VFS_NEXT_SET_QUOTA(handle, fsp, qtype, id, qt) \
+	smb_vfs_call_set_quota((handle)->next, (fsp), (qtype), (id), (qt))
 
 #define SMB_VFS_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) \
 	smb_vfs_call_get_shadow_copy_data((fsp)->conn->vfs_handles, (fsp), (shadow_copy_data), (labels))

@@ -139,13 +139,18 @@ static int vfswrap_get_quota(struct vfs_handle_struct *handle,
 #endif
 }
 
-static int vfswrap_set_quota(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+static int vfswrap_set_quota(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     enum SMB_QUOTA_TYPE qtype,
+			     unid_t id,
+			     SMB_DISK_QUOTA *qt)
 {
 #ifdef HAVE_SYS_QUOTAS
+	struct smb_filename *smb_fname = fsp->fsp_name;
 	int result;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_set_quota);
-	result = sys_set_quota(handle->conn->connectpath, qtype, id, qt);
+	result = sys_set_quota(smb_fname->base_name, qtype, id, qt);
 	END_PROFILE_X(syscall_set_quota);
 	return result;
 #else

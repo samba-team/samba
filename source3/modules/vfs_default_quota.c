@@ -158,7 +158,11 @@ static int default_quota_get_quota(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int default_quota_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dq)
+static int default_quota_set_quota(vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   enum SMB_QUOTA_TYPE qtype,
+				   unid_t id,
+				   SMB_DISK_QUOTA *dq)
 {
 	int ret = -1;
 
@@ -191,7 +195,8 @@ static int default_quota_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 			break;
 	}
 
-	if ((ret=SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, dq))!=0) {
+	ret = SMB_VFS_NEXT_SET_QUOTA(handle, fsp, qtype, id, dq);
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -206,7 +211,12 @@ static int default_quota_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 			{
 				unid_t qid;
 				qid.uid = DEFAULT_QUOTA_UID(handle);
-				ret = SMB_VFS_NEXT_SET_QUOTA(handle, SMB_USER_QUOTA_TYPE, qid, dq);
+				ret = SMB_VFS_NEXT_SET_QUOTA(
+					handle,
+					fsp,
+					SMB_USER_QUOTA_TYPE,
+					qid,
+					dq);
 			}
 			break;
 #ifdef HAVE_GROUP_QUOTA
@@ -214,7 +224,12 @@ static int default_quota_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 			{
 				unid_t qid;
 				qid.gid = DEFAULT_QUOTA_GID(handle);
-				ret = SMB_VFS_NEXT_SET_QUOTA(handle, SMB_GROUP_QUOTA_TYPE, qid, dq);
+				ret = SMB_VFS_NEXT_SET_QUOTA(
+					handle,
+					fsp,
+					SMB_GROUP_QUOTA_TYPE,
+					qid,
+					dq);
 			}
 			break;
 #endif /* HAVE_GROUP_QUOTA */

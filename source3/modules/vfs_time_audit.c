@@ -222,7 +222,9 @@ static int smb_time_audit_get_quota(struct vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_set_quota(struct vfs_handle_struct *handle,
-				    enum SMB_QUOTA_TYPE qtype, unid_t id,
+				    struct files_struct *fsp,
+				    enum SMB_QUOTA_TYPE qtype,
+				    unid_t id,
 				    SMB_DISK_QUOTA *qt)
 {
 	int result;
@@ -230,7 +232,7 @@ static int smb_time_audit_set_quota(struct vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt);
+	result = SMB_VFS_NEXT_SET_QUOTA(handle, fsp, qtype, id, qt);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

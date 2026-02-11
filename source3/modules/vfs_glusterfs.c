@@ -555,9 +555,11 @@ static int vfs_gluster_get_quota(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int
-vfs_gluster_set_quota(struct vfs_handle_struct *handle,
-		      enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+static int vfs_gluster_set_quota(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 enum SMB_QUOTA_TYPE qtype,
+				 unid_t id,
+				 SMB_DISK_QUOTA *qt)
 {
 	errno = ENOSYS;
 	return -1;

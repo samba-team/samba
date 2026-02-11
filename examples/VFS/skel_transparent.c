@@ -66,10 +66,13 @@ static int skel_get_quota(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_GET_QUOTA(handle, fsp, qtype, id, dq);
 }
 
-static int skel_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
-			  unid_t id, SMB_DISK_QUOTA *dq)
+static int skel_set_quota(vfs_handle_struct *handle,
+			  struct files_struct *fsp,
+			  enum SMB_QUOTA_TYPE qtype,
+			  unid_t id,
+			  SMB_DISK_QUOTA *dq)
 {
-	return SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, dq);
+	return SMB_VFS_NEXT_SET_QUOTA(handle, fsp, qtype, id, dq);
 }
 
 static int skel_get_shadow_copy_data(vfs_handle_struct *handle,

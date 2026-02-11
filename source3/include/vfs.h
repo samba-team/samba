@@ -402,6 +402,7 @@
  * Version 53 - Add fstatvfs
  * Version 53 - Remove statvfs
  * Version 53 - Change GET_QUOTA to take a fsp instead of a name
+ * Version 53 - Add fsp to SET_QUOTA
  */
 
 #define SMB_VFS_INTERFACE_VERSION 53
@@ -997,7 +998,11 @@ struct vfs_fn_pointers {
 			    enum SMB_QUOTA_TYPE qtype,
 			    unid_t id,
 			    SMB_DISK_QUOTA *qt);
-	int (*set_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
+	int (*set_quota_fn)(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp,
+			    enum SMB_QUOTA_TYPE qtype,
+			    unid_t id,
+			    SMB_DISK_QUOTA *qt);
 	int (*get_shadow_copy_data_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels);
 	int (*fstatvfs_fn)(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
@@ -1453,7 +1458,9 @@ int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
 			   unid_t id,
 			   SMB_DISK_QUOTA *qt);
 int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,
-			   enum SMB_QUOTA_TYPE qtype, unid_t id,
+			   struct files_struct *fsp,
+			   enum SMB_QUOTA_TYPE qtype,
+			   unid_t id,
 			   SMB_DISK_QUOTA *qt);
 int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
@@ -1886,8 +1893,10 @@ int vfs_not_implemented_get_quota(vfs_handle_struct *handle,
 				  unid_t id,
 				  SMB_DISK_QUOTA *dq);
 int vfs_not_implemented_set_quota(vfs_handle_struct *handle,
+				  struct files_struct *fsp,
 				  enum SMB_QUOTA_TYPE qtype,
-				  unid_t id, SMB_DISK_QUOTA *dq);
+				  unid_t id,
+				  SMB_DISK_QUOTA *dq);
 int vfs_not_implemented_get_shadow_copy_data(vfs_handle_struct *handle,
 				files_struct *fsp,
 				struct shadow_copy_data *shadow_copy_data,

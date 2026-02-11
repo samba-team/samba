@@ -144,7 +144,7 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid
 			 dom_sid_str_buf(psid, &buf)));
 	}
 
-	ret = SMB_VFS_SET_QUOTA(fsp->conn, qtype, id, &D);
+	ret = SMB_VFS_SET_QUOTA(fsp, qtype, id, &D);
 
 	return ret;
 }

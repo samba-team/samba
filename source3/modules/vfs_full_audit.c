@@ -853,12 +853,14 @@ static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
-			   enum SMB_QUOTA_TYPE qtype, unid_t id,
-			   SMB_DISK_QUOTA *qt)
+				    struct files_struct *fsp,
+				    enum SMB_QUOTA_TYPE qtype,
+				    unid_t id,
+				    SMB_DISK_QUOTA *qt)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt);
+	result = SMB_VFS_NEXT_SET_QUOTA(handle, fsp, qtype, id, qt);
 
 	do_log(SMB_VFS_OP_SET_QUOTA, errmsg_unix(result), handle, "");
 
