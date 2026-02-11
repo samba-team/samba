@@ -25,7 +25,7 @@ interface messaging
 		MSG_REQ_PROFILELEVEL		= 0x0007,
 		MSG_PROFILELEVEL		= 0x0008,
 		MSG_REQ_POOL_USAGE		= 0x0009,
-		MSG_POOL_USAGE			= 0x000A,
+		/* MSG_POOL_USAGE		= 0x000A,  Obsoleted */
 
 		/* If dmalloc is included, set a steady-state mark */
 		MSG_REQ_DMALLOC_MARK		= 0x000B,
@@ -35,7 +35,7 @@ interface messaging
 		MSG_REQ_DMALLOC_LOG_CHANGED	= 0x000C,
 		MSG_SHUTDOWN			= 0x000D,
 
-		/* ID_CACHE_FLUSH		= 0x000E, obsoleted */
+		/* ID_CACHE_FLUSH		= 0x000E,  Obsoleted */
 		ID_CACHE_DELETE			= 0x000F,
 		ID_CACHE_KILL			= 0x0010,
 
@@ -43,8 +43,8 @@ interface messaging
 		MSG_SMB_CONF_UPDATED		= 0x0021,
 		MSG_RELOAD_TLS_CERTIFICATES	= 0x0022,
 
-		MSG_PREFORK_CHILD_EVENT		= 0x0031,
-		MSG_PREFORK_PARENT_EVENT	= 0x0032,
+		/* MSG_PREFORK_CHILD_EVENT	= 0x0031,  Obsoleted */
+		/* MSG_PREFORK_PARENT_EVENT	= 0x0032,  Obsoleted */
 
 		MSG_REQ_RINGBUF_LOG		= 0x0033,
 		MSG_RINGBUF_LOG			= 0x0034,
@@ -60,9 +60,9 @@ interface messaging
 		/* MSG_PRINTER_NOTIFY		= 0x2001,  Obsoleted */
 		MSG_PRINTER_NOTIFY2		= 0x0202,
 		MSG_PRINTER_DRVUPGRADE		= 0x0203,
-		MSG_PRINTERDATA_INIT_RESET	= 0x0204,
+		/* MSG_PRINTERDATA_INIT_RESET	= 0x0204,  Obsoleted */
 		MSG_PRINTER_UPDATE		= 0x0205,
-		MSG_PRINTER_MOD			= 0x0206,
+		/* MSG_PRINTER_MOD		= 0x0206,  Obsoleted */
 		MSG_PRINTER_PCAP		= 0x0207,
 
 		/* smbd messages */
@@ -78,7 +78,7 @@ interface messaging
 		MSG_SMB_KERNEL_BREAK		= 0x030A,
 		MSG_SMB_FILE_RENAME		= 0x030B,
 		MSG_SMB_INJECT_FAULT		= 0x030C,
-		MSG_SMB_BLOCKING_LOCK_CANCEL	= 0x030D,
+		/* MSG_SMB_BLOCKING_LOCK_CANCEL	= 0x030D,  Obsoleted */
 		MSG_SMB_NOTIFY			= 0x030E,
 		/* MSG_SMB_STAT_CACHE_DELETE	= 0x030F,  Obsoleted */
 
@@ -86,7 +86,7 @@ interface messaging
 		MSG_PVFS_NOTIFY			= 0x0310,
 
 		/* cluster reconfigure events */
-		/* MSG_SMB_BRL_VALIDATE		= 0x0311,  Oboleted */
+		/* MSG_SMB_BRL_VALIDATE		= 0x0311,  Obsoleted */
 
 		/*Close a specific file given a share entry. */
 		MSG_SMB_CLOSE_FILE		= 0x0313,
@@ -121,8 +121,8 @@ interface messaging
 		MSG_SMB_IP_DROPPED		= 0x0322,
 
 		/* winbind messages */
-		MSG_WINBIND_FINISHED		= 0x0401,
-		MSG_WINBIND_FORGET_STATE	= 0x0402,
+		/* MSG_WINBIND_FINISHED		= 0x0401,  Obsoleted */
+		/* MSG_WINBIND_FORGET_STATE	= 0x0402,  Obsoleted */
 		MSG_WINBIND_ONLINE		= 0x0403,
 		MSG_WINBIND_OFFLINE		= 0x0404,
 		MSG_WINBIND_ONLINESTATUS	= 0x0405,
@@ -136,7 +136,7 @@ interface messaging
 		MSG_WINBIND_DISCONNECT_DC       = 0x040E,
 
 		/* event messages */
-		/* MSG_DUMP_EVENT_LIST		= 0x0500, Obsoleted */
+		/* MSG_DUMP_EVENT_LIST		= 0x0500,  Obsoleted */
 
 		/* smbXsrv messages */
 		MSG_SMBXSRV_SESSION_CLOSE	= 0x0600,
