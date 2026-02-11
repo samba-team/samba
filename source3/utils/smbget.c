@@ -390,7 +390,7 @@ static bool smb_download_file(const char *base, const char *name,
 		case EISDIR:
 			if (!recursive) {
 				fprintf(stderr,
-					"%s is a directory. Specify -R "
+					"%s is a directory. Specify --recursive "
 					"to download recursively\n",
 					path);
 				return false;
