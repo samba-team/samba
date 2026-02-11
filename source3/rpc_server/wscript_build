@@ -181,7 +181,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_LSARPC',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
                     source='''dfs/srv_dfs_nt.c''',
-                    deps='samba-util')
+                    deps='samba-util smbd_base RPC_SERVER_LOOP')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETLOGON',
                      source='''netlogon/srv_netlog_nt.c''',

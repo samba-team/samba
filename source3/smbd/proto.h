@@ -490,23 +490,20 @@ int setup_dfs_referral(connection_struct *orig_conn,
 			const char *dfs_path,
 			int max_referral_level,
 			char **ppdata, NTSTATUS *pstatus);
-bool create_junction(TALLOC_CTX *ctx,
-		const char *dfs_path,
-		struct junction_map *jucn);
+
 struct referral;
 char *msdfs_link_string(TALLOC_CTX *ctx,
 		const struct referral *reflist,
 		size_t referral_count);
-bool create_msdfs_link(const struct junction_map *jucn,
-		       struct auth_session_info *session_info);
-bool remove_msdfs_link(const struct junction_map *jucn,
-		       struct auth_session_info *session_info);
 
-struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
-				      struct auth_session_info *session_info,
-				      size_t *p_num_jn);
 struct connection_struct;
 struct smb_filename;
+
+NTSTATUS parse_dfs_path_strict(TALLOC_CTX *ctx,
+			       const char *pathname,
+			       char **_hostname,
+			       char **_servicename,
+			       char **_remaining_path);
 
 NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
