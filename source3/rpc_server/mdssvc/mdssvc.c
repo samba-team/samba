@@ -241,7 +241,7 @@ static int cnid_comp_fn(const void *p1, const void *p2)
 static bool sort_cnids(struct sl_query *slq, const DALLOC_CTX *d)
 {
 	uint64_t *cnids = NULL;
-	int i;
+	size_t i;
 	const void *p;
 
 	cnids = talloc_array(slq, uint64_t, dalloc_size(d));
