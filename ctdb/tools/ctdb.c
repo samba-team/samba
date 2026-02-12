@@ -51,6 +51,10 @@
 #include "conf/ctdb_config.h"
 #include "conf/node.h"
 
+#ifdef HAVE_JANSSON
+#include <jansson.h>
+#endif /* HAVE_JANSSON */
+
 #define TIMEOUT() timeval_current_ofs(options.timelimit, 0)
 
 #define SRVID_CTDB_TOOL (CTDB_SRVID_TOOL_RANGE | 0x0001000000000000LL)
@@ -63,6 +67,7 @@ static struct {
 	int timelimit;
 	int pnn;
 	int machinereadable;
+	int json_output;
 	const char *sep;
 	int machineparsable;
 	int verbose;
@@ -975,6 +980,289 @@ static void print_status(TALLOC_CTX *mem_ctx,
 	print_pnn(leader);
 }
 
+#ifdef HAVE_JANSSON
+static int build_json_node_flags(json_t *parent_obj, uint32_t flags)
+{
+	static const struct {
+		uint32_t flag;
+		const char *name;
+	} flag_names[] = {
+		{NODE_FLAGS_DISCONNECTED, "disconnected"},
+		{NODE_FLAGS_UNKNOWN, "unknown"},
+		{NODE_FLAGS_PERMANENTLY_DISABLED, "disabled"},
+		{NODE_FLAGS_BANNED, "banned"},
+		{NODE_FLAGS_UNHEALTHY, "unhealthy"},
+		{NODE_FLAGS_DELETED, "deleted"},
+		{NODE_FLAGS_STOPPED, "stopped"},
+		{NODE_FLAGS_INACTIVE, "inactive"},
+	};
+	unsigned int i;
+	int ret = 0;
+	json_t *flags_map = json_object();
+
+	if (flags_map == NULL) {
+		return 1;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(flag_names); i++) {
+		ret = json_object_set_new(flags_map,
+					  flag_names[i].name,
+					  json_boolean(flags &
+						       flag_names[i].flag));
+		if (ret != 0) {
+			goto done;
+		}
+	}
+
+	ret = json_object_set(parent_obj, "flags", flags_map);
+	if (ret != 0) {
+		goto done;
+	}
+done:
+	json_decref(flags_map);
+	return (ret == 0) ? 0 : 1;
+}
+
+static int build_json_nodemap(json_t *root_object,
+			      TALLOC_CTX *mem_ctx,
+			      struct ctdb_context *ctdb,
+			      struct ctdb_node_map *nodemap,
+			      uint32_t mypnn)
+{
+	struct ctdb_node_and_flags *node;
+	int num_deleted_nodes = 0;
+	int ret = 0;
+	unsigned int i;
+	json_t *nodemap_obj = json_object();
+	json_t *nodes_obj = json_object();
+	json_t *node_obj = NULL;
+	char *pnn_name = NULL;
+
+	if (nodemap_obj == NULL) {
+		return 1;
+	}
+	if (nodes_obj == NULL) {
+		ret = 1;
+		goto done;
+	}
+
+	for (i = 0; i < nodemap->num; i++) {
+		node_obj = json_object();
+		if (node_obj == NULL) {
+			ret = 1;
+			goto done;
+		}
+
+		node = &nodemap->node[i];
+		if (node->flags & NODE_FLAGS_DELETED) {
+			num_deleted_nodes++;
+			continue;
+		}
+		ret = json_object_set_new(node_obj,
+					  "pnn",
+					  json_integer(node->pnn));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_object_set_new(
+			node_obj,
+			"address",
+			json_string(ctdb_sock_addr_to_string(mem_ctx,
+							     &node->addr,
+							     false)));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_object_set_new(
+			node_obj,
+			"partially_online",
+			json_boolean(partially_online(mem_ctx, ctdb, node)));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_object_set_new(node_obj,
+					  "flags_raw",
+					  json_integer(node->flags));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_object_set_new(node_obj,
+					  "flags_ok",
+					  json_boolean(node->flags == 0));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = build_json_node_flags(node_obj, node->flags);
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_object_set_new(node_obj,
+					  "this_node",
+					  json_boolean(node->pnn == mypnn));
+		if (ret != 0) {
+			goto done;
+		}
+		pnn_name = talloc_asprintf(mem_ctx, "%d", node->pnn);
+		ret = json_object_set_new(nodes_obj, pnn_name, node_obj);
+		if (ret != 0) {
+			goto done;
+		}
+	}
+
+	ret = json_object_set_new(nodemap_obj,
+				  "node_count",
+				  json_integer(nodemap->num));
+	if (ret != 0) {
+		goto done;
+	}
+	ret = json_object_set_new(nodemap_obj,
+				  "deleted_node_count",
+				  json_integer(num_deleted_nodes));
+	if (ret != 0) {
+		goto done;
+	}
+	ret = json_object_set(nodemap_obj, "nodes", nodes_obj);
+	if (ret != 0) {
+		goto done;
+	}
+	ret = json_object_set(root_object, "node_status", nodemap_obj);
+	if (ret != 0) {
+		goto done;
+	}
+done:
+	json_decref(nodes_obj);
+	json_decref(nodemap_obj);
+	return (ret == 0) ? 0 : 1;
+}
+
+static int build_json_vnnmap(json_t *root_object,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     struct ctdb_vnn_map *vnnmap)
+{
+	int ret = 0;
+	unsigned int i;
+	json_t *vnnmap_obj = json_object();
+	json_t *vnn_lst = json_array();
+	json_t *vnn_obj = NULL;
+	json_t *gen_value = NULL;
+
+	if (vnnmap_obj == NULL) {
+		return 1;
+	}
+	if (vnn_lst == NULL) {
+		ret = 1;
+		goto done;
+	}
+
+	if (vnnmap->generation == INVALID_GENERATION) {
+		gen_value = json_null();
+	} else {
+		gen_value = json_integer(vnnmap->generation);
+	}
+	if (gen_value == NULL) {
+		ret = 1;
+		goto done;
+	}
+	ret = json_object_set(vnnmap_obj, "generation", gen_value);
+	if (ret != 0) {
+		goto done;
+	}
+
+	ret = json_object_set_new(vnnmap_obj,
+				  "size",
+				  json_integer(vnnmap->size));
+	for (i = 0; i < vnnmap->size; i++) {
+		vnn_obj = json_object();
+		if (vnn_obj == NULL) {
+			ret = 1;
+			goto done;
+		}
+		ret = json_object_set_new(vnn_obj, "hash", json_integer(i));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_object_set_new(vnn_obj,
+					  "lmaster",
+					  json_integer(vnnmap->map[i]));
+		if (ret != 0) {
+			goto done;
+		}
+		ret = json_array_append_new(vnn_lst, vnn_obj);
+		if (ret != 0) {
+			goto done;
+		}
+	}
+
+	ret = json_object_set(vnnmap_obj, "vnn_map", vnn_lst);
+	if (ret != 0) {
+		goto done;
+	}
+	ret = json_object_set(root_object, "vnn_status", vnnmap_obj);
+	if (ret != 0) {
+		goto done;
+	}
+done:
+	json_decref(gen_value);
+	json_decref(vnn_lst);
+	json_decref(vnnmap_obj);
+	return (ret == 0) ? 0 : 1;
+}
+
+static int print_json_status(TALLOC_CTX *mem_ctx,
+			     struct ctdb_context *ctdb,
+			     struct ctdb_node_map *nodemap,
+			     uint32_t mypnn,
+			     struct ctdb_vnn_map *vnnmap,
+			     int recmode,
+			     uint32_t leader)
+{
+	int ret;
+	json_t *root_json = json_object();
+
+	if (root_json == NULL) {
+		fprintf(stderr, "failed to create json object\n");
+		return 1;
+	}
+	ret = build_json_nodemap(root_json, mem_ctx, ctdb, nodemap, mypnn);
+	if (ret != 0) {
+		goto done;
+	}
+	ret = build_json_vnnmap(root_json, mem_ctx, ctdb, vnnmap);
+	if (ret != 0) {
+		goto done;
+	}
+
+	ret = json_object_set_new(root_json,
+				  "recovery_mode",
+				  json_string(recmode == CTDB_RECOVERY_NORMAL
+						      ? "NORMAL"
+						      : "RECOVERY"));
+	if (ret != 0) {
+		goto done;
+	}
+	ret = json_object_set_new(root_json,
+				  "recovery_mode_raw",
+				  json_integer(recmode));
+	if (ret != 0) {
+		goto done;
+	}
+	ret = json_object_set_new(root_json, "leader", json_integer(leader));
+	if (ret != 0) {
+		goto done;
+	}
+
+	ret = json_dumpf(root_json, stdout, JSON_INDENT(2));
+done:
+	json_decref(root_json);
+	if (ret != 0) {
+		fprintf(stderr, "failed to create json object\n");
+		return 1;
+	}
+	return 0;
+}
+#endif /* HAVE_JANSSON */
+
 static int control_status(TALLOC_CTX *mem_ctx,
 			  struct ctdb_context *ctdb,
 			  int argc,
@@ -1030,6 +1318,18 @@ static int control_status(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		return ret;
 	}
+
+#ifdef HAVE_JANSSON
+	if (options.json_output) {
+		return print_json_status(mem_ctx,
+					 ctdb,
+					 nodemap,
+					 ctdb->cmd_pnn,
+					 vnnmap,
+					 recmode,
+					 leader);
+	}
+#endif /* HAVE_JANSSON */
 
 	print_status(
 		mem_ctx, ctdb, nodemap, ctdb->cmd_pnn, vnnmap, recmode, leader);
@@ -6778,90 +7078,116 @@ static const struct ctdb_cmd {
 	const char *name;
 	int (*fn)(TALLOC_CTX *, struct ctdb_context *, int, const char **);
 	bool without_daemon; /* can be run without daemon running ? */
-	bool remote;	     /* can be run on remote nodes */
+	bool remote; /* can be run on remote nodes */
+	bool allow_json; /* can emit json output */
 	const char *msg;
 	const char *args;
 } ctdb_commands[] = {
-	{"version", control_version, true, false, "show version of ctdb", NULL},
-	{"status", control_status, false, true, "show node status", NULL},
-	{"uptime", control_uptime, false, true, "show node uptime", NULL},
-	{"ping", control_ping, false, true, "ping a node", NULL},
+	{"version",
+	 control_version,
+	 true,
+	 false,
+	 false,
+	 "show version of ctdb",
+	 NULL},
+	{"status", control_status, false, true, true, "show node status", NULL},
+	{"uptime",
+	 control_uptime,
+	 false,
+	 true,
+	 false,
+	 "show node uptime",
+	 NULL},
+	{"ping", control_ping, false, true, false, "ping a node", NULL},
 	{"runstate",
 	 control_runstate,
 	 false,
 	 true,
+	 false,
 	 "get/check runstate of a node",
 	 "[setup|first_recovery|startup|running]"},
 	{"getvar",
 	 control_getvar,
 	 false,
 	 true,
+	 false,
 	 "get a tunable variable",
 	 "<name>"},
 	{"setvar",
 	 control_setvar,
 	 false,
 	 true,
+	 false,
 	 "set a tunable variable",
 	 "<name> <value>"},
 	{"listvars",
 	 control_listvars,
 	 false,
 	 true,
+	 false,
 	 "list tunable variables",
 	 NULL},
 	{"statistics",
 	 control_statistics,
 	 false,
 	 true,
+	 false,
 	 "show ctdb statistics",
 	 NULL},
 	{"statisticsreset",
 	 control_statistics_reset,
 	 false,
 	 true,
+	 false,
 	 "reset ctdb statistics",
 	 NULL},
 	{"stats",
 	 control_stats,
 	 false,
 	 true,
+	 false,
 	 "show rolling statistics",
 	 "[count]"},
-	{"ip", control_ip, false, true, "show public ips", "[all]"},
+	{"ip", control_ip, false, true, false, "show public ips", "[all]"},
 	{"ipinfo",
 	 control_ipinfo,
 	 false,
 	 true,
+	 false,
 	 "show public ip details",
 	 "<ip>"},
-	{"ifaces", control_ifaces, false, true, "show interfaces", NULL},
+	{"ifaces", control_ifaces, false, true, false, "show interfaces", NULL},
 	{"setifacelink",
 	 control_setifacelink,
 	 false,
 	 true,
+	 false,
 	 "set interface link status",
 	 "<iface> up|down"},
 	{"process-exists",
 	 control_process_exists,
 	 false,
 	 true,
+	 false,
 	 "check if a process exists on a node",
 	 "<pid> [<srvid>]"},
 	{"getdbmap",
 	 control_getdbmap,
 	 false,
 	 true,
+	 false,
 	 "show attached databases",
 	 NULL},
 	{"getdbstatus",
 	 control_getdbstatus,
 	 false,
 	 true,
+	 false,
 	 "show database status",
 	 "<dbname|dbid>"},
 	{"catdb",
 	 control_catdb,
+	 false,
 	 false,
 	 false,
 	 "dump cluster-wide ctdb database",
@@ -6870,16 +7196,19 @@ static const struct ctdb_cmd {
 	 control_cattdb,
 	 false,
 	 false,
+	 false,
 	 "dump local ctdb database",
 	 "<dbname|dbid>"},
 	{"getcapabilities",
 	 control_getcapabilities,
 	 false,
 	 true,
+	 false,
 	 "show node capabilities",
 	 NULL},
 	{"pnn",
 	 control_pnn,
+	 false,
 	 false,
 	 false,
 	 "show the pnn of the current node",
@@ -6888,17 +7217,26 @@ static const struct ctdb_cmd {
 	 control_lvs,
 	 false,
 	 false,
+	 false,
 	 "show lvs configuration",
 	 "leader|list|status"},
 	{"setdebug",
 	 control_setdebug,
 	 false,
 	 true,
+	 false,
 	 "set debug level",
 	 "ERROR|WARNING|NOTICE|INFO|DEBUG"},
-	{"getdebug", control_getdebug, false, true, "get debug level", NULL},
+	{"getdebug",
+	 control_getdebug,
+	 false,
+	 true,
+	 false,
+	 "get debug level",
+	 NULL},
 	{"attach",
 	 control_attach,
+	 false,
 	 false,
 	 false,
 	 "attach a database",
@@ -6907,60 +7245,87 @@ static const struct ctdb_cmd {
 	 control_detach,
 	 false,
 	 false,
+	 false,
 	 "detach database(s)",
 	 "<dbname|dbid> ..."},
 	{"dumpmemory",
 	 control_dumpmemory,
 	 false,
 	 true,
+	 false,
 	 "dump ctdbd memory map",
 	 NULL},
 	{"rddumpmemory",
 	 control_rddumpmemory,
 	 false,
 	 true,
+	 false,
 	 "dump recoverd memory map",
 	 NULL},
-	{"getpid", control_getpid, false, true, "get ctdbd process ID", NULL},
-	{"disable", control_disable, false, true, "disable a node", NULL},
-	{"enable", control_enable, false, true, "enable a node", NULL},
-	{"stop", control_stop, false, true, "stop a node", NULL},
+	{"getpid",
+	 control_getpid,
+	 false,
+	 true,
+	 false,
+	 "get ctdbd process ID",
+	 NULL},
+	{"disable",
+	 control_disable,
+	 false,
+	 true,
+	 false,
+	 "disable a node",
+	 NULL},
+	{"enable", control_enable, false, true, false, "enable a node", NULL},
+	{"stop", control_stop, false, true, false, "stop a node", NULL},
 	{"continue",
 	 control_continue,
 	 false,
 	 true,
+	 false,
 	 "continue a stopped node",
 	 NULL},
-	{"ban", control_ban, false, true, "ban a node", "<bantime>"},
-	{"unban", control_unban, false, true, "unban a node", NULL},
+	{"ban", control_ban, false, true, false, "ban a node", "<bantime>"},
+	{"unban", control_unban, false, true, false, "unban a node", NULL},
 	{"shutdown",
 	 control_shutdown,
 	 false,
 	 true,
+	 false,
 	 "shutdown ctdb daemon",
 	 NULL},
-	{"recover", control_recover, false, true, "force recovery", NULL},
+	{"recover",
+	 control_recover,
+	 false,
+	 true,
+	 false,
+	 "force recovery",
+	 NULL},
 	{"sync",
 	 control_ipreallocate,
 	 false,
 	 true,
+	 false,
 	 "run ip reallocation (deprecated)",
 	 NULL},
 	{"ipreallocate",
 	 control_ipreallocate,
 	 false,
 	 true,
+	 false,
 	 "run ip reallocation",
 	 NULL},
 	{"gratarp",
 	 control_gratarp,
 	 false,
 	 true,
+	 false,
 	 "send a gratuitous arp",
 	 "<ip> <interface>"},
 	{"tickle",
 	 control_tickle,
 	 true,
+	 false,
 	 false,
 	 "send a tcp tickle ack",
 	 "<srcip:port> <dstip:port>"},
@@ -6968,28 +7333,33 @@ static const struct ctdb_cmd {
 	 control_gettickles,
 	 false,
 	 true,
+	 false,
 	 "get the list of tickles",
 	 "<ip> [<port>]"},
 	{"addtickle",
 	 control_addtickle,
 	 false,
 	 true,
+	 false,
 	 "add a tickle",
 	 "<ip>:<port> <ip>:<port>"},
 	{"deltickle",
 	 control_deltickle,
 	 false,
 	 true,
+	 false,
 	 "delete a tickle",
 	 "<ip>:<port> <ip>:<port>"},
 	{"listnodes",
 	 control_listnodes,
 	 true,
 	 true,
+	 false,
 	 "list nodes in the cluster",
 	 NULL},
 	{"reloadnodes",
 	 control_reloadnodes,
+	 false,
 	 false,
 	 false,
 	 "reload the nodes file all nodes",
@@ -6998,22 +7368,26 @@ static const struct ctdb_cmd {
 	 control_moveip,
 	 false,
 	 false,
+	 false,
 	 "move an ip address to another node",
 	 "<ip> <node>"},
 	{"addip",
 	 control_addip,
 	 false,
 	 true,
+	 false,
 	 "add an ip address to a node",
 	 "<ip/mask> <iface>"},
 	{"delip",
 	 control_delip,
 	 false,
 	 true,
+	 false,
 	 "delete an ip address from a node",
 	 "<ip>"},
 	{"backupdb",
 	 control_backupdb,
+	 false,
 	 false,
 	 false,
 	 "backup a database into a file",
@@ -7022,16 +7396,19 @@ static const struct ctdb_cmd {
 	 control_restoredb,
 	 false,
 	 false,
+	 false,
 	 "restore a database from a file",
 	 "<file> [dbname]"},
 	{"dumpdbbackup",
 	 control_dumpdbbackup,
 	 true,
 	 false,
+	 false,
 	 "dump database from a backup file",
 	 "<file>"},
 	{"wipedb",
 	 control_wipedb,
+	 false,
 	 false,
 	 false,
 	 "wipe the contents of a database.",
@@ -7040,11 +7417,13 @@ static const struct ctdb_cmd {
 	 control_leader,
 	 false,
 	 true,
+	 false,
 	 "show the pnn of the leader",
 	 NULL},
 	{"event",
 	 control_event,
 	 true,
+	 false,
 	 false,
 	 "event and event script commands",
 	 NULL},
@@ -7052,10 +7431,12 @@ static const struct ctdb_cmd {
 	 control_scriptstatus,
 	 true,
 	 false,
+	 false,
 	 "show event script status",
 	 "[init|setup|startup|monitor|takeip|releaseip|ipreallocated]"},
 	{"natgw",
 	 control_natgw,
+	 false,
 	 false,
 	 false,
 	 "show natgw configuration",
@@ -7064,34 +7445,40 @@ static const struct ctdb_cmd {
 	 control_getreclock,
 	 false,
 	 true,
+	 false,
 	 "get recovery lock file",
 	 NULL},
 	{"setlmasterrole",
 	 control_setlmasterrole,
 	 false,
 	 true,
+	 false,
 	 "set LMASTER role",
 	 "on|off"},
 	{"setleaderrole",
 	 control_setleaderrole,
 	 false,
 	 true,
+	 false,
 	 "set LEADER role",
 	 "on|off"},
 	{"setdbreadonly",
 	 control_setdbreadonly,
 	 false,
 	 true,
+	 false,
 	 "enable readonly records",
 	 "<dbname|dbid>"},
 	{"setdbsticky",
 	 control_setdbsticky,
 	 false,
 	 true,
+	 false,
 	 "enable sticky records",
 	 "<dbname|dbid>"},
 	{"pfetch",
 	 control_pfetch,
+	 false,
 	 false,
 	 false,
 	 "fetch record from persistent database",
@@ -7100,10 +7487,12 @@ static const struct ctdb_cmd {
 	 control_pstore,
 	 false,
 	 false,
+	 false,
 	 "write record to persistent database",
 	 "<dbname|dbid> <key> <value>"},
 	{"pdelete",
 	 control_pdelete,
+	 false,
 	 false,
 	 false,
 	 "delete record from persistent database",
@@ -7112,22 +7501,26 @@ static const struct ctdb_cmd {
 	 control_ptrans,
 	 false,
 	 false,
+	 false,
 	 "update a persistent database (from file or stdin)",
 	 "<dbname|dbid> [<file>]"},
 	{"tfetch",
 	 control_tfetch,
 	 false,
 	 true,
+	 false,
 	 "fetch a record",
 	 "<tdb-file> <key> [<file>]"},
 	{"tstore",
 	 control_tstore,
 	 false,
 	 true,
+	 false,
 	 "store a record",
 	 "<tdb-file> <key> <data> [<rsn> <dmaster> <flags>]"},
 	{"readkey",
 	 control_readkey,
+	 false,
 	 false,
 	 false,
 	 "read value of a database key",
@@ -7136,10 +7529,12 @@ static const struct ctdb_cmd {
 	 control_writekey,
 	 false,
 	 false,
+	 false,
 	 "write value for a database key",
 	 "<dbname|dbid> <key> <value>"},
 	{"deletekey",
 	 control_deletekey,
+	 false,
 	 false,
 	 false,
 	 "delete a database key",
@@ -7148,10 +7543,12 @@ static const struct ctdb_cmd {
 	 control_checktcpport,
 	 true,
 	 false,
+	 false,
 	 "check if a service is bound to a specific tcp port or not",
 	 "<port>"},
 	{"getdbseqnum",
 	 control_getdbseqnum,
+	 false,
 	 false,
 	 false,
 	 "get database sequence number",
@@ -7160,16 +7557,19 @@ static const struct ctdb_cmd {
 	 control_nodestatus,
 	 false,
 	 true,
+	 false,
 	 "show and return node status",
 	 "[all|<pnn-list>]"},
 	{"dbstatistics",
 	 control_dbstatistics,
 	 false,
 	 true,
+	 false,
 	 "show database statistics",
 	 "<dbname|dbid>"},
 	{"reloadips",
 	 control_reloadips,
+	 false,
 	 false,
 	 false,
 	 "reload the public addresses file",
@@ -7264,6 +7664,14 @@ struct poptOption cmdline_options[] = {
 		.arg = &options.machinereadable,
 		.val = 0,
 		.descrip = "enable machine readable output",
+	},
+	{
+		.longName = "json",
+		.shortName = 'j',
+		.argInfo = POPT_ARG_NONE,
+		.arg = &options.json_output,
+		.val = 0,
+		.descrip = "JSON output",
 	},
 	{
 		.longName = "separator",
@@ -7472,6 +7880,18 @@ int main(int argc, const char *argv[])
 	if (options.machineparsable) {
 		options.machinereadable = 1;
 	}
+#ifdef HAVE_JANSSON
+	if (options.json_output && options.machinereadable) {
+		fprintf(stderr,
+			"--json and -Y options are mutually exclusive\n");
+		exit(1);
+	}
+#else  /* HAVE_JANSSON */
+	if (options.json_output) {
+		fprintf(stderr, "JSON support not available\n");
+		exit(1);
+	}
+#endif /* HAVE_JANSSON */
 
 	/* setup the remaining options for the commands */
 	extra_argc = 0;
@@ -7489,6 +7909,16 @@ int main(int argc, const char *argv[])
 	cmd = match_command(extra_argv[0]);
 	if (cmd == NULL) {
 		fprintf(stderr, "Unknown command '%s'\n", extra_argv[0]);
+		exit(1);
+	}
+	/*
+	 * Reject the --json option if a subcommand doesn't support JSON output.
+	 * This way we never print anything but JSON if it is requested.
+	 */
+	if (options.json_output && !cmd->allow_json) {
+		fprintf(stderr,
+			"--json not supported by the %s subcommand\n",
+			cmd->name);
 		exit(1);
 	}
 
