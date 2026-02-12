@@ -641,6 +641,7 @@ def build(bld):
                      install_path='${SBINDIR}',
                      manpages='ctdbd.1')
 
+    json_deps = ' jansson' if bld.CONFIG_GET('HAVE_JANSSON') else ''
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
                      deps='''ctdb-client
@@ -653,7 +654,8 @@ def build(bld):
                              popt
                              samba-util
                              sys_rw
-                          ''',
+                          ''' +
+                          json_deps,
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
 
