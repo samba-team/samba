@@ -1479,6 +1479,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 	char *printdollar = NULL;
 	int printdollar_snum;
 	WERROR err = WERR_OK;
+	bool became_user = false;
 
 	switch (r->level) {
 	case 3:
@@ -1494,24 +1495,24 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		break;
 	default:
 		DBG_ERR("Unknown info level (%" PRIu32 ")\n", r->level);
-		TALLOC_FREE(frame);
-		return WERR_INVALID_LEVEL;
+		err = WERR_INVALID_LEVEL;
+		goto err_exit;
 	}
 
 	short_architecture = get_short_archi(driver->architecture);
 	if (!short_architecture) {
-		TALLOC_FREE(frame);
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+		err = WERR_UNKNOWN_PRINTER_DRIVER;
+		goto err_exit;
 	}
 
 	printdollar_snum = find_service(frame, "print$", &printdollar);
 	if (!printdollar) {
-		TALLOC_FREE(frame);
-		return WERR_NOT_ENOUGH_MEMORY;
+		err = WERR_NOT_ENOUGH_MEMORY;
+		goto err_exit;
 	}
 	if (printdollar_snum == -1) {
-		TALLOC_FREE(frame);
-		return WERR_BAD_NET_NAME;
+		err = WERR_BAD_NET_NAME;
+		goto err_exit;
 	}
 
 	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
@@ -1523,8 +1524,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		DBG_ERR("create_conn_struct returned %s\n",
 			nt_errstr(nt_status));
 		err = ntstatus_to_werror(nt_status);
-		TALLOC_FREE(frame);
-		return err;
+		goto err_exit;
 	}
 	conn = c->conn;
 
@@ -1532,14 +1532,15 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("failed set force user / group\n");
 		err = ntstatus_to_werror(nt_status);
-		goto err_free_conn;
+		goto err_exit;
 	}
 
 	if (!become_user_without_service_by_session(conn, session_info)) {
 		DBG_ERR("failed to become user\n");
 		err = WERR_ACCESS_DENIED;
-		goto err_free_conn;
+		goto err_exit;
 	}
+	became_user = true;
 
 	new_dir = talloc_asprintf(frame,
 				"%s/%d",
@@ -1681,8 +1682,9 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 
 	err = WERR_OK;
  err_exit:
-	unbecome_user_without_service();
- err_free_conn:
+	if (became_user) {
+		unbecome_user_without_service();
+	}
 	TALLOC_FREE(frame);
 	return err;
 }
