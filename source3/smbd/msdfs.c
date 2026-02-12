@@ -186,13 +186,13 @@ out:
  SMB_VFS_CONNECT requires root privileges.
 *********************************************************/
 
-static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
-			    struct tevent_context *ev,
-			    struct messaging_context *msg,
-			    connection_struct **pconn,
-			    int snum,
-			    const char *path,
-			    const struct auth_session_info *session_info)
+static NTSTATUS create_conn_struct_as_root(
+	TALLOC_CTX *ctx,
+	struct messaging_context *msg,
+	connection_struct **pconn,
+	int snum,
+	const char *path,
+	const struct auth_session_info *session_info)
 {
 	connection_struct *conn;
 	char *connpath;
@@ -206,7 +206,10 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->ev_ctx = ev;
+	/*
+	 * Leave sconn->ev_ctx as NULL. Trying to run anything async
+	 * on a fake is a bug, and we should crash early.
+	 */
 	sconn->msg_ctx = msg;
 
 	conn = conn_new(sconn);
@@ -334,7 +337,6 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 				struct conn_struct_tos **_c)
 {
 	struct conn_struct_tos *c = NULL;
-	struct tevent_context *ev = NULL;
 	NTSTATUS status;
 
 	*_c = NULL;
@@ -344,20 +346,9 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ev = samba_tevent_context_init(c);
-	if (ev == NULL) {
-		TALLOC_FREE(c);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	become_root();
-	status = create_conn_struct_as_root(c,
-					    ev,
-					    msg,
-					    &c->conn,
-					    snum,
-					    path,
-					    session_info);
+	status = create_conn_struct_as_root(
+		c, msg, &c->conn, snum, path, session_info);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(c);
@@ -440,7 +431,6 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 *********************************************************/
 
 NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
 				struct messaging_context *msg,
 				const struct auth_session_info *session_info,
 				int snum,
@@ -450,13 +440,8 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	become_root();
-	status = create_conn_struct_as_root(mem_ctx,
-					    ev,
-					    msg,
-					    c,
-					    snum,
-					    path,
-					    session_info);
+	status = create_conn_struct_as_root(
+		mem_ctx, msg, c, snum, path, session_info);
 	unbecome_root();
 	return status;
 }

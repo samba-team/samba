@@ -506,7 +506,6 @@ NTSTATUS parse_dfs_path_strict(TALLOC_CTX *ctx,
 			       char **_remaining_path);
 
 NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
 				struct messaging_context *msg,
 				const struct auth_session_info *session_info,
 				int snum,

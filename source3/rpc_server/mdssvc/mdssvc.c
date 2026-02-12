@@ -1739,7 +1739,6 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 	}
 
 	status = create_conn_struct_cwd(mds_ctx,
-					ev,
 					msg_ctx,
 					session_info,
 					snum,
