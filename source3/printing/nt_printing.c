@@ -2048,10 +2048,10 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	char *printdollar = NULL;
 	int printdollar_snum;
 	bool ret = false;
+	bool became_user = false;
 
 	if (!r) {
-		TALLOC_FREE(frame);
-		return false;
+		goto fail;
 	}
 
 	DBG_INFO("deleting driver [%s] - version [%d]\n",
@@ -2060,12 +2060,10 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 
 	printdollar_snum = find_service(frame, "print$", &printdollar);
 	if (!printdollar) {
-		TALLOC_FREE(frame);
-		return false;
+		goto fail;
 	}
 	if (printdollar_snum == -1) {
-		TALLOC_FREE(frame);
-		return false;
+		goto fail;
 	}
 
 	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
@@ -2076,36 +2074,32 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("create_conn_struct returned %s\n",
 			nt_errstr(nt_status));
-		TALLOC_FREE(frame);
-		return false;
+		goto fail;
 	}
 	conn = c->conn;
 
 	nt_status = set_conn_force_user_group(conn, printdollar_snum);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("failed set force user / group\n");
-		ret = false;
-		goto err_free_conn;
+		goto fail;
 	}
 
 	if (!become_user_without_service_by_session(conn, session_info)) {
 		DBG_ERR("failed to become user\n");
-		ret = false;
-		goto err_free_conn;
+		goto fail;
 	}
+	became_user = true;
 
 	if ( !CAN_WRITE(conn) ) {
 		DBG_NOTICE("Cannot delete print driver when [print$] is "
 			   "read-only\n");
-		ret = false;
-		goto err_out;
+		goto fail;
 	}
 
 	short_arch = get_short_archi(r->architecture);
 	if (short_arch == NULL) {
 		DBG_ERR("bad architecture %s\n", r->architecture);
-		ret = false;
-		goto err_out;
+		goto fail;
 	}
 
 	/* now delete the files */
@@ -2141,9 +2135,10 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	}
 
 	ret = true;
- err_out:
-	unbecome_user_without_service();
- err_free_conn:
+fail:
+	if (became_user) {
+		unbecome_user_without_service();
+	}
 	TALLOC_FREE(frame);
 	return ret;
 }
