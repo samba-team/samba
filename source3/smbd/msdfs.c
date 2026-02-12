@@ -420,7 +420,6 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 		DBG_NOTICE("Can't ChDir to new conn path %s. "
 			   "Error was %s\n",
 			   c->conn->connectpath, strerror(errno));
-		TALLOC_FREE(c->oldcwd_fname);
 		TALLOC_FREE(c);
 		return status;
 	}
