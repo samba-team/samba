@@ -4284,7 +4284,15 @@ static struct tevent_req *smbd_smb2_break_send(TALLOC_CTX *mem_ctx,
 	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(xconn);
-	if (tevent_req_nterror(req, status)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		if (tevent_req_is_in_progress(req)) {
+			/*
+			 * most likely tevent_req_nterror()
+			 * was already called on
+			 * state->queue_entry.ack.req
+			 */
+			tevent_req_nterror(req, status);
+		}
 		return tevent_req_post(req, ev);
 	}
 
@@ -4482,6 +4490,33 @@ static void smbXsrv_pending_break_done(struct tevent_req *subreq)
 	status = smbd_smb2_break_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		struct smbXsrv_connection *xconn = NULL;
+
+		/*
+		 * smbXsrv_connection_disconnect_transport()
+		 * was already called, but in order to
+		 * avoid stale xconn structures and in
+		 * case of only one xconn a stale process
+		 * we need to call smbd_server_connection_terminate()
+		 *
+		 * So we search if the xconn related to the
+		 * last_channel_id is still there and
+		 * start the cleanup, which most likely
+		 * happens in an async fashion
+		 */
+		for (xconn = client->connections;
+		     xconn != NULL;
+		     xconn = xconn->next)
+		{
+			if (xconn->channel_id != pb->last_channel_id) {
+				continue;
+			}
+
+			smbd_server_connection_terminate(xconn,
+							 nt_errstr(status));
+			break;
+		}
+
 		status = smbXsrv_pending_break_submit(pb);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ABANDONED)) {
 			/*
