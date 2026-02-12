@@ -1013,6 +1013,15 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	return ret;
 }
 
+int vfs_ChDir_shareroot(connection_struct *conn)
+{
+	const struct smb_filename connectpath_fname = {
+		.base_name = conn->connectpath,
+	};
+	int ret = vfs_ChDir(conn, &connectpath_fname);
+	return ret;
+}
+
 /*******************************************************************
  Return the absolute current directory path - given a UNIX pathname.
  Note that this path is returned in DOS format, not UNIX

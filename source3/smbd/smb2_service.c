@@ -108,16 +108,13 @@ static char *utok_string(TALLOC_CTX *mem_ctx,
 
 bool chdir_current_service(connection_struct *conn)
 {
-	const struct smb_filename connectpath_fname = {
-		.base_name = conn->connectpath,
-	};
 	int saved_errno = 0;
 	char *utok_str = NULL;
 	int ret;
 
 	conn->lastused_count++;
 
-	ret = vfs_ChDir(conn, &connectpath_fname);
+	ret = vfs_ChDir_shareroot(conn);
 	if (ret == 0) {
 		return true;
 	}
@@ -130,7 +127,7 @@ bool chdir_current_service(connection_struct *conn)
 		return false;
 	}
 
-	DBG_ERR("vfs_ChDir(%s) failed: %s. Current token: %s\n",
+	DBG_ERR("vfs_ChDir_shareroot(%s) failed: %s. Current token: %s\n",
 		conn->connectpath,
 		strerror(saved_errno),
 		utok_str);

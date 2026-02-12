@@ -386,8 +386,8 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 				    struct conn_struct_tos **_c)
 {
 	struct conn_struct_tos *c = NULL;
-	struct smb_filename smb_fname_connectpath = {0};
 	NTSTATUS status;
+	int ret;
 
 	*_c = NULL;
 
@@ -414,11 +414,8 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 		return status;
 	}
 
-	smb_fname_connectpath = (struct smb_filename) {
-		.base_name = c->conn->connectpath
-	};
-
-	if (vfs_ChDir(c->conn, &smb_fname_connectpath) != 0) {
+	ret = vfs_ChDir_shareroot(c->conn);
+	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		DBG_NOTICE("Can't ChDir to new conn path %s. "
 			   "Error was %s\n",

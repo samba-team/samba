@@ -1647,7 +1647,6 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	struct smb_filename conn_basedir;
 	struct mds_ctx *mds_ctx;
 	int backend;
 	int ret;
@@ -1752,14 +1751,11 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	conn_basedir = (struct smb_filename) {
-		.base_name = mds_ctx->conn->connectpath,
-	};
-
-	ret = vfs_ChDir(mds_ctx->conn, &conn_basedir);
+	ret = vfs_ChDir_shareroot(mds_ctx->conn);
 	if (ret != 0) {
-		DBG_ERR("vfs_ChDir [%s] failed: %s\n",
-			conn_basedir.base_name, strerror(errno));
+		DBG_ERR("vfs_ChDir_shareroot [%s] failed: %s\n",
+			mds_ctx->conn->connectpath,
+			strerror(errno));
 		status = map_nt_error_from_unix(errno);
 		goto error;
 	}
@@ -1800,9 +1796,6 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 	DALLOC_CTX *reply = NULL;
 	char *rpccmd;
 	const struct slrpc_cmd *slcmd;
-	const struct smb_filename conn_basedir = {
-		.base_name = mds_ctx->conn->connectpath,
-	};
 	NTSTATUS status;
 
 	if (CHECK_DEBUGLVL(10)) {
@@ -1855,10 +1848,11 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 		goto cleanup;
 	}
 
-	ret = vfs_ChDir(mds_ctx->conn, &conn_basedir);
+	ret = vfs_ChDir_shareroot(mds_ctx->conn);
 	if (ret != 0) {
-		DBG_ERR("vfs_ChDir [%s] failed: %s\n",
-			conn_basedir.base_name, strerror(errno));
+		DBG_ERR("vfs_ChDir_shareroot [%s] failed: %s\n",
+			mds_ctx->conn->connectpath,
+			strerror(errno));
 		ok = false;
 		goto cleanup;
 	}
