@@ -218,9 +218,27 @@ static int vfs_worm_renameat(vfs_handle_struct *handle,
 			     const struct smb_filename *smb_fname_dst,
 			     const struct vfs_rename_how *how)
 {
+	struct stat_ex dst_st;
+	int ret;
+
 	if (is_readonly(handle, smb_fname_src)) {
 		errno = EACCES;
 		return -1;
+	}
+
+	/* Check if destination is WORM-protected (fixes CVE-2026-2340) */
+	ret = SMB_VFS_FSTATAT(handle->conn,
+			      dst_dirfsp,
+			      smb_fname_dst,
+			      &dst_st,
+			      AT_SYMLINK_NOFOLLOW);
+	if (ret == 0) {
+		struct smb_filename dst_with_stat = *smb_fname_dst;
+		dst_with_stat.st = dst_st;
+		if (is_readonly(handle, &dst_with_stat)) {
+			errno = EACCES;
+			return -1;
+		}
 	}
 
 	return SMB_VFS_NEXT_RENAMEAT(handle,
