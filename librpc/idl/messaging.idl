@@ -163,6 +163,13 @@ interface messaging
 		MSG_DSDB_PWD_LOG                = 0x0802,
 		MSG_GROUP_LOG                   = 0x0803,
 
+		/*
+		 * VFS aio_ratelimit cluster coordination messages
+		 * Node-level aggregation via ratelimitd daemon
+		 */
+		MSG_VFS_AIO_RATELIMIT_READ_NODE_SUMMARY	= 0x0900,
+		MSG_VFS_AIO_RATELIMIT_WRITE_NODE_SUMMARY = 0x0901,
+
 		/* dbwrap messages 4001-4999 (0x0FA0 - 0x1387) */
 		/* MSG_DBWRAP_TDB2_CHANGES		= 4001, */
 		/* MSG_DBWRAP_G_LOCK_RETRY		= 4002, */

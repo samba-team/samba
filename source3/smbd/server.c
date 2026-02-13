@@ -54,6 +54,9 @@
 #include "locking/leases_db.h"
 #include "smbd/notifyd/notifyd.h"
 #include "smbd/smbd_cleanupd.h"
+#ifdef WITH_RATELIMITD
+#include "smbd/smbd_ratelimitd.h"
+#endif
 #include "lib/util/sys_rw.h"
 #include "cleanupdb.h"
 #include "g_lock.h"
@@ -91,6 +94,9 @@ struct smbd_parent_context {
 
 	struct server_id cleanupd;
 	struct server_id notifyd;
+#ifdef WITH_RATELIMITD
+	struct server_id ratelimitd;
+#endif
 
 	struct tevent_timer *cleanup_te;
 
@@ -878,6 +884,189 @@ static void cleanupd_started(struct tevent_req *req)
 	}
 }
 
+/**************************************************************************
+ * ratelimitd - cluster-wide rate limit coordination daemon
+ **************************************************************************/
+#ifdef WITH_RATELIMITD
+static void ratelimitd_stopped(struct tevent_req *req)
+{
+	int ret = smbd_ratelimitd_recv(req);
+	if (ret != 0) {
+		DBG_ERR("ratelimitd stopped with error: %s\n", strerror(ret));
+	} else {
+		DBG_NOTICE("ratelimitd stopped cleanly\n");
+	}
+}
+
+static bool smbd_ratelimitd_init(struct messaging_context *msg,
+				 bool interactive,
+				 struct server_id *ppid)
+{
+	struct tevent_context *ev = messaging_tevent_context(msg);
+	struct tevent_req *req;
+	pid_t pid;
+	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Start daemon unconditionally when clustering is enabled.
+	 * VFS modules load dynamically, so we can't detect aio_ratelimit
+	 * usage at startup. When idle, daemon only waits in event loop
+	 * and broadcasts nothing.
+	 */
+	if (!lp_clustering()) {
+		DBG_DEBUG("Clustering disabled, not starting ratelimitd\n");
+		return true;
+	}
+
+	if (interactive) {
+		req = smbd_ratelimitd_send(msg, ev, msg);
+		*ppid = messaging_server_id(msg);
+		return (req != NULL);
+	}
+
+	pid = fork();
+	if (pid == -1) {
+		DBG_ERR("ratelimitd fork failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	if (pid != 0) {
+		DBG_DEBUG("Started ratelimitd pid=%d\n", (int)pid);
+
+		if (am_parent != NULL) {
+			add_child_pid(am_parent, pid);
+		}
+
+		*ppid = pid_to_procid(pid);
+		return true;
+	}
+
+	status = smbd_reinit_after_fork(msg, ev, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("reinit_after_fork failed: %s\n", nt_errstr(status));
+		exit(1);
+	}
+
+	process_set_title("smbd-ratelimitd", "ratelimitd");
+	set_remote_machine_name("ratelimitd", false);
+
+	reopen_logs();
+
+	req = smbd_ratelimitd_send(msg, ev, msg);
+	if (req == NULL) {
+		DBG_ERR("smbd_ratelimitd_send failed\n");
+		exit(1);
+	}
+
+	tevent_req_set_callback(req, ratelimitd_stopped, msg);
+
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		DBG_ERR("tevent_req_poll failed: %s\n", strerror(errno));
+	}
+	exit(0);
+}
+
+static void ratelimitd_init_trigger(struct tevent_req *subreq);
+
+struct ratelimitd_init_state {
+	struct tevent_context *ev;
+	struct messaging_context *msg;
+	struct server_id *ppid;
+	bool ok;
+};
+
+static struct tevent_req *ratelimitd_init_send(struct tevent_context *ev,
+					       TALLOC_CTX *mem_ctx,
+					       struct messaging_context *msg,
+					       struct server_id *ppid)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct ratelimitd_init_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct ratelimitd_init_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	*state = (struct ratelimitd_init_state){
+		.msg = msg,
+		.ev = ev,
+		.ppid = ppid,
+	};
+
+	subreq = tevent_wakeup_send(state,
+				    ev,
+				    tevent_timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, ratelimitd_init_trigger, req);
+	return req;
+}
+
+static void ratelimitd_init_trigger(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct ratelimitd_init_state *state = tevent_req_data(
+		req, struct ratelimitd_init_state);
+	bool ok;
+
+	DBG_NOTICE("Triggering ratelimitd startup\n");
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
+	state->ok = smbd_ratelimitd_init(state->msg, false, state->ppid);
+	if (state->ok) {
+		DBG_NOTICE("ratelimitd restarted\n");
+		tevent_req_done(req);
+		return;
+	}
+
+	DBG_NOTICE("ratelimitd startup failed, rescheduling\n");
+
+	subreq = tevent_wakeup_send(state,
+				    state->ev,
+				    tevent_timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		DBG_ERR("scheduling ratelimitd restart failed, giving up\n");
+		return;
+	}
+
+	tevent_req_set_callback(subreq, ratelimitd_init_trigger, req);
+	return;
+}
+
+static bool ratelimitd_init_recv(struct tevent_req *req)
+{
+	struct ratelimitd_init_state *state = tevent_req_data(
+		req, struct ratelimitd_init_state);
+
+	return state->ok;
+}
+
+static void ratelimitd_started(struct tevent_req *req)
+{
+	bool ok;
+
+	ok = ratelimitd_init_recv(req);
+	TALLOC_FREE(req);
+	if (!ok) {
+		DBG_ERR("Failed to restart ratelimitd, giving up\n");
+		return;
+	}
+}
+#endif /* WITH_RATELIMITD */
+
 static void remove_child_pid(struct smbd_parent_context *parent,
 			     pid_t pid,
 			     bool unclean_shutdown,
@@ -945,6 +1134,28 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		tevent_req_set_callback(req, notifyd_started, parent);
 		return;
 	}
+
+#ifdef WITH_RATELIMITD
+	if (pid == procid_to_pid(&parent->ratelimitd)) {
+		struct tevent_req *req;
+		struct tevent_context *ev = messaging_tevent_context(
+			parent->msg_ctx);
+
+		server_id_set_disconnected(&parent->ratelimitd);
+
+		DBG_WARNING("Restarting ratelimitd\n");
+		req = ratelimitd_init_send(ev,
+					   parent,
+					   parent->msg_ctx,
+					   &parent->ratelimitd);
+		if (req == NULL) {
+			DBG_ERR("Failed to restart ratelimitd\n");
+			return;
+		}
+		tevent_req_set_callback(req, ratelimitd_started, parent);
+		return;
+	}
+#endif /* WITH_RATELIMITD */
 
 	ok = cleanupdb_store_child(pid, unclean_shutdown);
 	if (!ok) {
@@ -2457,6 +2668,16 @@ quic_disabled:
 		    &parent->cleanupd)) {
 		exit_daemon("Samba cannot init the cleanupd", EACCES);
 	}
+
+#ifdef WITH_RATELIMITD
+	if (!smbd_ratelimitd_init(msg_ctx,
+				  cmdline_daemon_cfg->interactive,
+				  &parent->ratelimitd))
+	{
+		DBG_WARNING("ratelimitd init failed, "
+			    "cluster rate limiting will not be available\n");
+	}
+#endif /* WITH_RATELIMITD */
 
 	if (!W_ERROR_IS_OK(registry_init_full()))
 		exit_daemon("Samba cannot init registry", EACCES);
