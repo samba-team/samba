@@ -594,9 +594,29 @@ static void dns_udp_call_process_done(struct tevent_req *subreq)
 		subreq, struct dns_udp_call);
 	struct dns_udp_socket *sock = call->sock;
 	struct dns_server *dns = sock->dns_socket->dns;
+	struct dns_process_state *state = tevent_req_data(
+		subreq, struct dns_process_state);
 	WERROR err;
 
 	err = dns_process_recv(subreq, call, &call->out);
+	/*
+	* If a UDP response exceeds the threshold, set the TC flag and return an
+	* empty response, expecting the client to retry over TCP as required by
+	* RFC 1035 Section 4.2.1 ("the message was truncated due to length greater
+	* than that permitted on the transmission channel").
+	*/
+	if (W_ERROR_IS_OK(err) && call->out.length > DNS_MAX_UDP_PACKET_LENGTH) {
+		state->out_packet.operation |= DNS_FLAG_TRUNCATION;
+		state->out_packet.ancount = 0;
+		state->out_packet.nscount = 0;
+		state->out_packet.arcount = 0;
+		TALLOC_FREE(call->out.data);
+		err = dns_process_recv(subreq, call, &call->out);
+		if (!W_ERROR_IS_OK(err)) {
+			DBG_WARNING("Failed to build truncated DNS packet: %s!\n",
+				win_errstr(err));
+		}
+	}
 	TALLOC_FREE(subreq);
 	if (!W_ERROR_IS_OK(err)) {
 		DEBUG(1, ("dns_process returned %s\n", win_errstr(err)));
