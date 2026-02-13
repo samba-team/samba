@@ -27,7 +27,7 @@
 		<arg choice="opt">-q, --quiet</arg>
 		<arg choice="opt">-v, --verbose</arg>
 		<arg choice="opt">-b, --blocksize</arg>
-		<arg choice="opt">-O, --stdout</arg>
+		<arg choice="opt">--stdout</arg>
 		<arg choice="opt">-u, --update</arg>
 		<arg choice="opt">-e, --encrypt</arg>
 		<arg choice="opt">--limit-rate=INT</arg>
@@ -105,12 +105,12 @@
 
 	<varlistentry>
 		<term>-o, --outputfile</term>
-		<listitem><para>Write the file that is being downloaded to the specified file. Can not be used together with -R.</para></listitem>
+		<listitem><para>Write the file that is being downloaded to the specified file. Can not be used together with --recursive or --stdout.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
 		<term>--stdout</term>
-		<listitem><para>Write the file that is being downloaded to standard output.</para></listitem>
+		<listitem><para>Write the file that is being downloaded to standard output. Can not be used together with --recursive or -o, --outputfile.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
@@ -179,7 +179,7 @@ smbget --resume smb://rhonwyn/isos/FreeBSD5.1.iso
 # Recursively download all ISOs
 smbget --recursive --resume smb://rhonwyn/isos
 # Backup my data on rhonwyn
-smbget --recursive -resume smb://rhonwyn/
+smbget --recursive --resume smb://rhonwyn/
 </programlisting>
 
 </refsect1>
@@ -188,7 +188,7 @@ smbget --recursive -resume smb://rhonwyn/
 	<title>BUGS</title>
 
 	<para>Permission denied is returned in some cases where the cause of the error is unknown
-(such as an illegally formatted smb:// url or trying to get a directory without --resursive
+(such as an illegally formatted smb:// url or trying to get a directory without --recursive
 turned on).</para>
 </refsect1>
 
