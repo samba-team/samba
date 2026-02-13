@@ -73,6 +73,18 @@ test_smbclient "smbclient.smb3.kerberos.desired[//${SERVER}/tmp]" \
 	--use-kerberos=desired -U${USERNAME}%${PASSWORD} -mSMB3 ||
 	failed=$(expr $failed + 1)
 
+test_smbclient "smbclient.smb3.kerberos.desired (no user/pass) [//${SERVER}/tmp]" \
+	"ls; quit" //${SERVER}/tmp \
+	--use-kerberos=desired -mSMB3 ||
+	failed=$(expr $failed + 1)
+
+test_smbclient "smbclient.smb3.kerberos.required (no user/pass) [//${SERVER}/tmp]" \
+	"ls; quit" //${SERVER}/tmp \
+	--use-kerberos=required -mSMB3 ||
+	failed=$(expr $failed + 1)
+
+
+
 $samba_kdestroy
 
 rm -rf $KRB5CCNAME_PATH
