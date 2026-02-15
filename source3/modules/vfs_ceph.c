@@ -509,12 +509,21 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 		became_root = true;
 	}
 
+	if (dirfd == -1 && smb_fname->base_name[0] == '/') {
+		result = ceph_open(handle->data,
+				   smb_fname->base_name,
+				   flags,
+				   mode);
+		goto done;
+	}
+
 	result = ceph_openat(handle->data,
 			     dirfd,
 			     smb_fname->base_name,
 			     flags,
 			     mode);
 
+done:
 	if (became_root) {
 		unbecome_root();
 	}
