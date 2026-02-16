@@ -939,7 +939,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	struct connection_struct *conn = NULL;
 	char *servicename = NULL;
 	char *reqpath = NULL;
@@ -1050,16 +1050,17 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct_tos_cwd(global_messaging_context(),
-					    snum,
-					    lp_path(frame, lp_sub, snum),
-					    session_info,
-					    &c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  snum,
+					  lp_path(frame, lp_sub, snum),
+					  session_info,
+					  &w);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	/*
 	 * TODO
