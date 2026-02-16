@@ -3025,8 +3025,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "deadtime", "10080");
 
-	lpcfg_do_global_parameter(lp_ctx, "getwd cache", "True");
-
 	lpcfg_do_global_parameter(lp_ctx, "winbind nested groups", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "mangled names", "illegal");

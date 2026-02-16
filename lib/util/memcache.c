@@ -59,7 +59,6 @@ static bool memcache_is_talloc(enum memcache_number n)
 	case PDB_GETPWSID_CACHE:
 	case SINGLETON_CACHE_TALLOC:
 	case SHARE_MODE_LOCK_CACHE:
-	case GETWD_CACHE:
 	case VIRUSFILTER_SCAN_RESULTS_CACHE_TALLOC:
 		result = true;
 		break;

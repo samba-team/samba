@@ -656,7 +656,6 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.max_smbd_processes = 0;/* no limit specified */
 	Globals.username_level = 0;
 	Globals.deadtime = 10080;
-	Globals.getwd_cache = true;
 	Globals.large_readwrite = true;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = max_open_files();
