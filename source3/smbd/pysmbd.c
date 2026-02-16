@@ -154,17 +154,10 @@ static const char *canonicalize_path(TALLOC_CTX *mem_ctx,
 	char *result = NULL;
 
 	if (fname[0] != '/') {
-		struct smb_filename *cwd = SMB_VFS_GETWD(conn, mem_ctx);
-		if (cwd == NULL) {
-			return NULL;
-		}
-
 		to_free = talloc_asprintf(mem_ctx,
 					  "%s/%s",
-					  cwd->base_name,
+					  conn->connectpath,
 					  fname);
-		TALLOC_FREE(cwd);
-
 		if (to_free == NULL) {
 			return NULL;
 		}
