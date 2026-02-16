@@ -931,8 +931,6 @@ void close_cnum(connection_struct *conn,
 		uint64_t vuid,
 		enum file_close_type close_type)
 {
-	char rootpath[2] = { '/', '\0'};
-	struct smb_filename root_fname = { .base_name = rootpath };
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 
@@ -947,7 +945,8 @@ void close_cnum(connection_struct *conn,
 				 lp_const_servicename(SNUM(conn))));
 
 	/* make sure we leave the directory available for unmount */
-	vfs_ChDir(conn, &root_fname);
+	SMB_ASSERT(chdir("/") == 0);
+	SAFE_FREE(LastDir);
 
 	/* Call VFS disconnect hook */
 	SMB_VFS_DISCONNECT(conn);
