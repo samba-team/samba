@@ -311,10 +311,6 @@ static NTSTATUS create_conn_struct_as_root(
 
 static int conn_struct_tos_destructor(struct conn_struct_tos *c)
 {
-	if (c->oldcwd_fname != NULL) {
-		vfs_ChDir(c->conn, c->oldcwd_fname);
-		TALLOC_FREE(c->oldcwd_fname);
-	}
 	SMB_VFS_DISCONNECT(c->conn);
 	TALLOC_FREE(c->conn);
 	return 0;
@@ -356,64 +352,6 @@ NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
 	}
 
 	talloc_set_destructor(c, conn_struct_tos_destructor);
-
-	*_c = c;
-	return NT_STATUS_OK;
-}
-
-/********************************************************
- Fake up a connection struct for the VFS layer.
- Note: this performs a vfs connect and CHANGES CWD !!!! JRA.
-
- See also the comment for create_conn_struct_tos() above!
-
- The CWD change is reverted by the destructor of
- conn_struct_tos when the current talloc_tos() is destroyed.
-*********************************************************/
-NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
-				    int snum,
-				    const char *path,
-				    const struct auth_session_info *session_info,
-				    struct conn_struct_tos **_c)
-{
-	struct conn_struct_tos *c = NULL;
-	NTSTATUS status;
-	int ret;
-
-	*_c = NULL;
-
-	status = create_conn_struct_tos(msg,
-					snum,
-					path,
-					session_info,
-					&c);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	 * Windows seems to insist on doing trans2getdfsreferral() calls on
-	 * the IPC$ share as the anonymous user. If we try to chdir as that
-	 * user we will fail.... WTF ? JRA.
-	 */
-
-	c->oldcwd_fname = vfs_GetWd(c, c->conn);
-	if (c->oldcwd_fname == NULL) {
-		status = map_nt_error_from_unix(errno);
-		DEBUG(3, ("vfs_GetWd failed: %s\n", strerror(errno)));
-		TALLOC_FREE(c);
-		return status;
-	}
-
-	ret = vfs_ChDir_shareroot(c->conn);
-	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
-		DBG_NOTICE("Can't ChDir to new conn path %s. "
-			   "Error was %s\n",
-			   c->conn->connectpath, strerror(errno));
-		TALLOC_FREE(c);
-		return status;
-	}
 
 	*_c = c;
 	return NT_STATUS_OK;
