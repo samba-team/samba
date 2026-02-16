@@ -978,7 +978,7 @@ static WERROR get_correct_cversion(
 	struct smb_filename *smb_fname = NULL;
 	files_struct      *fsp = NULL;
 	struct files_struct *dirfsp = NULL;
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	char *printdollar = NULL;
 	char *printdollar_path = NULL;
@@ -1035,18 +1035,19 @@ static WERROR get_correct_cversion(
 					      driver_directory);
 	}
 
-	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
-					       printdollar_snum,
-					       working_dir,
-					       session_info,
-					       &c);
+	nt_status = create_conn_struct_chdir(talloc_tos(),
+					     global_messaging_context(),
+					     printdollar_snum,
+					     working_dir,
+					     session_info,
+					     &w);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("create_conn_struct returned %s\n",
 			nt_errstr(nt_status));
 		werr = ntstatus_to_werror(nt_status);
 		goto done;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	nt_status = set_conn_force_user_group(conn, printdollar_snum);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1471,7 +1472,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_dname = NULL;
 	char *new_dir = NULL;
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
 	int i;
@@ -1515,18 +1516,21 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		goto err_exit;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
-					       printdollar_snum,
-					       lp_path(frame, lp_sub, printdollar_snum),
-					       session_info,
-					       &c);
+	nt_status = create_conn_struct_chdir(talloc_tos(),
+					     global_messaging_context(),
+					     printdollar_snum,
+					     lp_path(frame,
+						     lp_sub,
+						     printdollar_snum),
+					     session_info,
+					     &w);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("create_conn_struct returned %s\n",
 			nt_errstr(nt_status));
 		err = ntstatus_to_werror(nt_status);
 		goto err_exit;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	nt_status = set_conn_force_user_group(conn, printdollar_snum);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2044,7 +2048,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	const char *short_arch;
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
 	char *printdollar = NULL;
@@ -2068,17 +2072,20 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 		goto fail;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
-					       printdollar_snum,
-					       lp_path(frame, lp_sub, printdollar_snum),
-					       session_info,
-					       &c);
+	nt_status = create_conn_struct_chdir(talloc_tos(),
+					     global_messaging_context(),
+					     printdollar_snum,
+					     lp_path(frame,
+						     lp_sub,
+						     printdollar_snum),
+					     session_info,
+					     &w);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("create_conn_struct returned %s\n",
 			nt_errstr(nt_status));
 		goto fail;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	nt_status = set_conn_force_user_group(conn, printdollar_snum);
 	if (!NT_STATUS_IS_OK(nt_status)) {
