@@ -468,7 +468,7 @@ int main(int argc, const char *argv[])
 {
 	char *cmdstr = NULL;
 	struct cmd_set	**cmd_set;
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	struct vfs_state *vfs;
 	int opt;
 	int i;
@@ -585,16 +585,17 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	status = create_conn_struct_tos_cwd(global_messaging_context(),
-					-1,
-					cwd,
-					session_info,
-					&c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  -1,
+					  cwd,
+					  session_info,
+					  &w);
 	SAFE_FREE(cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
 	}
-	vfs->conn = c->conn;
+	vfs->conn = conn_wrap_connection(w);
 
 	vfs->conn->share_access = FILE_GENERIC_ALL;
 	vfs->conn->read_only = false;
