@@ -48,17 +48,29 @@ extern const struct generic_mapping file_generic_mapping;
 #define DIRECTORY_FLAGS O_RDONLY
 #endif
 
+struct fchdir_state {
+	int dirfd;
+};
+
+static int fchdir_state_destructor(struct fchdir_state *state)
+{
+	SMB_ASSERT(fchdir(state->dirfd) == 0);
+	SMB_ASSERT(close(state->dirfd) == 0);
+	state->dirfd = -1;
+	return 0;
+}
 
 static connection_struct *get_conn_tos(
 	const char *service,
 	const struct auth_session_info *session_info)
 {
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
+	struct connection_struct *conn = NULL;
 	int snum = -1;
 	NTSTATUS status;
 	char *cwd = NULL;
-	struct smb_filename cwd_fname = {0};
-	int ret;
+	int dirfd;
+	struct fchdir_state *chdir_back = NULL;
 
 	mangle_reset_cache();
 
@@ -90,40 +102,48 @@ static connection_struct *get_conn_tos(
 		return NULL;
 	}
 
-	status = create_conn_struct_tos(NULL,
-					snum,
-					"/",
-					session_info,
-					&c);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
-	/* Ignore read-only and share restrictions */
-	c->conn->read_only = false;
-	c->conn->share_access = SEC_RIGHTS_FILE_ALL;
+	dirfd = open(".", O_RDONLY|O_DIRECTORY);
+	if (dirfd == -1) {
+		PyErr_SetFromErrno(PyExc_OSError);
+		return NULL;
+	}
 
 	/* Provided by libreplace if not present. Always mallocs. */
 	cwd = get_current_dir_name();
 	if (cwd == NULL) {
+		close(dirfd);
 		PyErr_NoMemory();
 		return NULL;
 	}
 
-	cwd_fname.base_name = cwd;
-	/*
-	 * We need to call vfs_ChDir() to initialize
-	 * conn->cwd_fsp correctly. Change directory
-	 * to current directory (so no change for process).
-	 */
-	ret = vfs_ChDir(c->conn, &cwd_fname);
-	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
-		SAFE_FREE(cwd);
-		PyErr_NTSTATUS_IS_ERR_RAISE(status);
-	}
-
+	status = create_conn_struct_chdir(
+		talloc_tos(), NULL, snum, cwd, session_info, &w);
 	SAFE_FREE(cwd);
 
-	return c->conn;
+	if (!NT_STATUS_IS_OK(status)) {
+		close(dirfd);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	conn = conn_wrap_connection(w);
+
+	/* Ignore read-only and share restrictions */
+	conn->read_only = false;
+	conn->share_access = SEC_RIGHTS_FILE_ALL;
+
+	chdir_back = talloc(w, struct fchdir_state);
+	if (chdir_back == NULL) {
+		TALLOC_FREE(w);
+		close(dirfd);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	*chdir_back = (struct fchdir_state) { .dirfd = dirfd };
+	talloc_set_destructor(chdir_back, fchdir_state_destructor);
+
+	return conn;
 }
 
 static const char *canonicalize_path(TALLOC_CTX *mem_ctx,
