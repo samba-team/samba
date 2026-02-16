@@ -35,6 +35,9 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/sys_rw.h"
 
+static struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx,
+				      connection_struct *conn);
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
@@ -1029,7 +1032,7 @@ int vfs_ChDir_shareroot(connection_struct *conn)
  format. Note this can be called with conn == NULL.
 ********************************************************************/
 
-struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
+static struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
         struct smb_filename *current_dir_fname = NULL;
 	struct file_id key;
