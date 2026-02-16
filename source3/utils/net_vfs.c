@@ -44,7 +44,8 @@ static struct net_vfs_state {
 	TALLOC_CTX *mem_ctx;
 	struct net_context *c;
 	struct auth_session_info *session_info;
-	struct conn_struct_tos *conn_tos;
+	struct conn_wrap *wrap;
+	struct connection_struct *conn;
 } state;
 
 static void net_vfs_usage(void)
@@ -178,20 +179,22 @@ static int net_vfs_init(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	status = create_conn_struct_tos_cwd(global_messaging_context(),
-					    snum,
-					    share_root,
-					    state.session_info,
-					    &state.conn_tos);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  snum,
+					  share_root,
+					  state.session_info,
+					  &state.wrap);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	state.conn = conn_wrap_connection(state.wrap);
 
-	state.conn_tos->conn->share_access = FILE_GENERIC_ALL;
-	state.conn_tos->conn->read_only = false;
-	file_init(state.conn_tos->conn->sconn);
+	state.conn->share_access = FILE_GENERIC_ALL;
+	state.conn->read_only = false;
+	file_init(state.conn->sconn);
 
-	ok = become_user_without_service_by_session(state.conn_tos->conn,
+	ok = become_user_without_service_by_session(state.conn,
 						    state.session_info);
 	if (!ok) {
 		fprintf(stderr,
@@ -234,7 +237,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 	}
 
 	status = filename_convert_dirfsp(state.mem_ctx,
-					 state.conn_tos->conn,
+					 state.conn,
 					 path,
 					 UCF_POSIX_PATHNAMES |
 						 UCF_LCOMP_LNK_OK,
@@ -249,7 +252,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 	}
 
 	status = SMB_VFS_CREATE_FILE(
-		state.conn_tos->conn,
+		state.conn,
 		NULL,				/* req */
 		dirfsp,
 		smb_fname,
@@ -334,7 +337,7 @@ static bool do_unfruit(const char *path)
 	}
 
 	status = ad_unconvert(state.mem_ctx,
-			      state.conn_tos->conn->vfs_handles,
+			      state.conn->vfs_handles,
 			      macos_string_replace_map,
 			      smb_fname,
 			      &converted);
