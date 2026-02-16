@@ -1619,11 +1619,8 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
 		talloc_free(mds_ctx->query_list);
 	}
 	TALLOC_FREE(mds_ctx->ino_path_map);
-
-	if (mds_ctx->conn != NULL) {
-		SMB_VFS_DISCONNECT(mds_ctx->conn);
-		TALLOC_FREE(mds_ctx->conn);
-	}
+	TALLOC_FREE(mds_ctx->wrap);
+	mds_ctx->conn = NULL;
 
 	ZERO_STRUCTP(mds_ctx);
 
@@ -1649,7 +1646,6 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		loadparm_s3_global_substitution();
 	struct mds_ctx *mds_ctx;
 	int backend;
-	int ret;
 	bool ok;
 	smb_iconv_t iconv_hnd = (smb_iconv_t)-1;
 	NTSTATUS status;
@@ -1738,26 +1734,18 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	status = create_conn_struct_cwd(mds_ctx,
-					msg_ctx,
-					session_info,
-					snum,
-					lp_path(talloc_tos(), lp_sub, snum),
-					&mds_ctx->conn);
+	status = create_conn_struct_chdir(mds_ctx,
+					  msg_ctx,
+					  snum,
+					  lp_path(talloc_tos(), lp_sub, snum),
+					  session_info,
+					  &mds_ctx->wrap);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("failed to create conn for vfs: %s\n",
 			nt_errstr(status));
 		goto error;
 	}
-
-	ret = vfs_ChDir_shareroot(mds_ctx->conn);
-	if (ret != 0) {
-		DBG_ERR("vfs_ChDir_shareroot [%s] failed: %s\n",
-			mds_ctx->conn->connectpath,
-			strerror(errno));
-		status = map_nt_error_from_unix(errno);
-		goto error;
-	}
+	mds_ctx->conn = conn_wrap_connection(mds_ctx->wrap);
 
 	ok = mds_ctx->backend->connect(mds_ctx);
 	if (!ok) {

@@ -128,6 +128,7 @@ struct mds_ctx {
 	const char *sharename;
 	const char *spath;
 	size_t spath_len;
+	struct conn_wrap *wrap;
 	struct connection_struct *conn;
 	struct sl_query *query_list;     /* list of active queries */
 	struct db_context *ino_path_map; /* dbwrap rbt for storing inode->path mappings */
