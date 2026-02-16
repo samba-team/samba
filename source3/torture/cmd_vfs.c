@@ -529,9 +529,6 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 				smb_fname,
 				0);
 		TALLOC_FREE(smb_fname);
-	} else if (strcmp("chdir", argv[0]) == 0 ) {
-		ret = SMB_VFS_CHDIR(vfs->conn, smb_fname);
-		TALLOC_FREE(smb_fname);
 	} else {
 		printf("%s: error=%d (invalid function name!)\n", argv[0], errno);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1035,20 +1032,6 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	}
 
 	printf("fchown: ok\n");
-	return NT_STATUS_OK;
-}
-
-
-static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
-{
-	struct smb_filename *smb_fname = SMB_VFS_GETWD(vfs->conn, talloc_tos());
-	if (smb_fname == NULL) {
-		printf("getwd: error=%d (%s)\n", errno, strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	printf("getwd: %s\n", smb_fname->base_name);
-	TALLOC_FREE(smb_fname);
 	return NT_STATUS_OK;
 }
 
@@ -2275,8 +2258,6 @@ struct cmd_set vfs_commands[] = {
 	{ "chmod",   cmd_chmod,   "VFS chmod()",    "chmod <path> <mode>" },
 	{ "fchmod",   cmd_fchmod,   "VFS fchmod()",    "fchmod <fd> <mode>" },
 	{ "fchown",   cmd_fchown,   "VFS fchown()",    "fchown <fd> <uid> <gid>" },
-	{ "chdir",   cmd_pathfunc,   "VFS chdir()",    "chdir <path>" },
-	{ "getwd",   cmd_getwd,   "VFS getwd()",    "getwd" },
 	{ "utime",   cmd_utime,   "VFS utime()",    "utime <path> <access> <modify>" },
 	{ "ftruncate",   cmd_ftruncate,   "VFS ftruncate()",    "ftruncate <fd> <length>" },
 	{ "lock",   cmd_lock,   "VFS lock()",    "lock <f> <op> <offset> <count> <type>" },
