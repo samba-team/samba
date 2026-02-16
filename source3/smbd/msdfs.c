@@ -309,54 +309,6 @@ static NTSTATUS create_conn_struct_as_root(
 	return NT_STATUS_OK;
 }
 
-static int conn_struct_tos_destructor(struct conn_struct_tos *c)
-{
-	SMB_VFS_DISCONNECT(c->conn);
-	TALLOC_FREE(c->conn);
-	return 0;
-}
-
-/********************************************************
- Fake up a connection struct for the VFS layer, for use in
- applications (such as the python bindings), that do not want the
- global working directory changed under them.
-
- SMB_VFS_CONNECT requires root privileges.
- This temporary uses become_root() and unbecome_root().
-
- But further impersonation has to be done by the caller.
-*********************************************************/
-NTSTATUS create_conn_struct_tos(struct messaging_context *msg,
-				int snum,
-				const char *path,
-				const struct auth_session_info *session_info,
-				struct conn_struct_tos **_c)
-{
-	struct conn_struct_tos *c = NULL;
-	NTSTATUS status;
-
-	*_c = NULL;
-
-	c = talloc_zero(talloc_tos(), struct conn_struct_tos);
-	if (c == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	status = create_conn_struct_as_root(
-		c, msg, &c->conn, snum, path, session_info);
-	unbecome_root();
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(c);
-		return status;
-	}
-
-	talloc_set_destructor(c, conn_struct_tos_destructor);
-
-	*_c = c;
-	return NT_STATUS_OK;
-}
-
 struct conn_wrap {
 	struct connection_struct *conn;
 };
