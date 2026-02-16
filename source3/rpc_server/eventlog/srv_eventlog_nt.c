@@ -103,7 +103,8 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 				struct security_descriptor **sd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
+	struct connection_struct *conn = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *pathref_fname = NULL;
 
@@ -112,31 +113,31 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = create_conn_struct_tos(global_messaging_context(),
-					-1,
-					"/",
-					session_info,
-					&c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  -1,
+					  "/",
+					  session_info,
+					  &w);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("create_conn_struct_tos() returned %s.\n",
+		DBG_ERR("create_conn_struct_chdir() returned %s.\n",
 			nt_errstr(status));
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
+	conn = conn_wrap_connection(w);
 
 	status = synthetic_pathref(talloc_tos(),
-				c->conn->cwd_fsp,
-				fname,
-				NULL,
-				NULL,
-				0,
-				0,
-				&pathref_fname);
+				   conn->cwd_fsp,
+				   fname,
+				   NULL,
+				   NULL,
+				   0,
+				   0,
+				   &pathref_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("synthetic_pathref for file %s returned %s.\n",
 			  fname, nt_errstr(status));
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 	status = SMB_VFS_FGET_NT_ACL(pathref_fname->fsp,
 				security_info_wanted,
@@ -147,8 +148,8 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 			  fname, nt_errstr(status));
 	}
 
+done:
 	TALLOC_FREE(frame);
-
 	return status;
 }
 
