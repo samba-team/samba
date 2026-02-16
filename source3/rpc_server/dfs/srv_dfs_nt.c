@@ -94,7 +94,7 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 {
 	const struct loadparm_substitution
 		*lp_sub = loadparm_s3_global_substitution();
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	int snum;
 	char *path_out = NULL;
 	NTSTATUS status;
@@ -103,27 +103,26 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 	if (snum < 0) {
 		return False;
 	}
-	status = create_conn_struct_tos_cwd(global_messaging_context(),
-					    snum,
-					    lp_path(talloc_tos(),
-						    lp_sub,
-						    snum),
-					    session_info,
-					    &c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  snum,
+					  lp_path(talloc_tos(), lp_sub, snum),
+					  session_info,
+					  &w);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	path_out = talloc_asprintf(c,
+	path_out = talloc_asprintf(w,
 				   "%s/%s",
 				   lp_path(talloc_tos(), lp_sub, snum),
 				   jucn->volume_name);
 	if (path_out == NULL) {
-		TALLOC_FREE(c);
+		TALLOC_FREE(w);
 		return False;
 	}
 	*pp_path_out = path_out;
-	*conn_out = c->conn;
+	*conn_out = conn_wrap_connection(w);
 	return True;
 }
 
@@ -229,22 +228,21 @@ static bool remove_msdfs_link(const struct junction_map *jucn,
 
 		DBG_WARNING("Can't remove DFS entry on read-only share %s\n",
 			    lp_servicename(frame, lp_sub, snum));
-		TALLOC_FREE(frame);
-		return false;
+		goto fail;
 	}
 
 	smb_fname = cp_smb_basename(frame, path);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
-		return false;
+		goto fail;
 	}
 
 	status = parent_pathref(
 		frame, conn->cwd_fsp, smb_fname, &parent_fname, &at_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return false;
+		errno = map_errno_from_nt_status(status);
+		goto fail;
 	}
 
 	retval = SMB_VFS_UNLINKAT(conn, parent_fname->fsp, at_fname, 0);
@@ -252,6 +250,7 @@ static bool remove_msdfs_link(const struct junction_map *jucn,
 		ret = True;
 	}
 
+fail:
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -272,7 +271,7 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	char *talloced = NULL;
 	const char *connect_path = lp_path(frame, lp_sub, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS status;
 	struct smb_filename *smb_fname = NULL;
@@ -287,18 +286,19 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_tos_cwd(global_messaging_context(),
-					    snum,
-					    connect_path,
-					    session_info,
-					    &c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  snum,
+					  connect_path,
+					  session_info,
+					  &w);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return 0;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	/* Count a link for the msdfs root - convention */
 	cnt = 1;
@@ -359,7 +359,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	const char *connect_path = lp_path(frame, lp_sub, snum);
 	char *service_name = lp_servicename(frame, lp_sub, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	struct referral *ref = NULL;
 	struct smb_filename *smb_fname = NULL;
@@ -380,18 +380,19 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct_tos_cwd(global_messaging_context(),
-					    snum,
-					    connect_path,
-					    session_info,
-					    &c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  global_messaging_context(),
+					  snum,
+					  connect_path,
+					  session_info,
+					  &w);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return 0;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	/* form a junction for the msdfs root - convention
 	   DO NOT REMOVE THIS: NT clients will not work with us
