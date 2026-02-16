@@ -14346,7 +14346,7 @@ static bool run_local_memcache(int dummy)
 
 	TALLOC_FREE(cache);
 
-	/* GETWD_CACHE TESTS */
+	/* SINGLETON_CACHE_TALLOC TESTS */
 	str1 = talloc_strdup(mem_ctx, "string1");
 	if (str1 == NULL) {
 		return false;
@@ -14364,9 +14364,9 @@ static bool run_local_memcache(int dummy)
 		return false;
 	}
 
-	memcache_add_talloc(cache, GETWD_CACHE, k2, &str1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, k2, &str1);
 	/* str1 == NULL now. */
-	ptr1 = memcache_lookup_talloc(cache, GETWD_CACHE, k2);
+	ptr1 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, k2);
 	if (ptr1 == NULL) {
 		printf("could not find k2\n");
 		return false;
@@ -14380,7 +14380,7 @@ static bool run_local_memcache(int dummy)
 	d3 = data_blob_talloc_zero(mem_ctx, 180);
 	memcache_add(cache, STAT_CACHE, k3, d3);
 
-	ptr2 = memcache_lookup_talloc(cache, GETWD_CACHE, k2);
+	ptr2 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, k2);
 	if (ptr2 != NULL) {
 		printf("Did find k2, should have been purged\n");
 		return false;
@@ -14394,10 +14394,10 @@ static bool run_local_memcache(int dummy)
 	str1 = talloc_zero_size(mem_ctx, 100);
 	str2 = talloc_zero_size(mem_ctx, 100);
 
-	memcache_add_talloc(cache, GETWD_CACHE, k4, &str1);
-	memcache_add_talloc(cache, GETWD_CACHE, k5, &str1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, k4, &str1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, k5, &str1);
 
-	ptr3 = memcache_lookup_talloc(cache, GETWD_CACHE, k4);
+	ptr3 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, k4);
 	if (ptr3 != NULL) {
 		printf("Did find k4, should have been purged\n");
 		return false;
@@ -14427,7 +14427,7 @@ static bool run_local_memcache(int dummy)
 	 * total talloced size.
 	 */
 	str1 = talloc_zero_size(mem_ctx, 100);
-	memcache_add_talloc(cache, GETWD_CACHE, k4, &str1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, k4, &str1);
 	/*
 	 * Now overwrite with a small talloced
 	 * value. This should fit in the existing size
@@ -14435,7 +14435,7 @@ static bool run_local_memcache(int dummy)
 	 * from the cache size.
 	 */
 	str1 = talloc_zero_size(mem_ctx, 2);
-	memcache_add_talloc(cache, GETWD_CACHE, k4, &str1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, k4, &str1);
 	/*
 	 * Now store a 20 byte string. If the
 	 * total talloced size wasn't accounted for
@@ -14443,9 +14443,9 @@ static bool run_local_memcache(int dummy)
 	 * will evict k4.
 	 */
 	str2 = talloc_zero_size(mem_ctx, 20);
-	memcache_add_talloc(cache, GETWD_CACHE, k5, &str2);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, k5, &str2);
 
-	ptr3 = memcache_lookup_talloc(cache, GETWD_CACHE, k4);
+	ptr3 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, k4);
 	if (ptr3 == NULL) {
 		printf("Did not find k4, should not have been purged\n");
 		return false;

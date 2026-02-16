@@ -76,26 +76,26 @@ static void torture_memcache_add_lookup_delete(void **state)
 	path2 = talloc_strdup(mem_ctx, "/tmp/two");
 	assert_non_null(path1);
 
-	memcache_add_talloc(cache, GETWD_CACHE, key1, &path1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, key1, &path1);
 	assert_null(path1);
 
-	memcache_add_talloc(cache, GETWD_CACHE, key2, &path2);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, key2, &path2);
 	assert_null(path2);
 
-	path1 = memcache_lookup_talloc(cache, GETWD_CACHE, key1);
+	path1 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, key1);
 	assert_non_null(path1);
 	assert_string_equal(path1, "/tmp/one");
 
-	path2 = memcache_lookup_talloc(cache, GETWD_CACHE, key2);
+	path2 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, key2);
 	assert_non_null(path2);
 	assert_string_equal(path2, "/tmp/two");
 
-	memcache_delete(cache, GETWD_CACHE, key1);
-	path1 = memcache_lookup_talloc(cache, GETWD_CACHE, key1);
+	memcache_delete(cache, SINGLETON_CACHE_TALLOC, key1);
+	path1 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, key1);
 	assert_null(path1);
 
-	memcache_flush(cache, GETWD_CACHE);
-	path2 = memcache_lookup_talloc(cache, GETWD_CACHE, key2);
+	memcache_flush(cache, SINGLETON_CACHE_TALLOC);
+	path2 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, key2);
 	assert_null(path2);
 
 	TALLOC_FREE(path1);
@@ -121,16 +121,16 @@ static void torture_memcache_add_oversize(void **state)
 	path2 = talloc_strdup(mem_ctx, "/tmp/two");
 	assert_non_null(path1);
 
-	memcache_add_talloc(cache, GETWD_CACHE, key1, &path1);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, key1, &path1);
 	assert_null(path1);
 
-	memcache_add_talloc(cache, GETWD_CACHE, key2, &path2);
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC, key2, &path2);
 	assert_null(path2);
 
-	path1 = memcache_lookup_talloc(cache, GETWD_CACHE, key1);
+	path1 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, key1);
 	assert_null(path1);
 
-	path2 = memcache_lookup_talloc(cache, GETWD_CACHE, key2);
+	path2 = memcache_lookup_talloc(cache, SINGLETON_CACHE_TALLOC, key2);
 	assert_non_null(path2);
 	assert_string_equal(path2, "/tmp/two");
 
