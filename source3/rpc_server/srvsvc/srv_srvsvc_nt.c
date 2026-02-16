@@ -2556,7 +2556,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
 	WERROR werr;
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
 	struct files_struct *dirfsp = NULL;
@@ -2582,18 +2582,19 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
-					       snum,
-					       lp_path(frame, lp_sub, snum),
-					       session_info,
-					       &c);
+	nt_status = create_conn_struct_chdir(talloc_tos(),
+					     global_messaging_context(),
+					     snum,
+					     lp_path(frame, lp_sub, snum),
+					     session_info,
+					     &w);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
 			   nt_errstr(nt_status)));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	nt_status = filename_convert_dirfsp(frame,
 					    conn,
@@ -2696,7 +2697,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
 	WERROR werr;
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
 	connection_struct *conn = NULL;
 	int snum;
 	struct security_descriptor *psd = NULL;
@@ -2723,18 +2724,19 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
-					       snum,
-					       lp_path(frame, lp_sub, snum),
-					       session_info,
-					       &c);
+	nt_status = create_conn_struct_chdir(talloc_tos(),
+					     global_messaging_context(),
+					     snum,
+					     lp_path(frame, lp_sub, snum),
+					     session_info,
+					     &w);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
 			   nt_errstr(nt_status)));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
-	conn = c->conn;
+	conn = conn_wrap_connection(w);
 
 	nt_status = filename_convert_dirfsp(frame,
 					    conn,
