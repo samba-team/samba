@@ -946,7 +946,7 @@ void close_cnum(connection_struct *conn,
 
 	/* make sure we leave the directory available for unmount */
 	SMB_ASSERT(chdir("/") == 0);
-	SAFE_FREE(LastDir);
+	reset_chdir_lastconn_cache();
 
 	/* Call VFS disconnect hook */
 	SMB_VFS_DISCONNECT(conn);

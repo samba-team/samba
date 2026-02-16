@@ -326,7 +326,7 @@ static int conn_wrap_destructor(struct conn_wrap *w)
 	/*
 	 * Prevent vfs_ChDir() from skipping the real chdir()
 	 */
-	LastDir = NULL;
+	reset_chdir_lastconn_cache();
 
 	return 0;
 }

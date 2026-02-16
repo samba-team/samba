@@ -365,7 +365,7 @@ static void set_sec_ctx_internal(uid_t uid, gid_t gid,
 	 * directory.
 	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14682
 	 */
-	SAFE_FREE(LastDir);
+	reset_chdir_lastconn_cache();
 }
 
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct security_token *token)

@@ -235,6 +235,8 @@ static void conn_free_internal(connection_struct *conn)
 	}
 
 	ZERO_STRUCTP(conn);
+
+	reset_chdir_lastconn_cache();
 }
 
 /*
