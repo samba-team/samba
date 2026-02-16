@@ -526,6 +526,15 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 				    const struct auth_session_info *session_info,
 				    struct conn_struct_tos **_c);
 
+struct conn_wrap;
+NTSTATUS create_conn_struct_chdir(TALLOC_CTX *mem_ctx,
+				  struct messaging_context *msg,
+				  int snum,
+				  const char *path,
+				  const struct auth_session_info *session_info,
+				  struct conn_wrap **_wrap);
+struct connection_struct *conn_wrap_connection(const struct conn_wrap *w);
+
 /* The following definitions come from smbd/notify.c  */
 
 bool change_notify_fsp_has_changes(struct files_struct *fsp);

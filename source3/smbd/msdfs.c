@@ -419,6 +419,72 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 	return NT_STATUS_OK;
 }
 
+struct conn_wrap {
+	struct connection_struct *conn;
+};
+
+static int conn_wrap_destructor(struct conn_wrap *w)
+{
+	SMB_VFS_DISCONNECT(w->conn);
+	TALLOC_FREE(w->conn);
+
+	/*
+	 * Make whatever directory we chdir()ed to umountable
+	 */
+	SMB_ASSERT(chdir("/") == 0);
+
+	/*
+	 * Prevent vfs_ChDir() from skipping the real chdir()
+	 */
+	LastDir = NULL;
+
+	return 0;
+}
+
+NTSTATUS create_conn_struct_chdir(TALLOC_CTX *mem_ctx,
+				  struct messaging_context *msg,
+				  int snum,
+				  const char *path,
+				  const struct auth_session_info *session_info,
+				  struct conn_wrap **_wrap)
+{
+	struct conn_wrap *w = NULL;
+	NTSTATUS status;
+	int ret;
+
+	w = talloc(mem_ctx, struct conn_wrap);
+	if (w == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+	status = create_conn_struct_as_root(
+		w, msg, &w->conn, snum, path, session_info);
+	unbecome_root();
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(w);
+		return status;
+	}
+	talloc_set_destructor(w, conn_wrap_destructor);
+
+	ret = vfs_ChDir_shareroot(w->conn);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		TALLOC_FREE(w);
+		return status;
+	}
+
+	*_wrap = w;
+
+	return NT_STATUS_OK;
+}
+
+struct connection_struct *conn_wrap_connection(const struct conn_wrap *w)
+{
+	return w->conn;
+}
+
 /********************************************************
  Fake up a connection struct for the VFS layer.
  This takes an TALLOC_CTX and tevent_context from the
