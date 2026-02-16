@@ -907,35 +907,6 @@ int vfs_ChDir_shareroot(connection_struct *conn)
 		LastDir = SMB_STRDUP("");
 	}
 
-	if (ISDOT(smb_fname.base_name)) {
-		/*
-		 * passing a '.' is a noop,
-		 * and we only expect this after
-		 * everything is initialized.
-		 *
-		 * So the first vfs_ChDir() on a given
-		 * connection_struct must not be '.'.
-		 *
-		 * Note: conn_new() sets
-		 * conn->cwd_fsp->fh->fd = -1
-		 * and vfs_ChDir() leaves with
-		 * conn->cwd_fsp->fh->fd = AT_FDCWD
-		 * on success!
-		 */
-		if (fsp_get_pathref_fd(conn->cwd_fsp) != AT_FDCWD) {
-			/*
-			 * This should never happen and
-			 * we might change this to
-			 * SMB_ASSERT() in future.
-			 */
-			DBG_ERR("Called with '.' as first operation!\n");
-			log_stack_trace();
-			errno = EINVAL;
-			return -1;
-		}
-		return 0;
-	}
-
 	if (smb_fname.base_name[0] == '/' &&
 	    strcsequal(LastDir, smb_fname.base_name))
 	{
