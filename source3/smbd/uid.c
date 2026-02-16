@@ -445,27 +445,6 @@ static bool check_user_ok(connection_struct *conn,
 	return(True);
 }
 
-static void print_impersonation_info(connection_struct *conn)
-{
-	struct smb_filename *cwdfname = NULL;
-
-	if (!CHECK_DEBUGLVL(DBGLVL_INFO)) {
-		return;
-	}
-
-	if (conn->tcon_done) {
-		cwdfname = vfs_GetWd(talloc_tos(), conn);
-	}
-
-	DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
-		 (int)getuid(),
-		 (int)geteuid(),
-		 (int)getgid(),
-		 (int)getegid(),
-		 cwdfname ? cwdfname->base_name : "no cwd");
-	TALLOC_FREE(cwdfname);
-}
-
 /****************************************************************************
  Become the user of a connection number without changing the security context
  stack, but modify the current_user entries.
@@ -632,7 +611,13 @@ bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
 		}
 	}
 
-	print_impersonation_info(conn);
+	DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
+		 (int)getuid(),
+		 (int)geteuid(),
+		 (int)getgid(),
+		 (int)getegid(),
+		 conn->tcon_done ? conn->connectpath : "no cwd");
+
 	return true;
 }
 
