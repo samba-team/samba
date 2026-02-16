@@ -291,28 +291,31 @@ static NTSTATUS fss_conn_create_tos(struct messaging_context *msg_ctx,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	struct conn_struct_tos *c = NULL;
+	struct conn_wrap *w = NULL;
+	struct connection_struct *conn = NULL;
 	NTSTATUS status;
 
-	status = create_conn_struct_tos(msg_ctx,
-					snum,
-					lp_path(talloc_tos(), lp_sub, snum),
-					session_info,
-					&c);
+	status = create_conn_struct_chdir(talloc_tos(),
+					  msg_ctx,
+					  snum,
+					  lp_path(talloc_tos(), lp_sub, snum),
+					  session_info,
+					  &w);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("failed to create conn for vfs: %s\n",
 			 nt_errstr(status)));
 		return status;
 	}
+	conn = conn_wrap_connection(w);
 
-	status = set_conn_force_user_group(c->conn, snum);
+	status = set_conn_force_user_group(conn, snum);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("failed set force user / group\n"));
-		TALLOC_FREE(c);
+		TALLOC_FREE(w);
 		return status;
 	}
 
-	*conn_out = c->conn;
+	*conn_out = conn;
 	return NT_STATUS_OK;
 }
 
