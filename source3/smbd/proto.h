@@ -1174,8 +1174,6 @@ const char *vfs_readdirname(connection_struct *conn,
 			    struct files_struct *dirfsp,
 			    DIR *d,
 			    char **talloced);
-int vfs_ChDir(connection_struct *conn,
-			const struct smb_filename *smb_fname);
 int vfs_ChDir_shareroot(connection_struct *conn);
 struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 int vfs_stat(struct connection_struct *conn,

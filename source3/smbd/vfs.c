@@ -892,7 +892,8 @@ const char *vfs_readdirname(connection_struct *conn,
  A wrapper for vfs_chdir().
 ********************************************************************/
 
-int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
+static int vfs_ChDir(connection_struct *conn,
+		     const struct smb_filename *smb_fname)
 {
 	int ret;
 	struct smb_filename *cwd = NULL;
