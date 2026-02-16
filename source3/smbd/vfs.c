@@ -895,9 +895,11 @@ const char *vfs_readdirname(connection_struct *conn,
  A wrapper for vfs_chdir().
 ********************************************************************/
 
-static int vfs_ChDir(connection_struct *conn,
-		     const struct smb_filename *smb_fname)
+int vfs_ChDir_shareroot(connection_struct *conn)
 {
+	const struct smb_filename smb_fname = {
+		.base_name = conn->connectpath,
+	};
 	int ret;
 	struct smb_filename *cwd = NULL;
 
@@ -905,7 +907,7 @@ static int vfs_ChDir(connection_struct *conn,
 		LastDir = SMB_STRDUP("");
 	}
 
-	if (ISDOT(smb_fname->base_name)) {
+	if (ISDOT(smb_fname.base_name)) {
 		/*
 		 * passing a '.' is a noop,
 		 * and we only expect this after
@@ -934,8 +936,8 @@ static int vfs_ChDir(connection_struct *conn,
 		return 0;
 	}
 
-	if (smb_fname->base_name[0] == '/' &&
-	    strcsequal(LastDir,smb_fname->base_name))
+	if (smb_fname.base_name[0] == '/' &&
+	    strcsequal(LastDir, smb_fname.base_name))
 	{
 		/*
 		 * conn->cwd_fsp->fsp_name and the kernel
@@ -950,9 +952,9 @@ static int vfs_ChDir(connection_struct *conn,
 		return 0;
 	}
 
-	DEBUG(4,("vfs_ChDir to %s\n", smb_fname->base_name));
+	DEBUG(4,("vfs_ChDir to %s\n", smb_fname.base_name));
 
-	ret = SMB_VFS_CHDIR(conn, smb_fname);
+	ret = SMB_VFS_CHDIR(conn, &smb_fname);
 	if (ret != 0) {
 		return -1;
 	}
@@ -1001,7 +1003,7 @@ static int vfs_ChDir(connection_struct *conn,
 	/* vfs_GetWd() succeeded. */
 	/* Replace global cache. */
 	SAFE_FREE(LastDir);
-	LastDir = SMB_STRDUP(smb_fname->base_name);
+	LastDir = SMB_STRDUP(smb_fname.base_name);
 
 	/*
 	 * (Indirect) Callers of vfs_ChDir() may still hold references to the
@@ -1014,15 +1016,6 @@ static int vfs_ChDir(connection_struct *conn,
 
 	DBG_INFO("vfs_ChDir got %s\n", fsp_str_dbg(conn->cwd_fsp));
 
-	return ret;
-}
-
-int vfs_ChDir_shareroot(connection_struct *conn)
-{
-	const struct smb_filename connectpath_fname = {
-		.base_name = conn->connectpath,
-	};
-	int ret = vfs_ChDir(conn, &connectpath_fname);
 	return ret;
 }
 
