@@ -2493,16 +2493,16 @@ out:
 	return ret;
 }
 
-static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
-			    const struct smb_filename *smb_fname,
-			    struct vfs_statvfs_struct *statbuf)
+static int vfs_ceph_fstatvfs(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     struct vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf = { 0 };
-	struct vfs_ceph_iref iref = {0};
+	struct vfs_ceph_iref iref = { 0 };
 	uint32_t caps = 0;
 	int ret;
 
-	ret = vfs_ceph_iget(handle, smb_fname->base_name, 0, &iref);
+	ret = vfs_ceph_iget(handle, fsp->fsp_name->base_name, 0, &iref);
 	if (ret != 0) {
 		goto out;
 	}
@@ -2527,9 +2527,9 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 	statbuf->FsIdentifier = statvfs_buf.f_fsid;
 	statbuf->FsCapabilities = caps;
 
-	DBG_DEBUG("[CEPH] statvfs: name=%s f_bsize=%ld f_blocks=%ld "
+	DBG_DEBUG("[CEPH] fstatvfs: name=%s f_bsize=%ld f_blocks=%ld "
 		  "f_bfree=%ld f_bavail=%ld\n",
-		  smb_fname->base_name,
+		  fsp->fsp_name->base_name,
 		  (long int)statvfs_buf.f_bsize,
 		  (long int)statvfs_buf.f_blocks,
 		  (long int)statvfs_buf.f_bfree,
@@ -2537,13 +2537,6 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 out:
 	vfs_ceph_iput(handle, &iref);
 	return status_code(ret);
-}
-
-static int vfs_ceph_fstatvfs(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp,
-			     struct vfs_statvfs_struct *statbuf)
-{
-	return vfs_ceph_statvfs(handle, fsp->fsp_name, statbuf);
 }
 
 static uint32_t vfs_ceph_fs_capabilities(
