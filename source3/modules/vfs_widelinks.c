@@ -167,42 +167,9 @@ static int widelinks_chdir(struct vfs_handle_struct *handle,
 	 * DOT or DOTDOT.
 	 */
 
-	if (smb_fname->base_name[0] == '/') {
-		/* Absolute path - replace. */
-		new_cwd = talloc_strdup(config,
-				smb_fname->base_name);
-	} else {
-		if (config->cwd == NULL) {
-			/*
-			 * Relative chdir before absolute one -
-			 * see note 1b above.
-			 */
-			struct smb_filename *current_dir_fname =
-					SMB_VFS_NEXT_GETWD(handle,
-							config);
-			if (current_dir_fname == NULL) {
-				return -1;
-			}
-			/* Paranoia.. */
-			if (current_dir_fname->base_name[0] != '/') {
-				DBG_ERR("SMB_VFS_NEXT_GETWD returned "
-					"non-absolute path |%s|\n",
-					current_dir_fname->base_name);
-				TALLOC_FREE(current_dir_fname);
-				return -1;
-			}
-			config->cwd = talloc_strdup(config,
-					current_dir_fname->base_name);
-			TALLOC_FREE(current_dir_fname);
-			if (config->cwd == NULL) {
-				return -1;
-			}
-		}
-		new_cwd = talloc_asprintf(config,
-				"%s/%s",
-				config->cwd,
-				smb_fname->base_name);
-	}
+	SMB_ASSERT(smb_fname->base_name[0] == '/');
+
+	new_cwd = talloc_strdup(config, smb_fname->base_name);
 	if (new_cwd == NULL) {
 		return -1;
 	}
