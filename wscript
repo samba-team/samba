@@ -138,14 +138,6 @@ def options(opt):
     opt.load('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
 
-    opt.add_option('--with-json',
-                   action='store_true', dest='with_json', default=True,
-                   help=("Build with JSON support (default=True). This "
-                         "requires the jansson development headers."))
-    opt.add_option('--without-json',
-                   action='store_false', dest='with_json',
-                   help=("Build without JSON support."))
-
     opt.samba_add_onoff_option('smb1-server',
                                dest='with_smb1server',
                                help=("Build smbd with SMB1 support (default=yes)."))
@@ -419,27 +411,11 @@ def configure(conf):
             Logs.warn("pthreadpool support cannot be enabled when pthread support was not found")
             conf.undefine('WITH_PTHREADPOOL')
 
-    conf.SET_TARGET_TYPE('jansson', 'EMPTY')
-
-    if Options.options.with_json is not False:
-        if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
-                          msg='Checking for jansson'):
-            conf.CHECK_FUNCS_IN('json_object', 'jansson')
-
     if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
-        if Options.options.with_json is not False:
-            conf.fatal("Jansson JSON support not found. "
-                       "Try installing libjansson-dev or jansson-devel. "
-                       "Otherwise, use --without-json to build without "
-                       "JSON support. "
-                       "JSON support is required for the JSON "
-                       "formatted audit log feature, the AD DC, and "
-                       "the JSON printers of the net utility")
         if not Options.options.without_ad_dc:
             raise Errors.WafError('--without-json requires --without-ad-dc. '
-                                 'Jansson JSON library is required for '
-                                 'building the AD DC')
-        Logs.info("Building without Jansson JSON log support")
+                                  'Jansson JSON library is required for '
+                                  'building the AD DC')
 
     conf.RECURSE('source3')
     conf.RECURSE('lib/texpect')

@@ -11,6 +11,22 @@ if Options.options.disable_fault_handling:
 conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 conf.CHECK_HEADERS('execinfo.h')
 
+conf.SET_TARGET_TYPE('jansson', 'EMPTY')
+if Options.options.with_json is not False:
+    if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
+                      msg='Checking for jansson'):
+        conf.CHECK_FUNCS_IN('json_object', 'jansson')
+    if not conf.CONFIG_GET('HAVE_JSON_OBJECT'):
+        if Options.options.with_json is not False:
+            conf.fatal("Jansson JSON support not found. "
+                       "Try installing libjansson-dev or jansson-devel. "
+                       "Otherwise, use --without-json to build without "
+                       "JSON support. "
+                       "JSON support is required for the JSON "
+                       "formatted audit log feature, the AD DC, and "
+                       "the JSON printers of the net utility")
+        Logs.info("Building without Jansson JSON log support")
+
 conf.SET_TARGET_TYPE('LIBUNWIND', 'EMPTY')
 if Options.options.with_libunwind:
     if conf.check_cfg(package='libunwind-generic',

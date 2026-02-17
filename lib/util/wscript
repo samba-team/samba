@@ -2,6 +2,23 @@ def options(opt):
     ''' This is a bit strange, but disable is the flag, not enable. '''
     opt.add_option('--disable-fault-handling', action='store_true', dest='disable_fault_handling', help=('disable the fault handlers'), default=False)
 
+    opt.add_option(
+        "--with-json",
+        action="store_true",
+        dest="with_json",
+        default=True,
+        help=(
+            "Build with JSON support (default=True). This "
+            "requires the jansson development headers."
+        ),
+    )
+    opt.add_option(
+        "--without-json",
+        action="store_false",
+        dest="with_json",
+        help=("Build without JSON support."),
+    )
+
     # We do not want libunwind by default (backtrace_symbols() in
     # glibc is better) but allow (eg) IA-64 to build with it where it
     # might be better (per old comment in fault.c)
