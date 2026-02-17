@@ -410,13 +410,6 @@ static int skel_chdir(vfs_handle_struct *handle,
 	return -1;
 }
 
-static struct smb_filename *skel_getwd(vfs_handle_struct *handle,
-				TALLOC_CTX *ctx)
-{
-	errno = ENOSYS;
-	return NULL;
-}
-
 static int skel_fntimes(vfs_handle_struct *handle,
 			files_struct *fsp,
 			struct smb_file_time *ft)
@@ -1009,7 +1002,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.fchown_fn = skel_fchown,
 	.lchown_fn = skel_lchown,
 	.chdir_fn = skel_chdir,
-	.getwd_fn = skel_getwd,
 	.fntimes_fn = skel_fntimes,
 	.ftruncate_fn = skel_ftruncate,
 	.fallocate_fn = skel_fallocate,

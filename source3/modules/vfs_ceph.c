@@ -1135,14 +1135,6 @@ static int cephwrap_chdir(struct vfs_handle_struct *handle,
 	return status_code(result);
 }
 
-static struct smb_filename *cephwrap_getwd(struct vfs_handle_struct *handle,
-			TALLOC_CTX *ctx)
-{
-	const char *cwd = ceph_getcwd(handle->data);
-	DBG_DEBUG("[CEPH] getwd(%p) = %s\n", handle, cwd);
-	return cp_smb_basename(ctx, cwd);
-}
-
 static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
 				     files_struct *fsp,
 				     off_t len)
@@ -1826,7 +1818,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.fchown_fn = cephwrap_fchown,
 	.lchown_fn = cephwrap_lchown,
 	.chdir_fn = cephwrap_chdir,
-	.getwd_fn = cephwrap_getwd,
 	.fntimes_fn = cephwrap_fntimes,
 	.ftruncate_fn = cephwrap_ftruncate,
 	.fallocate_fn = cephwrap_fallocate,

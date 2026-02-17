@@ -403,6 +403,7 @@
  * Version 53 - Remove statvfs
  * Version 53 - Change GET_QUOTA to take a fsp instead of a name
  * Version 53 - Add fsp to SET_QUOTA
+ * Version 53 - Remove GETWD
  */
 
 #define SMB_VFS_INTERFACE_VERSION 53
@@ -1123,8 +1124,6 @@ struct vfs_fn_pointers {
 			gid_t gid);
 	int (*chdir_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname);
-	struct smb_filename *(*getwd_fn)(struct vfs_handle_struct *handle,
-				TALLOC_CTX *mem_ctx);
 	int (*fntimes_fn)(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp,
 			  struct smb_file_time *ft);
@@ -1609,8 +1608,6 @@ int smb_vfs_call_lchown(struct vfs_handle_struct *handle,
 			gid_t gid);
 int smb_vfs_call_chdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
-struct smb_filename *smb_vfs_call_getwd(struct vfs_handle_struct *handle,
-				TALLOC_CTX *ctx);
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			struct smb_file_time *ft);
@@ -2042,8 +2039,6 @@ int vfs_not_implemented_lchown(vfs_handle_struct *handle,
 			       gid_t gid);
 int vfs_not_implemented_chdir(vfs_handle_struct *handle,
 			      const struct smb_filename *smb_fname);
-struct smb_filename *vfs_not_implemented_getwd(vfs_handle_struct *handle,
-					       TALLOC_CTX *ctx);
 int vfs_not_implemented_ntimes(vfs_handle_struct *handle,
 			       const struct smb_filename *smb_fname,
 			       struct smb_file_time *ft);

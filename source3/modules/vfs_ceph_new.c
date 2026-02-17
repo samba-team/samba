@@ -3791,25 +3791,6 @@ out:
 	return status_code(result);
 }
 
-static struct smb_filename *vfs_ceph_getwd(struct vfs_handle_struct *handle,
-			TALLOC_CTX *ctx)
-{
-	const char *cwd = NULL;
-	struct vfs_ceph_config *config = NULL;
-	struct smb_filename *result = NULL;
-
-	START_PROFILE_X(SNUM(handle->conn), syscall_getwd);
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
-				goto out);
-
-	cwd = config->ceph_getcwd_fn(config->mount);
-	DBG_DEBUG("[CEPH] getwd: cwd=%s\n", cwd);
-	result = cp_smb_basename(ctx, cwd);
-out:
-	END_PROFILE_X(syscall_getwd);
-	return result;
-}
-
 static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
 				     files_struct *fsp,
 				     off_t len)
@@ -4653,7 +4634,6 @@ static struct vfs_fn_pointers ceph_new_fns = {
 	.fchown_fn = vfs_ceph_fchown,
 	.lchown_fn = vfs_ceph_lchown,
 	.chdir_fn = vfs_ceph_chdir,
-	.getwd_fn = vfs_ceph_getwd,
 	.fntimes_fn = vfs_ceph_fntimes,
 	.ftruncate_fn = vfs_ceph_ftruncate,
 	.fallocate_fn = vfs_ceph_fallocate,

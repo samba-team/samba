@@ -146,7 +146,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FCHOWN,
 	SMB_VFS_OP_LCHOWN,
 	SMB_VFS_OP_CHDIR,
-	SMB_VFS_OP_GETWD,
 	SMB_VFS_OP_NTIMES,
 	SMB_VFS_OP_FNTIMES,
 	SMB_VFS_OP_FTRUNCATE,
@@ -281,7 +280,6 @@ static struct {
 	{ SMB_VFS_OP_FCHOWN,	"fchown" },
 	{ SMB_VFS_OP_LCHOWN,	"lchown" },
 	{ SMB_VFS_OP_CHDIR,	"chdir" },
-	{ SMB_VFS_OP_GETWD,	"getwd" },
 	{ SMB_VFS_OP_NTIMES,	"ntimes" },
 	{ SMB_VFS_OP_FNTIMES,	"fntimes" },
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
@@ -1857,22 +1855,6 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static struct smb_filename *smb_full_audit_getwd(vfs_handle_struct *handle,
-				TALLOC_CTX *ctx)
-{
-	struct smb_filename *result;
-
-	result = SMB_VFS_NEXT_GETWD(handle, ctx);
-
-	do_log(SMB_VFS_OP_GETWD,
-	       result == NULL ? strerror(errno) : NULL,
-	       handle,
-	       "%s",
-	       result == NULL ? "" : result->base_name);
-
-	return result;
-}
-
 static int smb_full_audit_fntimes(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  struct smb_file_time *ft)
@@ -3186,7 +3168,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fchown_fn = smb_full_audit_fchown,
 	.lchown_fn = smb_full_audit_lchown,
 	.chdir_fn = smb_full_audit_chdir,
-	.getwd_fn = smb_full_audit_getwd,
 	.fntimes_fn = smb_full_audit_fntimes,
 	.ftruncate_fn = smb_full_audit_ftruncate,
 	.fallocate_fn = smb_full_audit_fallocate,

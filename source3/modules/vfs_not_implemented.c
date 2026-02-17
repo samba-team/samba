@@ -446,14 +446,6 @@ int vfs_not_implemented_chdir(vfs_handle_struct *handle,
 }
 
 _PUBLIC_
-struct smb_filename *vfs_not_implemented_getwd(vfs_handle_struct *handle,
-					       TALLOC_CTX *ctx)
-{
-	errno = ENOSYS;
-	return NULL;
-}
-
-_PUBLIC_
 int vfs_not_implemented_fntimes(vfs_handle_struct *handle,
 				files_struct *fsp,
 				struct smb_file_time *ft)
@@ -1103,7 +1095,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.fchown_fn = vfs_not_implemented_fchown,
 	.lchown_fn = vfs_not_implemented_lchown,
 	.chdir_fn = vfs_not_implemented_chdir,
-	.getwd_fn = vfs_not_implemented_getwd,
 	.fntimes_fn = vfs_not_implemented_fntimes,
 	.ftruncate_fn = vfs_not_implemented_ftruncate,
 	.fallocate_fn = vfs_not_implemented_fallocate,

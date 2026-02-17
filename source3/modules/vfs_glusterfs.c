@@ -1698,25 +1698,6 @@ static int vfs_gluster_chdir(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
-				TALLOC_CTX *ctx)
-{
-	char cwd[PATH_MAX] = { '\0' };
-	char *ret;
-	struct smb_filename *smb_fname = NULL;
-
-	START_PROFILE(syscall_getwd);
-
-	ret = glfs_getcwd(handle->data, cwd, PATH_MAX - 1);
-	END_PROFILE(syscall_getwd);
-
-	if (ret == NULL) {
-		return NULL;
-	}
-	smb_fname = cp_smb_basename(ctx, ret);
-	return smb_fname;
-}
-
 static int vfs_gluster_fntimes(struct vfs_handle_struct *handle,
 			       files_struct *fsp,
 			       struct smb_file_time *ft)
@@ -2613,7 +2594,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.fchown_fn = vfs_gluster_fchown,
 	.lchown_fn = vfs_gluster_lchown,
 	.chdir_fn = vfs_gluster_chdir,
-	.getwd_fn = vfs_gluster_getwd,
 	.fntimes_fn = vfs_gluster_fntimes,
 	.ftruncate_fn = vfs_gluster_ftruncate,
 	.fallocate_fn = vfs_gluster_fallocate,

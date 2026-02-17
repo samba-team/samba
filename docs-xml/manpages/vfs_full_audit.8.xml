@@ -89,7 +89,6 @@
 	<member>get_real_filename</member>
 	<member>get_real_filename_at</member>
 	<member>get_shadow_copy_data</member>
-	<member>getwd</member>
 	<member>getxattrat_recv</member>
 	<member>getxattrat_send</member>
 	<member>is_offline</member>

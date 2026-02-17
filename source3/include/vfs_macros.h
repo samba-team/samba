@@ -290,11 +290,6 @@
 #define SMB_VFS_NEXT_CHDIR(handle, smb_fname) \
 	smb_vfs_call_chdir((handle)->next, (smb_fname))
 
-#define SMB_VFS_GETWD(conn, ctx) \
-	smb_vfs_call_getwd((conn)->vfs_handles, (ctx))
-#define SMB_VFS_NEXT_GETWD(handle, ctx) \
-	smb_vfs_call_getwd((handle)->next, (ctx))
-
 #define SMB_VFS_FNTIMES(fsp, ts) \
 	smb_vfs_call_fntimes((fsp)->conn->vfs_handles, (fsp), (ts))
 #define SMB_VFS_NEXT_FNTIMES(handle, fsp, ts) \

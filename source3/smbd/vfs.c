@@ -1817,13 +1817,6 @@ int smb_vfs_call_chdir(struct vfs_handle_struct *handle,
 	return handle->fns->chdir_fn(handle, smb_fname);
 }
 
-struct smb_filename *smb_vfs_call_getwd(struct vfs_handle_struct *handle,
-				TALLOC_CTX *ctx)
-{
-	VFS_FIND(getwd);
-	return handle->fns->getwd_fn(handle, ctx);
-}
-
 int smb_vfs_call_fntimes(struct vfs_handle_struct *handle,
 			 struct files_struct *fsp,
 			 struct smb_file_time *ft)

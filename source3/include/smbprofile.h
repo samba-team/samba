@@ -88,7 +88,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_fchown) \
 	SMBPROFILE_STATS_BASIC(syscall_lchown) \
 	SMBPROFILE_STATS_BASIC(syscall_chdir) \
-	SMBPROFILE_STATS_BASIC(syscall_getwd) \
 	SMBPROFILE_STATS_BASIC(syscall_fntimes) \
 	SMBPROFILE_STATS_BASIC(syscall_ftruncate) \
 	SMBPROFILE_STATS_BASIC(syscall_fallocate) \
@@ -291,7 +290,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_fchown) \
 	SMBPROFILE_STATS_BASIC(syscall_lchown) \
 	SMBPROFILE_STATS_BASIC(syscall_chdir) \
-	SMBPROFILE_STATS_BASIC(syscall_getwd) \
 	SMBPROFILE_STATS_BASIC(syscall_fntimes) \
 	SMBPROFILE_STATS_BASIC(syscall_ftruncate) \
 	SMBPROFILE_STATS_BASIC(syscall_fallocate) \
