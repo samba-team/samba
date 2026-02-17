@@ -345,14 +345,14 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 	return *dfree;
 }
 
-static int cephwrap_statvfs(struct vfs_handle_struct *handle,
-			    const struct smb_filename *smb_fname,
-			    struct vfs_statvfs_struct *statbuf)
+static int cephwrap_fstatvfs(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     struct vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf = { 0 };
 	int ret;
 
-	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
+	ret = ceph_statfs(handle->data, fsp->fsp_name->base_name, &statvfs_buf);
 	if (ret < 0) {
 		return status_code(ret);
 	}
@@ -368,21 +368,15 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,
 	statbuf->FsCapabilities =
 		FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 
-	DBG_DEBUG("[CEPH] f_bsize: %ld, f_blocks: %ld, f_bfree: %ld, "
-		  "f_bavail: %ld\n",
+	DBG_DEBUG("[CEPH] fstatvfs: name: %s, f_bsize: %ld, f_blocks: %ld, "
+		  "f_bfree: %ld, f_bavail: %ld\n",
+		  fsp->fsp_name->base_name,
 		  (long int)statvfs_buf.f_bsize,
 		  (long int)statvfs_buf.f_blocks,
 		  (long int)statvfs_buf.f_bfree,
 		  (long int)statvfs_buf.f_bavail);
 
 	return ret;
-}
-
-static int cephwrap_fstatvfs(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp,
-			     struct vfs_statvfs_struct *statbuf)
-{
-	return cephwrap_statvfs(handle, fsp->fsp_name, statbuf);
 }
 
 static uint32_t cephwrap_fs_capabilities(
