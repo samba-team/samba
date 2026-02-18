@@ -40,6 +40,7 @@ do_cleanup()
 		#subshell.
 		cd "$share_test_dir" || return
 		rm -f must-be-deleted must-not-be-deleted must-be-deleted-after-ctime-refresh
+		rm -f must-not-be-overwritten sentinel-value
 	)
 	rm -f $tmpfile
 }
@@ -51,6 +52,10 @@ do_cleanup
 
 tmpfile=$PREFIX/smbclient_interactive_prompt_commands
 
+tmp_sentinel=$PREFIX/sentinel_value
+SENTINEL_VALUE='1'
+echo $SENTINEL_VALUE > $tmp_sentinel
+
 test_worm()
 {
 	# use echo because helo scripts don't support variables
@@ -58,6 +63,7 @@ test_worm()
 put $tmpfile must-be-deleted
 put $tmpfile must-be-deleted-after-ctime-refresh
 put $tmpfile must-not-be-deleted
+put $tmpfile must-not-be-overwritten
 del must-be-deleted
 quit" > $tmpfile
 	# make sure the directory is not too old for worm:
@@ -97,6 +103,30 @@ quit" > $tmpfile
 		printf "$0: ERROR: must-not-be-deleted WAS deleted\n"
 		return 1
 	}
+
+	# Check we can't change a protected file by renaming over it.
+	# The source file needs to recently created or access will be
+	# denied before RENAME_AT is reached, which is the thing we
+	# want to test.
+	original_contents=`cat $share_test_dir/must-not-be-overwritten`
+	echo "
+put $tmp_sentinel sentinel-value
+rename sentinel-value must-not-be-overwritten  -f
+quit" > $tmpfile
+	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/worm -I$SERVER_IP $ADDARGS < $tmpfile 2>&1'
+	eval echo "$cmd"
+	out=$(eval "$cmd")
+	new_contents=`cat $share_test_dir/must-not-be-overwritten`
+
+	if [ "$new_contents" = "$SENTINEL_VALUE" ]; then
+	    echo "must-not-be-overwritten was overwritten"
+	    return 1
+	fi
+	if [ "$new_contents" != "$original_contents" ]; then
+	    echo "must-not-be-overwritten was changed (but not precisely overwritten)"
+	    return 1
+	fi
+
 	# if we're not root, return here:
 	test "$UID" = "0" ||  {
 		return 0
