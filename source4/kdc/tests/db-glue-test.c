@@ -1319,13 +1319,16 @@ static void issuer_name_parse_certificate_mapping(void **state)
 
 	krb5_error_code err = 0;
 	struct sdb_certificate_mapping mapping = {};
-	struct ldb_val *value = get_ldb_string(mem_ctx, "X509:<I>Issuer");
+	struct ldb_val *value = get_ldb_string(
+		mem_ctx, "X509:<I>CN=Intermediate CA SAMBA,C=FR,O=SAMBA");
 
 	err = parse_certificate_mapping(value, &mapping);
 
 	assert_int_equal(0, err);
-	assert_int_equal(6, mapping.issuer_name.length);
-	assert_memory_equal("Issuer", mapping.issuer_name.data, 6);
+	assert_int_equal(37, mapping.issuer_name.length);
+	assert_memory_equal("O=SAMBA,C=FR,CN=Intermediate CA SAMBA",
+			    mapping.issuer_name.data,
+			    37);
 	assert_false(mapping.strong_mapping);
 
 	sdb_certificate_mapping_free(&mapping);
@@ -1448,7 +1451,7 @@ static void serial_number_parse_certificate_mapping(void **state)
 
 	krb5_error_code err = 0;
 	struct sdb_certificate_mapping mapping = {};
-	uint8_t sn[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	uint8_t sn[] = {0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01};
 	struct ldb_val *value
 		= get_ldb_string(mem_ctx, "X509:<SR>0123456789abcdef");
 
@@ -1475,7 +1478,7 @@ static void duplicate_serial_number_parse_certificate_mapping(void **state)
 
 	krb5_error_code err = 0;
 	struct sdb_certificate_mapping mapping = {};
-	uint8_t sn[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	uint8_t sn[] = {0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01};
 	struct ldb_val *value
 		= get_ldb_string(
 			mem_ctx,
@@ -1505,7 +1508,7 @@ static void serial_number_and_issuer_name_parse_certificate_mapping(void **state
 
 	krb5_error_code err = 0;
 	struct sdb_certificate_mapping mapping = {};
-	uint8_t sn[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+	uint8_t sn[] = {0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01};
 	struct ldb_val *value = get_ldb_string(
 		mem_ctx, "X509:<SR>0123456789abcdef<I>TheIssuer");
 
@@ -1978,6 +1981,292 @@ static void cert_mapping_empty_altSecurityIdentities(void **state)
 	TALLOC_FREE(mem_ctx);
 }
 
+/*
+ * Test reverse DN, DN has no comma's
+ *
+ */
+static void reverse_dn_no_comma(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("No comma");
+	DATA_BLOB expected = data_blob_string_const("No comma");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, two components
+ *
+ */
+static void reverse_dn_two_components(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one,two");
+	DATA_BLOB expected = data_blob_string_const("two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, three components
+ *
+ */
+static void reverse_dn_three_components(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one,two,three");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, three components and trailing comma
+ *
+ */
+static void reverse_dn_trailing_comma(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one,two,three,");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, with embedded comma's
+ *
+ */
+static void reverse_dn_embeded_comma(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one,two,,three");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, with trailing commas
+ *
+ */
+static void reverse_dn_trailing_commas(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one,two,three,,");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN with a leading comma
+ *
+ */
+static void reverse_dn_leading_comma(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const(",one,two,three");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN with leading commas
+ *
+ *
+ */
+static void reverse_dn_leading_commas(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const(",,a,b,c");
+	DATA_BLOB expected = data_blob_string_const("c,b,a");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN with an empty DN
+ *
+ */
+static void reverse_dn_empty(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_null;
+	DATA_BLOB expected = data_blob_null;
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, three components \n delimeters
+ *
+ */
+static void reverse_dn_newline_delimiters(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one\ntwo\nthree");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, three components \r delimeters
+ *
+ */
+static void reverse_dn_cr_delimiters(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one\rtwo\rthree");
+	DATA_BLOB expected = data_blob_string_const("three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse DN, four components mixed delimiters
+ *
+ */
+static void reverse_dn_mixed_delimiters(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DATA_BLOB input = data_blob_string_const("one,two\rthree\nfour\n");
+	DATA_BLOB expected = data_blob_string_const("four,three,two,one");
+	DATA_BLOB result = data_blob_null;
+
+	int ret = reverse_dn(mem_ctx, &input, &result);
+
+	assert_int_equal(0, ret);
+	assert_int_equal(0, data_blob_cmp(&expected, &result));
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * Test reverse_krb5_data with zero length
+ *
+ */
+static void reverse_krb5_data_zero_length(void **state)
+{
+	char input[] = "1234";
+	krb5_data kd = {0, input};
+	reverse_krb5_data(&kd);
+	assert_string_equal("1234", kd.data);
+	assert_int_equal(0, kd.length);
+}
+
+/*
+ * Test reverse_krb5_data with NULL data
+ *
+ */
+static void reverse_krb5_data_null_data(void **state)
+{
+	krb5_data kd = {1, NULL};
+	reverse_krb5_data(&kd);
+	assert_null(kd.data);
+	assert_int_equal(1, kd.length);
+}
+
+/*
+ * Test reverse_krb5_data with one byte
+ *
+ */
+static void reverse_krb5_data_one_byte(void **state)
+{
+	char input[] = {0x01};
+	char expected[] = {0x01};
+	krb5_data kd = {1, input};
+
+	reverse_krb5_data(&kd);
+	assert_memory_equal(expected, kd.data, 1);
+	assert_int_equal(1, kd.length);
+}
+
+/*
+ * Test reverse_krb5_data with two bytes
+ *
+ */
+static void reverse_krb5_data_two_bytes(void **state)
+{
+	char input[] = {0x01, 0x02};
+	char expected[] = {0x02, 0x01};
+	krb5_data kd = {2, input};
+
+	reverse_krb5_data(&kd);
+	assert_memory_equal(expected, kd.data, 2);
+	assert_int_equal(2, kd.length);
+}
+
+/*
+ * Test reverse_krb5_data
+ *
+ */
+static void reverse_krb5_data_with_data(void **state)
+{
+	char input[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+	char expected[] = {0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01};
+	krb5_data kd = {8, input};
+
+	reverse_krb5_data(&kd);
+	assert_memory_equal(expected, kd.data, 8);
+	assert_int_equal(8, kd.length);
+}
 
 int main(int argc, const char **argv)
 {
@@ -2014,8 +2303,7 @@ int main(int argc, const char **argv)
 		cmocka_unit_test(
 			duplicate_serial_number_parse_certificate_mapping),
 		cmocka_unit_test(
-			serial_number_and_issuer_name_parse_certificate_mapping
-		),
+			serial_number_and_issuer_name_parse_certificate_mapping),
 		cmocka_unit_test(ski_parse_certificate_mapping),
 		cmocka_unit_test(duplicate_ski_parse_certificate_mapping),
 		cmocka_unit_test(public_key_parse_certificate_mapping),
@@ -2030,6 +2318,23 @@ int main(int argc, const char **argv)
 		cmocka_unit_test(cert_mapping_empty_altSecurityIdentities),
 		cmocka_unit_test(no_X509_altSecurityIdentities),
 		cmocka_unit_test(mixed_altSecurityIdentities),
+		cmocka_unit_test(reverse_dn_no_comma),
+		cmocka_unit_test(reverse_dn_two_components),
+		cmocka_unit_test(reverse_dn_three_components),
+		cmocka_unit_test(reverse_dn_trailing_comma),
+		cmocka_unit_test(reverse_dn_trailing_commas),
+		cmocka_unit_test(reverse_dn_embeded_comma),
+		cmocka_unit_test(reverse_dn_leading_comma),
+		cmocka_unit_test(reverse_dn_leading_commas),
+		cmocka_unit_test(reverse_dn_empty),
+		cmocka_unit_test(reverse_dn_newline_delimiters),
+		cmocka_unit_test(reverse_dn_cr_delimiters),
+		cmocka_unit_test(reverse_dn_mixed_delimiters),
+		cmocka_unit_test(reverse_krb5_data_zero_length),
+		cmocka_unit_test(reverse_krb5_data_null_data),
+		cmocka_unit_test(reverse_krb5_data_one_byte),
+		cmocka_unit_test(reverse_krb5_data_two_bytes),
+		cmocka_unit_test(reverse_krb5_data_with_data),
 
 	};
 

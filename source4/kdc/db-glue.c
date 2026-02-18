@@ -1213,6 +1213,31 @@ static krb5_error_code data_blob_to_krb5_data( DATA_BLOB *blob, krb5_data *krb5)
 	return 0;
 }
 
+/**
+ * @brief reverse the contents of a krb5_data element
+ *
+ * @param[in,out] krb5  krb5_data element to reverse
+ *
+ */
+static void reverse_krb5_data(krb5_data *krb5)
+{
+	size_t start = 0;
+	size_t end = 0;
+	char temp;
+	char *data = NULL;
+
+	if (krb5->length == 0 || krb5->data == NULL) {
+		return;
+	}
+	start = 0;
+	end = krb5->length - 1;
+	data = krb5->data;
+	while (start < end) {
+		temp = data[start];
+		data[start++] = data[end];
+		data[end--] = temp;
+	}
+}
 
 /**
  * @brief Copy the contents of a hex string data blob to a binary
@@ -1261,6 +1286,95 @@ static krb5_error_code db_hex_str_to_krb5_data(
 	return 0;
 }
 
+/**
+ * @brief reverse a DN
+ *
+ * Microsoft stores DN's (i.e. issuer, subject) in last to first order, i.e.
+ *     CN=Common Name, O=Organization, C=Country
+ * Need to reverse that to first to last order, i.e.
+ *      C=Country, O=Organization, CN=Common name
+ * Which is how they're stored on the X509 certificates.
+ *
+ * NOTE: Any empty components are removed from the result
+ *
+ * @param[in]  mem_ctx   talloc memory context
+ * @param[in]  name      the distinguished name, in last to first order
+ * @param[out] reversed  the issuer name, in first to last order
+ *                       allocated on mem_ctx
+ *
+ * @return      0 No error
+ *         ENOMEM memory allocation error
+ */
+static krb5_error_code reverse_dn(TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *name,
+				  DATA_BLOB *reversed)
+{
+	uint8_t *buffer = NULL;
+	size_t buffer_len = 0;
+	int name_idx = 0;
+	int buffer_idx = 0;
+	int buffer_end = 0;
+	int reversed_idx = 0;
+
+	if (name->length == 0) {
+		return 0;
+	}
+
+	buffer = talloc_zero_size(mem_ctx, name->length);
+	if (buffer == NULL) {
+		return ENOMEM;
+	}
+	*reversed = data_blob_talloc_zero(mem_ctx, name->length);
+	if (reversed->data == NULL) {
+		TALLOC_FREE(buffer);
+		return ENOMEM;
+	}
+
+	buffer_end = name->length - 1;
+	buffer_idx = buffer_end;
+	buffer_len = 0;
+	/*
+	 * Iterate backwards through the name,
+	 * components are delimited by ',', '\n' and '\r'
+	 */
+	for (name_idx = name->length - 1; name_idx >= 0; name_idx--) {
+		uint8_t b = name->data[name_idx];
+		bool is_delimiter = (b == ',' || b == '\n' || b == '\r');
+		if (!is_delimiter) {
+			/* Add b to the buffer in reverse order */
+			buffer[buffer_idx--] = name->data[name_idx];
+			buffer_len++;
+		}
+		if (is_delimiter || name_idx == 0) {
+			/*
+			 * Reached the start of a component
+			 * copy it into the buffer
+			 */
+			if (buffer_len > 0 && reversed_idx != 0) {
+				/*
+				 * if component not empty, and it's not the
+				 * first output a ','
+				 */
+				reversed->data[reversed_idx] = ',';
+				reversed_idx++;
+			}
+			if (buffer_len > 0) {
+				/* Copy the buffer contents to the result */
+				buffer_idx++;
+				memcpy(&reversed->data[reversed_idx],
+				       &buffer[buffer_idx],
+				       buffer_len);
+				reversed_idx += buffer_len;
+			}
+			buffer_idx = buffer_end;
+			buffer_len = 0;
+		}
+	}
+	reversed->length = reversed_idx;
+	TALLOC_FREE(buffer);
+	return 0;
+}
+
 /*
  * Helper macro to populate the data blob constants used by
  * populate_certificate_mapping and parse_certificate_mapping
@@ -1281,9 +1395,10 @@ static const DATA_BLOB X509_HEADER = DATA_BLOB_STRING("X509:");
 /**
  * @brief Populate the certificate mapping from the tag and value
  *
- * @param[in]     tag      the tag i.e. I, S, SKI, .....
- * @param[in]     value    the value associated with the tag
- * @param[in,out] mapping  the mapping to be updated
+ * @param[in] mem_ctx talloc memory context
+ * @param[in] tag     the tag i.e. I, S, SKI, .....
+ * @param[in] value   the value associated with the tag
+ * @param[in,out]     mapping the mapping to be updated
  *
  * @return      0 No error
  *         EINVAL tag or value are invalid
@@ -1293,6 +1408,7 @@ static const DATA_BLOB X509_HEADER = DATA_BLOB_STRING("X509:");
  *       sdb_certificate_mapping_free
  */
 static krb5_error_code populate_certificate_mapping(
+	TALLOC_CTX *mem_ctx,
 	DATA_BLOB *tag,
 	DATA_BLOB *value,
 	struct sdb_certificate_mapping *mapping)
@@ -1312,20 +1428,32 @@ static krb5_error_code populate_certificate_mapping(
 	}
 
 	if (data_blob_cmp(&ISSUER_NAME, tag) == 0) {
+		DATA_BLOB reversed = data_blob_null;
 		/* discard any previous value */
 		if (mapping->issuer_name.data != NULL) {
 			SAFE_FREE(mapping->issuer_name.data);
 			mapping->issuer_name.length = 0;
 		}
-		ret = data_blob_to_krb5_data(value, &mapping->issuer_name);
+		ret = reverse_dn(mem_ctx, value, &reversed);
+		if (ret == 0) {
+			ret = data_blob_to_krb5_data(&reversed,
+						     &mapping->issuer_name);
+		}
+		data_blob_free(&reversed);
 
 	} else if (data_blob_cmp(&SUBJECT_NAME, tag) == 0) {
+		DATA_BLOB reversed = data_blob_null;
 		/* discard any previous value */
 		if (mapping->subject_name.data != NULL) {
 			SAFE_FREE(mapping->subject_name.data);
 			mapping->subject_name.length = 0;
 		}
-		ret = data_blob_to_krb5_data(value, &mapping->subject_name);
+		ret = reverse_dn(mem_ctx, value, &reversed);
+		if (ret == 0) {
+			ret = data_blob_to_krb5_data(&reversed,
+						     &mapping->subject_name);
+		}
+		data_blob_free(&reversed);
 
 	} else if (data_blob_cmp(&RFC822, tag) == 0) {
 		/* discard any previous value */
@@ -1342,6 +1470,9 @@ static krb5_error_code populate_certificate_mapping(
 			mapping->serial_number.length = 0;
 		}
 		ret = db_hex_str_to_krb5_data(value, &mapping->serial_number);
+		if (ret == 0) {
+			reverse_krb5_data(&mapping->serial_number);
+		}
 
 	} else if (data_blob_cmp(&SUBJECT_KEY_IDENTIFIER, tag) == 0) {
 		/* discard any previous value */
@@ -1515,8 +1646,10 @@ static krb5_error_code parse_certificate_mapping(
 		case value_state:
 			if (c == '<') {
 				value.data[value.length] = '\0';
-				ret = populate_certificate_mapping(
-					&tag, &value, mapping);
+				ret = populate_certificate_mapping(tmp_ctx,
+								   &tag,
+								   &value,
+								   mapping);
 				if (ret != 0) {
 					goto out;
 				}
@@ -1536,8 +1669,7 @@ static krb5_error_code parse_certificate_mapping(
 		goto out;
 	}
 	value.data[value.length] = '\0';
-	ret = populate_certificate_mapping(
-		&tag, &value, mapping);
+	ret = populate_certificate_mapping(tmp_ctx, &tag, &value, mapping);
 	if (ret != 0) {
 		goto out;
 	}

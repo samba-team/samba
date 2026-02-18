@@ -178,7 +178,8 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, []
         )
 
-        identity = f"X509:<S>{self._rfc4514_string(certificate.subject)}"
+        subject = self._reverse_dn(self._rfc4514_string(certificate.subject))
+        identity = f"X509:<S>{subject}"
         self._add_altSecurityIdentities(client_creds, identity)
 
         self._pkinit_req(
@@ -206,7 +207,8 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, [], not_before
         )
 
-        identity = f"X509:<S>{self._rfc4514_string(certificate.subject)}"
+        subject = self._reverse_dn(self._rfc4514_string(certificate.subject))
+        identity = f"X509:<S>{subject}"
         self._add_altSecurityIdentities(client_creds, identity)
 
         self._pkinit_req(
@@ -216,12 +218,12 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             expect_error=self.WEAK_EXPECTED_RESULT_BEFORE,
         )
 
-    def test_subject_name_reversed(self):
+    def test_subject_name_not_reversed(self):
         """
         Test PKINIT logon with a user account
         and the weak mapping subject name
         certificate created after the start of the compensation window
-        however the subject name has been reversed.
+        however the subject name has been not reversed.
 
         NOTE:This currently fails, as normalization/canonicalization of
              the subject and issuer name is not currently implemented
@@ -236,10 +238,7 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, []
         )
 
-        # Reverse the order of the subject name components
-        components = self._rfc4514_string(certificate.subject).split(",")
-        components.reverse()
-        subject = ",".join(components)
+        subject = self._rfc4514_string(certificate.subject)
         identity = f"X509:<S>{subject}"
         self._add_altSecurityIdentities(client_creds, identity)
 
@@ -266,11 +265,9 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, []
         )
 
-        identity = (
-            "X509:"
-            f"<I>{self._rfc4514_string(certificate.issuer)}"
-            f"<S>{self._rfc4514_string(certificate.subject)}"
-        )
+        issuer = self._reverse_dn(self._rfc4514_string(certificate.issuer))
+        subject = self._reverse_dn(self._rfc4514_string(certificate.subject))
+        identity = ( f"X509:<I>{issuer}<S>{subject}")
         self._add_altSecurityIdentities(client_creds, identity)
 
         self._pkinit_req(
@@ -298,11 +295,9 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, [], not_before
         )
 
-        identity = (
-            "X509:"
-            f"<I>{self._rfc4514_string(certificate.issuer)}"
-            f"<S>{self._rfc4514_string(certificate.subject)}"
-        )
+        issuer = self._reverse_dn(self._rfc4514_string(certificate.issuer))
+        subject = self._reverse_dn(self._rfc4514_string(certificate.subject))
+        identity = f"X509:<I>{issuer}" f"<S>{subject}"
         self._add_altSecurityIdentities(client_creds, identity)
 
         self._pkinit_req(
@@ -385,11 +380,9 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, []
         )
 
-        serial = hex(certificate.serial_number)[2:]
-        if len(serial) % 2:
-            # Add a leading 0 if needed
-            serial = '0' + serial
-        identity = f"X509:<I>{self._rfc4514_string(certificate.issuer)}<SR>{serial}"
+        issuer = self._reverse_dn(self._rfc4514_string(certificate.issuer))
+        serial = self._convert_serial(certificate.serial_number)
+        identity = f"X509:<I>{issuer}<SR>{serial}"
         self._add_altSecurityIdentities(client_creds, identity)
 
         self._pkinit_req(
@@ -517,6 +510,29 @@ class PkInitCertificateMappingTests(KDCBaseTest):
         ns = ns.replace("1.2.840.113549.1.9.1", "emailAddress")
         ns = ns.replace("ST=", "S=")
         return ns
+
+    def _reverse_dn(self, dn):
+        """
+        Reverse the components of a DN, as they're stored in reverse
+        order on altSecurityIdentities
+        """
+        components = dn.split(',')
+        components.reverse()
+        return ','.join(components)
+
+    def _convert_serial(self, serial):
+        """
+        convert a certificate serial number into a format suitable
+        for  storage in altSecurityIdentities
+        a string of hex byte values, in reverse order
+        """
+        hex_str = hex(serial)[2:]
+        if len(hex_str) % 2:
+            # Add a leading 0 if needed
+            hex_str = '0' + hex_str
+        hex_bytes = [hex_str[i:i+2] for i in range(0, len(hex_str), 2)]
+        hex_bytes.reverse()
+        return "".join(hex_bytes)
 
     def _add_altSecurityIdentities(self, creds, identity):
         """
