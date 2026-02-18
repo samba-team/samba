@@ -539,6 +539,7 @@ static void empty_message2entry(void **state)
 	/* Expect ENOENT as there is no SAMAccountName, among others */
 	assert_int_equal(ENOENT, err);
 
+	krb5_free_principal(krb5_ctx, principal);
 	sdb_entry_free(&entry);
 	TALLOC_FREE(mem_ctx);
 }
@@ -2145,7 +2146,7 @@ static void reverse_dn_empty(void **state)
 }
 
 /*
- * Test reverse DN, three components \n delimeters
+ * Test reverse DN, three components \n delimiters
  *
  */
 static void reverse_dn_newline_delimiters(void **state)
@@ -2163,7 +2164,7 @@ static void reverse_dn_newline_delimiters(void **state)
 }
 
 /*
- * Test reverse DN, three components \r delimeters
+ * Test reverse DN, three components \r delimiters
  *
  */
 static void reverse_dn_cr_delimiters(void **state)
