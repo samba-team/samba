@@ -434,8 +434,8 @@ class PkInitCertificateMappingTests(KDCBaseTest):
             client_creds, ca_cert, ca_private_key, None, []
         )
 
-        hash = x509.SubjectKeyIdentifier.from_public_key(certificate.public_key())
-        identity = f"X509:<SHA1-PUKEY>{hash.digest.hex()}"
+        fingerprint = certificate.fingerprint(hashes.SHA1())
+        identity = f"X509:<SHA1-PUKEY>{fingerprint.hex()}"
         self._add_altSecurityIdentities(client_creds, identity)
 
         self._pkinit_req(

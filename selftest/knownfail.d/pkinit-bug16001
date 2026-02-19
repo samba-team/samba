@@ -1,0 +1,8 @@
+#
+# The SHA1 hash for altSecurityIdentities SHA1-PUKEY is calculated over
+# the entire certificate not just the public key
+#
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=16001
+#
+^samba.tests.krb5.pkinit_certificate_mapping_tests.samba.tests.krb5.pkinit_certificate_mapping_tests.PkInitCertificateMappingTests.test_public_key\(ad_dc_ntvfs\)
+^samba.tests.krb5.pkinit_certificate_mapping_tests.samba.tests.krb5.pkinit_certificate_mapping_tests.PkInitCertificateMappingTests.test_public_key\(ad_dc_smb1\)
