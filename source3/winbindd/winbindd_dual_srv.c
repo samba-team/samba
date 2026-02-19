@@ -107,12 +107,15 @@ bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 				  struct dcerpc_binding_handle *b,
 				  NTSTATUS status)
 {
+	bool ret = false;
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		invalidate_cm_connection(domain);
 		domain->conn.netlogon_force_reauth = true;
-		return true;
+		ret = true;
+		goto out;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
@@ -120,15 +123,24 @@ bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 	{
 		invalidate_cm_connection(domain);
 		/* We invalidated the connection. */
-		return true;
+		ret = true;
+		goto out;
 	}
 
 	if (b != NULL && !dcerpc_binding_handle_is_connected(b)) {
 		invalidate_cm_connection(domain);
-		return true;
+		ret = true;
+		goto out;
 	}
 
-	return false;
+	/* Set failover flag if we're invalidating the connection */
+out:
+	if (ret) {
+		set_domain_failover_state(domain,
+					WINBINDD_FAILOVER_DC_CONNECTIVITY);
+	}
+
+	return ret;
 }
 
 NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)

@@ -203,6 +203,9 @@ void winbind_msg_domain_online(struct messaging_context *msg_ctx,
 
 void set_domain_offline(struct winbindd_domain *domain);
 void set_domain_online_request(struct winbindd_domain *domain);
+void set_domain_failover_state(struct winbindd_domain *domain,
+			       enum winbindd_failover_reason reason);
+void reset_domain_failover_state(struct winbindd_domain *domain);
 void winbind_add_failed_connection_entry(
 	const struct winbindd_domain *domain,
 	const char *server,

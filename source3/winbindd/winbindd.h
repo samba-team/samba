@@ -44,6 +44,14 @@
 
 #define WB_REPLACE_CHAR		'_'
 
+/* Enum to indicate the reason for DC failover */
+enum winbindd_failover_reason {
+	WINBINDD_FAILOVER_NONE = 0,           /* No failover */
+	WINBINDD_FAILOVER_DC_CONNECTIVITY,    /* DC connectivity issue */
+	WINBINDD_FAILOVER_KERBEROS,           /* Kerberos authentication failure */
+	WINBINDD_FAILOVER_LDAP                /* LDAP operation failure */
+};
+
 struct winbind_internal_pipes;
 struct ads_struct;
 
@@ -192,6 +200,11 @@ struct winbindd_domain {
 	time_t last_seq_check;
 	uint32_t sequence_number;
 	NTSTATUS last_status;
+
+	/* DC failover metrics */
+	struct timeval start_dc_time;
+	char *src_dc;
+	enum winbindd_failover_reason failover_reason;
 
 	/* The smb connection */
 

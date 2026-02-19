@@ -2510,6 +2510,8 @@ NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
 		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
+			/* Set failover flag and reason for Kerberos failure */
+			set_domain_failover_state(domain, WINBINDD_FAILOVER_KERBEROS);
 			set_domain_offline( domain );
 			goto cached_logon;
 		}

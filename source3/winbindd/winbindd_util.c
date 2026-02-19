@@ -333,6 +333,8 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	domain->domain_type = trust_type;
 	domain->domain_trust_attribs = trust_attribs;
 	domain->routing_domain = routing_domain;
+	domain->start_dc_time = timeval_zero();
+	reset_domain_failover_state(domain);
 	sid_copy(&domain->sid, sid);
 
 	/* Is this our primary domain ? */

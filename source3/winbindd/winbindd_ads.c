@@ -160,6 +160,8 @@ static ADS_STATUS ads_cached_connection_connect(struct winbindd_domain *target_d
 
 	status = ads_connect_creds(ads, creds);
 	if (!ADS_ERR_OK(status)) {
+		/* LDAP connection failure - set failover reason if domain is available */
+		set_domain_failover_state(target_domain, WINBINDD_FAILOVER_LDAP);
 		DEBUG(1,("ads_connect for domain %s failed: %s\n",
 			 target_dom_name, ads_errstr(status)));
 		goto out;
