@@ -49,14 +49,22 @@ static int setup(void **state)
 static int teardown(void **state)
 {
 	struct test_state *test_state = *state;
+	int ret = 0;
 
 	if (test_state->pool != NULL) {
-		pthreadpool_pipe_destroy(test_state->pool);
+		ret = pthreadpool_pipe_destroy(test_state->pool);
+		if (ret != 0) {
+			fprintf(stderr, "pthreadpool_pipe_destroy failed: %s\n",
+				strerror(ret));
+			ret = -1;
+			goto done;
+		}
 	}
 
+done:
 	pthread_mutex_destroy(&test_state->mutex);
 	TALLOC_FREE(test_state);
-	return 0;
+	return ret;
 }
 
 /* Job function that uses mutex */
