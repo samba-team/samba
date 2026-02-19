@@ -1,4 +1,64 @@
                    ==============================
+                   Release Notes for Samba 4.22.8
+                         February 19, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.22 release series.
+
+
+Changes since 4.22.7
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15959: New Spotlight default search field incorrectly initialized
+   * BUG 15984: smbd: in contend_dirleases() don't bother checking when not
+     enabled
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15979: possible memory leak  on rpc_spoolss
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15964: "net offlinejoin requestodj" manpage entry incorrectly mentiones
+     provided credentials
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15972: Winbind group resolution failure
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15979: possible memory leak  on rpc_spoolss
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15977: ctdbd socket documentation is wrong
+
+o  Michael Tokarev <mjt@tls.msk.ru>
+   * BUG 15790: Bind dlz 9.20
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.22.7
                          December 18, 2025
                    ==============================
@@ -61,8 +121,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.22.6
                           October 16, 2025
