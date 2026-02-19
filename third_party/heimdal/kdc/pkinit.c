@@ -493,8 +493,28 @@ static krb5_boolean match_name(
 	goto out;
     }
     memcpy(ts, target->data, target->length);
-    if (strncmp(ts, ns, target->length) == 0) {
-	matched = TRUE;
+    /*
+     * replace any in ts \r\n chars with a ','
+     */
+    {
+	char *p = ts;
+	char *d = ts;
+	char last = 0;
+	for (; *p; p++) {
+	    if (*p == '\r' || *p == '\n') {
+		if (last != '\r' && last != '\n') {
+		    *d = ',';
+		}
+	    } else {
+		*d++ = *p;
+	    }
+	    last = *p;
+	}
+	*d = '\0';
+    }
+
+    if (strcmp(ts, ns) == 0) {
+        matched = TRUE;
     }
     free(ts);
 
@@ -565,8 +585,8 @@ match_public_key(
     EVP_MD_CTX *ctx = NULL;
     unsigned int size = 0;
 
-    SubjectPublicKeyInfo spki;
-    ret = hx509_cert_get_SPKI(context->hx509ctx, *cert, &spki);
+    heim_octet_string os;
+    ret = hx509_cert_binary(context->hx509ctx, *cert, &os);
     if (ret != 0) {
 	return FALSE;
     }
@@ -580,7 +600,7 @@ match_public_key(
     }
     EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
     EVP_DigestUpdate(
-	ctx, spki.subjectPublicKey.data, spki.subjectPublicKey.length/8);
+	ctx, os.data, os.length);
     EVP_DigestFinal_ex(ctx, digest, &size);
     EVP_MD_CTX_destroy(ctx);
 
@@ -593,7 +613,7 @@ match_public_key(
     }
 
 out:
-    free_SubjectPublicKeyInfo(&spki);
+    free(os.data);
     return matched;
 }
 

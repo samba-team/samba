@@ -560,15 +560,12 @@ pa_pkinit_validate(astgs_request_t r, const PA_DATA *pa)
 
     ret = _kdc_pk_rd_padata(r, pa, &pkp);
     if (ret || pkp == NULL) {
-	if (ret == HX509_CERT_REVOKED ||
-	    ret == KRB5_KDC_ERR_CLIENT_NOT_TRUSTED) {
-
-	    ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
-	} else if (ret == KRB5_KDC_ERR_CERTIFICATE_MISMATCH) {
-	    ret = KRB5_KDC_ERR_CERTIFICATE_MISMATCH;
-	} else {
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-	}
+        if (ret == HX509_CERT_REVOKED ||
+            ret == KRB5_KDC_ERR_CLIENT_NOT_TRUSTED) {
+            ret = KRB5_KDC_ERR_CLIENT_NOT_TRUSTED;
+        } else if (ret != KRB5_KDC_ERR_CERTIFICATE_MISMATCH) {
+            ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+        }
 	_kdc_r_log(r, 4, "Failed to decode PKINIT PA-DATA -- %s",
 		   r->cname);
 	goto out;

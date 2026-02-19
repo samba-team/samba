@@ -886,8 +886,10 @@ find_extension_ntds_security_extension(const Certificate *subject,
     if (ret)
 	return ret;
 
-    if (size != e->extnValue.length)
-	return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+    if (size != e->extnValue.length) {
+        free_SidExtension(sid_extension);
+        return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+    }
 
     return ret;
 }
@@ -2013,26 +2015,31 @@ hx509_cert_get_object_sid(hx509_cert p,
     }
 
     if (sid_ext.len != 1) {
-	return HX509_CMS_INVALID_DATA;
+        free_SidExtension(&sid_ext);
+        return HX509_CMS_INVALID_DATA;
     }
 
     if (sid_ext.val[0].element != choice_GeneralName_otherName) {
-	return HX509_CMS_INVALID_DATA;
+        free_SidExtension(&sid_ext);
+        return HX509_CMS_INVALID_DATA;
     }
 
     if (sid_ext.val[0].u.otherName._ioschoice_value.element !=
 	choice_OtherName_iosnum_szOID_NTDS_OBJECTSID)
     {
-	return HX509_CMS_INVALID_DATA;
+        free_SidExtension(&sid_ext);
+        return HX509_CMS_INVALID_DATA;
     }
 
     if (!sid_ext.val[0].u.otherName._ioschoice_value.u.on_ntds_objectsid) {
-	return HX509_CMS_INVALID_DATA;
+        free_SidExtension(&sid_ext);
+        return HX509_CMS_INVALID_DATA;
     }
 
-    return der_copy_octet_string(
-	sid_ext.val[0].u.otherName._ioschoice_value.u.on_ntds_objectsid,
-	sid);
+    ret = der_copy_octet_string(
+        sid_ext.val[0].u.otherName._ioschoice_value.u.on_ntds_objectsid, sid);
+    free_SidExtension(&sid_ext);
+    return ret;
 }
 
 HX509_LIB_FUNCTION hx509_private_key HX509_LIB_CALL
