@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 #
 # Test VFS module aio_ratelimit
+#
+# In cluster mode, limits are distributed per active connection.
+# These tests run with a single connection, so behavior is identical
+# whether clustering is enabled or not.
 
 SELF=$(basename "$0")
 
