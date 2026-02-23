@@ -258,6 +258,41 @@ smb.conf changes
   kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
 
 
+CHANGES SINCE 4.24.0rc2
+=======================
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15990: No function _python_sysroot defined
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15978: leases torture test flappy
+   * BUG 15984: smbd: in contend_dirleases() don't bother checking when not
+     enabled
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15993: 'net ads kerberos kinit' should use also default ccache name
+     from krb5.conf
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15789: "use-kerberos=desired" broken
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15975: source3/libads/kerberos.c sets wrong failure for negative
+     connection cache
+
+o  Peter Schwenke <pschwenke@ddn.com>
+   * BUG 15938: CTDB's statd_callout fails on sm-notify
+   * BUG 15939: CTDB statd_callout_notify notifies unnecessary clients and loses
+     their state
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15939: CTDB statd_callout_notify notifies unnecessary clients and loses
+     their state
+
+o  Jennifer Sutton <jennifersutton@catalyst.net.nz>
+   * BUG 15998: Backport domain default AES encryption types to 4.24
+
+
 CHANGES SINCE 4.24.0rc1
 =======================
 
