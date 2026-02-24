@@ -460,15 +460,26 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	struct nbt_name *name = &packet->questions[0].name;
+	struct nbt_name *name = NULL;
 	struct winsdb_record *rec;
 	uint8_t rcode = NBT_RCODE_OK;
-	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
-	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
+	struct nbt_res_rec *additional = NULL;
+	uint16_t nb_flags;
+	const char *address = NULL;
+	struct nbt_rdata_address *addresses = NULL;
 	bool mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
-	enum wrepl_name_type new_type = wrepl_type(nb_flags, name, mhomed);
+	enum wrepl_name_type new_type;
 	struct winsdb_addr *winsdb_addr = NULL;
 	bool duplicate_packet;
+
+	name = &packet->questions[0].name;
+	additional = packet->additional;
+
+	addresses = additional[0].rdata.netbios.addresses;
+
+	nb_flags = addresses[0].nb_flags;
+	address = addresses[0].ipaddr;
+	new_type = wrepl_type(nb_flags, name, mhomed);
 
 	/*
 	 * as a special case, the local master browser name is always accepted
@@ -729,12 +740,14 @@ static void nbtd_winsserver_query(struct loadparm_context *lp_ctx,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	struct nbt_name *name = &packet->questions[0].name;
+	struct nbt_name *name = NULL;
 	struct winsdb_record *rec;
 	struct winsdb_record *rec_1b = NULL;
 	const char **addresses;
 	const char **addresses_1b = NULL;
 	uint16_t nb_flags = 0;
+
+	name = &packet->questions[0].name;
 
 	if (name->type == NBT_NAME_MASTER) {
 		goto notfound;
@@ -871,10 +884,12 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	struct nbt_name *name = &packet->questions[0].name;
+	struct nbt_name *name = NULL;
 	struct winsdb_record *rec;
 	uint32_t modify_flags = 0;
 	uint8_t ret;
+
+	name = &packet->questions[0].name;
 
 	if (name->type == NBT_NAME_MASTER) {
 		goto done;
