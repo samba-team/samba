@@ -472,8 +472,15 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	struct winsdb_addr *winsdb_addr = NULL;
 	bool duplicate_packet;
 
+	NBTD_ASSERT_PACKET(packet, src, packet->qdcount > 0);
+	NBTD_ASSERT_PACKET(packet, src, packet->arcount > 0);
+
 	name = &packet->questions[0].name;
 	additional = packet->additional;
+
+	NBTD_ASSERT_PACKET(packet,
+			   src,
+			   additional[0].rdata.netbios.length > 0);
 
 	addresses = additional[0].rdata.netbios.addresses;
 
@@ -747,6 +754,8 @@ static void nbtd_winsserver_query(struct loadparm_context *lp_ctx,
 	const char **addresses_1b = NULL;
 	uint16_t nb_flags = 0;
 
+	NBTD_ASSERT_PACKET(packet, src, packet->qdcount > 0);
+
 	name = &packet->questions[0].name;
 
 	if (name->type == NBT_NAME_MASTER) {
@@ -888,6 +897,8 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	struct winsdb_record *rec;
 	uint32_t modify_flags = 0;
 	uint8_t ret;
+
+	NBTD_ASSERT_PACKET(packet, src, packet->qdcount > 0);
 
 	name = &packet->questions[0].name;
 
