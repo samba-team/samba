@@ -6951,6 +6951,7 @@ class GPOTests(tests.TestCase):
         confdn = 'CN=Public Key Services,CN=Services,CN=Configuration,%s' % base_dn
         ca_cn = '%s-CA' % hostname.replace('.', '-')
         certa_dn = 'CN=%s,CN=Certification Authorities,%s' % (ca_cn, confdn)
+        self.addCleanup(ldb.delete, certa_dn)
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
@@ -6959,6 +6960,7 @@ class GPOTests(tests.TestCase):
                 })
         # Write the dummy pKIEnrollmentService
         enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
+        self.addCleanup(ldb.delete, enroll_dn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
                  'cACertificate': dummy_certificate(),
@@ -6967,6 +6969,7 @@ class GPOTests(tests.TestCase):
                 })
         # Write the dummy pKICertificateTemplate
         template_dn = 'CN=Machine,CN=Certificate Templates,%s' % confdn
+        self.addCleanup(ldb.delete, template_dn)
         ldb.add({'dn': template_dn,
                  'objectClass': 'pKICertificateTemplate',
                 })
@@ -7012,11 +7015,6 @@ class GPOTests(tests.TestCase):
             self.assertNotIn(b'Workstation', out,
                              'Workstation certificate not removed')
 
-        # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
-        ldb.delete(certa_dn)
-        ldb.delete(enroll_dn)
-        ldb.delete(template_dn)
-
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
 
@@ -7027,6 +7025,7 @@ class GPOTests(tests.TestCase):
                                'MACHINE/REGISTRY.POL')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+        self.addCleanup(store.log.close)
 
         machine_creds = Credentials()
         machine_creds.guess(self.lp)
@@ -7059,6 +7058,7 @@ class GPOTests(tests.TestCase):
         confdn = 'CN=Public Key Services,CN=Services,CN=Configuration,%s' % base_dn
         ca_cn = '%s-CA' % hostname.replace('.', '-')
         certa_dn = 'CN=%s,CN=Certification Authorities,%s' % (ca_cn, confdn)
+        self.addCleanup(ldb.delete, certa_dn)
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
@@ -7067,6 +7067,7 @@ class GPOTests(tests.TestCase):
                 })
         # Write the dummy pKIEnrollmentService
         enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
+        self.addCleanup(ldb.delete, enroll_dn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
                  'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
@@ -7075,12 +7076,16 @@ class GPOTests(tests.TestCase):
                 })
         # Write the dummy pKICertificateTemplate
         template_dn = 'CN=Machine,CN=Certificate Templates,%s' % confdn
+        self.addCleanup(ldb.delete, template_dn)
         ldb.add({'dn': template_dn,
                  'objectClass': 'pKICertificateTemplate',
                 })
 
         with TemporaryDirectory() as dname:
-            ext.process_group_policy([], gpos, dname, dname)
+            try:
+                ext.process_group_policy([], gpos, dname, dname)
+            except Exception as e:
+                self.fail(f"process_group_policy() raised {e}")
             ca_crt = os.path.join(dname, '%s.crt' % ca_cn)
             self.assertTrue(os.path.exists(ca_crt),
                             'Root CA certificate was not requested')
@@ -7168,11 +7173,6 @@ class GPOTests(tests.TestCase):
                              'Machine certificate not removed')
             self.assertNotIn(b'Workstation', out,
                              'Workstation certificate not removed')
-
-        # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
-        ldb.delete(certa_dn)
-        ldb.delete(enroll_dn)
-        ldb.delete(template_dn)
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
@@ -7626,6 +7626,7 @@ class GPOTests(tests.TestCase):
                                'MACHINE/REGISTRY.POL')
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+        self.addCleanup(store.log.close)
 
         machine_creds = Credentials()
         machine_creds.guess(self.lp)
@@ -7667,6 +7668,8 @@ class GPOTests(tests.TestCase):
         confdn = 'CN=Public Key Services,CN=Services,CN=Configuration,%s' % base_dn
         ca_cn = '%s-CA' % hostname.replace('.', '-')
         certa_dn = 'CN=%s,CN=Certification Authorities,%s' % (ca_cn, confdn)
+        self.addCleanup(ldb.delete, certa_dn)
+
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
@@ -7675,6 +7678,7 @@ class GPOTests(tests.TestCase):
                 })
         # Write the dummy pKIEnrollmentService
         enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
+        self.addCleanup(ldb.delete, enroll_dn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
                  'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
@@ -7683,12 +7687,21 @@ class GPOTests(tests.TestCase):
                 })
         # Write the dummy pKICertificateTemplate
         template_dn = 'CN=Machine,CN=Certificate Templates,%s' % confdn
+        try:
+            ldb.delete(template_dn)
+        except _ldb.LdbError:
+            pass
+
+        self.addCleanup(ldb.delete, template_dn)
         ldb.add({'dn': template_dn,
                  'objectClass': 'pKICertificateTemplate',
                 })
 
         with TemporaryDirectory() as dname:
-            ext.process_group_policy([], gpos, dname, dname)
+            try:
+                ext.process_group_policy([], gpos, dname, dname)
+            except Exception as e:
+                self.fail(f"process_group_policy() raised {e}")
             ca_list = [ca_cn, 'example0-com-CA', 'example1-com-CA',
                        'example2-com-CA']
             for ca in ca_list:
@@ -7750,11 +7763,6 @@ class GPOTests(tests.TestCase):
                              'Machine certificate not removed')
             self.assertNotIn(b'Workstation', out,
                              'Workstation certificate not removed')
-
-        # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
-        ldb.delete(certa_dn)
-        ldb.delete(enroll_dn)
-        ldb.delete(template_dn)
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
