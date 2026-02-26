@@ -1485,6 +1485,80 @@ static void vfs_ceph_rgw_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 	return;
 }
 
+static ssize_t vfs_ceph_rgw_pwrite(struct vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   const void *data,
+				   size_t n,
+				   off_t offset)
+{
+	int rc = 0;
+	uint32_t flags = RGW_WRITE_FLAG_NONE;
+	bool retried = false;
+	size_t nbytes_written = 0;
+	ssize_t bytes_written = -ENOMEM;
+	struct vfs_ceph_rgw_fh *cfh = NULL;
+	struct vfs_ceph_rgw_config *config = NULL;
+
+	START_PROFILE_BYTES_X(SNUM(handle->conn), syscall_pwrite, n);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	DBG_DEBUG("[CEPH_RGW] write: [%s]\n", fsp_str_dbg(fsp));
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &cfh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to fetch handle for [%s]\n",
+			fsp_str_dbg(fsp));
+		bytes_written = rc;
+		goto out;
+	}
+retry:
+	rc = rgw_write(config->rgw_root_fs,
+		       cfh->rgw_fh,
+		       offset,
+		       n,
+		       &nbytes_written,
+		       discard_const(data),
+		       flags);
+	if (rc < 0) {
+		if ((rc == -EPERM) && !retried) {
+			/* librgw rgw_write() API expects handle to be in open
+			 * state, since this handle is common for all opens for
+			 * a file, marking close for any file results into
+			 * state being closed. This causes rgw_write() to fail
+			 * with EPERM. Since there is no way to track open
+			 * state via public API, we retry write with special
+			 * flag, which instructs rgw_write() to internally make
+			 * state as open and perform write.
+			 */
+			DBG_INFO("[CEPH_RGW] Underlying file is not opened. "
+				 "Retrying.\n");
+			retried = true;
+			flags |= RGW_OPEN_FLAG_V3;
+			goto retry;
+		}
+		DBG_ERR("[CEPH_RGW] Error writing to [%s]. rc = %d\n",
+			fsp_str_dbg(fsp),
+			rc);
+		bytes_written = rc;
+		goto out;
+	}
+	bytes_written = (ssize_t)nbytes_written;
+
+out:
+	DBG_DEBUG("[CEPH_RGW] pwrite: name=%s "
+		  "n=%zd offset=%jd bytes_written=%zd\n",
+		  fsp_str_dbg(fsp),
+		  n,
+		  (intmax_t)offset,
+		  bytes_written);
+	END_PROFILE_BYTES_X(syscall_pwrite);
+	return lstatus_code(bytes_written);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -1727,7 +1801,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.pread_fn = vfs_ceph_rgw_pread,
 	.pread_send_fn = vfs_ceph_rgw_pread_send,
 	.pread_recv_fn = vfs_ceph_rgw_pread_recv,
-	.pwrite_fn = vfs_not_implemented_pwrite,
+	.pwrite_fn = vfs_ceph_rgw_pwrite,
 	.pwrite_send_fn = vfs_not_implemented_pwrite_send,
 	.pwrite_recv_fn = vfs_not_implemented_pwrite_recv,
 	.lseek_fn = vfs_not_implemented_lseek,
