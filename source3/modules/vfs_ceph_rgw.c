@@ -1642,6 +1642,51 @@ out:
 	return lstatus_code(bytes_written);
 }
 
+static int vfs_ceph_rgw_unlinkat(struct vfs_handle_struct *handle,
+				 struct files_struct *dirfsp,
+				 const struct smb_filename *smb_fname,
+				 int flags)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_fh *dircfh = NULL;
+	struct vfs_ceph_rgw_config *config = NULL;
+	const char *name = smb_fname->base_name;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_unlinkat);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	if (smb_fname->stream_name) {
+		rc = -ENOENT;
+		goto out;
+	}
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, dirfsp, &dircfh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get handle for [%s]\n",
+			fsp_str_dbg(dirfsp));
+		goto out;
+	}
+
+	rc = rgw_unlink(config->rgw_root_fs,
+			dircfh->rgw_fh,
+			name,
+			RGW_UNLINK_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to unlink [%s]. rc = %d\n",
+			name,
+			rc);
+		goto out;
+	}
+	DBG_DEBUG("[CEPH_RGW] unlinkat: name=%s success\n", name);
+out:
+	END_PROFILE_X(syscall_unlinkat);
+	return status_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -1897,7 +1942,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.fstat_fn = vfs_ceph_rgw_fstat,
 	.lstat_fn = vfs_ceph_rgw_lstat,
 	.fstatat_fn = vfs_not_implemented_fstatat,
-	.unlinkat_fn = vfs_not_implemented_unlinkat,
+	.unlinkat_fn = vfs_ceph_rgw_unlinkat,
 	.fchmod_fn = vfs_not_implemented_fchmod,
 	.fchown_fn = vfs_not_implemented_fchown,
 	.lchown_fn = vfs_not_implemented_lchown,
