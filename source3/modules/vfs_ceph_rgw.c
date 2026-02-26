@@ -979,6 +979,54 @@ out:
 	return lstatus_code(rc);
 }
 
+static int vfs_ceph_rgw_fsetxattr(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  const char *name,
+				  const void *value,
+				  size_t size,
+				  int flags)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct vfs_ceph_rgw_fh *fh = NULL;
+	rgw_xattr attr = {{0}, {0}};
+	rgw_xattrlist attr_list = {&attr, 1};
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fsetxattr);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	DBG_DEBUG("[CEPH_RGW] fsetxattr [%s] %s\n", fsp_str_dbg(fsp), name);
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to fetch handle\n");
+		goto out;
+	}
+
+	prepare_xattr_list(&attr_list,
+			   discard_const(name),
+			   discard_const(value),
+			   (uint32_t)size);
+
+	rc = rgw_setxattrs(config->rgw_root_fs,
+			   fh->rgw_fh,
+			   &attr_list,
+			   RGW_SETXATTR_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to set x attributes\n");
+		goto out;
+	}
+
+out:
+	DBG_DEBUG("[CEPH_RGW] fsetxattr(...) = %d\n", rc);
+	END_PROFILE_X(syscall_fsetxattr);
+	return status_code(rc);
+}
+
 static struct tevent_req *vfs_ceph_rgw_fsync_send(
 	struct vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
@@ -1721,7 +1769,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.fgetxattr_fn = vfs_ceph_rgw_fgetxattr,
 	.flistxattr_fn = vfs_not_implemented_flistxattr,
 	.fremovexattr_fn = vfs_not_implemented_fremovexattr,
-	.fsetxattr_fn = vfs_not_implemented_fsetxattr,
+	.fsetxattr_fn = vfs_ceph_rgw_fsetxattr,
 
 	/* Posix ACL Operations */
 	.sys_acl_get_fd_fn = vfs_not_implemented_sys_acl_get_fd,
