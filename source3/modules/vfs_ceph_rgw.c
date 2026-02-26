@@ -1653,6 +1653,105 @@ static char *prepare_full_path(TALLOC_CTX *ctx,
 	return talloc_strdup(ctx, base_name);
 }
 
+/* Note about rename:
+ * librgw rename method expects file handle for source file to be in
+ * closed state. This behaviour breaks posix compliance.
+ * Therefore, until librgw resolves this issue, module choose to return
+ * ENOSYS and implementation should stay commented.
+ */
+static int vfs_ceph_rgw_renameat(struct vfs_handle_struct *handle,
+				 files_struct *src_dirfsp,
+				 const struct smb_filename *smb_fname_src,
+				 files_struct *dst_dirfsp,
+				 const struct smb_filename *smb_fname_dst,
+				 const struct vfs_rename_how *how)
+{
+	int rc = -ENOSYS;
+#if 0
+	struct vfs_ceph_rgw_config *config = NULL;
+	char *src_name = NULL;
+	char *dst_name = NULL;
+	char *src_abs_path = NULL;
+	char *dst_abs_path = NULL;
+	mode_t mode = 0;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	START_PROFILE_X(SNUM(handle->conn), syscall_renameat);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	DBG_DEBUG("[CEPH_RGW] renameat: src [%s] dst [%s]\n",
+		  smb_fname_src->base_name,
+		  smb_fname_dst->base_name);
+
+	if (smb_fname_src->stream_name != NULL ||
+	    smb_fname_dst->stream_name != NULL)
+	{
+		DBG_ERR("[CEPH_RGW] streams can't be renamed.\n");
+		rc = -EINVAL;
+		goto out;
+	}
+
+	mode = smb_fname_src->st.st_ex_mode;
+	if (S_ISDIR(mode)) {
+		DBG_ERR("[CEPH_RGW] Directory renaming not supported\n");
+		rc = -ENOTSUP;
+		goto out;
+	}
+
+	if (how->flags != 0) {
+		DBG_ERR("[CEPH_RGW] Incorrect flags=%u\n", how->flags);
+		rc = -EINVAL;
+		goto out;
+	}
+
+	src_abs_path = normalise_name(ctx, src_dirfsp->fsp_name->base_name);
+	dst_abs_path = normalise_name(ctx, dst_dirfsp->fsp_name->base_name);
+	if (src_abs_path == NULL || dst_abs_path == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory\n");
+		rc = -ENOMEM;
+		goto out;
+	}
+
+	/* prepare absolute path for filenames */
+	src_name = prepare_full_path(ctx,
+				     src_abs_path,
+				     smb_fname_src->base_name);
+	dst_name = prepare_full_path(ctx,
+				     dst_abs_path,
+				     smb_fname_dst->base_name);
+	if (src_name == NULL || dst_name == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for filenames\n");
+		rc = -ENOMEM;
+		goto out;
+	}
+
+	rc = rgw_rename(config->rgw_root_fs,
+			config->rgw_root_fh,
+			src_name,
+			config->rgw_root_fh,
+			dst_name,
+			RGW_RENAME_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW]: Unable to rename [%s] to [%s]. rc=%d\n",
+			smb_fname_src->base_name,
+			smb_fname_dst->base_name,
+			rc);
+		goto out;
+	}
+
+	DBG_DEBUG("[CEPH_RGW]: rename [%s]->[%s] success\n",
+		  smb_fname_src->base_name,
+		  smb_fname_dst->base_name);
+out:
+	TALLOC_FREE(ctx);
+	END_PROFILE_X(syscall_renameat);
+#endif
+	return status_code(rc);
+}
+
 static int vfs_ceph_rgw_unlinkat(struct vfs_handle_struct *handle,
 				 struct files_struct *dirfsp,
 				 const struct smb_filename *smb_fname,
@@ -2247,7 +2346,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.lseek_fn = vfs_not_implemented_lseek,
 	.sendfile_fn = vfs_not_implemented_sendfile,
 	.recvfile_fn = vfs_not_implemented_recvfile,
-	.renameat_fn = vfs_not_implemented_renameat,
+	.renameat_fn = vfs_ceph_rgw_renameat,
 	.fsync_send_fn = vfs_ceph_rgw_fsync_send,
 	.fsync_recv_fn = vfs_ceph_rgw_fsync_recv,
 	.stat_fn = vfs_ceph_rgw_stat,
