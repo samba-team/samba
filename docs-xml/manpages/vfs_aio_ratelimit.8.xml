@@ -12,7 +12,7 @@
 
 <refnamediv>
 	<refname>vfs_aio_ratelimit</refname>
-	<refpurpose>Implement async-I/O rate-limiting for Samba</refpurpose>
+	<refpurpose>Implement async-I/O rate-limiting for Samba with cluster-wide coordination</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -46,7 +46,15 @@
 	</para>
 
 	<para>
-	This module operates only on asynchronous VFS READ/WRITE operation.
+	<emphasis role="bold">Cluster Support:</emphasis>
+	When clustering is enabled in Samba, cluster-wide rate limiting is
+	automatically enabled by default. Each share's configured rate limit
+	applies to that share across the entire cluster. Limits for different
+	shares are tracked and enforced independently of one another.
+	</para>
+
+	<para>
+	This module operates only on asynchronous VFS READ/WRITE operations.
 	</para>
 
 	<para>This module is stackable.</para>
@@ -63,6 +71,35 @@
 	<smbconfoption name="vfs objects">aio_ratelimit</smbconfoption>
 </programlisting>
 
+	<para>Cluster deployment example (cluster-wide limits):</para>
+
+<programlisting>
+	<smbconfsection name="[global]"/>
+	<smbconfoption name="clustering">yes</smbconfoption>
+
+	<smbconfsection name="[shared-storage]"/>
+	<smbconfoption name="path">/mnt/shared</smbconfoption>
+	<smbconfoption name="vfs objects">aio_ratelimit</smbconfoption>
+	<smbconfoption name="aio_ratelimit:read_iops_limit">10000</smbconfoption>
+	<smbconfoption name="aio_ratelimit:write_bw_limit">1G</smbconfoption>
+</programlisting>
+
+	<para>The 10000 IOPS and 1G bandwidth limits apply to the entire cluster.</para>
+
+	<para>Cluster deployment with per-node limits:</para>
+
+<programlisting>
+	<smbconfsection name="[global]"/>
+	<smbconfoption name="clustering">yes</smbconfoption>
+
+	<smbconfsection name="[shared-storage]"/>
+	<smbconfoption name="path">/mnt/shared</smbconfoption>
+	<smbconfoption name="vfs objects">aio_ratelimit</smbconfoption>
+	<smbconfoption name="aio_ratelimit:read_iops_limit">10000</smbconfoption>
+</programlisting>
+
+	<para>Each node independently enforces the 10000 IOPS limit.</para>
+
 </refsect1>
 
 <refsect1>
@@ -76,6 +113,12 @@
 			Upper limit of READ operations-per-second before
 			injecting delays. Zero value implies no limit.
 		</para>
+		<para>
+			In cluster mode, this is the <emphasis>global limit</emphasis>
+			enforced across all nodes. The limit is automatically distributed
+			equally among all active smbd processes performing I/O
+			on this share.
+		</para>
 		<para>Default: 0, Max: 1000000</para>
 		<para>Example: aio_ratelimit:read_iops_limit = 1000</para>
 		</listitem>
@@ -88,6 +131,12 @@
 			Upper limit of READ bandwidth (bytes-per-second) before
 			injecting delays. Zero value implies no limit.
 			Supports size suffixes (K, M, G, T).
+		</para>
+		<para>
+			In cluster mode, this is the <emphasis>global limit</emphasis>
+			enforced across all nodes. The limit is automatically distributed
+			equally among all active smbd processes performing I/O
+			on this share.
 		</para>
 		<para>Default: 0, Max: 1T</para>
 		<para>Example: aio_ratelimit:read_bw_limit = 2M</para>
@@ -115,6 +164,12 @@
 			Upper limit of WRITE operations-per-second before
 			injecting delays. Zero value implies no limit.
 		</para>
+		<para>
+			In cluster mode, this is the <emphasis>global limit</emphasis>
+			enforced across all nodes. The limit is automatically distributed
+			equally among all active smbd processes performing I/O
+			on this share.
+		</para>
 		<para>Default: 0, Max: 1000000</para>
 		<para>Example: aio_ratelimit:write_iops_limit = 1000</para>
 		</listitem>
@@ -127,6 +182,12 @@
 			Upper limit of WRITE bandwidth (bytes-per-second)
 			before injecting delays. Zero value implies no limit.
 			Supports size suffixes (K, M, G, T).
+		</para>
+		<para>
+			In cluster mode, this is the <emphasis>global limit</emphasis>
+			enforced across all nodes. The limit is automatically distributed
+			equally among all active smbd processes performing I/O
+			on this share.
 		</para>
 		<para>Default: 0, Max: 1T</para>
 		<para>Example: aio_ratelimit:write_bw_limit = 1M</para>
@@ -148,6 +209,55 @@
 		</varlistentry>
 
 	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>CLUSTER BEHAVIOR</title>
+
+	<para>
+	When Samba clustering is enabled, cluster-wide rate limiting is
+	automatically enabled by default. The configured limits apply to the
+	<emphasis>entire cluster</emphasis>, not individual nodes. This requires
+	the <command>ratelimitd</command> daemon, which must be enabled at build
+	time with <command>--with-ratelimitd</command>.
+	</para>
+
+<programlisting>
+	<smbconfsection name="[share]"/>
+	<smbconfoption name="aio_ratelimit:read_iops_limit">1000</smbconfoption>
+</programlisting>
+
+	<para>
+	With cluster mode enabled (default when clustering is active),
+	the module automatically distributes bandwidth among active connections
+	on that share.
+	For example, with a 1000 IOPS limit:
+	</para>
+	<itemizedlist>
+		<listitem>
+			<para>4 active connections → Each gets ~250 IOPS</para>
+		</listitem>
+		<listitem>
+			<para>10 active connections → Each gets ~100 IOPS</para>
+		</listitem>
+		<listitem>
+			<para>Total cluster throughput: Always limited to 1000 IOPS</para>
+		</listitem>
+	</itemizedlist>
+
+	<para>
+	The distribution happens automatically as connections are established
+	and closed.
+	</para>
+
+	<note>
+		<para>
+		Nodes with more active connections will naturally use more of the
+		total bandwidth. This ensures fair per-connection allocation across
+		the cluster.
+		</para>
+	</note>
+
 </refsect1>
 
 <refsect1>
