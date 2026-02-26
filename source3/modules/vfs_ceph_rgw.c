@@ -1485,6 +1485,89 @@ static void vfs_ceph_rgw_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 	return;
 }
 
+static int vfs_ceph_rgw_mkdirat(struct vfs_handle_struct *handle,
+				files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				mode_t mode)
+{
+	int rc = -ENOMEM;
+	uint32_t mask = RGW_SETATTR_UID | RGW_SETATTR_GID | RGW_SETATTR_MODE;
+	struct rgw_file_handle *rgw_fh = NULL;
+	struct vfs_ceph_rgw_config *config = NULL;
+	const struct security_unix_token *utok = NULL;
+	struct stat st = {0};
+	char *name = NULL;
+	char *abs_path = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_mkdirat);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	/* Get abs name */
+	abs_path = normalise_name(ctx, dirfsp->fsp_name->base_name);
+	if (abs_path == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for abs path\n");
+		goto out;
+	}
+
+	/* Prepare dir name, librgw expects dir-name to end with '/',
+	 * thus adding '/' in the end of supplied dir name.
+	 */
+	if (*abs_path != '\0') {
+		name = talloc_asprintf(ctx,
+				       "%s/%s/",
+				       abs_path,
+				       smb_fname->base_name);
+	} else {
+		name = talloc_asprintf(ctx, "%s/", smb_fname->base_name);
+	}
+
+	if (name == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for dir name\n");
+		goto out;
+	}
+
+	utok = get_current_utok(handle->conn);
+	st.st_uid = utok->uid;
+	st.st_gid = utok->gid;
+	st.st_mode = mode;
+
+	DBG_DEBUG(
+		"[CEPH_RGW] mkdirat: name [%s] uid = %u gid = %u mode = %u\n",
+		name,
+		utok->uid,
+		utok->gid,
+		mode);
+
+	rc = rgw_create(config->rgw_root_fs,
+			config->rgw_root_fh,
+			name,
+			&st,
+			mask,
+			&rgw_fh,
+			O_CREAT,
+			RGW_CREATE_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Error creating [%s]. rc = %d\n", name, rc);
+		goto out;
+	}
+
+	/* Release obtained handle */
+	(void)rgw_fh_rele(config->rgw_root_fs, rgw_fh, RGW_FH_RELE_FLAG_NONE);
+
+	DBG_NOTICE("[CEPH_RGW] mkdirat: [%s] success. mode = %u\n",
+		   name,
+		   st.st_mode);
+out:
+	TALLOC_FREE(ctx);
+	END_PROFILE_X(syscall_mkdirat);
+	return status_code(rc);
+}
+
 static ssize_t vfs_ceph_rgw_pwrite(struct vfs_handle_struct *handle,
 				   files_struct *fsp,
 				   const void *data,
@@ -1789,7 +1872,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.fdopendir_fn = vfs_ceph_rgw_fdopendir,
 	.readdir_fn = vfs_ceph_rgw_readdir,
 	.rewind_dir_fn = vfs_ceph_rgw_rewinddir,
-	.mkdirat_fn = vfs_not_implemented_mkdirat,
+	.mkdirat_fn = vfs_ceph_rgw_mkdirat,
 	.closedir_fn = vfs_ceph_rgw_closedir,
 
 	/* File operations */
