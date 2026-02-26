@@ -452,11 +452,21 @@ class gp_cert_auto_enroll_ext(gp_pol_ext, gp_applier):
                     # This is a basic configuration.
                     cas = fetch_certification_authorities(ldb)
                     for _ca in cas:
+                        if 'cACertificate' not in _ca:
+                            log.warning(f"ignoring CA '{_ca['name']}' with no "
+                                        "cACertificate in LDAP.")
+                            continue
+
                         self.apply(guid, _ca, cert_enroll, _ca, ldb, trust_dir,
                                    private_dir)
                         ca_names.append(_ca['name'])
                 # If EndPoint.URI starts with "HTTPS//":
                 elif ca['URL'].lower().startswith('https://'):
+                    if 'cACertificate' not in ca:
+                        log.warning(f"ignoring CA '{ca['name']}' "
+                                    f"({ca['URL']}) with no "
+                                    "cACertificate in LDAP.")
+                        continue
                     self.apply(guid, ca, cert_enroll, ca, ldb, trust_dir,
                                private_dir, auth=ca['auth'])
                     ca_names.append(ca['name'])
