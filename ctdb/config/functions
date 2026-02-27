@@ -965,7 +965,44 @@ _failcount_common()
 	_thing="$1"
 
 	_counter=$(echo "$_thing" | sed -e 's@/@_SLASH_@g' -e 's@ @_@g')
+	_failcount_warn_stamp="${script_state_dir}/${_counter}.last-warning"
 }
+
+case "$CTDB_PLATFORM_STYLE" in
+freebsd)
+	_stat_mtime_seconds()
+	{
+		stat -f '%m' -t '%s' "$@" 2>/dev/null
+	}
+	;;
+*)
+	_stat_mtime_seconds()
+	{
+		stat -c '%Y' "$@" 2>/dev/null
+	}
+	;;
+esac
+
+failcount_set_warning_interval()
+{
+	_interval="$1"
+
+	case "$_interval" in
+	none)
+		failcount_interval=""
+		;;
+	daily)
+		failcount_interval=$((24 * 60 * 60))
+		;;
+	hourly)
+		failcount_interval=$((60 * 60))
+		;;
+	[0-9] | [0-9][0-9] | [0-9][0-9][0-9] | [0-9][0-9][0-9][0-9])
+		failcount_interval="$_interval"
+		;;
+	esac
+}
+failcount_set_warning_interval "hourly"
 
 failcount_init()
 {
@@ -989,6 +1026,7 @@ failcount_reset()
 
 	printf 'NOTICE: %s: no longer failing\n' "$_thing"
 	ctdb_counter_init "$_counter"
+	rm -f "$_failcount_warn_stamp"
 }
 
 failcount_incr()
@@ -1039,12 +1077,32 @@ failcount_incr()
 		fi
 	fi
 
+	_print_output=false
+	# If warnings could be issued forever because this situation
+	# will never make the node unhealthy, then issue warnings
+	# according to failcount interval.  In this case, also print
+	# the output.
+	if [ -z "$_unhealthy_threshold" ] && [ -n "$failcount_interval" ]; then
+		if _mtime=$(_stat_mtime_seconds "$_failcount_warn_stamp"); then
+			_now=$(date '+%s')
+			if [ $((_now - _mtime)) -lt "$failcount_interval" ]; then
+				return
+			fi
+		fi
+		_print_output=true
+	fi
+
+	touch "$_failcount_warn_stamp"
+
 	printf 'WARNING: %s: fail count %d >= threshold %d\n' \
 		"$_thing" \
 		"$_failcount" \
 		"$_warn_threshold"
 	if [ "$_failcount" -eq "$_warn_threshold" ] && [ -n "$_output" ]; then
-		# Only print output when reaching the warning threshold
+		# Also print output when reaching the warning threshold
+		_print_output=true
+	fi
+	if $_print_output; then
 		echo "$_output"
 	fi
 }

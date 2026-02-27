@@ -96,6 +96,13 @@ setup_date()
 	export FAKE_DATE_OUTPUT="$1"
 }
 
+setup_date_one_hour_from_now()
+{
+	_now=$(date '+%s')
+	_one_hour_from_now=$((_now + 60 * 60))
+	setup_date "$_one_hour_from_now"
+}
+
 setup_tcp_listen()
 {
 	export FAKE_TCP_LISTEN="$*"

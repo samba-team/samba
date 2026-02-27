@@ -144,10 +144,13 @@
 	    <listitem>
 	      <para>
 		A warning message is logged when failcount is
-		initially ≥ WARNING_THRESHOLD.  No additional warnings
-		are logged (until failcount ≥ ERROR_THRESHOLD).  The
-		intention is to avoid flooding the log with warnings.
-		The event script continues when a warning is logged.
+		initially ≥ WARNING_THRESHOLD.  If ERROR_THRESHOLD is
+		provided then no additional warnings are logged (until
+		failcount ≥ ERROR_THRESHOLD).  If ERROR_THRESHOLD is
+		not provided then additional warning are logged at
+		intervals of 1 hour.  The intention is to avoid
+		flooding the log with warnings.  The event script
+		continues when a warning is logged.
 	      </para>
 	    </listitem>
 	  </itemizedlist>
