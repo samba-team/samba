@@ -1,4 +1,71 @@
                    ==============================
+                   Release Notes for Samba 4.23.6
+                         February 27, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.5
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15990: No function _python_sysroot defined
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15978: leases torture test flappy
+   * BUG 15984: smbd: in contend_dirleases() don't bother checking when not
+     enabled
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 15979: possible memory leak  on rpc_spoolss
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15964: "net offlinejoin requestodj" manpage entry incorrectly mentiones
+     provided credentials
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15789: "use-kerberos=desired" broken
+   * BUG 15958: pthreadpool_tevent has race conditions accessing both
+     pthreadpool_tevent.jobs list and pthreadpool_tevent.glue_list
+   * BUG 15979: possible memory leak  on rpc_spoolss
+
+o  Peter Schwenke <pschwenke@ddn.com>
+   * BUG 15938: CTDB's statd_callout fails on sm-notify
+   * BUG 15939: CTDB statd_callout_notify notifies unnecessary clients and loses
+     their state
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15939: CTDB statd_callout_notify notifies unnecessary clients and loses
+     their state
+   * BUG 15977: ctdbd socket documentation is wrong
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.23.5
                           January 23, 2026
                    ==============================
@@ -44,8 +111,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.23.4
                          December 12, 2025
