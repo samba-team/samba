@@ -7062,7 +7062,7 @@ class GPOTests(tests.TestCase):
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
-                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
+                 'cACertificate': dummy_certificate(),
                  'certificateRevocationList': ['XXX'],
                 })
         # Write the dummy pKIEnrollmentService
@@ -7070,7 +7070,7 @@ class GPOTests(tests.TestCase):
         self.addCleanup(ldb.delete, enroll_dn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
-                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
+                 'cACertificate': dummy_certificate(),
                  'certificateTemplates': ['Machine'],
                  'dNSHostName': hostname,
                 })
@@ -7673,7 +7673,7 @@ class GPOTests(tests.TestCase):
         ldb.add({'dn': certa_dn,
                  'objectClass': 'certificationAuthority',
                  'authorityRevocationList': ['XXX'],
-                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
+                 'cACertificate': dummy_certificate(),
                  'certificateRevocationList': ['XXX'],
                 })
         # Write the dummy pKIEnrollmentService
@@ -7681,7 +7681,7 @@ class GPOTests(tests.TestCase):
         self.addCleanup(ldb.delete, enroll_dn)
         ldb.add({'dn': enroll_dn,
                  'objectClass': 'pKIEnrollmentService',
-                 'cACertificate': b'0\x82\x03u0\x82\x02]\xa0\x03\x02\x01\x02\x02\x10I',
+                 'cACertificate': dummy_certificate(),
                  'certificateTemplates': ['Machine'],
                  'dNSHostName': hostname,
                 })
