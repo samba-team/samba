@@ -19,20 +19,20 @@
 ### END INIT INFO
 
 # Source function library.
-if [ -f /etc/init.d/functions ] ; then
-    # Red Hat
-    . /etc/init.d/functions
-elif [ -f /etc/rc.d/init.d/functions ] ; then
-    # Red Hat
-    . /etc/rc.d/init.d/functions
-elif [ -f /etc/rc.status ] ; then
-    # SUSE
-    . /etc/rc.status
-    rc_reset
-    LC_ALL=en_US.UTF-8
-elif [ -f /lib/lsb/init-functions ] ; then
-    # Debian
-    . /lib/lsb/init-functions
+if [ -f /etc/init.d/functions ]; then
+	# Red Hat
+	. /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ]; then
+	# Red Hat
+	. /etc/rc.d/init.d/functions
+elif [ -f /etc/rc.status ]; then
+	# SUSE
+	. /etc/rc.status
+	rc_reset
+	LC_ALL=en_US.UTF-8
+elif [ -f /lib/lsb/init-functions ]; then
+	# Debian
+	. /lib/lsb/init-functions
 fi
 
 # Avoid using root's TMPDIR
@@ -45,8 +45,8 @@ unset TMPDIR
 load_system_config "network"
 
 # check networking is up (for redhat)
-if [ "$NETWORKING" = "no" ] ; then
-    exit 0
+if [ "$NETWORKING" = "no" ]; then
+	exit 0
 fi
 
 load_system_config "ctdb"
@@ -62,60 +62,60 @@ pidfile="/var/run/ctdb/ctdbd.pid"
 
 start()
 {
-    printf "Starting ctdbd service: "
+	printf "Starting ctdbd service: "
 
-    case "$CTDB_INIT_STYLE" in
+	case "$CTDB_INIT_STYLE" in
 	suse)
-	    startproc "$ctdbd"
-	    rc_status -v
-	    ;;
+		startproc "$ctdbd"
+		rc_status -v
+		;;
 	redhat)
-	    daemon --pidfile "$pidfile" "$ctdbd"
-	    RETVAL=$?
-	    echo
-	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
-	    return $RETVAL
-	    ;;
+		daemon --pidfile "$pidfile" "$ctdbd"
+		RETVAL=$?
+		echo
+		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
+		return $RETVAL
+		;;
 	debian)
-	    eval start-stop-daemon --start --quiet --background --exec "$ctdbd"
-	    ;;
-    esac
+		eval start-stop-daemon --start --quiet --background --exec "$ctdbd"
+		;;
+	esac
 }
 
 stop()
 {
-    printf "Shutting down ctdbd service: "
+	printf "Shutting down ctdbd service: "
 
-    case "$CTDB_INIT_STYLE" in
+	case "$CTDB_INIT_STYLE" in
 	suse)
-	    "$ctdb" "shutdown"
-	    rc_status -v
-	    ;;
+		"$ctdb" "shutdown"
+		rc_status -v
+		;;
 	redhat)
-	    "$ctdb" "shutdown"
-	    RETVAL=$?
-	    # Common idiom in Red Hat init scripts - success() always
-	    # succeeds so this does behave like if-then-else
-	    # shellcheck disable=SC2015
-            [ $RETVAL -eq 0 ] && success || failure
-	    echo ""
-	    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
-	    return $RETVAL
-	    ;;
+		"$ctdb" "shutdown"
+		RETVAL=$?
+		# Common idiom in Red Hat init scripts - success() always
+		# succeeds so this does behave like if-then-else
+		# shellcheck disable=SC2015
+		[ $RETVAL -eq 0 ] && success || failure
+		echo ""
+		[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
+		return $RETVAL
+		;;
 	debian)
-	    "$ctdb" "shutdown"
-	    log_end_msg $?
-	    ;;
-    esac
+		"$ctdb" "shutdown"
+		log_end_msg $?
+		;;
+	esac
 }
 
 restart()
 {
-    stop
-    start
+	stop
+	start
 }
 
-check_status ()
+check_status()
 {
 	case "$CTDB_INIT_STYLE" in
 	suse)
@@ -134,28 +134,29 @@ check_status ()
 ############################################################
 
 case "$1" in
-    start)
-  	start
+start)
+	start
 	;;
-    stop)
-  	stop
+stop)
+	stop
 	;;
-    restart|reload|force-reload)
-  	restart
+restart | reload | force-reload)
+	restart
 	;;
-    status)
-  	check_status
+status)
+	check_status
 	;;
-    condrestart|try-restart)
-  	if check_status >/dev/null ; then
-	    restart
+condrestart | try-restart)
+	if check_status >/dev/null; then
+		restart
 	fi
 	;;
-    cron)
+cron)
 	# used from cron to auto-restart ctdb
-  	check_status >/dev/null 2>&1 || restart
+	check_status >/dev/null 2>&1 || restart
 	;;
-    *)
+*)
 	echo "Usage: $0 {start|stop|restart|reload|force-reload|status|cron|condrestart|try-restart}"
 	exit 1
+	;;
 esac

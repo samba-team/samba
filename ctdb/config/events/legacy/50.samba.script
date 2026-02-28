@@ -32,8 +32,7 @@ generate_smb_interfaces_config()
 	get_public_ifaces
 	pub_iface_list=$public_ifaces
 	public_ifaces=""
-	for iface in $pub_iface_list;
-	do
+	for iface in $pub_iface_list; do
 		public_ifaces="$public_ifaces \"$iface;options=dynamic\""
 	done
 
@@ -41,7 +40,7 @@ generate_smb_interfaces_config()
 		public_ifaces="$public_ifaces $CTDB_SAMBA_INTERFACES_EXTRA"
 	fi
 
-cat <<EOT > "$CTDB_SAMBA_INTERFACES_FILE"
+	cat <<EOT >"$CTDB_SAMBA_INTERFACES_FILE"
     bind interfaces only = yes
     interfaces = lo $public_ifaces
 EOT
@@ -132,13 +131,13 @@ testparm_background_update()
 	testparm_foreground_update "$_timeout" >/dev/null 2>&1 </dev/null &
 }
 
-testparm_get ()
+testparm_get()
 {
 	_param="$1"
 
 	sed -n \
-	    -e "s|^[[:space:]]*${_param}[[:space:]]*=[[:space:]]\(..*\)|\1|p" \
-	    "$smbconf_cache"
+		-e "s|^[[:space:]]*${_param}[[:space:]]*=[[:space:]]\(..*\)|\1|p" \
+		"$smbconf_cache"
 
 }
 
@@ -152,7 +151,7 @@ list_samba_ports()
 	{
 		testparm_get "server smb transports"
 		testparm_get "smb ports"
-	# only | head -1 would cause a broken pipe for the 2nd command
+		# only | head -1 would cause a broken pipe for the 2nd command
 	} | head -2 | head -1
 }
 

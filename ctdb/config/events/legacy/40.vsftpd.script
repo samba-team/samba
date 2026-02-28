@@ -1,14 +1,14 @@
 #!/bin/sh
 # event strict to manage vsftpd in a cluster environment
 
-[ -n "$CTDB_BASE" ] || \
+[ -n "$CTDB_BASE" ] ||
 	CTDB_BASE=$(d="$(dirname "$0")" && cd -P "$d/../../" && pwd)
 
 . "${CTDB_BASE}/functions"
 
 service_name="vsftpd"
 
-service_reconfigure ()
+service_reconfigure()
 {
 	# shellcheck disable=SC2317
 	# Called indirectly via ctdb_service_reconfigure()
@@ -23,7 +23,7 @@ port_21="vsftpd listening on TCP port 21"
 
 case "$1" in
 startup)
-	service "$service_name" stop > /dev/null 2>&1
+	service "$service_name" stop >/dev/null 2>&1
 	service "$service_name" start
 	failcount_init "$port_21"
 	;;
@@ -32,18 +32,18 @@ shutdown)
 	service "$service_name" stop
 	;;
 
-takeip|releaseip)
+takeip | releaseip)
 	ctdb_service_set_reconfigure
 	;;
 
 ipreallocated)
-	if ctdb_service_needs_reconfigure ; then
+	if ctdb_service_needs_reconfigure; then
 		ctdb_service_reconfigure
 	fi
 	;;
 
 monitor)
-	if ctdb_check_tcp_ports 21 ; then
+	if ctdb_check_tcp_ports 21; then
 		failcount_reset "$port_21"
 	else
 		# Set defaults, if unset

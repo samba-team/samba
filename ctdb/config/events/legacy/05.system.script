@@ -52,9 +52,9 @@ check_thresholds()
 	if validate_percentage "$_unhealthy_threshold" "$_thing"; then
 		if [ "$_usage" -ge "$_unhealthy_threshold" ]; then
 			printf 'ERROR: %s utilization %d%% >= threshold %d%%\n' \
-			       "$_thing" \
-			       "$_usage" \
-			       "$_unhealthy_threshold"
+				"$_thing" \
+				"$_usage" \
+				"$_unhealthy_threshold"
 			# Only run unhealthy callout if passing the
 			# unhealthy threshold.  That is, if the
 			# previous usage was below the threshold.
@@ -72,18 +72,18 @@ check_thresholds()
 				return
 			fi
 			printf 'WARNING: %s utilization %d%% >= threshold %d%%\n' \
-			       "$_thing" \
-			       "$_usage" \
-			       "$_warn_threshold"
+				"$_thing" \
+				"$_usage" \
+				"$_warn_threshold"
 			echo "$_usage" >"$_cache"
 		else
 			if [ ! -r "$_cache" ]; then
 				return
 			fi
 			printf 'NOTICE: %s utilization %d%% < threshold %d%%\n' \
-			       "$_thing" \
-			       "$_usage" \
-			       "$_warn_threshold"
+				"$_thing" \
+				"$_usage" \
+				"$_warn_threshold"
 			rm -f "$_cache"
 		fi
 	fi
@@ -129,7 +129,7 @@ monitor_filesystem_usage()
 			sed -n -e 's@.*[[:space:]]\([[:digit:]]*\)%.*@\1@p')
 		if [ -z "$_fs_usage" ]; then
 			printf 'WARNING: Unable to get FS utilization for %s\n' \
-			       "$_fs_mount"
+				"$_fs_mount"
 			continue
 		fi
 
