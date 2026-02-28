@@ -49,10 +49,6 @@ if [ -n "$format" ]; then
 		esac
 
 		case "$format" in
-		"s#[0-9a-f]*:[0-9a-f]*:%i #%n #")
-			inode=$(fake_inode "$path")
-			echo "s#[0-9a-f]*:[0-9a-f]*:${inode} #${f} #"
-			;;
 		"%d:%i")
 			device_id=$(fake_device_id "$path")
 			inode=$(fake_inode "$path")
