@@ -39,8 +39,12 @@ fake_inode()
 }
 
 if [ -n "$format" ]; then
+	rc=0
 	for f; do
 		if [ ! -e "$f" ]; then
+			echo "stat: cannot statx '${f}': " \
+				"No such file or directory"
+			rc=1
 			continue
 		fi
 		case "$f" in
@@ -61,7 +65,7 @@ if [ -n "$format" ]; then
 		esac
 	done
 
-	exit
+	exit $rc
 fi
 
 usage
