@@ -6,7 +6,7 @@ setup()
 
 	if [ "$1" != "down" ]; then
 
-		debug "Marking Samba services as up, listening and managed by CTDB"
+		debug "Marking Samba services as up and listening"
 
 		# All possible service names for all known distros.
 		for i in "smb" "samba" "smbd"; do
@@ -20,7 +20,7 @@ setup()
 		# happen.  This avoids that...  :-)
 		export FAKE_SLEEP_FORCE=0.1
 	else
-		debug "Marking Samba services as down, not listening and not managed by CTDB"
+		debug "Marking Samba services as down and not listening"
 
 		# All possible service names for all known distros.
 		for i in "smb" "samba" "smbd"; do

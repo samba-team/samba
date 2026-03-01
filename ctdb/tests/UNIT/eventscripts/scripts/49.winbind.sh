@@ -6,14 +6,14 @@ setup()
 
 	if [ "$1" != "down" ]; then
 
-		debug "Marking Winbind service as up and managed by CTDB"
+		debug "Marking Winbind service as up"
 
 		service "winbind" force-started
 
 		export FAKE_WBINFO_FAIL="no"
 
 	else
-		debug "Marking Winbind service as down and not managed by CTDB"
+		debug "Marking Winbind service as down"
 
 		service "winbind" force-stopped
 

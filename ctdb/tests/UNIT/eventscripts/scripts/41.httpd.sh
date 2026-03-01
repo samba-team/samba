@@ -1,6 +1,6 @@
 setup()
 {
-	debug "Setting up HTTPD environment: service $1, not managed by CTDB"
+	debug "Setting up HTTPD environment: service $1"
 
 	if [ "$1" != "down" ]; then
 		for _service_name in "apache2" "httpd"; do

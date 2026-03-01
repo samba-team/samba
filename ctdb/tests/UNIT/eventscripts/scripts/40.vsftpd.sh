@@ -1,6 +1,6 @@
 setup()
 {
-	debug "Setting up VSFTPD environment: service $1, not managed by CTDB"
+	debug "Setting up VSFTPD environment: service $1"
 
 	_service_name="vsftpd"
 
