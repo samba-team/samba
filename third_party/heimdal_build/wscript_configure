@@ -76,6 +76,9 @@ if conf.env['WITH_KERNEL_KEYRING'] is not False:
                       critical=require_keyutils)
 
 heimdal_no_error_flags = ['-Wno-error=cast-qual',
+                          '-Wno-error=uninitialized-const-pointer',
+                          '-Wno-error=format-nonliteral',
+                          '-Wno-error=sometimes-uninitialized',
                           '-Wno-error=discarded-qualifiers',
                           '-Wno-error=old-style-definition',
                           '-Wno-error=unused-result',
