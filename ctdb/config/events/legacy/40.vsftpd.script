@@ -43,13 +43,14 @@ ipreallocated)
 	;;
 
 monitor)
-	if ctdb_check_tcp_ports 21; then
+	if output=$(ctdb_check_tcp_ports 21); then
 		failcount_reset "$port_21"
 	else
 		# Set defaults, if unset
 		: "${CTDB_VSFTPD_MONITOR_THRESHOLDS:=1:2}"
 
-		failcount_incr "$port_21" "$CTDB_VSFTPD_MONITOR_THRESHOLDS"
+		failcount_incr \
+			"$port_21" "$CTDB_VSFTPD_MONITOR_THRESHOLDS" "$output"
 	fi
 	;;
 esac
