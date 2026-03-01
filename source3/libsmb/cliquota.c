@@ -225,15 +225,15 @@ NTSTATUS build_fs_quota_buffer(TALLOC_CTX *mem_ctx,
 	buf = blob->data;
 
 	/* Unknown1 24 NULL bytes*/
-	SBIG_UINT(buf, 0, (uint64_t)0);
-	SBIG_UINT(buf, 8, (uint64_t)0);
-	SBIG_UINT(buf, 16, (uint64_t)0);
+	PUSH_LE_U64(buf, 0, 0);
+	PUSH_LE_U64(buf, 8, 0);
+	PUSH_LE_U64(buf, 16, 0);
 
 	/* Default Soft Quota 8 bytes */
-	SBIG_UINT(buf, 24, pqt->softlim);
+	PUSH_LE_U64(buf, 24, pqt->softlim);
 
 	/* Default Hard Quota 8 bytes */
-	SBIG_UINT(buf, 32, pqt->hardlim);
+	PUSH_LE_U64(buf, 32, pqt->hardlim);
 
 	/* Quota flag 4 bytes */
 	SIVAL(buf, 40, pqt->qflags);
