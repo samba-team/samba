@@ -2211,8 +2211,8 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 				 bytes_per_sector,
 				 dsize,
 				 dfree);
-			SBIG_UINT(pdata,0,dsize);
-			SBIG_UINT(pdata,8,dfree);
+			PUSH_LE_U64(pdata, 0, dsize);
+			PUSH_LE_U64(pdata, 8, dfree);
 			SIVAL(pdata,16,sectors_per_unit);
 			SIVAL(pdata,20,bytes_per_sector);
 			*fixed_portion = 24;
@@ -2252,9 +2252,9 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 				 bytes_per_sector,
 				 dsize,
 				 dfree);
-			SBIG_UINT(pdata,0,dsize); /* Total Allocation units. */
-			SBIG_UINT(pdata,8,dfree); /* Caller available allocation units. */
-			SBIG_UINT(pdata,16,dfree); /* Actual available allocation units. */
+			PUSH_LE_U64(pdata, 0, dsize); /* Total Allocation units. */
+			PUSH_LE_U64(pdata, 8, dfree); /* Caller available allocation units. */
+			PUSH_LE_U64(pdata, 16, dfree); /* Actual available allocation units. */
 			SIVAL(pdata,24,sectors_per_unit); /* Sectors per allocation unit. */
 			SIVAL(pdata,28,bytes_per_sector); /* Bytes per sector. */
 			*fixed_portion = 32;
@@ -2329,15 +2329,15 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 				  lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 
 			/* Unknown1 24 NULL bytes*/
-			SBIG_UINT(pdata,0,(uint64_t)0);
-			SBIG_UINT(pdata,8,(uint64_t)0);
-			SBIG_UINT(pdata,16,(uint64_t)0);
+			PUSH_LE_U64(pdata, 0, 0);
+			PUSH_LE_U64(pdata, 8, 0);
+			PUSH_LE_U64(pdata, 16, 0);
 
 			/* Default Soft Quota 8 bytes */
-			SBIG_UINT(pdata,24,quotas.softlim);
+			PUSH_LE_U64(pdata, 24, quotas.softlim);
 
 			/* Default Hard Quota 8 bytes */
-			SBIG_UINT(pdata,32,quotas.hardlim);
+			PUSH_LE_U64(pdata, 32, quotas.hardlim);
 
 			/* Quota flag 2 bytes */
 			SSVAL(pdata,40,quotas.qflags);
@@ -2358,7 +2358,9 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			SIVAL(pdata,16,extended_info.samba_magic);
 			SIVAL(pdata,20,extended_info.samba_version);
 			SIVAL(pdata,24,extended_info.samba_subversion);
-			SBIG_UINT(pdata,28,extended_info.samba_gitcommitdate);
+			PUSH_LE_U64(pdata,
+				    28,
+				    extended_info.samba_gitcommitdate);
 			memcpy(pdata+36,extended_info.samba_version_string,28);
 			data_len = 64;
 			break;
@@ -2450,16 +2452,18 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			/* We have POSIX ACLs, pathname, encryption,
 			 * large read/write, and locking capability. */
 
-			SBIG_UINT(pdata,4,((uint64_t)(
-					CIFS_UNIX_POSIX_ACLS_CAP|
-					CIFS_UNIX_POSIX_PATHNAMES_CAP|
-					CIFS_UNIX_FCNTL_LOCKS_CAP|
-					CIFS_UNIX_EXTATTR_CAP|
-					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
-					encrypt_caps|
-					(large_read ? CIFS_UNIX_LARGE_READ_CAP : 0) |
-					(large_write ?
-					CIFS_UNIX_LARGE_WRITE_CAP : 0))));
+			PUSH_LE_U64(pdata,
+				    4,
+				    CIFS_UNIX_POSIX_ACLS_CAP |
+				    CIFS_UNIX_POSIX_PATHNAMES_CAP |
+				    CIFS_UNIX_FCNTL_LOCKS_CAP |
+				    CIFS_UNIX_EXTATTR_CAP |
+				    CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP |
+				    encrypt_caps |
+				    (large_read ?
+					CIFS_UNIX_LARGE_READ_CAP : 0) |
+				    (large_write ?
+					CIFS_UNIX_LARGE_WRITE_CAP : 0));
 			break;
 		}
 #endif
@@ -2544,8 +2548,8 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 
 			SIVAL(pdata, 0, flags);
 			SIVAL(pdata, 4, SMB_WHOAMI_MASK);
-			SBIG_UINT(pdata, 8, (uint64_t)utok->uid);
-			SBIG_UINT(pdata, 16, (uint64_t)utok->gid);
+			PUSH_LE_U64(pdata, 8, utok->uid);
+			PUSH_LE_U64(pdata, 16, utok->gid);
 
 			if (data_len >= max_data_bytes) {
 				/* Potential overflow, skip the GIDs and SIDs. */
@@ -2580,9 +2584,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 
 			/* GID list */
 			for (i = 0; i < utok->ngroups; ++i) {
-				SBIG_UINT(pdata,
-					  data_len,
-					  (uint64_t)utok->groups[i]);
+				PUSH_LE_U64(pdata, data_len, utok->groups[i]);
 				data_len += 8;
 			}
 
