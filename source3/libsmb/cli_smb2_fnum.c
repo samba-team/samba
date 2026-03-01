@@ -2711,9 +2711,9 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 		goto fail;
 	}
 
-	*total_allocation_units = BIG_UINT(outbuf.data, 0);
-	*caller_allocation_units = BIG_UINT(outbuf.data, 8);
-	*actual_allocation_units = BIG_UINT(outbuf.data, 16);
+	*total_allocation_units = PULL_LE_U64(outbuf.data, 0);
+	*caller_allocation_units = PULL_LE_U64(outbuf.data, 8);
+	*actual_allocation_units = PULL_LE_U64(outbuf.data, 16);
 	*sectors_per_allocation_unit = (uint64_t)IVAL(outbuf.data, 24);
 	*bytes_per_sector = (uint64_t)IVAL(outbuf.data, 28);
 

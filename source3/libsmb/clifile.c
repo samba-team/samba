@@ -880,7 +880,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(data, 84));
 
 	/* number of hard links */
-	sbuf->st_ex_nlink = BIG_UINT(data, 92);
+	sbuf->st_ex_nlink = PULL_LE_U64(data, 92);
 
 	tevent_req_done(req);
 }

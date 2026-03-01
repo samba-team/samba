@@ -467,13 +467,13 @@ NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
 	}
 
 	if (total_allocation_units) {
-                *total_allocation_units = BIG_UINT(rdata, 0);
+                *total_allocation_units = PULL_LE_U64(rdata, 0);
 	}
 	if (caller_allocation_units) {
-		*caller_allocation_units = BIG_UINT(rdata,8);
+		*caller_allocation_units = PULL_LE_U64(rdata, 8);
 	}
 	if (actual_allocation_units) {
-		*actual_allocation_units = BIG_UINT(rdata,16);
+		*actual_allocation_units = PULL_LE_U64(rdata, 16);
 	}
 	if (sectors_per_allocation_unit) {
 		*sectors_per_allocation_unit = IVAL(rdata,24);
@@ -572,12 +572,12 @@ static void cli_get_posix_fs_info_done(struct tevent_req *subreq)
 
 	state->optimal_transfer_size = IVAL(data, 0);
 	state->block_size = IVAL(data,4);
-	state->total_blocks = BIG_UINT(data,8);
-	state->blocks_available = BIG_UINT(data,16);
-	state->user_blocks_available = BIG_UINT(data,24);
-	state->total_file_nodes = BIG_UINT(data,32);
-	state->free_file_nodes = BIG_UINT(data,40);
-	state->fs_identifier = BIG_UINT(data,48);
+	state->total_blocks = PULL_LE_U64(data, 8);
+	state->blocks_available = PULL_LE_U64(data, 16);
+	state->user_blocks_available = PULL_LE_U64(data, 24);
+	state->total_file_nodes = PULL_LE_U64(data, 32);
+	state->free_file_nodes = PULL_LE_U64(data, 40);
+	state->fs_identifier = PULL_LE_U64(data, 48);
 	TALLOC_FREE(data);
 	tevent_req_done(req);
 }
