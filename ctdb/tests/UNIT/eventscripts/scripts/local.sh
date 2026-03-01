@@ -168,7 +168,7 @@ shares_missing()
 			debug "Mark share $_n as missing share \"$_i\""
 			rmdir "$_i"
 			_t=$(printf "ERROR: %s directory \"%s\" not available" \
-				    "$_type" "${_i}")
+				"$_type" "${_i}")
 			_out="${_out}${_out:+${_nl}}${_t}"
 		done
 		_n=$((_n + 1))

@@ -398,7 +398,7 @@ rpc_set_service_failure_response()
 		# matter...
 		_stats_changed=false
 		if nfs_stats_check_changed \
-			   "$_rpc_service" "$service_stats_cmd"; then
+			"$_rpc_service" "$service_stats_cmd"; then
 			_stats_changed=true
 		fi
 
@@ -552,7 +552,6 @@ EOF
 			# ... and a successful monitor result
 			simple_test
 		fi
-
 
 		cat <<EOF
 --------------------------------------------------
