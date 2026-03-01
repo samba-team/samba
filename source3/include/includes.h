@@ -163,7 +163,6 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 /* TODO: remove this macros */
-#define SBIG_UINT(p, ofs, v) SBVAL(p, ofs, v)
 #define BIG_UINT(p, ofs) BVAL(p, ofs)
 
 /*
