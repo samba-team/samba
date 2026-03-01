@@ -8,9 +8,12 @@ usage()
 
 format=""
 
-while getopts "c:h:?" opt; do
+# Mix of Linux and FreeBSD options
+while getopts "c:f:t:h:?" opt; do
 	case "$opt" in
 	c) format="$OPTARG" ;;
+	f) format="$OPTARG" ;;
+	t) : ;; # Ignore and assume seconds since epoch
 	\? | h) usage ;;
 	esac
 done
@@ -39,6 +42,22 @@ fake_inode()
 }
 
 if [ -n "$format" ]; then
+	case "$format" in
+	"%m" | "%Y")
+		# Want the real platform because we want to run the
+		# platform version of stat
+		. /etc/os-release
+		case "$ID" in
+		freebsd)
+			exec /usr/bin/stat -f '%m' -t '%s' "$@"
+			;;
+		*)
+			exec /usr/bin/stat -c "%Y" "$@"
+			;;
+		esac
+		;;
+	esac
+
 	rc=0
 	for f; do
 		if [ ! -e "$f" ]; then
