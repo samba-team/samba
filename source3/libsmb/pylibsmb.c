@@ -1616,6 +1616,58 @@ static PyObject *py_cli_qfileinfo(struct py_cli_state *self, PyObject *args)
 	return result;
 }
 
+static PyObject *py_cli_sfileinfo(struct py_cli_state *self, PyObject *args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_req *req = NULL;
+	int fnum, type, level;
+	uint8_t *data = NULL;
+	Py_ssize_t data_len;
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTuple(args,
+			      "iii"PYARG_BYTES_LEN,
+			      &fnum,
+			      &type,
+			      &level,
+			      &data,
+			      &data_len))
+	{
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	blob = (DATA_BLOB) {
+		.data = data,
+		.length = data_len
+	};
+
+	req = cli_smb2_set_info_fnum_send(frame,
+					  self->ev,
+					  self->cli,
+					  fnum,
+					  type,
+					  level,
+					  &blob,
+					  0);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	status = cli_smb2_set_info_fnum_recv(req);
+	TALLOC_FREE(req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	TALLOC_FREE(frame);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_cli_rename(
 	struct py_cli_state *self, PyObject *args, PyObject *kwds)
 {
@@ -3425,6 +3477,12 @@ static PyMethodDef py_cli_state_methods[] = {
 		(PyCFunction)py_cli_qfileinfo,
 		METH_VARARGS | METH_KEYWORDS,
 		"qfileinfo(fnum, level) -> blob",
+	},
+	{
+		"sfileinfo",
+		(PyCFunction)py_cli_sfileinfo,
+		METH_VARARGS,
+		"sfileinfo(fnum, type, level, blob)",
 	},
 	{ "mknod",
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_mknod),
