@@ -196,12 +196,31 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode)
 	 * Only allow delete on close for writable files.
 	 */
 
-	if ((dosmode & FILE_ATTRIBUTE_READONLY) &&
-	    !lp_delete_readonly(SNUM(fsp->conn))) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
-			  "flag set but file attribute is readonly.\n",
-			  fsp_str_dbg(fsp)));
-		return NT_STATUS_CANNOT_DELETE;
+	if (dosmode & FILE_ATTRIBUTE_READONLY) {
+		bool delete_readonly = false;
+
+		if (lp_delete_readonly(SNUM(fsp->conn))) {
+			delete_readonly = true;
+		} else if (fsp->fsp_flags.posix_open &&
+			   fsp->access_mask & FILE_WRITE_ATTRIBUTES)
+		{
+			delete_readonly = true;
+		} else if (fsp->fsp_flags.posix_open) {
+			status = smbd_check_access_rights_fsp(
+						fsp->conn->cwd_fsp,
+						fsp,
+						false,
+						FILE_WRITE_ATTRIBUTES);
+			if (NT_STATUS_IS_OK(status)) {
+				delete_readonly = true;
+			}
+		}
+		if (!delete_readonly) {
+			DBG_DEBUG("file %s delete on close "
+				  "flag set but file attribute is readonly.\n",
+				  fsp_str_dbg(fsp));
+			return NT_STATUS_CANNOT_DELETE;
+		}
 	}
 
 	/*
