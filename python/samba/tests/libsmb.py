@@ -25,6 +25,7 @@ from samba import (ntstatus,NTSTATUSError)
 import samba.tests
 import os
 import stat
+import struct
 
 class LibsmbTests(samba.tests.TestCase):
 
@@ -46,15 +47,38 @@ class LibsmbTests(samba.tests.TestCase):
         self.server = samba.tests.env_get_var_value("SERVER")
         self.server_ip = samba.tests.env_get_var_value("SERVER_IP")
 
-    def clean_file(self, conn, filename):
+    def clean_file(self, conn, filename, retry=True):
         try:
             conn.unlink(filename)
         except NTSTATUSError as e:
             if e.args[0] == ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY:
                 conn.rmdir(filename)
-            elif not (e.args[0] == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND or
-                      e.args[0] == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND):
-                raise
+                return
+            if e.args[0] == ntstatus.NT_STATUS_CANNOT_DELETE:
+                if not retry:
+                    raise e
+            elif (e.args[0] == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND or
+                  e.args[0] == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND):
+                return
+            else:
+                raise e
+        else:
+            return
+
+        # Reset READ-ONLY attribute so we can delete the file
+        h,_,_ = conn.create_ex(
+            'test_delete_read_only_attr',
+            CreateDisposition=libsmb.FILE_OPEN,
+            DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE)
+
+        blob = struct.pack("<QQQQII", 0, 0, 0, 0,
+                           libsmb.FILE_ATTRIBUTE_NORMAL, 0)
+        conn.sfileinfo(h,
+                       libsmb.SMB2_0_INFO_FILE,
+                       libsmb.FSCC_FILE_BASIC_INFORMATION,
+                       blob)
+        conn.close(h)
+        self.clean_file(conn, filename, retry=False)
 
     def wire_mode_to_unix(self, wire):
         mode = libsmb.wire_mode_to_unix(wire)
