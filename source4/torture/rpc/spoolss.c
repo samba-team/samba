@@ -3954,7 +3954,7 @@ static bool test_GetPrinterData_checktype(struct torture_context *tctx,
 	struct spoolss_GetPrinterData r;
 	uint32_t needed;
 	enum winreg_Type type;
-	union spoolss_PrinterData data;
+	union spoolss_PrinterData data = {};
 
 	r.in.handle = handle;
 	r.in.value_name = value_name;
@@ -4024,7 +4024,7 @@ static bool test_GetPrinterDataEx_checktype(struct torture_context *tctx,
 	struct spoolss_GetPrinterDataEx r;
 	enum winreg_Type type;
 	uint32_t needed;
-	union spoolss_PrinterData data;
+	union spoolss_PrinterData data = {};
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.handle = handle;
