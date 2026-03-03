@@ -1116,26 +1116,19 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 	struct smb_filename *smb_fname_cpath = NULL;
 	struct vfs_statvfs_struct statbuf = {};
 	NTSTATUS status;
-	int dirfd, ret;
+	int ret;
 
-	dirfd = fsp_get_pathref_fd(conn->cwd_fsp);
-
-	if (dirfd == -1) {
-		/*
-		 * This happens in create_conn_struct_as_root()
-		 */
-		status = openat_pathref_fsp_rootdir(talloc_tos(),
-						    conn,
-						    &smb_fname_cpath);
-	} else {
-		status = openat_pathref_fsp_dot(talloc_tos(),
-						conn->cwd_fsp,
-						0,
-						&smb_fname_cpath);
-	}
-
+	status = synthetic_pathref(talloc_tos(),
+				   conn->cwd_fsp,
+				   conn->connectpath,
+				   NULL,
+				   NULL,
+				   0,
+				   0,
+				   &smb_fname_cpath);
 	if (!NT_STATUS_IS_OK(status)) {
-		return caps;
+		DBG_DEBUG("Could not open share root\n");
+		goto done;
 	}
 
 	ret = SMB_VFS_FSTATVFS(conn, smb_fname_cpath->fsp, &statbuf);
@@ -1179,6 +1172,7 @@ uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
 			  lp_servicename(talloc_tos(), lp_sub, conn->params->service),
 			  conn->connectpath );
 	}
+done:
 	TALLOC_FREE(smb_fname_cpath);
 	return caps;
 }
