@@ -706,6 +706,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 				TALLOC_FREE(rec);
 				break;
 			}
+			TALLOC_FREE(rec);
 		}
 
 		/*
@@ -2874,6 +2875,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 				TALLOC_FREE(list);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
+			TALLOC_FREE(rec);
 		}
 	}
 
