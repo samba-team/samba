@@ -484,6 +484,12 @@ int rep_dlclose(void *handle);
 #endif
 #endif
 
+#ifdef HAVE__STATIC_ASSERT
+# define BUILD_ASSERT(x) _Static_assert((x), #x)
+#else
+# define BUILD_ASSERT(x)
+#endif
+
 #if !defined(HAVE_VDPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define vdprintf rep_vdprintf
 int rep_vdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);

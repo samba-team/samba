@@ -38,6 +38,27 @@ def configure(conf):
     conf.DEFINE('HAVE_LIBREPLACE', 1)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
+    conf.CHECK_CODE('''
+                    _Static_assert(sizeof(int) >= 0, "int too small");
+                    int main(void) {
+                        _Static_assert(sizeof(int) >= 1, "int too small");
+                        int ret = 0;
+
+                        _Static_assert(sizeof(int) >= 2, "int too small");
+
+                        do {
+                            _Static_assert(sizeof(int) >= 3, "int too small");
+                        } while (0);
+
+                        _Static_assert(sizeof(int) >= 4, "int too small");
+                        return ret;
+                    }
+                    ''',
+                    'HAVE__STATIC_ASSERT',
+                    addmain=False,
+                    strict=True, # -Werror
+                    msg='Checking for _Static_assert')
+
     conf.CHECK_HEADERS('linux/types.h crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
