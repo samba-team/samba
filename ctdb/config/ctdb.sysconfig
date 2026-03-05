@@ -8,4 +8,4 @@ ulimit -n 1048576
 ulimit -c unlimited
 
 # Useful if default detection doesn't work
-# CTDB_INIT_STYLE=debian
+# CTDB_PLATFORM_STYLE=debian

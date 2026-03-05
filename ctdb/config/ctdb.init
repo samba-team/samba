@@ -51,9 +51,6 @@ fi
 
 load_system_config "ctdb"
 
-detect_init_style
-export CTDB_INIT_STYLE
-
 ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
 ctdb="${CTDB:-/usr/bin/ctdb}"
 pidfile="/var/run/ctdb/ctdbd.pid"
@@ -64,7 +61,7 @@ start()
 {
 	printf "Starting ctdbd service: "
 
-	case "$CTDB_INIT_STYLE" in
+	case "$CTDB_PLATFORM_STYLE" in
 	suse)
 		startproc "$ctdbd"
 		rc_status -v
@@ -86,7 +83,7 @@ stop()
 {
 	printf "Shutting down ctdbd service: "
 
-	case "$CTDB_INIT_STYLE" in
+	case "$CTDB_PLATFORM_STYLE" in
 	suse)
 		"$ctdb" "shutdown"
 		rc_status -v
@@ -117,7 +114,7 @@ restart()
 
 check_status()
 {
-	case "$CTDB_INIT_STYLE" in
+	case "$CTDB_PLATFORM_STYLE" in
 	suse)
 		checkproc -p "$pidfile" "$ctdbd"
 		rc_status -v

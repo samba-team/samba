@@ -6,9 +6,7 @@
 
 . "${CTDB_BASE}/functions"
 
-detect_init_style
-
-case $CTDB_INIT_STYLE in
+case $CTDB_PLATFORM_STYLE in
 suse)
 	CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmb}
 	;;

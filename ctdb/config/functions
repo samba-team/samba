@@ -157,51 +157,54 @@ ctdb_check_args()
 }
 
 ##############################################################
-# determine on what type of system (init style) we are running
-detect_init_style()
+# determine on what type of system we are running
+detect_platform_style()
 {
-	_init_style_file="${CTDB_SCRIPT_VARDIR}/init-style"
+	CTDB_PLATFORM_STYLE=""
 
-	if [ ! -f "$_init_style_file" ]; then
-		if [ -n "$CTDB_INIT_STYLE" ]; then
-			echo "$CTDB_INIT_STYLE" >"$_init_style_file"
-			return
-		fi
+	_os_release="${CTDB_SYS_ETCDIR}/os-release"
+	if [ -f "$_os_release" ]; then
+		# Limit the variables that might be set
+		eval "$(grep '^ID=\|^ID_LIKE=' "$_os_release")"
 
-		# Subshell to contain variables in os-release file
-		(
-			_os_release="${CTDB_SYS_ETCDIR}/os-release"
-			if [ -f "$_os_release" ]; then
-				. "$_os_release"
-				case "$ID" in
-				centos | fedora | rhel)
-					echo "redhat"
-					;;
-				debian | ubuntu)
-					echo "debian"
-					;;
-				sles | suse)
-					echo "suse"
-					;;
-				*)
-					case "$ID_LIKE" in
-					*centos* | *rhel*)
-						echo "redhat"
-						;;
-					*)
-						echo "$ID"
-						;;
-					esac
-					;;
-				esac
-			else
-				echo "WARNING: unknown distribution ${ID}" >&2
-				echo "unknown"
-			fi
-		) >"$_init_style_file"
+		case "$ID" in
+		centos | fedora | rhel)
+			CTDB_PLATFORM_STYLE="redhat"
+			;;
+		debian | ubuntu)
+			CTDB_PLATFORM_STYLE="debian"
+			;;
+		sles | suse)
+			CTDB_PLATFORM_STYLE="suse"
+			;;
+		*)
+			case "$ID_LIKE" in
+			*centos* | *rhel*)
+				CTDB_PLATFORM_STYLE="redhat"
+				;;
+			*)
+				CTDB_PLATFORM_STYLE="$ID"
+				;;
+			esac
+			;;
+		esac
+
+		unset -v ID ID_LIKE 2>/dev/null
 	fi
 
-	read -r CTDB_INIT_STYLE <"$_init_style_file"
+	if [ -z "$CTDB_PLATFORM_STYLE" ]; then
+		echo "WARNING: unknown platform" >&2
+		CTDB_PLATFORM_STYLE="unknown"
+	fi
+}
+
+detect_platform_style
+
+detect_init_style()
+{
+	# CTDB_INIT_STYLE may be used by 3rd party scripts
+	# shellcheck disable=SC2034
+	CTDB_INIT_STYLE="$CTDB_PLATFORM_STYLE"
 }
 
 ######################################################

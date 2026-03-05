@@ -40,17 +40,34 @@
     <variablelist>
 
       <varlistentry>
-	<term>CTDB_INIT_STYLE=debian|redhat|suse</term>
+	<term>CTDB_PLATFORM_STYLE=debian|redhat|suse|freebsd</term>
 	<listitem>
 	  <para>
-	    This is the init style used by the Linux distribution (or
+	    This characterises the Linux distribution (or
 	    other operating system) being used.  This is usually
 	    determined dynamically by checking the system.  This
-	    variable is used by the initscript to determine which init
-	    system primitives to use.  It is also used by some
-	    eventscripts to choose the name of initscripts for certain
-	    services, since these can vary between distributions.
+	    variable is used by:
 	  </para>
+	  <itemizedlist>
+	    <listitem>
+	      <para>
+		The initscript to determine which init system
+		primitives to use.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		Some event scripts to determine services names, since
+		these can vary between distributions.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		Some shell functions to determine which options to use
+		for certain commands.
+	      </para>
+	    </listitem>
+	  </itemizedlist>
 	  <para>
 	    If using CTDB's event scripts are unable to determine an
 	    appropriate default then this option can also be placed in
@@ -59,8 +76,8 @@
 	    <manvolnum>5</manvolnum></citerefentry> file.
 	  </para>
 	  <para>
-	    Default: NONE.  Guessed, based on features of
-	    distribution.
+	    Default: Based on contents of
+	    <filename>/etc/os-release</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
