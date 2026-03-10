@@ -22,6 +22,7 @@
 #include "replace.h"
 #include <talloc.h>
 #include "librpc/gen_ndr/misc.h"
+#include "libcli/util/ntstatus.h"
 
 struct netr_DsRGetDCNameInfo;
 struct messaging_context;
