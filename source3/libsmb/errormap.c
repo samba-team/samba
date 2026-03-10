@@ -321,7 +321,7 @@ static const struct {
 
 NTSTATUS map_nt_error_from_wbcErr(wbcErr wbc_err)
 {
-	int i;
+	size_t i;
 
 	/* Look through list */
 	for (i=0;i<ARRAY_SIZE(wbcErr_ntstatus_map);i++) {
