@@ -2502,6 +2502,8 @@ static int vfs_ceph_fstatvfs(struct vfs_handle_struct *handle,
 	uint32_t caps = 0;
 	int ret;
 
+	START_PROFILE_X(SNUM(handle->conn), syscall_fstatvfs);
+
 	ret = vfs_ceph_iget(handle, fsp->fsp_name->base_name, 0, &iref);
 	if (ret != 0) {
 		goto out;
@@ -2536,6 +2538,7 @@ static int vfs_ceph_fstatvfs(struct vfs_handle_struct *handle,
 		  (long int)statvfs_buf.f_bavail);
 out:
 	vfs_ceph_iput(handle, &iref);
+	END_PROFILE_X(syscall_fstatvfs);
 	return status_code(ret);
 }
 
@@ -4247,7 +4250,9 @@ static ssize_t vfs_ceph_fgetxattr(struct vfs_handle_struct *handle,
 				  void *value,
 				  size_t size)
 {
-	int ret;
+	ssize_t ret;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fgetxattr);
 
 	DBG_DEBUG("[CEPH] fgetxattr: fsp_name=%s name=%s value=%p size=%zu\n",
 		  fsp_str_dbg(fsp),
@@ -4276,7 +4281,8 @@ static ssize_t vfs_ceph_fgetxattr(struct vfs_handle_struct *handle,
 		vfs_ceph_iput(handle, &iref);
 	}
 out:
-	DBG_DEBUG("[CEPH] fgetxattr done: ret=%d\n", ret);
+	DBG_DEBUG("[CEPH] fgetxattr done: ret=%zd\n", ret);
+	END_PROFILE_X(syscall_fgetxattr);
 	return lstatus_code(ret);
 }
 
@@ -4286,7 +4292,9 @@ static ssize_t vfs_ceph_flistxattr(struct vfs_handle_struct *handle,
 				   size_t size)
 {
 	size_t list_size = 0;
-	int ret;
+	ssize_t ret;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_flistxattr);
 
 	DBG_DEBUG("[CEPH] flistxattr: fsp_name=%s list=%p size=%zd\n",
 		  fsp_str_dbg(fsp),
@@ -4328,7 +4336,8 @@ static ssize_t vfs_ceph_flistxattr(struct vfs_handle_struct *handle,
 	}
 	ret = (int)list_size;
 out:
-	DBG_DEBUG("[CEPH] flistxattr done: ret=%d\n", ret);
+	DBG_DEBUG("[CEPH] flistxattr done: ret=%zd\n", ret);
+	END_PROFILE_X(syscall_flistxattr);
 	return lstatus_code(ret);
 }
 
@@ -4337,6 +4346,8 @@ static int vfs_ceph_fremovexattr(struct vfs_handle_struct *handle,
 				 const char *name)
 {
 	int ret;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fremovexattr);
 
 	DBG_DEBUG("[CEPH] fremovexattr: fsp_name=%s name=%s\n",
 		  fsp_str_dbg(fsp),
@@ -4364,6 +4375,7 @@ static int vfs_ceph_fremovexattr(struct vfs_handle_struct *handle,
 	}
 out:
 	DBG_DEBUG("[CEPH] fremovexattr done: ret=%d\n", ret);
+	END_PROFILE_X(syscall_fremovexattr);
 	return status_code(ret);
 }
 
@@ -4375,6 +4387,8 @@ static int vfs_ceph_fsetxattr(struct vfs_handle_struct *handle,
 			      int flags)
 {
 	int ret;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fsetxattr);
 
 	DBG_DEBUG("[CEPH] fsetxattr: fsp_name=%s name=%s value=%p size=%zd"
 		  " flags=%d\n",
@@ -4414,6 +4428,7 @@ static int vfs_ceph_fsetxattr(struct vfs_handle_struct *handle,
 	}
 out:
 	DBG_DEBUG("[CEPH] fsetxattr done: ret=%d\n", ret);
+	END_PROFILE_X(syscall_fsetxattr);
 	return status_code(ret);
 }
 
