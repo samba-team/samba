@@ -33,6 +33,11 @@ static size_t spoolss_interfaces(
 	static const struct ndr_interface_table *ifaces[] = {
 		&ndr_table_spoolss,
 	};
+
+	if (lp_disable_spoolss()) {
+		return 0;
+	}
+
 	*pifaces = ifaces;
 	return ARRAY_SIZE(ifaces);
 }
