@@ -176,9 +176,13 @@ static int vfswrap_fstatvfs(struct vfs_handle_struct *handle,
 {
 	int ret, fd;
 
+	START_PROFILE_X(SNUM(handle->conn), syscall_fstatvfs);
+
 	fd = fsp_get_pathref_fd(fsp);
 
 	ret = sys_fstatvfs(fd, statbuf);
+
+	END_PROFILE_X(syscall_fstatvfs);
 	return ret;
 }
 
@@ -3555,23 +3559,31 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
 				 size_t size)
 {
 	int fd = fsp_get_pathref_fd(fsp);
+	ssize_t res = -1;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fgetxattr);
 
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
 
 	if (!fsp->fsp_flags.is_pathref) {
-		return fgetxattr(fd, name, value, size);
+		res = fgetxattr(fd, name, value, size);
+		goto out;
 	}
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		struct sys_proc_fd_path_buf buf;
 
-		return getxattr(sys_proc_fd_path(fd, &buf), name, value, size);
+		res = getxattr(sys_proc_fd_path(fd, &buf), name, value, size);
+		goto out;
 	}
 
 	/*
 	 * This is no longer a handle based call.
 	 */
-	return getxattr(fsp->fsp_name->base_name, name, value, size);
+	res = getxattr(fsp->fsp_name->base_name, name, value, size);
+out:
+	END_PROFILE_X(syscall_fgetxattr);
+	return res;
 }
 
 struct vfswrap_getxattrat_state {
@@ -3885,71 +3897,95 @@ static ssize_t vfswrap_getxattrat_recv(struct tevent_req *req,
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	int fd = fsp_get_pathref_fd(fsp);
+	ssize_t res = -1;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_flistxattr);
 
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
 
 	if (!fsp->fsp_flags.is_pathref) {
-		return flistxattr(fd, list, size);
+		res = flistxattr(fd, list, size);
+		goto out;
 	}
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		struct sys_proc_fd_path_buf buf;
 
-		return listxattr(sys_proc_fd_path(fd, &buf), list, size);
+		res = listxattr(sys_proc_fd_path(fd, &buf), list, size);
+		goto out;
 	}
 
 	/*
 	 * This is no longer a handle based call.
 	 */
-	return listxattr(fsp->fsp_name->base_name, list, size);
+	res = listxattr(fsp->fsp_name->base_name, list, size);
+out:
+	END_PROFILE_X(syscall_flistxattr);
+	return res;
 }
 
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
 	int fd = fsp_get_pathref_fd(fsp);
+	int res = -1;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fremovexattr);
 
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
 
 	if (!fsp->fsp_flags.is_pathref) {
-		return fremovexattr(fd, name);
+		res = fremovexattr(fd, name);
+		goto out;
 	}
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		struct sys_proc_fd_path_buf buf;
 
-		return removexattr(sys_proc_fd_path(fd, &buf), name);
+		res = removexattr(sys_proc_fd_path(fd, &buf), name);
+		goto out;
 	}
 
 	/*
 	 * This is no longer a handle based call.
 	 */
-	return removexattr(fsp->fsp_name->base_name, name);
+	res = removexattr(fsp->fsp_name->base_name, name);
+out:
+	END_PROFILE_X(syscall_fremovexattr);
+	return res;
 }
 
 static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
 	int fd = fsp_get_pathref_fd(fsp);
+	int res = -1;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fsetxattr);
 
 	SMB_ASSERT(!fsp_is_alternate_stream(fsp));
 
 	if (!fsp->fsp_flags.is_pathref) {
-		return fsetxattr(fd, name, value, size, flags);
+		res = fsetxattr(fd, name, value, size, flags);
+		goto out;
 	}
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		struct sys_proc_fd_path_buf buf;
 
-		return setxattr(sys_proc_fd_path(fd, &buf),
+		res =  setxattr(sys_proc_fd_path(fd, &buf),
 				name,
 				value,
 				size,
 				flags);
+		goto out;
 	}
 
 	/*
 	 * This is no longer a handle based call.
 	 */
-	return setxattr(fsp->fsp_name->base_name, name, value, size, flags);
+	res = setxattr(fsp->fsp_name->base_name, name, value, size, flags);
+out:
+	END_PROFILE_X(syscall_fsetxattr);
+	return res;
 }
 
 static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
