@@ -615,14 +615,6 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
                        uint32_t security_info_sent);
 NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
                        uint32_t security_info_sent);
-NTSTATUS copy_internals(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			struct smb_request *req,
-			struct files_struct *src_dirfsp,
-			struct smb_filename *smb_fname_src,
-			struct files_struct *dst_dirfsp,
-			struct smb_filename *smb_fname_dst,
-			uint32_t attrs);
 NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 					TALLOC_CTX *mem_ctx,
 					files_struct *fsp,
