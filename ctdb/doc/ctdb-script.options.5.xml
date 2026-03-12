@@ -87,13 +87,72 @@
       <para>
 	A threshold setting looks like
 	<parameter>WARNING_THRESHOLD<optional>:ERROR_THRESHOLD</optional></parameter>.
-	If the number of problems is ≥ WARNING_THRESHOLD then the
-	script will log a warning and continue.  If the number
-	problems is ≥ ERROR_THRESHOLD then the script will log an
-	error and exit with failure, causing monitoring to fail.  Note
-	that ERROR_THRESHOLD is optional, and follows the optional
-	colon (:) separator.
+	Note that ERROR_THRESHOLD is optional, and follows the
+	optional colon (:) separator.  A threshold can indicate either
+	of the following:
       </para>
+      <itemizedlist>
+	<listitem>
+	  <para>
+	    A measurement to be compared against.  This can include
+	    things like resource usage or the duration of an
+	    operation.  In this case, the associated event script
+	    behaves as follows:
+	  </para>
+	  <itemizedlist>
+	    <listitem>
+	      <para>
+		If ERROR_THRESHOLD is present, an error message is
+		logged and the event script fails when measurement
+		≥ ERROR_THRESHOLD.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		An initial warning message is logged when measurement
+		is initially ≥ WARNING_THRESHOLD.  Additional warning
+		messages are logged each time measurement changes and
+		measurement remains ≥ WARNING_THRESHOLD.  The event
+		script continues when a warning is logged.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		If the previous event caused an error or warning to be
+		logged and measurement &lt; WARNING_THRESHOLD then a
+		notice is logged indicating that measurement is now
+		less than WARNING_THRESHOLD.  The event script
+		continues when a notice is logged.
+	      </para>
+	    </listitem>
+	  </itemizedlist>
+	</listitem>
+	<listitem>
+	  <para>
+	    A failure count ("failcount"). That is, the number of
+	    times a particular check has consecutively failed.  In
+	    this case, the associated event script behaves as follows:
+	  </para>
+	  <itemizedlist>
+	    <listitem>
+	      <para>
+		If ERROR_THRESHOLD is present, an error message is
+		logged and the event script fails when failcount ≥
+		ERROR_THRESHOLD.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		A warning message is logged when failcount is
+		initially ≥ WARNING_THRESHOLD.  No additional warnings
+		are logged (until failcount ≥ ERROR_THRESHOLD).  The
+		intention is to avoid flooding the log with warnings.
+		The event script continues when a warning is logged.
+	      </para>
+	    </listitem>
+	  </itemizedlist>
+	</listitem>
+      </itemizedlist>
     </refsect2>
 
   </refsect1>
@@ -1275,38 +1334,38 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  <listitem>
 	    <para>
 	      FS-LIMIT-LIST is a space-separated list of
-	      <parameter>FILESYSTEM</parameter>:<parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
-	      triples indicating that warnings should be logged if the
-	      space used on FILESYSTEM reaches WARN_LIMIT%.  If usage
-	      reaches UNHEALTHY_LIMIT then the node should be flagged
-	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
-	      left blank, meaning that check will be omitted.
+	      <parameter>FILESYSTEM</parameter>:<parameter>THRESHOLDS</parameter>
+	      entries.  See <citetitle>Monitoring
+	      Thresholds</citetitle> for details of how THRESHOLDS
+	      will be interpreted - in this case, as a percentage
+	      measurement of FILESYSTEM usage.
 	    </para>
 
 	    <para>
-	      Default is to warn for each filesystem containing a
-	      database directory
+	      Default is to set a WARNING_THRESHOLD of 90 for each
+	      filesystem containing a database directory
 	      (<literal>volatile&nbsp;database&nbsp;directory</literal>,
 	      <literal>persistent&nbsp;database&nbsp;directory</literal>,
-	      <literal>state&nbsp;database&nbsp;directory</literal>)
-	      with a threshold of 90%.
+	      <literal>state&nbsp;database&nbsp;directory</literal>).
+	    </para>
+	    <para>
+	      To disable filesystem usage checking, set
+	      CTDB_MONITOR_FILESYSTEM_USAGE to a filesystem path with
+	      no THRESHOLDS.
 	    </para>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
 	  <term>
-	    CTDB_MONITOR_MEMORY_USAGE=<parameter>MEM-LIMITS</parameter>
+	    CTDB_MONITOR_MEMORY_USAGE=<parameter>THRESHOLDS</parameter>
 	  </term>
 	  <listitem>
 	    <para>
-	      MEM-LIMITS takes the form
-	      <parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
-	      indicating that warnings should be logged if memory
-	      usage reaches WARN_LIMIT%.  If usage reaches
-	      UNHEALTHY_LIMIT then the node should be flagged
-	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
-	      left blank, meaning that check will be omitted.
+	      See <citetitle>Monitoring Thresholds</citetitle> for
+	      details of how THRESHOLDS will be interpreted - in this
+	      case, as a percentage measurement of virtual memory
+	      usage.
 	    </para>
 	    <para>
 	      Default is 80, so warnings will be logged when memory
