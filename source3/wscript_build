@@ -1130,8 +1130,13 @@ bld.SAMBA3_SUBSYSTEM('fd_handle',
 
 ########################## BINARIES #################################
 
+smbd_sources = 'smbd/server.c smbd/smbd_cleanupd.c'
+
+if bld.CONFIG_GET('WITH_RATELIMITD'):
+    smbd_sources += ' smbd/smbd_ratelimitd.c'
+
 bld.SAMBA3_BINARY('smbd/smbd',
-                 source='smbd/server.c smbd/smbd_cleanupd.c smbd/smbd_ratelimitd.c',
+                 source=smbd_sources,
                  deps='''
                       CMDLINE_S3
                       smbd_base

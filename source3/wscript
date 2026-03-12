@@ -90,6 +90,10 @@ def options(opt):
     opt.samba_add_onoff_option('glusterfs', with_name="enable", without_name="disable", default=True)
     opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=None)
     opt.samba_add_onoff_option('cephrgw', with_name="enable", without_name="disable", default=None)
+    opt.samba_add_onoff_option('ratelimitd',
+                                help=("Enable cluster rate limiting coordination daemon (requires clustering)"),
+                                default=False)
+
 
     opt.add_option('--enable-vxfs',
                   help=("enable support for VxFS (default=no)"),
@@ -1696,6 +1700,10 @@ int main(void) {
         not conf.CONFIG_SET('HAVE_CEPHRGW')):
             Logs.error("librgw not present, cannot build ceph rgw module")
             conf.fatal("librgw not present, but --enable-cephrgw was specified")
+
+    if Options.options.with_ratelimitd:
+        conf.DEFINE('WITH_RATELIMITD', 1)
+        Logs.info("Enabling rate limiting daemon")
 
     if Options.options.with_glusterfs:
         conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
