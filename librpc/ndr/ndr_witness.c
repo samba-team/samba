@@ -91,8 +91,54 @@ _PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr,
 					struct ndr_pull *_ndr_messages;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_messages, 4, r->length));
 					for (cntr_messages_0 = 0; cntr_messages_0 < (size_messages_0); cntr_messages_0++) {
+						uint32_t old_offset = _ndr_messages->offset;
 						NDR_CHECK(ndr_pull_set_switch_value(_ndr_messages, &r->messages[cntr_messages_0], r->type));
 						NDR_CHECK(ndr_pull_witness_notifyResponse_message(_ndr_messages, NDR_SCALARS, &r->messages[cntr_messages_0]));
+						if (_ndr_messages->offset == old_offset) {
+							/*
+							 * We pulled
+							 * no data,
+							 * probably
+							 * because the
+							 * message
+							 * type was
+							 * nonsensical
+							 * and we
+							 * tried
+							 * pulling a
+							 * data blob
+							 * of zero
+							 * size which
+							 * leaves the
+							 * offset
+							 * unchanged.
+							 * The loop
+							 * will stop
+							 * when we get
+							 * to r->num,
+							 * but the
+							 * offset will
+							 * never
+							 * advance
+							 * past here.
+							 *
+							 * Otherwise,
+							 * we fill
+							 * this struct
+							 * with empty
+							 * messages:
+							 *
+							 * *r = {
+							 *    type = 7416864,
+							 *    length = 4,
+							 *    num = 10551297,
+							 *    messages = 0x...
+							 * }
+							 */
+							ndr->flags = _flags_save_witness_notifyResponse_message;
+							NDR_PULL_SET_MEM_CTX(ndr, _mem_save_messages_0, 0);
+							return NDR_ERR_BAD_SWITCH;
+						}
 					}
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_messages, 4, r->length));
 				}
