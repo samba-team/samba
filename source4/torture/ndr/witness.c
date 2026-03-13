@@ -334,6 +334,13 @@ static bool witness_AsyncNotify_check_fuzz1_OUT(struct torture_context *tctx,
 	return true;
 }
 
+
+static const uint8_t witness_notifyResponse_data_fuzz2_STRUCT[] = {
+	0x20, 0x2c, 0x71, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0xa1, 0x00,
+	0x31, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+
 struct torture_suite *ndr_witness_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "witness");
@@ -406,6 +413,11 @@ struct torture_suite *ndr_witness_suite(TALLOC_CTX *ctx)
 					    NDR_OUT,
 					    0,
 					    witness_AsyncNotify_check_fuzz1_OUT);
+
+	torture_suite_add_ndr_pull_invalid_data_test(suite,
+						     witness_notifyResponse,
+						     witness_notifyResponse_data_fuzz2_STRUCT,
+						     NDR_ERR_BAD_SWITCH);
 
 	return suite;
 }
