@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/util/util_file.h"
+#include "lib/util/util_str_escape.h"
 #include "printing.h"
 #include "smbd/proto.h"
 #include "source3/lib/substitute.h"
@@ -207,6 +208,52 @@ static int generic_queue_get(const char *printer_name,
 	return qcount;
 }
 
+static const char *replace_print_cmd_J(TALLOC_CTX *mem_ctx,
+				       const char *orig_cmd,
+				       const char *unsafe_jobname,
+				       const char *fallback_jobname)
+{
+	char *cmd = NULL;
+	bool modified = false;
+	bool masked = false;
+	bool mixed_fallback = false;
+
+	/*
+	 * This replaces unsafe characters with '_'.
+	 * We also mask forward and backslash here.
+	 *
+	 * Then it replaces %J with an single quoted
+	 * version of the masked jobname or it falls
+	 * back to fallback_jobname is the print command
+	 * uses strange mixed quoting.
+	 */
+
+#define JOBNAME_UNSAFE_CHARACTERS \
+	STRING_SUB_UNSAFE_CHARACTERS "/\\"
+
+	cmd = talloc_string_sub_unsafe(mem_ctx,
+				       orig_cmd,
+				       'J',
+				       unsafe_jobname,
+				       JOBNAME_UNSAFE_CHARACTERS,
+				       '_',
+				       fallback_jobname,
+				       &modified,
+				       &masked,
+				       &mixed_fallback);
+	if (cmd == NULL) {
+		return NULL;
+	}
+
+	/*
+	 * The caller already checked talloc_string_sub_mixed_quoting()
+	 * and warned the admin, so we don't check mixed_fallback
+	 * here
+	 */
+
+	return cmd;
+}
+
 /****************************************************************************
  Submit a file for printing - called from print_job_end()
 ****************************************************************************/
@@ -222,11 +269,12 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 	char *print_directory = NULL;
 	char *wd = NULL;
 	char *p = NULL;
-	char *jobname = NULL;
+	const char *print_cmd = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	fstring job_page_count, job_size;
 	print_queue_struct *q = NULL;
 	print_status_struct status;
+	const char *jobname = "No Document Name";
 
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
@@ -255,24 +303,48 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 		return -1;
 	}
 
-	jobname = talloc_strdup(ctx, pjob->jobname);
-	if (!jobname) {
-		ret = -1;
-		goto out;
+	if (pjob->jobname[0] != '\0') {
+		jobname = pjob->jobname;
 	}
-	jobname = talloc_string_sub(ctx, jobname, "'", "_");
-	if (!jobname) {
-		ret = -1;
-		goto out;
+
+	print_cmd = lp_print_command(snum);
+	if (print_cmd != NULL) {
+		const char *invalid_jobname = "__CVE-2026-4480_FallbackJobname__";
+
+		if (talloc_string_sub_mixed_quoting(print_cmd, 'J')) {
+			/*
+			 * The admin used a strange mixture of
+			 * single and double quotes, fallback
+			 * to InvalidDocumentName and warn about
+			 * it, so that the admin can adjust to
+			 * the use single quotes directly around %J,
+			 * e.g. '%J'.
+			 */
+			jobname = invalid_jobname;
+			D_WARNING("CVE-2026-4480: printer %s "
+				  "strange quoting in 'print command', "
+				  "falling back to jobname=%s, "
+				  "use testparm to fix the configuration\n",
+				  lp_printername(talloc_tos(), lp_sub, snum),
+				  invalid_jobname);
+		}
+
+		print_cmd = replace_print_cmd_J(ctx,
+						print_cmd,
+						jobname,
+						invalid_jobname);
+		if (!print_cmd) {
+			ret = -1;
+			goto out;
+		}
 	}
 	fstr_sprintf(job_page_count, "%d", pjob->page_count);
 	fstr_sprintf(job_size, "%zu", pjob->size);
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
-			lp_print_command(snum), NULL,
+			print_cmd, NULL,
 			"%s", p,
-			"%J", jobname,
 			"%f", p,
 			"%z", job_size,
 			"%c", job_page_count,
@@ -293,17 +365,26 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 		int i;
 		for (i = 0; i < ret; i++) {
 			if (strcmp(q[i].fs_file, p) == 0) {
+				char *le_jobname =
+					log_escape(talloc_tos(), jobname);
+
 				pjob->sysjob = q[i].sysjob;
 				DEBUG(5, ("new job %u (%s) matches sysjob %d\n",
-					  pjob->jobid, jobname, pjob->sysjob));
+					  pjob->jobid, le_jobname, pjob->sysjob));
+
+				TALLOC_FREE(le_jobname);
 				break;
 			}
 		}
 		ret = 0;
 	}
 	if (pjob->sysjob == -1) {
+		char *le_jobname = log_escape(talloc_tos(), jobname);
+
 		DEBUG(2, ("failed to get sysjob for job %u (%s), tracking as "
-			  "Unix job\n", pjob->jobid, jobname));
+			  "Unix job\n", pjob->jobid, le_jobname));
+
+		TALLOC_FREE(le_jobname);
 	}
 
 
