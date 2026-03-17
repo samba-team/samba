@@ -1470,8 +1470,8 @@ static int streams_xattr_connect(vfs_handle_struct *handle,
 					  "streams_xattr",
 					  "ext_prefix",
 					  default_ext_prefix);
-	TALLOC_FREE(default_ext_prefix);
 	config->ext_prefix = talloc_strdup(config, ext_prefix);
+	TALLOC_FREE(default_ext_prefix);
 	if (config->ext_prefix == NULL) {
 		DEBUG(1, ("talloc_strdup() failed\n"));
 		errno = ENOMEM;
