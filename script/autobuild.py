@@ -176,7 +176,7 @@ builddirs = {
 }
 
 ctdb_configure_params = " --enable-developer ${PREFIX}"
-samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --with-prometheus-exporter"
+samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --with-prometheus-exporter --with-ratelimitd"
 
 # To test that waf copes with unknown arguments that look like
 # environment variables, we add a couple of parameters that should be
