@@ -330,7 +330,7 @@ static bool wrap_ndr_pull_invalid_data_test(struct torture_context *tctx,
 	torture_assert_ndr_err_equal(
 		tctx,
 		data->pull_fn(ndr, data->ndr_flags, ds),
-		NDR_ERR_BUFSIZE,
+		data->ndr_err,
 		"pulling invalid data");
 
 	talloc_free(ndr);
