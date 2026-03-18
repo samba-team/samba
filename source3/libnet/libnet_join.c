@@ -2643,7 +2643,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		struct sockaddr_storage ss = {0};
 		const char *numeric_dcip = info->dc_address + 2;
 
-		if (numeric_dcip[0] == '\0') {
+		if (numeric_dcip[0] != '\0') {
 			if (!interpret_string_addr(&ss, numeric_dcip,
 						   AI_NUMERICHOST)) {
 				DBG_ERR(
