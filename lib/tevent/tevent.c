@@ -955,24 +955,35 @@ done:
 
 bool tevent_common_have_events(struct tevent_context *ev)
 {
-	if (ev->fd_events != NULL) {
-		if (ev->fd_events != ev->wakeup_fde) {
-			return true;
-		}
-		if (ev->fd_events->next != NULL) {
-			return true;
-		}
+	struct tevent_fd *fde = NULL;
 
-		/*
-		 * At this point we just have the wakeup pipe event as
-		 * the only fd_event. That one does not count as a
-		 * regular event, so look at the other event types.
-		 */
+	if (ev->timer_events != NULL ||
+	    ev->immediate_events != NULL ||
+	    ev->signal_events != NULL)
+	{
+		return true;
 	}
 
-	return ((ev->timer_events != NULL) ||
-		(ev->immediate_events != NULL) ||
-		(ev->signal_events != NULL));
+	for (fde = ev->fd_events; fde != NULL; fde = fde->next) {
+		if (fde == ev->wakeup_fde) {
+			/*
+			 * Just ignore the wakeup pipe event,
+			 * it should not let us loop forever.
+			 */
+			continue;
+		}
+		if (fde->flags == 0) {
+			/*
+			 * Disabled fd event should not
+			 * let us loop forever.
+			 */
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 /*
