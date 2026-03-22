@@ -2274,7 +2274,11 @@ static unsigned int count_acl_entries(connection_struct *conn, SMB_ACL_T posix_a
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 
-	while ( posix_acl && (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1)) {
+	if (posix_acl == NULL) {
+		return 0;
+	}
+
+	while (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		entry_id = SMB_ACL_NEXT_ENTRY;
 		ace_count++;
 	}
@@ -2290,7 +2294,11 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 
-	while ( posix_acl && (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1)) {
+	if (posix_acl == NULL) {
+		return true;
+	}
+
+	while (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		unsigned char perms = 0;
