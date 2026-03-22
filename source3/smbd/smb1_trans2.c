@@ -4016,7 +4016,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	 */
 
 	if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) &&
-	    (sbuf.st_ex_uid != set_owner)) {
+	    (set_owner != sbuf.st_ex_uid)) {
 		int ret;
 
 		DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC "
@@ -4049,7 +4049,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	 */
 
 	if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) &&
-	    (sbuf.st_ex_gid != set_grp)) {
+	    (set_grp != sbuf.st_ex_gid)) {
 		int ret;
 
 		DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC "
