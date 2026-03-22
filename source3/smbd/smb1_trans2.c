@@ -2059,10 +2059,12 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	size_t fixed_portion;
 	NTSTATUS status = NT_STATUS_OK;
 
-	DEBUG(3,("call_trans2qfilepathinfo %s (%s) level=%d call=%d "
-		 "total_data=%d\n", smb_fname_str_dbg(smb_fname),
-		 fsp_fnum_dbg(fsp),
-		 info_level,tran_call,total_data));
+	DBG_NOTICE("%s (%s) level=%" PRIu16 " call=%d total_data=%d\n",
+		   smb_fname_str_dbg(smb_fname),
+		   fsp_fnum_dbg(fsp),
+		   info_level,
+		   tran_call,
+		   total_data);
 
 	/* Pull out any data sent here before we realloc. */
 	switch (info_level) {
@@ -2079,8 +2081,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			ea_size = IVAL(pdata,0);
 
 			if (total_data > 0 && ea_size != total_data) {
-				DEBUG(4,("call_trans2qfilepathinfo: Rejecting EA request with incorrect \
-total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
+				DBG_NOTICE("Rejecting EA request with "
+					   "incorrect total_data=%d "
+					   "(should be %" PRIu32 ")\n",
+					   total_data,
+					   ea_size);
 				reply_nterror(
 					req, NT_STATUS_INVALID_PARAMETER);
 				return;
@@ -2294,12 +2299,12 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
 		if (sys_acl_get_tag_type(entry, &tagtype) == -1) {
-			DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_TAG_TYPE failed.\n"));
+			DBG_ERR("SMB_VFS_SYS_ACL_GET_TAG_TYPE failed.\n");
 			return False;
 		}
 
 		if (sys_acl_get_permset(entry, &permset) == -1) {
-			DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_PERMSET failed.\n"));
+			DBG_ERR("SMB_VFS_SYS_ACL_GET_PERMSET failed.\n");
 			return False;
 		}
 
@@ -2320,7 +2325,8 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 				{
 					uid_t *puid = (uid_t *)sys_acl_get_qualifier(entry);
 					if (!puid) {
-						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
+						DBG_ERR("SMB_VFS_SYS_ACL_GET_"
+							"QUALIFIER failed.\n");
 						return False;
 					}
 					own_grp = (unsigned int)*puid;
@@ -2339,7 +2345,8 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 				{
 					gid_t *pgid= (gid_t *)sys_acl_get_qualifier(entry);
 					if (!pgid) {
-						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
+						DBG_ERR("SMB_VFS_SYS_ACL_GET_"
+							"QUALIFIER failed.\n");
 						return False;
 					}
 					own_grp = (unsigned int)*pgid;
@@ -2359,7 +2366,7 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 				SIVAL(pdata,6,0xFFFFFFFF);
 				break;
 			default:
-				DEBUG(0,("marshall_posix_acl: unknown tagtype.\n"));
+				DBG_ERR("unknown tagtype.\n");
 				return False;
 		}
 		pdata += SMB_POSIX_ACL_ENTRY_SIZE;
