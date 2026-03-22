@@ -3957,8 +3957,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 
 	if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
 	   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
-		size=IVAL(pdata,0); /* first 8 Bytes are size */
-		size |= (((off_t)IVAL(pdata,4)) << 32);
+		size = PULL_LE_U64(pdata, 0);
 	}
 
 	ft.atime = pull_long_date_full_timespec(pdata+24); /* access_time */
