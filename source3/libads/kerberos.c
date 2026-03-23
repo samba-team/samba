@@ -1365,10 +1365,12 @@ static char *get_enctypes(TALLOC_CTX *mem_ctx)
 }
 #endif
 
-bool create_local_private_krb5_conf_for_domain(const char *realm,
-						const char *domain,
-						const char *sitename,
-					        const struct sockaddr_storage *pss)
+bool create_local_private_krb5_conf_for_domain_internal(
+	const char *realm,
+	const char *domain,
+	const char *sitename,
+	const struct sockaddr_storage *pss,
+	bool dns_lookup_kdc)
 {
 	char *dname;
 	char *tmpname = NULL;
@@ -1453,10 +1455,16 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 #endif
 
 	/*
-	 * We are setting 'dns_lookup_kdc' to true, because we want to lookup
-	 * KDCs which are not configured via DNS SRV records, eg. if we do:
+	 * Normally 'dns_lookup_kdc' should be set to true, because we want to
+	 * also lookup KDCs via DNS SRV records, e.g. cross domain scenario:
 	 *
 	 *     net ads join -Uadmin@otherdomain
+	 *
+	 * However, during domain join we need to set it to false when we
+	 * reconnect using the freshly created machine account credentials.
+	 * With dns_lookup_kdc = true, Kerberos may pick a different DC
+	 * for the TCP retry (after UDP response is too large), and that DC
+	 * might not have replicated the new machine account yet.
 	 */
 	file_contents =
 	    talloc_asprintf(fname,
@@ -1470,7 +1478,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			    "\tdefault_realm = %s\n"
 			    "%s"
 			    "\tdns_lookup_realm = false\n"
-			    "\tdns_lookup_kdc = true\n\n"
+			    "\tdns_lookup_kdc = %s\n\n"
 			    "[realms]\n\t%s = {\n"
 			    "%s\t}\n"
 			    "\t%s = {\n"
@@ -1479,6 +1487,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			    timeout_sec,
 			    realm_upper,
 			    enctypes,
+			    dns_lookup_kdc ? "true" : "false",
 			    realm_upper,
 			    kdc_ip_string,
 			    domain,

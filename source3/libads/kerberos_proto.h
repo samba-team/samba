@@ -70,10 +70,35 @@ int ads_kdestroy(const char *cc_name);
 int kerberos_kinit_password(const char *principal,
 			    const char *password,
 			    const char *cache_name);
-bool create_local_private_krb5_conf_for_domain(const char *realm,
-						const char *domain,
-						const char *sitename,
-					        const struct sockaddr_storage *pss);
+
+bool create_local_private_krb5_conf_for_domain_internal(
+	const char *realm,
+	const char *domain,
+	const char *sitename,
+	const struct sockaddr_storage *pss,
+	bool dns_lookup_kdc);
+
+/* Create krb5.conf that allows DC lookup using DNS. */
+static inline bool create_local_private_krb5_conf_for_domain(
+	const char *realm,
+	const char *domain,
+	const char *sitename,
+	const struct sockaddr_storage *pss)
+{
+	return create_local_private_krb5_conf_for_domain_internal(
+		realm, domain, sitename, pss, true);
+}
+
+/* Create krb5.conf that disables DC lookup using DNS - needed during join. */
+static inline bool create_local_private_krb5_conf_for_domain_join(
+	const char *realm,
+	const char *domain,
+	const char *sitename,
+	const struct sockaddr_storage *pss)
+{
+	return create_local_private_krb5_conf_for_domain_internal(
+		realm, domain, sitename, pss, false);
+}
 
 /* The following definitions come from libads/authdata.c  */
 
