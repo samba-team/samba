@@ -2881,6 +2881,10 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		   struct libnet_JoinCtx *r)
 {
 	WERROR werr;
+#ifdef HAVE_ADS
+	struct sockaddr_storage dc_ss = {0};
+	bool dns_lookup_kdc_disabled = false;
+#endif /* HAVE_ADS */
 
 	if (r->in.debug) {
 		LIBNET_JOIN_IN_DUMP_CTX(mem_ctx, r);
@@ -2903,6 +2907,49 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	}
+
+#ifdef HAVE_ADS
+	/*
+	 * The machine account was just created on r->in.dc_name,
+	 * but might not have replicated to other DCs yet.
+	 * Regenerate the krb5.conf with dns_lookup_kdc = false
+	 * so that the Kerberos library only talks to the DC
+	 * where the account was created. This covers all
+	 * subsequent machine-credential operations:
+	 *   - libnet_join_post_processing_ads_modify() (etype update)
+	 *   - libnet_join_post_verify() (domain membership verification)
+	 */
+	if (r->out.domain_is_ad &&
+	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) &&
+	    !r->in.request_offline_join)
+	{
+		bool ok;
+		const char *ip = NULL;
+
+		/* dcinfo might not be set for offline joins, however this
+		 * check is redundant since we have a guard:
+		 * !r->in.request_offline_join
+		 */
+		if (r->out.dcinfo) {
+			ip = r->out.dcinfo->dc_address + 2; /* Strip "\\" */
+		}
+
+		if (ip && ip[0] != '\0') {
+			ok = interpret_string_addr(&dc_ss, ip, AI_NUMERICHOST);
+		} else {
+			ok = interpret_string_addr(&dc_ss, r->in.dc_name, 0);
+		}
+
+		if (ok) {
+			create_local_private_krb5_conf_for_domain_join(
+				r->out.dns_domain_name,
+				r->out.netbios_domain_name,
+				NULL, /* sitename */
+				&dc_ss);
+			dns_lookup_kdc_disabled = true;
+		}
+	}
+#endif /* HAVE_ADS */
 
 	werr = libnet_join_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -2931,7 +2978,18 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		}
 	}
 
- done:
+done:
+#ifdef HAVE_ADS
+	if (dns_lookup_kdc_disabled) {
+		/* Restore dns_lookup_kdc = true for subsequent operations */
+		create_local_private_krb5_conf_for_domain(
+			r->out.dns_domain_name,
+			r->out.netbios_domain_name,
+			NULL, /* sitename */
+			&dc_ss);
+	}
+#endif /* HAVE_ADS */
+
 	r->out.result = werr;
 
 	if (r->in.debug) {
