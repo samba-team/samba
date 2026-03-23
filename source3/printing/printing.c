@@ -60,22 +60,28 @@ static int fetch_share_cache_time(const char *key_name,
 {
 	char *key = NULL;
 	int64_t curr_time64 = -1;
+	int ret = -1;
 
 	key = talloc_asprintf(NULL, "%s/%s", key_name, sharename);
 	if (key == NULL) {
 		DBG_ERR("Failed to format key\n");
-		return -1;
+		goto out;
 	}
 
-	if (tdb_fetch_int64(tdb, key, &curr_time64) != 0) {
-		DBG_ERR("No timing record found for[%s]!\n", sharename);
-		TALLOC_FREE(key);
-		return -1;
+	ret = tdb_fetch_int64(tdb, key, &curr_time64);
+	if (ret != 0) {
+		enum TDB_ERROR tdb_err = tdb_error(tdb);
+		if (tdb_err != TDB_ERR_NOEXIST) {
+			DBG_ERR("Error fetching timing data for [%s]. Err:%s\n",
+				sharename, tdb_errorstr(tdb));
+			goto out;
+		}
 	}
 	*curr_time = curr_time64;
-
+	ret = 0;
+out:
 	TALLOC_FREE(key);
-	return 0;
+	return ret;
 }
 
 static int update_share_cache_time(const char *key_name,
@@ -1311,7 +1317,6 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 
 		msg_pending_time = u;
 		if ( check_pending
-			&& u
 			&& msg_pending_time > 0
 			&& msg_pending_time <= time_now
 			&& (time_now - msg_pending_time) < 60 )
