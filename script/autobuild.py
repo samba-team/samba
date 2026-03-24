@@ -210,13 +210,7 @@ try:
 except ImportError:
     pass
 
-# on ubuntu gcc implies _FORTIFY_SOURCE
-# before 24.04 it was _FORTIFY_SOURCE=2
-# and 24.04 has _FORTIFY_SOURCE=3
-# so we do not specify it explicitly.
 samba_o3_cflags = "-O3"
-if not is_ubuntu:
-    samba_o3_cflags += " -Wp,-D_FORTIFY_SOURCE=2"
 
 def format_option(name, value=None):
     """Format option as str list."""
