@@ -733,11 +733,16 @@ def SAMBA_CONFIG_H(conf, path=None):
                                     }
                                     ''',
                                     execute=0,
-                                    cflags=[ '-Werror', '-Wp,-D_FORTIFY_SOURCE=2', stack_protect_flag],
+                                    cflags=[
+                                        '-Werror',
+                                        '-Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3',
+                                        stack_protect_flag
+                                    ],
                                     mandatory=False,
                                     msg='Checking if compiler accepts %s' % (stack_protect_flag))
         if flag_supported:
             conf.ADD_CFLAGS('%s' % (stack_protect_flag))
+            conf.ADD_CFLAGS('-Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3')
             break
 
     flag_supported = conf.check(fragment='''
