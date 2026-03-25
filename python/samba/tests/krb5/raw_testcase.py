@@ -5379,6 +5379,7 @@ class RawKerberosTest(TestCase):
             require_strict = {PADATA_FX_COOKIE,
                               PADATA_FX_FAST,
                               PADATA_PAC_OPTIONS,
+                              PADATA_PK_AS_REP,
                               PADATA_PK_AS_REP_19,
                               PADATA_PK_AS_REQ,
                               PADATA_PKINIT_KX,
