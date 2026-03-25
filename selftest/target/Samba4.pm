@@ -3160,7 +3160,8 @@ sub setup_schema_pair_dc
 
 	my $repl_cmd = $cmd_vars;
 	$repl_cmd .= "$samba_tool drs replicate $env->{SERVER} $dcvars->{SERVER}";
-        $repl_cmd .= " CN=Schema,CN=Configuration,DC=schema,DC=samba,DC=example,DC=com";
+	$repl_cmd .= " $env->{CONFIGURATION}";
+	$repl_cmd .= " CN=Schema,CN=Configuration,DC=schema,DC=samba,DC=example,DC=com";
 	$repl_cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($join_cmd) == 0) {
