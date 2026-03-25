@@ -92,11 +92,10 @@ class ClaimsSupportTests(BlackboxTestCase):
                 device_password=device_password,
             )
 
-            self.assertEqual(error.exception.args[0], NT_STATUS_LOGON_FAILURE)
-            self.assertEqual(
-                error.exception.args[1],
-                "The attempted logon is invalid. This is either due to a "
-                "bad username or authentication information.")
+        self.assertEqual(error.exception.args[0], NT_STATUS_UNSUCCESSFUL)
+        self.assertIn(
+            "The requested operation was unsuccessful.",
+            error.exception.args[1])
 
         self.check_run("group addmembers allowed-devices claims-device")
 
