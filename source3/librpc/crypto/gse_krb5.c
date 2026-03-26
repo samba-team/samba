@@ -554,19 +554,35 @@ out:
 krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 					   krb5_keytab *keytab)
 {
+	char *memktab_name = NULL;
 	krb5_error_code ret = 0;
 	krb5_error_code ret1 = 0;
 	krb5_error_code ret2 = 0;
 
 	*keytab = NULL;
 
+	/*
+	 * create a unique name so concurrent or long lived
+	 * processes don't append to existing in memory copy
+	 */
+	memktab_name = talloc_asprintf(NULL,
+				       "%s-%p",
+				       SRV_MEM_KEYTAB_NAME,
+				       krbctx);
+	if (memktab_name == NULL) {
+		DBG_ERR("out of memory\n");
+		return ENOMEM;
+	}
 	/* create memory keytab */
-	ret = krb5_kt_resolve(krbctx, SRV_MEM_KEYTAB_NAME, keytab);
+	ret = krb5_kt_resolve(krbctx, memktab_name, keytab);
 	if (ret) {
 		DEBUG(1, (__location__ ": Failed to get memory "
 			  "keytab!\n"));
+		TALLOC_FREE(memktab_name);
 		return ret;
 	}
+
+	TALLOC_FREE(memktab_name);
 
 	switch (lp_kerberos_method()) {
 	default:
