@@ -5846,10 +5846,11 @@ int dsdb_search_one(struct ldb_context *ldb,
 /* returns back the forest DNS name */
 const char *samdb_forest_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
-	const char *forest_name = ldb_dn_canonical_string(mem_ctx,
-							  ldb_get_root_basedn(ldb));
-	char *p;
+	char *forest_name = NULL;
+	char *p = NULL;
 
+	forest_name = ldb_dn_canonical_string(mem_ctx,
+					      ldb_get_root_basedn(ldb));
 	if (forest_name == NULL) {
 		return NULL;
 	}
@@ -5865,10 +5866,11 @@ const char *samdb_forest_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 /* returns back the default domain DNS name */
 const char *samdb_default_domain_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
-	const char *domain_name = ldb_dn_canonical_string(mem_ctx,
-							  ldb_get_default_basedn(ldb));
+	char *domain_name = NULL;
 	char *p;
 
+	domain_name = ldb_dn_canonical_string(mem_ctx,
+					      ldb_get_default_basedn(ldb));
 	if (domain_name == NULL) {
 		return NULL;
 	}

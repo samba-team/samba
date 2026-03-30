@@ -1162,6 +1162,7 @@ done:
 ****************************************************************************/
 
 #define strip_driver_path(_mem_ctx, _element) do { \
+	const char *_p = NULL; \
 	if (_element && ((_p = strrchr((_element), '\\')) != NULL)) { \
 		(_element) = talloc_asprintf((_mem_ctx), "%s", _p+1); \
 		W_ERROR_HAVE_NO_MEMORY((_element)); \
@@ -1183,7 +1184,6 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	const char *short_architecture;
 	int i, cversion;
 	WERROR err;
-	char *_p;
 
 	if (!*driver_path || !*data_file) {
 		return WERR_INVALID_PARAMETER;
