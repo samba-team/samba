@@ -232,7 +232,7 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_handle *h, struct winsdb_record
 
 	address = (char *)val->data;
 
-	p = strchr(address, ';');
+	p = strchr_m(address, ';');
 	if (!p) {
 		/* support old entries, with only the address */
 		addr->address		= (const char *)talloc_steal(addr, val->data);
@@ -258,7 +258,7 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_handle *h, struct winsdb_record
 		goto failed;
 	}
 	wins_owner = p + 10;
-	p = strchr(wins_owner, ';');
+	p = strchr_m(wins_owner, ';');
 	if (!p) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
@@ -280,7 +280,7 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_handle *h, struct winsdb_record
 	}
 
 	expire_time = p + 11;
-	p = strchr(expire_time, ';');
+	p = strchr_m(expire_time, ';');
 	if (!p) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;

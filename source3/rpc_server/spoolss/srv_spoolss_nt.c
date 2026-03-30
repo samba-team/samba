@@ -10164,7 +10164,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 
 	/* check for OID in valuename */
 
-	oid_string = strchr(r->in.value_name, ',');
+	oid_string = strchr_m(r->in.value_name, ',');
 	if (oid_string) {
 		*oid_string = '\0';
 		oid_string++;

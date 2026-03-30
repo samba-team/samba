@@ -267,7 +267,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	p += 2;  /* Skip the double slash */
 
         /* See if any options were specified */
-        if ((q = strrchr(p, '?')) != NULL ) {
+        if ((q = strrchr_m(p, '?')) != NULL ) {
                 /* There are options.  Null terminate here and point to them */
                 *q++ = '\0';
 

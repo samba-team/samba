@@ -150,7 +150,7 @@ static NTSTATUS find_manufacturer_name(struct gp_inifile_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p = strchr(s, ':');
+	p = strchr_m(s, ':');
 	if (p == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -205,7 +205,7 @@ static NTSTATUS find_manufacturer_url(struct gp_inifile_context *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	p = strchr(keys[0], ':');
+	p = strchr_m(keys[0], ':');
 	if (p == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -300,7 +300,7 @@ static NTSTATUS add_dependent_driver_file(TALLOC_CTX *mem_ctx,
 		file++;
 	}
 
-	p = strchr(file, ',');
+	p = strchr_m(file, ',');
 	if (p != NULL) {
 		*p = '\0';
 	}
@@ -392,7 +392,7 @@ static NTSTATUS enum_devices_in_toc(struct gp_inifile_context *ctx,
 					return NT_STATUS_NO_MEMORY;
 				}
 
-				p = strchr(s, ':');
+				p = strchr_m(s, ':');
 				if (p == NULL) {
 					return NT_STATUS_DRIVER_INTERNAL_ERROR;
 				}
@@ -506,7 +506,7 @@ static NTSTATUS process_driver_section_copyfiles(struct gp_inifile_context *ctx,
 		status = gp_inifile_enum_section(ctx, str, &num_keys, &keys, &values);
 		if (NT_STATUS_IS_OK(status)) {
 			for (i = 0; i < num_keys; i++) {
-				p = strchr(keys[i], ':');
+				p = strchr_m(keys[i], ':');
 				if (p == NULL) {
 					return NT_STATUS_INVALID_PARAMETER;
 				}
@@ -584,7 +584,7 @@ static NTSTATUS process_driver_section_printprocessor(struct gp_inifile_context 
 	if (NT_STATUS_IS_OK(status)) {
 		s = get_string_unquote(s);
 
-		p = strchr(s, ',');
+		p = strchr_m(s, ',');
 		if (p == NULL) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -883,7 +883,7 @@ static NTSTATUS process_driver_driverver(struct gp_inifile_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p = strchr(str, ',');
+	p = strchr_m(str, ',');
 	if (p) {
 		*p = '\0';
 		p++;
