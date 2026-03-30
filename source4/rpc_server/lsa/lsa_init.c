@@ -63,6 +63,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 		"fSMORoleOwner",
 		NULL
 	};
+	char *s;
 	char *p;
 	int ret;
 
@@ -119,23 +120,25 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 
 	state->domain_name = lpcfg_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 
-	state->domain_dns = ldb_dn_canonical_string(state, state->domain_dn);
-	if (!state->domain_dns) {
+	s = ldb_dn_canonical_string(state, state->domain_dn);
+	if (!s) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
-	p = strchr(state->domain_dns, '/');
+	p = strchr(s, '/');
 	if (p) {
 		*p = '\0';
 	}
+	state->domain_dns = s;
 
-	state->forest_dns = ldb_dn_canonical_string(state, state->forest_dn);
-	if (!state->forest_dns) {
+	s = ldb_dn_canonical_string(state, state->forest_dn);
+	if (!s) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
-	p = strchr(state->forest_dns, '/');
+	p = strchr(s, '/');
 	if (p) {
 		*p = '\0';
 	}
+	state->forest_dns = s;
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */

@@ -387,14 +387,15 @@ _PUBLIC_ char *cli_credentials_get_principal_and_obtained(struct cli_credentials
 
 		cred->principal = NULL;
 		if (princ != NULL) {
+			char *s = NULL;
 			char *p = NULL;
 
-			cred->principal = talloc_strdup(cred, princ);
-			if (cred->principal == NULL) {
+			s = talloc_strdup(cred, princ);
+			if (s == NULL) {
 				return NULL;
 			}
 
-			p = strchr(cred->principal, '@');
+			p = strchr(s, '@');
 			if (p != NULL) {
 				p += 1;
 
@@ -402,6 +403,7 @@ _PUBLIC_ char *cli_credentials_get_principal_and_obtained(struct cli_credentials
 					*p = toupper(p[0]);
 				}
 			}
+			cred->principal = s;
 		}
 
 		if (cred->principal_obtained == CRED_CALLBACK) {
@@ -484,20 +486,24 @@ _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
 		/* If `val = NULL` is passed, principal is reset */
 		cred->principal = NULL;
 		if (val != NULL) {
-			char *p = strchr(val, '@');
-			if (p != NULL) {
+			const char *cp = NULL;
+			char *s = NULL;
+			char *p = NULL;
+
+			cp = strchr(val, '@');
+			if (cp != NULL) {
 				/* For realm names, only ASCII is allowed */
-				if (!str_is_ascii(p + 1)) {
+				if (!str_is_ascii(cp + 1)) {
 					return false;
 				}
 			}
 
-			cred->principal = talloc_strdup(cred, val);
-			if (cred->principal == NULL) {
+			s = talloc_strdup(cred, val);
+			if (s == NULL) {
 				return false;
 			}
 
-			p = strchr(cred->principal, '@');
+			p = strchr(s, '@');
 			if (p != NULL) {
 				p += 1;
 
@@ -505,6 +511,7 @@ _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
 					*p = toupper(p[0]);
 				}
 			}
+			cred->principal = s;
 		}
 		cred->principal_obtained = obtained;
 		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);

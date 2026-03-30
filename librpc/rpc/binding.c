@@ -384,10 +384,11 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 	}
 
 	for (i=0; options != NULL; i++) {
-		const char *name = options;
+		char *option = options;
+		const char *name = NULL;
 		const char *value = NULL;
 
-		p = strchr(options, ',');
+		p = strchr(option, ',');
 		if (p != NULL) {
 			*p = '\0';
 			options = p+1;
@@ -395,7 +396,8 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 			options = NULL;
 		}
 
-		p = strchr(name, '=');
+		name = option;
+		p = strchr(option, '=');
 		if (p != NULL) {
 			*p = '\0';
 			value = p + 1;
