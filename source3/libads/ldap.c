@@ -1851,9 +1851,9 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * @param dn the dn to return the parent from
  * @return parent dn string
  **/
-char *ads_parent_dn(const char *dn)
+const char *ads_parent_dn(const char *dn)
 {
-	char *p;
+	const char *p = NULL;
 
 	if (dn == NULL) {
 		return NULL;
@@ -2932,7 +2932,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	LDAPMessage *res = NULL;
 	char *filter = NULL;
 	char *computer_dn = NULL;
-	char *parent_dn;
+	const char *parent_dn = NULL;
 	char *computer_rdn = NULL;
 	bool need_move = False;
 

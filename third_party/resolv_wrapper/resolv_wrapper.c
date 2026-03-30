@@ -285,13 +285,13 @@ static int rwrap_create_fake_ns_rr(const char *key,
 }
 
 static int rwrap_create_fake_srv_rr(const char *key,
-				    const char *value,
+				    char *value,
 				    struct rwrap_fake_rr *rr)
 {
 	char *str_prio;
 	char *str_weight;
 	char *str_port;
-	const char *hostname;
+	char *hostname;
 
 	/* parse the value into priority, weight, port and hostname
 	 * and check the validity */
@@ -324,12 +324,12 @@ static int rwrap_create_fake_srv_rr(const char *key,
 }
 
 static int rwrap_create_fake_uri_rr(const char *key,
-				    const char *value,
+				    char *value,
 				    struct rwrap_fake_rr *rr)
 {
 	char *str_prio;
 	char *str_weight;
-	const char *uri;
+	char *uri;
 
 	/* parse the value into priority, weight, and uri
 	 * and check the validity */
@@ -371,10 +371,10 @@ static int rwrap_create_fake_txt_rr(const char *key,
 }
 
 static int rwrap_create_fake_soa_rr(const char *key,
-				    const char *value,
+				    char *value,
 				    struct rwrap_fake_rr *rr)
 {
-	const char *nameserver;
+	char *nameserver;
 	char *mailbox;
 	char *str_serial;
 	char *str_refresh;

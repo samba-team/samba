@@ -89,7 +89,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				int scope, const char *expr, const char **attrs,
 				bool (*fn)(ADS_STRUCT *, char *, void **, void *),
 				void *data_area);
-char *ads_parent_dn(const char *dn);
+const char *ads_parent_dn(const char *dn);
 ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx);
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		       const char *name, const char *val);
