@@ -2532,7 +2532,7 @@ static struct tevent_req *cli_connect_nb_send(
 	state->transports = *transports;
 
 	if (host != NULL) {
-		char *p = strchr(host, '#');
+		const char *p = strchr(host, '#');
 
 		if (p != NULL) {
 			name_type = strtol(p+1, NULL, 16);

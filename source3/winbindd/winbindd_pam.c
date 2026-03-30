@@ -688,7 +688,7 @@ static bool generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 
 	/* Handle types with explicit paths and %u or %{uid} substitution */
 	if (has_prefix) {
-		char *p;
+		const char *p;
 		const char *subst_pattern = NULL;
 
 		p = strchr(type, '%');

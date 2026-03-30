@@ -576,7 +576,7 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 char *get_mydnsdomname(TALLOC_CTX *ctx)
 {
 	const char *domname;
-	char *p;
+	const char *p;
 
 	domname = get_mydnsfullname();
 	if (!domname) {
@@ -1331,7 +1331,7 @@ char *myhostname_upper(void)
 bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 		    const char **name)
 {
-	char *p;
+	const char *p;
 	ptrdiff_t len;
 
 	p = strrchr_m(dir, '/'); /* Find final '/', if any */

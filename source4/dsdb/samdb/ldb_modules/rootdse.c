@@ -1145,7 +1145,8 @@ static int get_optional_feature_dn_guid(struct ldb_request *req, struct ldb_cont
 {
 	const struct ldb_message *msg = req->op.mod.message;
 	const char *ldb_val_str;
-	char *dn, *guid;
+	char *dn;
+	const char *guid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NTSTATUS status;
 

@@ -1990,7 +1990,7 @@ bool parse_domain_user(TALLOC_CTX *ctx,
 		       char **pdomain,
 		       char **puser)
 {
-	char *p = NULL;
+	const char *p = NULL;
 	char *namespace = NULL;
 	char *domain = NULL;
 	char *user = NULL;

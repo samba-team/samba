@@ -724,7 +724,7 @@ static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
 
 static const char *strip_unc(const char *unc)
 {
-	char *p;
+	const char *p = NULL;
 
 	if (unc == NULL) {
 		return NULL;

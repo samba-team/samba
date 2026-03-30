@@ -440,7 +440,7 @@ static const char force_shortname_chars[] = " +,[];=";
 static bool is_8_3(const char *name, bool check_case, bool allow_wildcards, const struct share_params *p)
 {
 	int len, i;
-	char *dot_p;
+	const char *dot_p = NULL;
 
 	/* as a special case, the names '.' and '..' are allowable 8.3 names */
 	if (ISDOT(name) || (ISDOTDOT(name))) {
@@ -684,7 +684,7 @@ static bool hash2_name_to_8_3(const char *name,
 			int default_case,
 			const struct share_params *p)
 {
-	char *dot_p;
+	const char *dot_p = NULL;
 	char lead_chars[7];
 	char extension[4];
 	unsigned int extension_length, i;

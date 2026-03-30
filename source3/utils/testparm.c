@@ -876,8 +876,8 @@ static void do_per_share_checks(int s)
 
 	if(deny_list) {
 		for (i=0; deny_list[i]; i++) {
-			char *hasstar = strchr_m(deny_list[i], '*');
-			char *hasquery = strchr_m(deny_list[i], '?');
+			const char *hasstar = strchr_m(deny_list[i], '*');
+			const char *hasquery = strchr_m(deny_list[i], '?');
 			if(hasstar || hasquery) {
 				fprintf(stderr,
 					"Invalid character %c in hosts deny list "
@@ -891,8 +891,8 @@ static void do_per_share_checks(int s)
 
 	if(allow_list) {
 		for (i=0; allow_list[i]; i++) {
-			char *hasstar = strchr_m(allow_list[i], '*');
-			char *hasquery = strchr_m(allow_list[i], '?');
+			const char *hasstar = strchr_m(allow_list[i], '*');
+			const char *hasquery = strchr_m(allow_list[i], '?');
 			if(hasstar || hasquery) {
 				fprintf(stderr,
 					"Invalid character %c in hosts allow "

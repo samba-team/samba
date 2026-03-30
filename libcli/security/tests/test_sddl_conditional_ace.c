@@ -902,7 +902,7 @@ static void test_a_number_of_invalid_full_sddl_strings(void **state)
 		}
 		if (cases[i].snippet != NULL) {
 			if (message != NULL) {
-				char *c = strstr(message, cases[i].snippet);
+				const char *c = strstr(message, cases[i].snippet);
 				print_error_message(cases[i].sddl,
 						    message,
 						    message_offset);

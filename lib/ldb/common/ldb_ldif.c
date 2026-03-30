@@ -110,7 +110,7 @@ int ldb_base64_decode(char *s)
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset=0, byte_offset, idx, i, n;
 	uint8_t *d = (uint8_t *)s;
-	char *p=NULL;
+	const char *p=NULL;
 
 	n=i=0;
 

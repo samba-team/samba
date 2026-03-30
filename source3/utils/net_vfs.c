@@ -320,7 +320,7 @@ done:
 static bool do_unfruit(const char *path)
 {
 	struct smb_filename *smb_fname = NULL;
-	char *p = NULL;
+	const char *p = NULL;
 	bool converted;
 	NTSTATUS status;
 

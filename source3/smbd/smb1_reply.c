@@ -1083,14 +1083,15 @@ static void make_dir_struct(char *buf,
 			    time_t date,
 			    bool uc)
 {
-	char *p;
+	const char *p = NULL;
 
 	if ((mode & FILE_ATTRIBUTE_DIRECTORY) != 0) {
 		size = 0;
 	}
 
 	memset(buf+1,' ',11);
-	if ((p = strchr_m(mask, '.')) != NULL) {
+	p = strchr_m(mask, '.');
+	if (p != NULL) {
 		char name[p - mask + 1];
 		strlcpy(name, mask, sizeof(name));
 		push_ascii(buf + 1, name, 8, 0);

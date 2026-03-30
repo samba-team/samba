@@ -206,7 +206,7 @@ static int virusfilter_vfs_connect(
 	const char *rename_prefix = NULL;
 	const char *rename_suffix = NULL;
 	const char *socket_path = NULL;
-	char *sret = NULL;
+	const char *sret = NULL;
 	char *tmp = NULL;
 	enum virusfilter_scanner_enum backend;
 	int connect_timeout = 0;
@@ -1264,7 +1264,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 	int rename_trap_count = 0;
 	int ret;
 	bool ok1;
-	char *sret = NULL;
+	const char *sret = NULL;
 	struct smb_filename *smb_fname = NULL;
 	SMB_STRUCT_STAT sbuf = smb_fname_in->st;
 

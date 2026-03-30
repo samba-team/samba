@@ -2951,7 +2951,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				    basedir);
 			basedir = NULL;
 		} else {
-			char *p;
+			const char *p;
 			p = strstr(basedir, config->mount_point);
 			if (p != basedir) {
 				DEBUG(1, ("Warning: basedir (%s) is not a "

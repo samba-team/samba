@@ -343,7 +343,7 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 				 char **path_out)
 {
 	int status = 0;
-	char *p;
+	const char *p = NULL;
 	char *digits;
 	size_t digits_len;
 	uintmax_t number;

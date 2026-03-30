@@ -90,7 +90,7 @@ static bool parse_nss_parm(TALLOC_CTX *mem_ctx,
 			   char **backend,
 			   char **domain)
 {
-	char *p;
+	const char *p;
 
 	*backend = *domain = NULL;
 

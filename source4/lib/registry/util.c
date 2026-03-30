@@ -90,7 +90,7 @@ static DATA_BLOB reg_strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *str)
 	DATA_BLOB ret;
 	const char *HEXCHARS = "0123456789ABCDEF";
 	size_t i, j;
-	char *hi, *lo;
+	const char *hi, *lo;
 
 	ret = data_blob_talloc_zero(mem_ctx, (strlen(str)+(strlen(str) % 3))/3);
 	j = 0;
