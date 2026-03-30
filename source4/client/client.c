@@ -3510,10 +3510,13 @@ int main(int argc, char *argv[])
 
 	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
-	if (query_host && (p=strchr_m(query_host,'#'))) {
-		*p = 0;
-		p++;
-		sscanf(p, "%x", &name_type);
+	if (query_host) {
+		p = discard_const_p(char, strchr_m(query_host, '#'));
+		if (p) {
+			*p = 0;
+			p++;
+			sscanf(p, "%x", &name_type);
+		}
 	}
 
 	if (query_host) {

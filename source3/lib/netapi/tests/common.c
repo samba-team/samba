@@ -51,12 +51,15 @@ void popt_common_callback(poptContext con,
 			char *p = NULL;
 
 			if ((p = strchr(puser,'%'))) {
+				const char *cp = NULL;
 				size_t len;
 				*p = 0;
 				libnetapi_set_username(ctx, puser);
 				libnetapi_set_password(ctx, p+1);
 				len = strlen(p+1);
-				memset(strchr(arg,'%')+1,'X',len);
+				cp = strchr(arg, '%');
+				p = (char *)(uintptr_t)(const void *)cp;
+				memset(p+1,'X',len);
 			} else {
 				libnetapi_set_username(ctx, puser);
 			}

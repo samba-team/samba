@@ -721,7 +721,7 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 				char *delim;
 				char *full_name = discard_const_p(char, name);
 
-				delim = strrchr(name, '/');
+				delim = strrchr(full_name, '/');
 				if (!delim) {
 					talloc_free(lck);
 					return NT_STATUS_INTERNAL_ERROR;

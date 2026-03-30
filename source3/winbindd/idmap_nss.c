@@ -198,7 +198,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		struct passwd *pw;
 		struct group *gr;
-		const char *name;
+		char *name;
 		struct dom_sid sid;
 		enum lsa_SidType type;
 

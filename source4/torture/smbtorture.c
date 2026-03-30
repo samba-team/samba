@@ -225,7 +225,7 @@ static void parse_dns(struct loadparm_context *lp_ctx, const char *dns)
 	char *p, *d;
 
 	/* retrieve the userdn */
-	p = strchr_m(dns, '#');
+	p = discard_const_p(char, strchr_m(dns, '#'));
 	if (!p) {
 		lpcfg_set_cmdline(lp_ctx, "torture:ldap_userdn", "");
 		lpcfg_set_cmdline(lp_ctx, "torture:ldap_basedn", "");

@@ -802,7 +802,8 @@ static void cache_mangled_name( const char mangled_name[13],
 	TDB_DATA data_val;
 	char mangled_name_key[13];
 	char *s1 = NULL;
-	char *s2 = NULL;
+	const char *s2 = NULL;
+	char *tmp_non_const_dot = NULL;
 
 	/* If the cache isn't initialized, give up. */
 	if( !tdb_mangled_cache )
@@ -829,7 +830,8 @@ static void cache_mangled_name( const char mangled_name[13],
 			 * put it back once we've used it.
 			 * JRA
 			 */
-			*s2 = '\0';
+			tmp_non_const_dot = discard_const_p(char, s2);
+			*tmp_non_const_dot = '\0';
 		}
 	}
 
@@ -841,8 +843,8 @@ static void cache_mangled_name( const char mangled_name[13],
 		DEBUG(5,("cache_mangled_name: Stored entry %s -> %s\n", mangled_name_key, raw_name));
 	}
 	/* Restore the change we made to the const string. */
-	if (s2) {
-		*s2 = '.';
+	if (tmp_non_const_dot != NULL) {
+		*tmp_non_const_dot = '.';
 	}
 }
 

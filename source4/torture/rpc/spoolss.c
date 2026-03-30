@@ -5462,7 +5462,7 @@ static bool test_SetPrinterDataEx_keys(struct torture_context *tctx,
 	for (i=0; i < ARRAY_SIZE(keys); i++) {
 
 		char *c;
-		const char *key;
+		char *key;
 		enum winreg_Type type;
 		DATA_BLOB blob_in, blob_out;
 		const char **subkeys;

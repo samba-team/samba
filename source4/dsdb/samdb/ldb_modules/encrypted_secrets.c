@@ -94,7 +94,7 @@ static const char* get_key_directory(TALLOC_CTX *ctx, struct ldb_context *ldb)
 {
 
 	const char *sam_ldb_path = NULL;
-	const char *private_dir  = NULL;
+	char *private_dir  = NULL;
 	char *p = NULL;
 
 

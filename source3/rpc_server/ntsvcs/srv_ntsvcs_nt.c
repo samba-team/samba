@@ -140,12 +140,16 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 
 		/* just parse the service name from the device path and then
 		   lookup the display name */
-		if ( !(ptr = strrchr_m( r->in.devicepath, '\\' )) )
+		ptr = discard_const_p(char, strrchr_m(r->in.devicepath, '\\'));
+		if (ptr == NULL) {
 			return WERR_GEN_FAILURE;
+		}
 		*ptr = '\0';
 
-		if ( !(ptr = strrchr_m( r->in.devicepath, '_' )) )
+		ptr = discard_const_p(char, strrchr_m(r->in.devicepath, '_'));
+		if (ptr == NULL) {
 			return WERR_GEN_FAILURE;
+		}
 		ptr++;
 
 		mem_ctx = talloc_stackframe();

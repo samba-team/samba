@@ -333,7 +333,7 @@ static bool test_wbc_users(struct torture_context *tctx)
 		const char *user;
 		char *c;
 
-		c = strchr_m(users[i], separator);
+		c = discard_const_p(char, strchr_m(users[i], separator));
 
 		if (c == NULL) {
 			/*
@@ -466,7 +466,7 @@ static bool test_wbc_groups(struct torture_context *tctx)
 		const char *group;
 		char *c;
 
-		c = strchr_m(groups[i], separator);
+		c = discard_const_p(char, strchr_m(groups[i], separator));
 
 		if (c == NULL) {
 			/*

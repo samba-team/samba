@@ -71,7 +71,7 @@ static NTSTATUS parse_dfs_path_strict(TALLOC_CTX *ctx,
 	char *pathname_local = NULL;
 	char *p = NULL;
 	const char *hostname = NULL;
-	const char *servicename = NULL;
+	char *servicename = NULL;
 	const char *reqpath = NULL;
 	bool my_hostname = false;
 	NTSTATUS status;

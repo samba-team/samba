@@ -75,7 +75,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 
 	DEBUG(10,("Converting %s\n", (const char *)key.dptr));
 
-	p = strchr((const char *)key.dptr, '/');
+	p = strchr((char *)key.dptr, '/');
 	if (!p)
 		return 0;
 

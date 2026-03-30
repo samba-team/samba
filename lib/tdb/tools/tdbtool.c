@@ -905,7 +905,7 @@ int main(int argc, char *argv[])
 		/* Interactive mode */
 		while ((cmdname = tdb_getline("tdb> "))) {
 			arg2 = arg1 = NULL;
-			if ((arg1 = strchr((const char *)cmdname,' ')) != NULL) {
+			if ((arg1 = strchr(discard_const_p(char, cmdname),' ')) != NULL) {
 				arg1++;
 				arg2 = arg1;
 				while (*arg2) {
