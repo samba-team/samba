@@ -38,9 +38,9 @@ uint32_t get_int_param( const char* param )
  utility function to parse an integer parameter from
  "parameter = value"
 **********************************************************/
-char* get_string_param( const char* param )
+const char* get_string_param( const char* param )
 {
-	char *p;
+	const char *p = NULL;
 
 	p = strchr( param, '=' );
 	if ( !p )

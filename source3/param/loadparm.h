@@ -211,6 +211,6 @@ void set_server_role(void);
 /* The following definitions come from param/util.c  */
 
 uint32_t get_int_param( const char* param );
-char *get_string_param( const char* param );
+const char *get_string_param( const char* param );
 
 #endif /* _S3_LOADPARM_H */
