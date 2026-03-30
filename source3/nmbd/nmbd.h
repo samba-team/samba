@@ -209,7 +209,16 @@ struct userdata_struct {
 	userdata_copy_fn copy_fn;
 	userdata_free_fn free_fn;
 	unsigned int userdata_len;
-	char data[16]; /* 16 is to ensure alignment/padding on all systems */
+	/*
+	 * The union enforces 16-byte alignment for data[]. Ideally data[]
+	 * would be inside the union overlapping __data16, but older GCC
+	 * rejects flexible array members in unions. Keeping data[] outside
+	 * wastes 16 bytes but preserves the alignment guarantee.
+	 */
+	union {
+		char __data16[16] _ALIGNED_(16);
+	};
+	char data[];
 };
 
 struct response_record;
