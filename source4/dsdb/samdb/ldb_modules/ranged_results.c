@@ -114,7 +114,8 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	/* Find those that are range requests from the attribute list */
 	for (i = 0; ac->req->op.search.attrs[i]; i++) {
-		char *p, *new_attr;
+		const char *p;
+		char *new_attr;
 		const char *end_str;
 		unsigned int start, end;
 		struct ldb_message_element *el;
@@ -221,7 +222,7 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* Strip the range request from the attribute */
 	for (i = 0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
-		char *p;
+		const char *p;
 		size_t range_len = strlen(";range=");
 
 		new_attrs = talloc_realloc(req, new_attrs, const char *, i+2);

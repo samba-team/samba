@@ -667,7 +667,7 @@ static bool generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 
 			/* we allow only one "%u" substitution */
 
-			char *p;
+			const char *p;
 
 			p = strchr(type, '%');
 			if (p != NULL) {

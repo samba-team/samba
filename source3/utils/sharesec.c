@@ -68,7 +68,7 @@ static struct security_descriptor* parse_acl_string(TALLOC_CTX *mem_ctx, const c
 		return NULL;
 
 	for ( i=0; i<num_ace; i++ ) {
-		char *end_acl = strchr_m( pacl, ',' );
+		const char *end_acl = strchr_m( pacl, ',' );
 		fstring acl_string;
 
 		strncpy( acl_string, pacl, MIN( PTR_DIFF( end_acl, pacl ), sizeof(fstring)-1) );

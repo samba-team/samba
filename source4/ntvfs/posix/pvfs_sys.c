@@ -157,7 +157,8 @@ static struct pvfs_sys_ctx *pvfs_sys_pushdir(struct pvfs_state *pvfs,
 					     const char **pathname)
 {
 	struct pvfs_sys_ctx *ctx;
-	char *cwd, *p, *dirname;
+	char *cwd, *dirname;
+	const char *p;
 	int ret;
 
 	ctx = talloc_zero(pvfs, struct pvfs_sys_ctx);

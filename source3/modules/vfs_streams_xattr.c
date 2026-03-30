@@ -497,7 +497,7 @@ static int streams_xattr_get_name(vfs_handle_struct *handle,
 				  char **xattr_name)
 {
 	size_t stream_name_len = strlen(stream_name);
-	char *stype;
+	const char *stype;
 	struct streams_xattr_config *config;
 	char *raw_stream_name = NULL;
 

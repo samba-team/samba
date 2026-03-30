@@ -186,7 +186,7 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	}
 
 	if (strchr_m(str, ':')) {
-		char *p = strchr_m(str, SCOPE_DELIMITER);
+		const char *p = strchr_m(str, SCOPE_DELIMITER);
 
 		/*
 		 * Cope with link-local.
@@ -475,7 +475,7 @@ bool is_ipaddress_v6(const char *str)
 {
 #if defined(HAVE_IPV6)
 	int ret = -1;
-	char *p = NULL;
+	const char *p = NULL;
 	char buf[INET6_ADDRSTRLEN] = { 0, };
 	size_t len;
 	const char *addr = str;

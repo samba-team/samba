@@ -42,7 +42,7 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 	const char *domain = NULL;
 	const char *realm = NULL;
 	char *user = NULL;
-	char *p;
+	const char *p = NULL;
 	char *fuser = NULL;
 	char *unixuser = NULL;
 	struct passwd *pw = NULL;

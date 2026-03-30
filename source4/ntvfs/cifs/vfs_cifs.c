@@ -178,7 +178,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (strncmp(sharename, "\\\\", 2) == 0) {
-		char *str = strchr(sharename+2, '\\');
+		const char *str = strchr(sharename+2, '\\');
 		if (str) {
 			sharename = str + 1;
 		}

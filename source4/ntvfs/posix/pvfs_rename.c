@@ -147,7 +147,7 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 {
 	const char *base1, *base2;
 	const char *ext1, *ext2;
-	char *p;
+	const char *p = NULL;
 
 	/* break into base part plus extension */
 	p = strrchr_m(fname, '.');

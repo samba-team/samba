@@ -206,7 +206,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (strncmp(sharename, "\\\\", 2) == 0) {
-		char *p = strchr(sharename+2, '\\');
+		const char *p = strchr(sharename+2, '\\');
 		if (p) {
 			sharename = p + 1;
 		}

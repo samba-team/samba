@@ -809,7 +809,7 @@ static bool parse_domain_user(struct torture_context *torture,
 			      const char *domuser, fstring domain,
 			      fstring user)
 {
-	char *p = strchr(domuser, winbind_separator(torture));
+	const char *p = strchr(domuser, winbind_separator(torture));
 	char *dom = NULL;
 
 	if (!p) {

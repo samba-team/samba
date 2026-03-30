@@ -58,7 +58,7 @@ char *svfs_unix_path(struct ntvfs_module_context *ntvfs,
 */
 struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, const char *unix_path)
 {
-	char *p, *mask;
+	const char *p, *mask;
 	struct svfs_dir *dir;
 	DIR *odir;
 	struct dirent *dent;

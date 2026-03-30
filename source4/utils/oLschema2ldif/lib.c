@@ -64,7 +64,7 @@ struct schema_token {
 static int check_braces(const char *string)
 {
 	size_t b;
-	char *c;
+	const char *c;
 
 	b = 0;
 	if ((c = strchr(string, '(')) == NULL) {

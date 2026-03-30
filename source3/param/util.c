@@ -25,7 +25,7 @@
 **********************************************************/
 uint32_t get_int_param( const char* param )
 {
-	char *p;
+	const char *p = NULL;
 
 	p = strchr( param, '=' );
 	if ( !p )

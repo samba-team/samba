@@ -2540,7 +2540,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	const char *auth_password = cli_credentials_get_password(c->creds);
 	const char *realm = NULL;
 	char *new_password = NULL;
-	char *chr = NULL;
+	const char *chr = NULL;
 	char *prompt = NULL;
 	const char *user = NULL;
 	char pwd[256] = {0};
@@ -3139,7 +3139,7 @@ static int net_ads_kerberos_pac_dump(struct net_context *c, int argc, const char
 static int net_ads_kerberos_pac_save(struct net_context *c, int argc, const char **argv)
 {
 	struct PAC_DATA_CTR *pac_data_ctr = NULL;
-	char *filename = NULL;
+	const char *filename = NULL;
 	int ret = -1;
 	int i;
 

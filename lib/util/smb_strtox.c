@@ -52,7 +52,7 @@ smb_strtoul(const char *nptr, char **endptr, int base, int *err, int flags)
 {
 	unsigned long int val;
 	int saved_errno = errno;
-	char *needle = NULL;
+	const char *needle = NULL;
 	char *tmp_endptr = NULL;
 
 	errno = 0;
@@ -128,7 +128,7 @@ smb_strtoull(const char *nptr, char **endptr, int base, int *err, int flags)
 {
 	unsigned long long int val;
 	int saved_errno = errno;
-	char *needle = NULL;
+	const char *needle = NULL;
 	char *tmp_endptr = NULL;
 
 	errno = 0;

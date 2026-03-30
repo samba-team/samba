@@ -131,7 +131,7 @@ static void tdb_log_open(struct tdb_context *tdb, enum tdb_debug_level level,
 {
 	const char *mutex_msg =
 		"Can use mutexes only with MUTEX_LOCKING or NOLOCK\n";
-	char *p;
+	const char *p;
 	va_list ap;
 
 	p = strstr(format, mutex_msg);

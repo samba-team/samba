@@ -1461,7 +1461,7 @@ static bool windows_parent_dirname(TALLOC_CTX *mem_ctx,
 				char **parent,
 				const char **name)
 {
-	char *p;
+	const char *p;
 	ptrdiff_t len;
 
 	p = strrchr_m(dir, '\\'); /* Find final '\\', if any */

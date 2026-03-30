@@ -190,7 +190,7 @@ static bool process_one(struct loadparm_context *lp_ctx, struct tevent_context *
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
-	char *node_name, *p;
+	const char *node_name, *p;
 	struct socket_address *all_zero_addr;
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status = NT_STATUS_OK;

@@ -88,7 +88,7 @@ int dns_cmp(const char *s1, const char *s2)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(comp1); i++) {
-		char *p;
+		const char *p;
 
 		if (i == 0) {
 			p1 = s1;
@@ -118,7 +118,7 @@ int dns_cmp(const char *s1, const char *s2)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(comp2); i++) {
-		char *p;
+		const char *p;
 
 		if (i == 0) {
 			p2 = s2;

@@ -69,7 +69,7 @@ static struct nfs4_to_smb4_id_map {
 
 static bool is_special_nfs4_id(const char *nfs4_id)
 {
-	char *at = NULL;
+	const char *at = NULL;
 
 	at = strchr(nfs4_id, '@');
 	if (at == NULL) {

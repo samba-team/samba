@@ -197,7 +197,7 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
 	int ret;
 	char *backend;
 	struct backends_list_entry *be;
-	char *colon = NULL;
+	const char *colon = NULL;
 
 	colon = strchr(url, ':');
 	if (colon != NULL) {

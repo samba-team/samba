@@ -122,7 +122,7 @@ static NTSTATUS ntvfs_map_async_finish(struct ntvfs_request *req, NTSTATUS statu
 */
 bool is_exe_filename(const char *fname)
 {
-	char *p;
+	const char *p;
 	p = strrchr(fname, '.');
 	if (!p) {
 		return false;

@@ -118,7 +118,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 	/* the service might be of the form \\SERVER\SHARE. Should we put
 	   the server name we get from this somewhere? */
 	if (strncmp(service, "\\\\", 2) == 0) {
-		char *p = strchr(service+2, '\\');
+		const char *p = strchr(service+2, '\\');
 		if (p) {
 			service = p + 1;
 		}
