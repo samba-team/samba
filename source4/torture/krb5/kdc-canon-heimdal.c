@@ -347,7 +347,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	if (test_data->upn) {
 		char *p;
 		test_data->username = talloc_strdup(test_data, upn);
-		p = strchr(test_data->username, '@');
+		p = strchr_m(test_data->username, '@');
 		if (p) {
 			*p = '\0';
 			p++;

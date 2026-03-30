@@ -5044,7 +5044,7 @@ static bool get_user_tokens(struct net_context *c, int *num_tokens,
 
 		fstrcpy(result[i].name, users[i]);
 
-		p = strchr(users[i], *lp_winbind_separator());
+		p = strchr_m(users[i], *lp_winbind_separator());
 
 		DEBUG(3, ("%s\n", users[i]));
 
