@@ -116,7 +116,7 @@ static bool parse_wbinfo_domain_user(const char *domuser, fstring domain,
 				     fstring user)
 {
 
-	char *p = strchr(domuser,winbind_separator());
+	const char *p = strchr(domuser,winbind_separator());
 
 	if (!p) {
 		/* Maybe it was a UPN? */

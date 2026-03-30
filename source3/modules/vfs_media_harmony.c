@@ -392,7 +392,7 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 	 * - with suffixed name.
 	 */
 	int status = 0;
-	char* pathPtr;
+	const char *pathPtr = NULL;
 	size_t intermPathLen;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
@@ -406,8 +406,9 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 		goto out;
 	}
 	DEBUG(MH_INFO_DEBUG, ("newPath #1 %s\n", *newPath));
+	pathPtr = strstr_m(path, CREATING_DIRNAME);
 	if (
-		(pathPtr = strstr(path, CREATING_DIRNAME)) != NULL
+		pathPtr != NULL
 			&&
 		(
 			*(pathPtr + CREATING_DIRNAME_LEN) == '\0'

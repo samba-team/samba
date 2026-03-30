@@ -39,7 +39,7 @@ _PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const cha
 	int bit_offset, byte_offset, idx, i, n;
 	DATA_BLOB decoded = data_blob_talloc(mem_ctx, s, strlen(s)+1);
 	unsigned char *d = decoded.data;
-	char *p;
+	const char *p;
 
 	if (decoded.data == NULL) {
 		decoded.length = 0;

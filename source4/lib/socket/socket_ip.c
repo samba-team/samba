@@ -561,7 +561,7 @@ static struct in6_addr interpret_addr6(const char *name)
 	char addr[INET6_ADDRSTRLEN];
 	struct in6_addr dest6;
 	const char *sp = name;
-	char *p;
+	const char *p = NULL;
 	int ret;
 
 	if (sp == NULL) return in6addr_any;

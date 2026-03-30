@@ -362,7 +362,8 @@ static int samaccountname_bad_chars_check(struct samldb_ctx *ac,
 
 	for (i = 0; name[i] != '\0'; i++) {
 		uint8_t c = name[i];
-		char *p = NULL;
+		const char *p = NULL;
+
 		if (c < 32 || c == 127) {
 			ldb_asprintf_errstring(
 				ldb,
@@ -3821,8 +3822,8 @@ static int check_spn_alias_collision(struct ldb_context *ldb,
 {
 	int ret;
 	char *service_class = NULL;
-	char *spn_tail = NULL;
-	char *p = NULL;
+	const char *spn_tail = NULL;
+	const char *p = NULL;
 	char **aliases = NULL;
 	size_t n_aliases = 0;
 	size_t i, len;

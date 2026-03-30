@@ -253,7 +253,7 @@ static bool is_8_3(struct pvfs_mangle_context *ctx,
 		   const char *name, bool check_case, bool allow_wildcards)
 {
 	int len, i;
-	char *dot_p;
+	const char *dot_p;
 
 	/* as a special case, the names '.' and '..' are allowable 8.3 names */
 	if (name[0] == '.') {
@@ -424,7 +424,7 @@ static bool is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 static char *name_map(struct pvfs_mangle_context *ctx,
 		      const char *name, bool need83, bool cache83)
 {
-	char *dot_p;
+	const char *dot_p;
 	char lead_chars[7];
 	char extension[4];
 	unsigned int extension_length, i;

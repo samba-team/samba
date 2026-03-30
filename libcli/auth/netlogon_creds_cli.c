@@ -116,7 +116,7 @@ static NTSTATUS netlogon_creds_cli_context_common(
 	struct netlogon_creds_cli_context *context = NULL;
 	char *_key_name = NULL;
 	size_t server_netbios_name_len;
-	char *p = NULL;
+	const char *p = NULL;
 
 	*_context = NULL;
 

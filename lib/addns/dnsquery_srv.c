@@ -339,7 +339,7 @@ struct tevent_req *ads_dns_query_srv_send(
 	state->query = query;
 
 	if ((sitename != NULL) && (sitename[0] != '\0')) {
-		char *after_tcp = NULL;
+		const char *after_tcp = NULL;
 		char *site_aware = NULL;
 
 		/*

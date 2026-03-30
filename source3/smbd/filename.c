@@ -416,7 +416,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 			const char *filename_in,
 			uint32_t ucf_flags)
 {
-	char *last_slash = NULL;
+	const char *last_slash = NULL;
 	char *orig_lcomp;
 	NTSTATUS status;
 

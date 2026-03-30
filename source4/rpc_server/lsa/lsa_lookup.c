@@ -975,7 +975,7 @@ static NTSTATUS dcesrv_lsa_LookupNames_base_call(struct dcesrv_lsa_LookupNames_b
 
 	for (i=0;i<r->in.num_names;i++) {
 		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
-		char *p = NULL;
+		const char *p = NULL;
 
 		item->type = SID_NAME_UNKNOWN;
 		item->name = r->in.names[i].string;

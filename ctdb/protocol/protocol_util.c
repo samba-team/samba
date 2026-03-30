@@ -240,7 +240,7 @@ static int ipv6_from_string(const char *str, struct sockaddr_in6 *ip6)
 
 static int ip_from_string(const char *str, ctdb_sock_addr *addr)
 {
-	char *p;
+	const char *p;
 	int ret;
 
 	if (addr == NULL) {

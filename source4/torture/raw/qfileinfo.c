@@ -808,7 +808,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		torture_fail(torture, "ALL_INFO didn't give a filename");
 	}
 	if (s1 && s1->all_info.out.fname.s) {
-		char *p = strrchr(s1->all_info.out.fname.s, '\\');
+		const char *p = strrchr(s1->all_info.out.fname.s, '\\');
 		if (!p) {
 			printf("Not a full path in all_info/fname? - '%s'\n",
 			       s1->all_info.out.fname.s);

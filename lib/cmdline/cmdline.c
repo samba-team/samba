@@ -203,7 +203,7 @@ static bool is_password_option(const char *p, size_t *ulen)
 		"--with-smbpasswd-file",
 	};
 
-	char *equals = NULL;
+	const char *equals = NULL;
 	*ulen = 0;
 
 	for (i = 0; i < ARRAY_SIZE(must_burn); i++) {
@@ -242,7 +242,7 @@ static bool is_password_option(const char *p, size_t *ulen)
 	if (equals == NULL) {
 		*ulen = strlen(p);
 	} else {
-		char *pass = (strstr(p, "pass"));
+		const char *pass = (strstr(p, "pass"));
 		if (pass > equals) {
 			/* this is --foo=pass, not --pass=foo */
 			return false;

@@ -750,7 +750,7 @@ static void init_chartest( void )
 
 static bool is_mangled(const char *s, const struct share_params *p)
 {
-	char *magic;
+	const char *magic = NULL;
 	char magic_char;
 
 	magic_char = lp_mangling_char(p);

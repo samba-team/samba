@@ -386,7 +386,7 @@ static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 				     fstring user)
 {
 
-	char *p = strchr(domuser,winbind_separator());
+	const char *p = strchr(domuser,winbind_separator());
 
 	if (!p) {
 		return False;

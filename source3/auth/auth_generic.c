@@ -52,7 +52,7 @@ static NTSTATUS generate_pac_session_info(
 	struct wbcAuthErrorInfo *err = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	char *original_user_name = NULL;
-	char *p = NULL;
+	const char *p = NULL;
 	wbcErr wbc_err;
 
 	/*

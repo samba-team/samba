@@ -4746,7 +4746,7 @@ static bool test_winreg_symbolic_link(struct torture_context *tctx,
 
 static const char *strip_unc(const char *unc)
 {
-	char *name;
+	const char *name;
 
 	if (!unc) {
 		return NULL;
@@ -5053,7 +5053,7 @@ static bool test_GetPrinterDriver2_level(struct torture_context *tctx,
 
 static const char *strip_path(const char *path)
 {
-	char *p;
+	const char *p;
 
 	if (path == NULL) {
 		return NULL;
@@ -5568,7 +5568,7 @@ static bool test_SetPrinterDataEx_values(struct torture_context *tctx,
 
 		if (torture_setting_bool(tctx, "samba3", false) ||
 		    torture_setting_bool(tctx, "samba4", false)) {
-			char *q;
+			const char *q;
 			q = strrchr(values[i], ',');
 			if (q) {
 				torture_comment(
@@ -7180,7 +7180,7 @@ static const char *get_full_printername(struct torture_context *tctx,
 					const char *name)
 {
 	const char *full_name = talloc_strdup(tctx, name);
-	char *p;
+	const char *p;
 
 	if (name && name[0] == '\\' && name[1] == '\\') {
 		name += 2;
@@ -8027,7 +8027,7 @@ static bool compose_local_driver_directory(struct torture_context *tctx,
 					   const char *local_dir,
 					   const char **path)
 {
-	char *p;
+	const char *p;
 
 	p = strrchr(local_dir, '/');
 	if (!p) {
@@ -10623,7 +10623,7 @@ static bool fillup_printserver_info(struct torture_context *tctx,
 
 static const char *driver_directory_dir(const char *driver_directory)
 {
-	char *p;
+	const char *p;
 
 	p = strrchr(driver_directory, '\\');
 	if (p) {

@@ -82,7 +82,7 @@ static NTSTATUS lookup_name_internal(TALLOC_CTX *mem_ctx,
 				     struct dom_sid *ret_sid,
 				     enum lsa_SidType *ret_type)
 {
-	char *p;
+	const char *p;
 	const char *tmp;
 	const char *domain = NULL;
 	const char *name = NULL;
@@ -104,7 +104,7 @@ static NTSTATUS lookup_name_internal(TALLOC_CTX *mem_ctx,
 					PTR_DIFF(p, full_name));
 		name = talloc_strdup(tmp_ctx, p+1);
 	} else {
-		char *q = strchr_m(full_name, '@');
+		const char *q = strchr_m(full_name, '@');
 
 		/* Set the domain for UPNs */
 		if (q != NULL) {

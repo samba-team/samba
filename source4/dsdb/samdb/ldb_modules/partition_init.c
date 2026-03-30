@@ -94,7 +94,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 	}
 	
 	for (i=0; i < modules_attributes->num_values; i++) {
-		char *p;
+		const char *p;
 		DATA_BLOB dn_blob;
 		data->modules[i] = talloc(data->modules, struct partition_module);
 		if (!data->modules[i]) {
@@ -111,7 +111,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		/* Now trim off the filename */
-		dn_blob.length = ((uint8_t *)p - dn_blob.data);
+		dn_blob.length = ((const uint8_t *)p - dn_blob.data);
 
 		p++;
 		data->modules[i]->modules = ldb_modules_list_from_string(ldb, data->modules[i],
@@ -457,7 +457,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		    (strncmp((const char *)&dn_blob.data[dn_blob.length-4], ".ldb", 4) == 0)) {
 
 			/* Look for DN:filename.ldb */
-			char *p = strrchr((const char *)dn_blob.data, ':');
+			const char *p = strrchr((const char *)dn_blob.data, ':');
 			if (!p) {
 				ldb_asprintf_errstring(ldb, 
 						       "partition_init: invalid DN in attempting to parse partition record: %s", (const char *)dn_blob.data);
@@ -467,7 +467,7 @@ int partition_reload_if_required(struct ldb_module *module,
 			filename = p+1;
 			
 			/* Now trim off the filename */
-			dn_blob.length = ((uint8_t *)p - dn_blob.data);
+			dn_blob.length = ((const uint8_t *)p - dn_blob.data);
 		}
 
 		dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &dn_blob);

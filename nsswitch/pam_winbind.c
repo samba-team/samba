@@ -2348,7 +2348,7 @@ static const char *get_conf_item_string(struct pwb_context *ctx,
 	for (i=0; i<ctx->argc; i++) {
 
 		if ((strncmp(ctx->argv[i], item, strlen(item)) == 0)) {
-			char *p;
+			const char *p;
 
 			if ((p = strchr(ctx->argv[i], '=')) == NULL) {
 				_pam_log(ctx, LOG_INFO,
@@ -2394,7 +2394,7 @@ static int get_config_item_int(struct pwb_context *ctx,
 	for (i = 0; i < ctx->argc; i++) {
 
 		if ((strncmp(ctx->argv[i], item, strlen(item)) == 0)) {
-			char *p;
+			const char *p;
 
 			if ((p = strchr(ctx->argv[i], '=')) == NULL) {
 				_pam_log(ctx, LOG_INFO,

@@ -1000,10 +1000,14 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		p = strstr_m(ntln->string, "..");
-		if (p != NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_INVALID_PARAMETER;
+		{
+			const char *dots = NULL;
+
+			dots = strstr_m(ntln->string, "..");
+			if (dots != NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 		}
 
 		if (nnb != NULL &&
