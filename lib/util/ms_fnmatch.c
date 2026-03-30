@@ -59,6 +59,15 @@ struct max_n {
   an optimisation only. The ldot pointer is NULL if the string does
   not contain a '.', otherwise it points at the last dot in 'n'.
 */
+
+/*
+ * GCC's constant propagation creates a specialised version of this function
+ * where max_n is typed as struct max_n[0] (past-the-end pointer from the
+ * caller). The code is correct, max_n is never dereferenced in constprop
+ * variants that have no remaining wildcards. GCC warns conservatively here.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 static int ms_fnmatch_core(const char *p, const char *n,
 			   struct max_n *max_n, const char *ldot,
 			   bool is_case_sensitive)
@@ -175,6 +184,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 
 	return -1;
 }
+#pragma GCC diagnostic pop
 
 int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol,
 			bool is_case_sensitive)
