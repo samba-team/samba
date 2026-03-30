@@ -1366,7 +1366,7 @@ enum encode_order {
 
 #define PASSWORD_BUFFER_LEN 512
 
-static ssize_t _encode_pwd_buffer_from_str(uint8_t buf[PASSWORD_BUFFER_LEN],
+static ssize_t _encode_pwd_buffer_from_str(uint8_t buf[static PASSWORD_BUFFER_LEN],
 					   const char *password,
 					   int string_flags,
 					   enum encode_order order)
@@ -1415,7 +1415,7 @@ static ssize_t _encode_pwd_buffer_from_str(uint8_t buf[PASSWORD_BUFFER_LEN],
  encode a password buffer with a unicode password.  The buffer
  is filled with random data to make it harder to attack.
 ************************************************************/
-bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flags)
+bool encode_pw_buffer(uint8_t buffer[static 516], const char *password, int string_flags)
 {
 	ssize_t pw_len;
 
@@ -1440,7 +1440,7 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
 ************************************************************/
 
 bool decode_pw_buffer(TALLOC_CTX *ctx,
-		      uint8_t in_buffer[516],
+		      uint8_t in_buffer[static 516],
 		      char **pp_new_pwrd,
 		      size_t *new_pw_len,
 		      charset_t string_charset)
@@ -1495,7 +1495,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
  * [MS-SAMR] 2.2.6.32 This creates the buffer to be sent. It is of type
  * SAMPR_USER_PASSWORD_AES.
  */
-bool encode_pwd_buffer514_from_str(uint8_t buffer[514],
+bool encode_pwd_buffer514_from_str(uint8_t buffer[static 514],
 				   const char *password,
 				   uint32_t string_flags)
 {
@@ -1515,7 +1515,7 @@ bool encode_pwd_buffer514_from_str(uint8_t buffer[514],
 }
 
 bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
-				     const uint8_t in_buffer[514],
+				     const uint8_t in_buffer[static 514],
 				     DATA_BLOB *new_password)
 {
 #ifdef DEBUG_PASSWORD
@@ -1545,7 +1545,7 @@ bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
 }
 
 bool decode_pwd_string_from_buffer514(TALLOC_CTX *mem_ctx,
-				      const uint8_t in_buffer[514],
+				      const uint8_t in_buffer[static 514],
 				      charset_t string_charset,
 				      DATA_BLOB *decoded_password)
 {
@@ -1645,7 +1645,7 @@ NTSTATUS decode_rc4_passwd_buffer(const DATA_BLOB *psession_key,
  rest of the buffer is filled with random data to make it harder to attack.
 ************************************************************/
 
-static bool create_pw_buffer_from_blob(uint8_t buffer[512],
+static bool create_pw_buffer_from_blob(uint8_t buffer[static 512],
 				       const DATA_BLOB *in_password,
 				       enum encode_order order)
 {
@@ -1675,7 +1675,7 @@ static bool create_pw_buffer_from_blob(uint8_t buffer[512],
 	return true;
 }
 
-bool set_pw_in_buffer(uint8_t buffer[516], const DATA_BLOB *password)
+bool set_pw_in_buffer(uint8_t buffer[static 516], const DATA_BLOB *password)
 {
 	bool ok;
 
@@ -1700,7 +1700,7 @@ bool set_pw_in_buffer(uint8_t buffer[516], const DATA_BLOB *password)
  *new_pw_size is the length in bytes of the extracted unicode password
 ************************************************************/
 bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
-			    uint8_t in_buffer[516], DATA_BLOB *new_pass)
+			    uint8_t in_buffer[static 516], DATA_BLOB *new_pass)
 {
 	int byte_len=0;
 
