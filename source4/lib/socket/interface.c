@@ -176,7 +176,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 		return;
 	}
 
-	p = strchr_m(token, ';');
+	p = discard_const_p(char, strchr_m(token, ';'));
 	if (p != NULL) {
 		/*
 		 * skip smbd-specific extra data:
@@ -186,7 +186,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 	}
 
 	/* maybe it is a DNS name */
-	p = strchr_m(token,'/');
+	p = discard_const_p(char, strchr_m(token, '/'));
 	if (p == NULL) {
 		if (!interpret_string_addr(&ss, token, 0)) {
 			DEBUG(2, ("interpret_interface: Can't find address "

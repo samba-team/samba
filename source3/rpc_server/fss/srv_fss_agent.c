@@ -100,7 +100,7 @@ static NTSTATUS fss_unc_parse(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	s = strstr_m(unc, "\\\\");
+	s = discard_const_p(char, strstr_m(unc, "\\\\"));
 	if (s == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

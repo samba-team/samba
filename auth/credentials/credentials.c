@@ -1439,13 +1439,16 @@ _PUBLIC_ bool cli_credentials_guess(struct cli_credentials *cred,
 		size_t len = strlen(env);
 
 		if (len > 0 && len <= 1024) {
-			char *p = NULL;
+			const char *p = NULL;
 
 			(void)cli_credentials_parse_string(cred,
 							   env,
 							   CRED_GUESS_ENV);
-			if ((p = strchr_m(env, '%'))) {
-				memset(p, '\0', strlen(cred->password));
+			p = strchr_m(env, '%');
+			if (p != NULL) {
+				memset(discard_const_p(char, p),
+				       '\0',
+				       strlen(cred->password));
 			}
 		}
 	}

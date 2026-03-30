@@ -189,7 +189,7 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 	}
 	result->port = -1;
 
-	tmp = strchr_m(result->serviceclass, '/');
+	tmp = discard_const_p(char, strchr_m(result->serviceclass, '/'));
 	if (tmp == NULL) {
 		/* illegal */
 		DBG_ERR("Failed to parse spn %s, no host definition\n",

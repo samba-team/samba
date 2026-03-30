@@ -108,7 +108,7 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct nbt_name *r)
 {
-	uint8_t *scope;
+	char *scope;
 	char *cname;
 	const char *s;
 	bool ok;
@@ -118,17 +118,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, ndr_flags_typ
 	}
 
 	NDR_CHECK(ndr_pull_nbt_string(ndr, ndr_flags, &s));
+	cname = discard_const_p(char, s);
 
-	scope = (uint8_t *)strchr(s, '.');
+	scope = strchr(cname, '.');
 	if (scope) {
 		*scope = 0;
-		r->scope = talloc_strdup(ndr->current_mem_ctx, (const char *)&scope[1]);
+		r->scope = talloc_strdup(ndr->current_mem_ctx, &scope[1]);
 		NDR_ERR_HAVE_NO_MEMORY(r->scope);
 	} else {
 		r->scope = NULL;
 	}
-
-	cname = discard_const_p(char, s);
 
 	/* the first component is limited to 16 bytes in the DOS charset,
 	   which is 32 in the 'compressed' form */

@@ -367,7 +367,8 @@ _PUBLIC_ const char *strchr_m_const(const char *src, char c)
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
-		return strchr(src, c);
+		s = strchr(src, c);
+		return discard_const_p(char, s);
 	}
 
 	/* this is quite a common operation, so we want it to be
@@ -417,7 +418,8 @@ _PUBLIC_ const char *strrchr_m_const(const char *s, char c)
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
-		return strrchr(s, c);
+		const char *t = strrchr(s, c);
+		return discard_const_p(char, t);
 	}
 
 	/* this is quite a common operation, so we want it to be

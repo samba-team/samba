@@ -14129,7 +14129,7 @@ static NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 
 	DEBUG(10, ("split_ntfs_stream_name called for [%s]\n", fname));
 
-	sname = strchr_m(fname, ':');
+	sname = discard_const_p(char, strchr_m(fname, ':'));
 
 	if (sname == NULL) {
 		if (pbase != NULL) {
