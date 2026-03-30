@@ -153,7 +153,7 @@ static ADS_STATUS pw2kt_scan_spec(TALLOC_CTX *ctx,
 		return ADS_SUCCESS;
 	}
 
-	vals = strchr_m(option, '=');
+	vals = discard_const_p(char, strchr_m(option, '='));
 	if (vals != NULL) {
 		*vals = 0;
 		vals++;

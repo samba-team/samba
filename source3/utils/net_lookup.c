@@ -55,7 +55,7 @@ static int net_lookup_host(struct net_context *c, int argc, const char **argv)
 	if (argc == 0)
 		return net_lookup_usage(c, argc, argv);
 
-	p = strchr_m(name,'#');
+	p = discard_const_p(char, strchr_m(name, '#'));
 	if (p) {
 		*p = '\0';
 		sscanf(++p,"%x",&name_type);

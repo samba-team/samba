@@ -314,7 +314,7 @@ static struct rpc_host_iface_name *rpc_exe_parse_iface_line(
 		return NULL;
 	}
 
-	name = strchr_m(line, ' ');
+	name = discard_const_p(char, strchr_m(line, ' '));
 	if (name == NULL) {
 		return NULL;
 	}

@@ -347,7 +347,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	if (test_data->upn) {
 		char *p;
 		test_data->username = talloc_strdup(test_data, upn);
-		p = strchr_m(test_data->username, '@');
+		p = discard_const_p(char, strchr_m(test_data->username, '@'));
 		if (p) {
 			*p = '\0';
 			p++;
@@ -391,7 +391,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	if (test_data->removedollar) {
 		char *p;
 
-		p = strchr_m(test_data->username, '$');
+		p = discard_const_p(char, strchr_m(test_data->username, '$'));
 		torture_assert(tctx, p != NULL, talloc_asprintf(tctx,
 			       "username[%s] contains no '$'\n",
 			       test_data->username));

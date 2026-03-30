@@ -307,13 +307,13 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 	/* migrate printerdata */
 	for (j = 0; j < r.count; j++) {
 		char *valuename;
-		const char *keyname;
+		char *keyname;
 
 		if (r.printer_data[j].type == REG_NONE) {
 			continue;
 		}
 
-		keyname = r.printer_data[j].name;
+		keyname = discard_const_p(char, r.printer_data[j].name);
 		valuename = strchr(keyname, '\\');
 		if (valuename == NULL) {
 			continue;

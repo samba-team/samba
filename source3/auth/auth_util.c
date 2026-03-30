@@ -1976,7 +1976,7 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 		return NULL;
 	}
 
-	p = strchr_m( username, *lp_winbind_separator() );
+	p = discard_const_p(char, strchr_m(username, *lp_winbind_separator()));
 
 	/* code for a DOMAIN\user string */
 

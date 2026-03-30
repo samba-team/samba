@@ -297,7 +297,7 @@ int main(int argc, const char *argv[])
 		debugstr = "set attributes";
 
 	do_set:
-		if ((p = strchr(the_acl, ':')) == NULL)
+		if ((p = (char *)(uintptr_t)strchr(the_acl, ':')) == NULL)
 		{
 			printf("Missing value.  ACL must be name:value pair\n");
 			return 1;

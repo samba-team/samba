@@ -561,7 +561,8 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	aprinter = discard_const_p(char, handlename);
 	if ( *handlename == '\\' ) {
 		servername = canon_servername(handlename);
-		if ( (aprinter = strchr_m( servername, '\\' )) != NULL ) {
+		aprinter = discard_const_p(char, strchr_m(servername, '\\'));
+		if (aprinter != NULL) {
 			*aprinter = '\0';
 			aprinter++;
 		}
@@ -10164,7 +10165,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 
 	/* check for OID in valuename */
 
-	oid_string = strchr_m(r->in.value_name, ',');
+	oid_string = discard_const_p(char, strchr_m(r->in.value_name, ','));
 	if (oid_string) {
 		*oid_string = '\0';
 		oid_string++;

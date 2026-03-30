@@ -186,7 +186,8 @@ static int iprint_get_server_version(http_t *http, char* serviceUri)
 		if ((os = strstr(ippGetString(attr, 0, NULL),
                                   NOVELL_SERVER_SYSNAME)) != NULL) {
 			os += strlen(NOVELL_SERVER_SYSNAME);
-			if ((temp = strchr(os,'<')) != NULL)
+			temp = discard_const_p(char, os);
+			if ((temp = strchr(temp,'<')) != NULL)
 				*temp = '\0';
 			if (strcmp(os,NOVELL_SERVER_SYSNAME_NETWARE))
 				osFlag = 1; /* 1 for non-NetWare systems */

@@ -674,7 +674,7 @@ wbcErr wbcCtxLookupUserSids(struct wbcContext *ctx,
 			    struct wbcDomainSid **_sids)
 {
 	uint32_t i;
-	const char *s;
+	char *s = NULL;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	struct wbcDomainSid *sids = NULL;
@@ -715,7 +715,7 @@ wbcErr wbcCtxLookupUserSids(struct wbcContext *ctx,
 		NULL);
 	BAIL_ON_PTR_ERROR(sids, wbc_status);
 
-	s = (const char *)response.extra_data.data;
+	s = (char *)response.extra_data.data;
 	for (i = 0; i < response.data.num_entries; i++) {
 		char *n = strchr(s, '\n');
 		if (n) {
@@ -771,7 +771,7 @@ wbcErr wbcCtxGetSidAliases(struct wbcContext *ctx,
 			   uint32_t *num_alias_rids)
 {
 	uint32_t i;
-	const char *s;
+	char *s = NULL;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	ssize_t extra_data_len = 0;
@@ -846,7 +846,7 @@ wbcErr wbcCtxGetSidAliases(struct wbcContext *ctx,
 					     sizeof(uint32_t), NULL);
 	BAIL_ON_PTR_ERROR(rids, wbc_status);
 
-	s = (const char *)response.extra_data.data;
+	s = (char *)response.extra_data.data;
 	for (i = 0; i < response.data.num_entries; i++) {
 		char *n = strchr(s, '\n');
 		if (n) {
@@ -895,7 +895,7 @@ wbcErr wbcCtxListUsers(struct wbcContext *ctx,
 	struct winbindd_response response;
 	uint32_t num_users = 0;
 	const char **users = NULL;
-	const char *next;
+	char *next = NULL;
 
 	/* Initialise request */
 
@@ -919,10 +919,10 @@ wbcErr wbcCtxListUsers(struct wbcContext *ctx,
 
 	/* Look through extra data */
 
-	next = (const char *)response.extra_data.data;
+	next = (char *)response.extra_data.data;
 	while (next) {
-		const char *current;
-		char *k;
+		char *current = NULL;
+		char *k = NULL;
 
 		if (num_users >= response.data.num_entries) {
 			wbc_status = WBC_ERR_INVALID_RESPONSE;
@@ -979,7 +979,7 @@ wbcErr wbcCtxListGroups(struct wbcContext *ctx,
 	struct winbindd_response response;
 	uint32_t num_groups = 0;
 	const char **groups = NULL;
-	const char *next;
+	char *next = NULL;
 
 	/* Initialise request */
 
@@ -1003,10 +1003,10 @@ wbcErr wbcCtxListGroups(struct wbcContext *ctx,
 
 	/* Look through extra data */
 
-	next = (const char *)response.extra_data.data;
+	next = (char *)response.extra_data.data;
 	while (next) {
-		const char *current;
-		char *k;
+		char *current = NULL;
+		char *k = NULL;
 
 		if (num_groups >= response.data.num_entries) {
 			wbc_status = WBC_ERR_INVALID_RESPONSE;
