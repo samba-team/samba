@@ -25,7 +25,6 @@
 #include "libcli/dns/dns.h"
 #include "lib/util/util_net.h"
 #include "libcli/util/ntstatus.h"
-#include "librpc/gen_ndr/dns.h"
 
 /* The following definitions come from libads/dns.c  */
 

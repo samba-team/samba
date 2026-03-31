@@ -31,8 +31,7 @@
 #include "libcli/util/ntstatus.h"
 #include "auth/gensec/gensec.h"
 #include "dnserr.h"
-#include "librpc/gen_ndr/dns.h"
-#include "dns.h"
+#include "lib/addns/dns.h"
 #include "libcli/dns/libdns.h"
 
 DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,

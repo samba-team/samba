@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "lib/util/util_net.h"
 #include "lib/util/tsort.h"
-#include "librpc/gen_ndr/dns.h"
 #include "libcli/dns/dns_lookup.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "dnsquery.h"
