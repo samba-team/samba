@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include <tevent.h>
 #include "lib/tsocket/tsocket.h"
+#include "source3/lib/util_tsock.h"
 #include "libcli/dns/libdns.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/samba_util.h"
@@ -193,11 +194,9 @@ struct dns_tcp_request_state {
 
 static void dns_tcp_request_connected(struct tevent_req *subreq);
 static void dns_tcp_request_sent(struct tevent_req *subreq);
-static int dns_tcp_request_next_vector(struct tstream_context *stream,
-				       void *private_data,
-				       TALLOC_CTX *mem_ctx,
-				       struct iovec **_vector,
-				       size_t *_count);
+static ssize_t dns_tcp_request_more(uint8_t *buf,
+				    size_t buflen,
+				    void *private_data);
 static void dns_tcp_request_received(struct tevent_req *subreq);
 
 static struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
@@ -297,76 +296,37 @@ static void dns_tcp_request_sent(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = tstream_readv_pdu_send(state, state->ev, state->stream,
-					dns_tcp_request_next_vector, state);
+	subreq = tstream_read_packet_send(state,
+					  state->ev,
+					  state->stream,
+					  2,
+					  dns_tcp_request_more,
+					  NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, dns_tcp_request_received, req);
 }
 
-static int dns_tcp_request_next_vector(struct tstream_context *stream,
-				       void *private_data,
-				       TALLOC_CTX *mem_ctx,
-				       struct iovec **_vector,
-				       size_t *_count)
+static ssize_t dns_tcp_request_more(uint8_t *buf,
+				    size_t buflen,
+				    void *private_data)
 {
-	struct dns_tcp_request_state *state = talloc_get_type_abort(
-		private_data, struct dns_tcp_request_state);
-	struct iovec *vector;
-	uint16_t msglen;
-
-	if (state->nread == 0) {
-		vector = talloc_array(mem_ctx, struct iovec, 1);
-		if (vector == NULL) {
-			return -1;
-		}
-		vector[0] = (struct iovec) {
-			.iov_base = state->dns_msglen_hdr,
-			.iov_len = sizeof(state->dns_msglen_hdr)
-		};
-		state->nread = sizeof(state->dns_msglen_hdr);
-
-		*_vector = vector;
-		*_count = 1;
-		return 0;
+	if (buflen > 2) {
+		return 0; /* We've been here, we're done */
 	}
-
-	if (state->nread == sizeof(state->dns_msglen_hdr)) {
-		msglen = RSVAL(state->dns_msglen_hdr, 0);
-
-		state->reply = talloc_array(state, uint8_t, msglen);
-		if (state->reply == NULL) {
-			return -1;
-		}
-
-		vector = talloc_array(mem_ctx, struct iovec, 1);
-		if (vector == NULL) {
-			return -1;
-		}
-		vector[0] = (struct iovec) {
-			.iov_base = state->reply,
-			.iov_len = msglen
-		};
-		state->nread += msglen;
-
-		*_vector = vector;
-		*_count = 1;
-		return 0;
-	}
-
-	*_vector = NULL;
-	*_count = 0;
-	return 0;
+	return PULL_BE_U16(buf, 0);
 }
 
 static void dns_tcp_request_received(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct dns_tcp_request_state *state = tevent_req_data(
+		req, struct dns_tcp_request_state);
 	int ret, err;
 
-	ret = tstream_readv_pdu_recv(subreq, &err);
+	ret = tstream_read_packet_recv(subreq, state, &state->reply, &err);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		tevent_req_error(req, err);
@@ -390,8 +350,14 @@ static int dns_tcp_request_recv(struct tevent_req *req,
 		return err;
 	}
 
-	*reply_len = talloc_array_length(state->reply);
-	*reply = talloc_move(mem_ctx, &state->reply);
+	/*
+	 * DNS over TCP prefixes each message with a 2-byte length
+	 * header, skip it.
+	 */
+	*reply_len = talloc_array_length(state->reply) - 2;
+	*reply = state->reply + 2;
+	talloc_steal(mem_ctx, state->reply);
+
 	tevent_req_received(req);
 
 	return 0;
@@ -568,7 +534,6 @@ static void dns_cli_request_tcp_done(struct tevent_req *subreq)
 		tevent_req_error(req, ndr_map_error2errno(ndr_err));
 		return;
 	}
-	TALLOC_FREE(reply.data);
 
 	if (state->reply->id != state->req_id) {
 		DBG_DEBUG("Got id %"PRIu16", expected %"PRIu16"\n",
