@@ -61,7 +61,7 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 			struct dns_res_rec tkey = {
 				.name = keyname,
 				.rr_type = QTYPE_TKEY,
-				.rr_class = DNS_CLASS_ANY,
+				.rr_class = DNS_QCLASS_ANY,
 				.length = 1,
 				.rdata.tkey_record
 					.algorithm = "gss.microsoft.com",
@@ -73,7 +73,7 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 			};
 			struct dns_name_question question = {
 				.name = keyname,
-				.question_class = DNS_CLASS_IN,
+				.question_class = DNS_QCLASS_IN,
 				.question_type = QTYPE_TKEY,
 			};
 			struct dns_name_packet rec = {

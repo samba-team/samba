@@ -49,12 +49,6 @@
 #define DNS_TCP			1
 #define DNS_UDP			2
 
-/* DNS Class Types */
-
-#define DNS_CLASS_IN		1
-#define DNS_CLASS_ANY		255
-#define DNS_CLASS_NONE		254
-
 #define DNS_TCP_PORT		53
 #define DNS_UDP_PORT		53
 

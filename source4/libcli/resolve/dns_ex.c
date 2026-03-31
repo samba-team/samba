@@ -109,7 +109,7 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx,
 		rr = &reply->answers[i];
 
 		/* we are only interested in the IN class */
-		if (rr->rr_class != DNS_CLASS_IN) {
+		if (rr->rr_class != DNS_QCLASS_IN) {
 			continue;
 		}
 
@@ -171,7 +171,7 @@ static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx,
 		if (!ok) {
 			return ERROR_DNS_NO_MEMORY;
 		}
-		rlen = res_search(name, DNS_CLASS_IN, q_type, blob.data, len);
+		rlen = res_search(name, DNS_QCLASS_IN, q_type, blob.data, len);
 		if (rlen == -1) {
 			if (len >= 65535) {
 				data_blob_free(&blob);

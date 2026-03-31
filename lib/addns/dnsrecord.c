@@ -85,7 +85,7 @@ DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 	}
 
 	z->z_type = QTYPE_SOA;
-	z->z_class = DNS_CLASS_IN;
+	z->z_class = DNS_QCLASS_IN;
 
 	*preq = req;
 	return ERROR_DNS_SUCCESS;
@@ -137,8 +137,14 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	err = dns_create_rrec(mem_ctx, host, QTYPE_A, DNS_CLASS_IN, ttl,
-			      sizeof(ip.s_addr), data, prec);
+	err = dns_create_rrec(mem_ctx,
+			      host,
+			      QTYPE_A,
+			      DNS_QCLASS_IN,
+			      ttl,
+			      sizeof(ip.s_addr),
+			      data,
+			      prec);
 
 	if (!ERR_DNS_IS_OK(err)) {
 		TALLOC_FREE(data);
@@ -166,8 +172,14 @@ DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	err = dns_create_rrec(mem_ctx, host, QTYPE_AAAA, DNS_CLASS_IN, ttl,
-			      sizeof(ip6.s6_addr), data, prec);
+	err = dns_create_rrec(mem_ctx,
+			      host,
+			      QTYPE_AAAA,
+			      DNS_QCLASS_IN,
+			      ttl,
+			      sizeof(ip6.s6_addr),
+			      data,
+			      prec);
 
 	if (!ERR_DNS_IS_OK(err)) {
 		TALLOC_FREE(data);
