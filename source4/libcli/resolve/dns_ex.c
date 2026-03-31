@@ -113,7 +113,7 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		if (rr->rr_type == QTYPE_NS) {
+		if (rr->rr_type == DNS_QTYPE_NS) {
 			/*
 			 * After the record for NS will come the A or AAAA
 			 * record of the NS.
@@ -128,11 +128,11 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx,
 
 		/* we are only interested in A and AAAA records */
 		switch (rr->rr_type) {
-		case QTYPE_A:
+		case DNS_QTYPE_A:
 			addr = rr->rdata.ipv4_record;
 			break;
 #ifdef HAVE_IPV6
-		case QTYPE_AAAA:
+		case DNS_QTYPE_AAAA:
 			addr = rr->rdata.ipv6_record;
 			break;
 #endif
@@ -144,7 +144,7 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx,
 			addrs, "%s@%u/%s", addr, port, rr->name);
 		if (addrs[total]) {
 			total++;
-			if (rr->rr_type == QTYPE_A) {
+			if (rr->rr_type == DNS_QTYPE_A) {
 				(*a_num)++;
 			}
 		}
@@ -229,13 +229,13 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	qtype = QTYPE_AAAA;
+	qtype = DNS_QTYPE_AAAA;
 
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid them in the parent */
 	err = dns_lookup(tmp_ctx, name, qtype, &reply);
 	if (!ERR_DNS_IS_OK(err)) {
-		qtype = QTYPE_A;
+		qtype = DNS_QTYPE_A;
 		err = dns_lookup(tmp_ctx, name, qtype, &reply);
 		if (!ERR_DNS_IS_OK(err)) {
 			goto done;
@@ -245,12 +245,12 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 	a_num = total = 0;
 	total = reply_to_addrs(tmp_ctx, &a_num, &addrs, total, reply, port);
 
-	if (qtype == QTYPE_AAAA && a_num == 0) {
+	if (qtype == DNS_QTYPE_AAAA && a_num == 0) {
 		/*
 		* DNS server didn't returned A when asked for AAAA records.
 		* Most of the server do it, let's ask for A specifically.
 		*/
-		err = dns_lookup(tmp_ctx, name, QTYPE_A, &reply);
+		err = dns_lookup(tmp_ctx, name, DNS_QTYPE_A, &reply);
 		if (ERR_DNS_IS_OK(err)) {
 			/*
 			 * Ignore an error here and just return any AAAA

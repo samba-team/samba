@@ -84,7 +84,7 @@ DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 		return err;
 	}
 
-	z->z_type = QTYPE_SOA;
+	z->z_type = DNS_QTYPE_SOA;
 	z->z_class = DNS_QCLASS_IN;
 
 	*preq = req;
@@ -139,7 +139,7 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 
 	err = dns_create_rrec(mem_ctx,
 			      host,
-			      QTYPE_A,
+			      DNS_QTYPE_A,
 			      DNS_QCLASS_IN,
 			      ttl,
 			      sizeof(ip.s_addr),
@@ -174,7 +174,7 @@ DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 
 	err = dns_create_rrec(mem_ctx,
 			      host,
-			      QTYPE_AAAA,
+			      DNS_QTYPE_AAAA,
 			      DNS_QCLASS_IN,
 			      ttl,
 			      sizeof(ip6.s6_addr),

@@ -60,7 +60,7 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 
 			struct dns_res_rec tkey = {
 				.name = keyname,
-				.rr_type = QTYPE_TKEY,
+				.rr_type = DNS_QTYPE_TKEY,
 				.rr_class = DNS_QCLASS_ANY,
 				.length = 1,
 				.rdata.tkey_record
@@ -74,7 +74,7 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 			struct dns_name_question question = {
 				.name = keyname,
 				.question_class = DNS_QCLASS_IN,
-				.question_type = QTYPE_TKEY,
+				.question_type = DNS_QTYPE_TKEY,
 			};
 			struct dns_name_packet rec = {
 				.operation = DNS_OPCODE_QUERY,
@@ -117,7 +117,7 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 			for (i = 0; i < reply->ancount; i++) {
 				tkey_answer = &reply->answers[i];
 
-				if (tkey_answer->rr_type == QTYPE_TKEY) {
+				if (tkey_answer->rr_type == DNS_QTYPE_TKEY) {
 					break;
 				}
 			}
