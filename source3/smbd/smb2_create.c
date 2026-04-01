@@ -1795,6 +1795,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 					conn->cwd_fsp,
 					state->result,
 					false,
+					true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&max_access_granted);
 

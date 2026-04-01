@@ -432,6 +432,7 @@ static NTSTATUS check_base_file_access(struct files_struct *fsp,
 	status = smbd_calculate_access_mask_fsp(fsp->conn->cwd_fsp,
 					fsp,
 					false,
+					false,
 					access_mask,
 					&access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3304,6 +3305,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 			struct files_struct *dirfsp,
 			struct files_struct *fsp,
 			bool use_privs,
+			bool ignore_readonly,
 			uint32_t *p_access_mask)
 {
 	struct security_descriptor *sd = NULL;
@@ -3389,17 +3391,30 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
 	}
 
+	if (ignore_readonly) {
+		/*
+		 * We end up here when the maximum access mask for the "MxAC"
+		 * create context response is needed. That ignores the read-only
+		 * attribute, cf smbtorture tests
+		 * "smb2.maximum_allowed.read_only_file" and
+		 * "smb2.maximum_allowed.read_only_dir".
+		 */
+		goto done;
+	}
+
 	dosattrs = fdos_mode(fsp);
 	if (dosattrs & FILE_ATTRIBUTE_READONLY) {
 		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
 	}
 
+done:
 	return NT_STATUS_OK;
 }
 
 NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *dirfsp,
 			struct files_struct *fsp,
 			bool use_privs,
+			bool ignore_readonly,
 			uint32_t access_mask,
 			uint32_t *access_mask_out)
 {
@@ -3426,6 +3441,7 @@ NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *dirfsp,
 						   dirfsp,
 						   fsp,
 						   use_privs,
+						   ignore_readonly,
 						   &access_mask);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3944,7 +3960,7 @@ static NTSTATUS open_file_ntcreate(
 	}
 
 	status = smbd_calculate_access_mask_fsp(
-		dirfsp, smb_fname->fsp, false, access_mask, &access_mask);
+		dirfsp, smb_fname->fsp, false, false, access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("smbd_calculate_access_mask_fsp "
 			"on file %s returned %s\n",
@@ -5031,7 +5047,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	status = smbd_calculate_access_mask_fsp(
-		dirfsp, smb_dname->fsp, false, access_mask, &access_mask);
+		dirfsp, smb_dname->fsp, false, false, access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("smbd_calculate_access_mask_fsp "
 			"on file %s returned %s\n",
