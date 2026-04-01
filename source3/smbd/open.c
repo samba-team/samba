@@ -3402,9 +3402,19 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 		goto done;
 	}
 
-	dosattrs = fdos_mode(fsp);
-	if (dosattrs & FILE_ATTRIBUTE_READONLY) {
-		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
+	/*
+	 * MS_FSA 2.1.5.1.2.1 "Algorithm to Check Access to an Existing File"
+	 * has the below, although it misses to state that this only affects
+	 * files, not directories.
+	 */
+	if (S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+		dosattrs = fdos_mode(fsp);
+		if (dosattrs & FILE_ATTRIBUTE_READONLY) {
+			*p_access_mask &= ~(FILE_WRITE_DATA |
+					    FILE_APPEND_DATA |
+					    FILE_ADD_SUBDIRECTORY |
+					    FILE_DELETE_CHILD);
+		}
 	}
 
 done:
