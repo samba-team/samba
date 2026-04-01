@@ -275,6 +275,6 @@ struct torture_suite *torture_smb2_max_allowed(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "maximum_allowed");
 
 	torture_suite_add_1smb2_test(suite, "maximum_allowed", torture_smb2_maximum_allowed);
-	torture_suite_add_1smb2_test(suite, "read_only", torture_smb2_read_only_file);
+	torture_suite_add_1smb2_test(suite, "read_only_file", torture_smb2_read_only_file);
 	return suite;
 }
