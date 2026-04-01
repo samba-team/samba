@@ -965,14 +965,6 @@ static NTSTATUS open_file(
 	bool posix_open = fsp->fsp_flags.posix_open;
 
 	/*
-	 * Catch early an attempt to open an existing
-	 * directory as a file.
-	 */
-	if (file_existed && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
-	/*
 	 * This little piece of insanity is inspired by the
 	 * fact that an NT client can open a file for O_RDONLY,
 	 * but set the create disposition to FILE_EXISTS_TRUNCATE.
@@ -3641,6 +3633,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		return print_spool_open(fsp, smb_fname->base_name,
 					req->vuid);
+	}
+
+	/*
+	 * Catch early an attempt to open an existing
+	 * directory as a file.
+	 */
+	if (file_existed && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	if (new_dos_attributes & FILE_FLAG_POSIX_SEMANTICS) {
