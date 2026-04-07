@@ -42,6 +42,7 @@
 #include "locking/leases_db.h"
 #include "librpc/gen_ndr/ndr_leases_db.h"
 #include "lib/util/time_basic.h"
+#include "lib/util/smb_strtox.h"
 #include "source3/smbd/dir.h"
 
 #if defined(HAVE_LINUX_MAGIC_H)
@@ -877,6 +878,8 @@ static bool fsp_is_automount_mountpoint(struct files_struct *fsp, int old_fd)
 #if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
 	struct statfs sbuf = {};
 	int ret;
+	const char **fs_types_list = NULL;
+	int i;
 
 	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 		return false;
@@ -890,6 +893,34 @@ static bool fsp_is_automount_mountpoint(struct files_struct *fsp, int old_fd)
 	if (sbuf.f_type == AUTOFS_SUPER_MAGIC) {
 		return true;
 	}
+
+	/* Check for additional filesystem types from configuration */
+	fs_types_list = lp_automount_fs_types();
+	if (fs_types_list == NULL) {
+		return false;
+	}
+
+	for (i = 0; fs_types_list[i] != NULL; i++) {
+		unsigned long long fs_type_val;
+		int error = 0;
+
+		fs_type_val = smb_strtoull(fs_types_list[i],
+					   NULL,
+					   0,
+					   &error,
+					   SMB_STR_FULL_STR_CONV);
+		if (error != 0) {
+			DBG_WARNING(
+				"Invalid value in 'automount fs types': %s\n",
+				fs_types_list[i]);
+			continue;
+		}
+
+		if (sbuf.f_type == fs_type_val) {
+			return true;
+		}
+	}
+
 	return false;
 #else
 	return false;

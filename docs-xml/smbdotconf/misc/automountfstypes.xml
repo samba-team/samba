@@ -1,0 +1,24 @@
+<samba:parameter name="automount fs types"
+                 context="G"
+                 type="cmdlist"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This parameter specifies a list of additional filesystem magic numbers
+	that should trigger automounting when accessed.</para>
+
+	<para>The values should be specified as hexadecimal numbers (with or without
+	0x prefix), separated by spaces or commas.</para>
+
+	<para>Note: This parameter is only available on Linux systems.</para>
+
+	<para>To find the filesystem magic number for a mounted filesystem,
+	consult /usr/include/linux/magic.h or call:
+	<command>stat -f -c '0x%t' /path/to/mountpoint</command></para>
+
+	<para>Note: autofs (0x187) is always checked and does not need to be included
+	in this list.</para>
+</description>
+
+<value type="default"></value>
+<value type="example">0xA0B0C0D0 0x12345678</value>
+</samba:parameter>
