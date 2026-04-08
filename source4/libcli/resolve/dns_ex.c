@@ -123,18 +123,30 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
 		/* we are only interested in A and AAAA records */
 		switch (rr->type) {
 		case QTYPE_A:
+			/*
+			 * rr->data will be correctly aligned as it's allocated
+			 * in dns_unmarshall_rr
+			 */
 			addr = inet_ntop(AF_INET,
-					 (struct in_addr *)rr->data,
-					 addrstr, sizeof(addrstr));
+					 discard_align_p(struct in_addr,
+							 rr->data),
+					 addrstr,
+					 sizeof(addrstr));
 			if (addr == NULL) {
 				continue;
 			}
 			break;
 		case QTYPE_AAAA:
 #ifdef HAVE_IPV6
+			/*
+			 * rr->data will be correctly aligned as it's allocated
+			 * in dns_unmarshal_rr
+			 */
 			addr = inet_ntop(AF_INET6,
-					 (struct in6_addr *)rr->data,
-					 addrstr, sizeof(addrstr));
+					 discard_align_p(struct in6_addr,
+							 rr->data),
+					 addrstr,
+					 sizeof(addrstr));
 #else
 			addr = NULL;
 #endif
