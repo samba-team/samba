@@ -403,7 +403,12 @@ static const char *extract_name(union smb_search_data *data,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (level == levels[i].level &&
 		    data_level == levels[i].data_level) {
-			return *(const char **)(levels[i].name_offset + (char *)data);
+			char *name = NULL;
+			char **name_ptr = &name;
+			memcpy(name_ptr,
+			       (levels[i].name_offset + (char *)data),
+			       sizeof(char *));
+			return name;
 		}
 	}
 	return NULL;
