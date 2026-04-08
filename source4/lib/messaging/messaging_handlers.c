@@ -23,9 +23,11 @@
 */
 
 #include "includes.h"
+#include "lib/util/alignment.h"
 #include "lib/util/server_id.h"
 #include "messaging/messaging.h"
 #include "messaging/messaging_internal.h"
+#include "replace.h"
 
 #if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
 
@@ -41,6 +43,7 @@ static void do_inject_fault(struct imessaging_context *msg,
 			    DATA_BLOB *data)
 {
 	int sig;
+	int *sig_p = NULL;
 	struct server_id_buf tmp;
 
 	if (num_fds != 0) {
@@ -54,7 +57,9 @@ static void do_inject_fault(struct imessaging_context *msg,
 		return;
 	}
 
-	sig = *(int *)data->data;
+	SMB_ASSERT(check_alignment(data->data, int));
+	sig_p = discard_align_p(int, data->data);
+	sig = *sig_p;
 	if (sig == -1) {
 		DBG_ERR("Process %s requested an iternal failure, "
 			"calling exit(1)\n",
@@ -88,6 +93,7 @@ static void do_sleep(struct imessaging_context *msg,
 		     DATA_BLOB *data)
 {
 	unsigned int seconds;
+	unsigned int *seconds_p = NULL;
 	struct server_id_buf tmp;
 
 	if (num_fds != 0) {
@@ -101,7 +107,9 @@ static void do_sleep(struct imessaging_context *msg,
 		return;
 	}
 
-	seconds = *(unsigned int *)data->data;
+	SMB_ASSERT(check_alignment(data->data, unsigned int));
+	seconds_p = discard_align_p(unsigned int, data->data);
+	seconds = *seconds_p;
 	DBG_ERR("Process %s requested a sleep of %u seconds\n",
 		server_id_str_buf(src, &tmp),
 		seconds);
