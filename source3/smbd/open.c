@@ -3385,8 +3385,12 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 		}
 	}
 
+	if (!CAN_WRITE(fsp->conn)) {
+		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
+	}
+
 	dosattrs = fdos_mode(fsp);
-	if ((dosattrs & FILE_ATTRIBUTE_READONLY) || !CAN_WRITE(fsp->conn)) {
+	if (dosattrs & FILE_ATTRIBUTE_READONLY) {
 		*p_access_mask &= ~(FILE_GENERIC_WRITE | DELETE_ACCESS);
 	}
 
