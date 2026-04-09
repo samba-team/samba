@@ -115,7 +115,10 @@ static int increment_attr_count(struct tdb_context *tdb,
 		return ret;
 	}
 
-	val = (uint32_t *)data.dptr;
+	/*
+	 * data.dptr is allocated by malloc
+	 */
+	val = discard_align_p(uint32_t, data.dptr);
 	(*val)++;
 
 	ret = tdb_store(tdb,
@@ -179,7 +182,10 @@ static int increment_req_vs_found(struct tdb_context *tdb,
 		return ret;
 	}
 
-	val = (uint32_t *)data.dptr;
+	/*
+	 * data.dptr is allocated by malloc
+	 */
+	val = discard_align_p(uint32_t, data.dptr);
 	(*val)++;
 
 	ret = tdb_store(tdb, key, data, 0);
