@@ -2070,16 +2070,10 @@ static int snapper_gmt_openat(struct vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname = NULL;
 	time_t timestamp;
-	char *stripped = NULL;
 	int ret;
 	int saved_errno = 0;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
-					smb_fname_in,
-					&timestamp, &stripped)) {
-		return -1;
-	}
-	if (timestamp == 0) {
+	if (smb_fname_in->twrp == 0) {
 		return SMB_VFS_NEXT_OPENAT(handle,
 					   dirfsp,
 					   smb_fname_in,
@@ -2087,15 +2081,21 @@ static int snapper_gmt_openat(struct vfs_handle_struct *handle,
 					   how);
 	}
 
-	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
+	timestamp = nt_time_to_unix(smb_fname_in->twrp);
+
+	smb_fname = full_path_from_dirfsp_atname(talloc_tos(),
+				dirfsp,
+				smb_fname_in);
+
 	if (smb_fname == NULL) {
-		TALLOC_FREE(stripped);
+		errno = ENOMEM;
 		return -1;
 	}
 
-	smb_fname->base_name = snapper_gmt_convert(smb_fname, handle,
-						   stripped, timestamp);
-	TALLOC_FREE(stripped);
+	smb_fname->base_name = snapper_gmt_convert(smb_fname,
+						   handle,
+						   smb_fname->base_name,
+						   timestamp);
 
 	if (smb_fname->base_name == NULL) {
 		TALLOC_FREE(smb_fname);
