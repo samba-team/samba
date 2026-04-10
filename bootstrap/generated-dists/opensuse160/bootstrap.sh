@@ -68,6 +68,7 @@ zypper --non-interactive install \
     libunwind-devel \
     liburing-devel \
     libuuid-devel \
+    libxcrypt-devel \
     libxslt \
     lmdb \
     lmdb-devel \

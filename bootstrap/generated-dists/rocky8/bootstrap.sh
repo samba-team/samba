@@ -79,6 +79,7 @@ yum install -y \
     libtirpc-devel \
     libunwind-devel \
     libuuid-devel \
+    libxcrypt-devel \
     libxslt \
     lmdb \
     lmdb-devel \

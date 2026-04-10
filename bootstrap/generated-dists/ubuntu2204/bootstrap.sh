@@ -54,6 +54,7 @@ apt-get -y install \
     libcap-dev \
     libcephfs-dev \
     libclang-dev \
+    libcrypt-dev \
     libcups2-dev \
     libdbus-1-dev \
     libevent-dev \

@@ -103,6 +103,7 @@ PKGS = [
     ('libcups2-dev', 'cups-devel'),
     ('libpam0g-dev', 'pam-devel'),
     ('libgpgme11-dev', 'gpgme-devel'),
+    ('libcrypt-dev', 'libxcrypt-devel'),
     # NOTE: Debian 8+ and Ubuntu 14.04+
     ('libgnutls28-dev', 'gnutls-devel'),
     ('gnutls-bin', 'gnutls-utils'),
@@ -139,7 +140,7 @@ PKGS = [
     ('lsb-release', 'lsb-release'),  # we need lsb_release to show info
     ('', 'rpcgen'),  # required for test
     # refer: https://fedoraproject.org/wiki/Changes/SunRPCRemoval
-    ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
+    ('libtirpc-dev', 'libtirpc-devel'),  # for <rpc/rpc.h> header
     ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
     ('shellcheck', 'ShellCheck'),
@@ -494,6 +495,7 @@ DEB_DISTS = {
         'docker_image': 'ubuntu:22.04',
         'vagrant_box': 'ubuntu/jammy64',
         'replace': {
+            'libtirpc-dev': '',
         },
     },
     'ubuntu2404': {

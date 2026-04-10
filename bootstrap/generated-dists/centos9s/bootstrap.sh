@@ -73,6 +73,7 @@ dnf install -y \
     libunwind-devel \
     liburing-devel \
     libuuid-devel \
+    libxcrypt-devel \
     libxslt \
     lmdb \
     lmdb-devel \

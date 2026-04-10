@@ -71,6 +71,7 @@ dnf install -y \
     liburing-devel \
     libuuid-devel \
     libvarlink-devel \
+    libxcrypt-devel \
     libxslt \
     lmdb \
     lmdb-devel \
