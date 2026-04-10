@@ -11,6 +11,7 @@ RUN [ -n $SHA1SUM ] && echo $SHA1SUM > /sha1sum.txt
 
 ADD *.sh /tmp/
 # need root permission, do it before USER samba
+# no BEFORE_BOOTSTRAP_ACTIONS
 RUN /tmp/bootstrap.sh && /tmp/locale.sh
 
 # if ld.gold exists, force link it to ld

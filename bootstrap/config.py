@@ -410,6 +410,7 @@ RUN [ -n $SHA1SUM ] && echo $SHA1SUM > /sha1sum.txt
 
 ADD *.sh /tmp/
 # need root permission, do it before USER samba
+{BEFORE_BOOTSTRAP_ACTIONS}
 RUN /tmp/bootstrap.sh && /tmp/locale.sh
 
 # if ld.gold exists, force link it to ld
@@ -501,6 +502,14 @@ DEB_DISTS = {
     'ubuntu2404': {
         'docker_image': 'ubuntu:24.04',
         'vagrant_box': 'ubuntu/noble64',
+        'replace': {
+        },
+    },
+    'ubuntu2604': {
+        'docker_image': 'ubuntu:26.04',
+        'vagrant_box': 'ubuntu/resolute64',
+        # locales postinstall is broken if /etc/default/locale exists
+        'BEFORE_BOOTSTRAP_ACTIONS': 'RUN mv /etc/default/locale /etc/default/locale.before.bootstrap',
         'replace': {
         },
     },
@@ -627,6 +636,8 @@ def expand_family_dists(family):
         config['home'] = join(OUT, name)
         config['family'] = family['name']
         config['GENERATED_MARKER'] = GENERATED_MARKER
+        if 'BEFORE_BOOTSTRAP_ACTIONS' not in config:
+            config['BEFORE_BOOTSTRAP_ACTIONS'] = '# no BEFORE_BOOTSTRAP_ACTIONS'
 
         # replace dist specific pkgs
         replace = config.get('replace', {})

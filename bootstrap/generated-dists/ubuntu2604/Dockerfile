@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM docker.io/library/rockylinux:8
+FROM ubuntu:26.04
 
 # pass in with --build-arg while build
 ARG SHA1SUM
@@ -11,7 +11,7 @@ RUN [ -n $SHA1SUM ] && echo $SHA1SUM > /sha1sum.txt
 
 ADD *.sh /tmp/
 # need root permission, do it before USER samba
-# no BEFORE_BOOTSTRAP_ACTIONS
+RUN mv /etc/default/locale /etc/default/locale.before.bootstrap
 RUN /tmp/bootstrap.sh && /tmp/locale.sh
 
 # if ld.gold exists, force link it to ld
