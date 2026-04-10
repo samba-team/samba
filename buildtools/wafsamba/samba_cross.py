@@ -26,7 +26,7 @@ def add_answer(ca_file, msg, answer):
     # don't care about its actual content (the tests should
     # yield one-line output in order to comply with the cross-answer
     # format)
-    retstring = retstring.strip()
+    retstring = retstring.strip("\n")
     if len(retstring.split('\n')) > 1:
         retstring = ''
     answer = (retcode, retstring)
