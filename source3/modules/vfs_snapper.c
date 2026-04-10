@@ -2011,12 +2011,15 @@ static int snapper_gmt_fstatat(struct vfs_handle_struct *handle,
 			       int flags)
 {
 	struct smb_filename *tmp_fname = NULL;
+	time_t timestamp;
 	int ret;
 
 	if (smb_fname->twrp == 0) {
 		return SMB_VFS_NEXT_FSTATAT(
 			handle, dirfsp, smb_fname, sbuf, flags);
 	}
+
+	timestamp = nt_time_to_unix(smb_fname->twrp);
 
 	tmp_fname = cp_smb_filename(talloc_tos(), smb_fname);
 	if (tmp_fname == NULL) {
@@ -2026,8 +2029,8 @@ static int snapper_gmt_fstatat(struct vfs_handle_struct *handle,
 
 	tmp_fname->base_name = snapper_gmt_convert(tmp_fname,
 						   handle,
-						   smb_fname->base_name,
-						   smb_fname->twrp);
+						   tmp_fname->base_name,
+						   timestamp);
 	if (tmp_fname->base_name == NULL) {
 		TALLOC_FREE(tmp_fname);
 		errno = ENOMEM;
