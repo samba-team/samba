@@ -183,8 +183,8 @@ out:
 
 	if (rc == 0) {
 		uint64_t magic = PULL_LE_U64(digest, 0);
-		if (magic == 0) {
-			magic = PULL_LE_U64(digest, 0);
+		if ((magic == 0) && (sizeof(digest) >= 16)) {
+			magic = PULL_LE_U64(digest, 8);
 		}
 		*_magic = magic;
 	}
