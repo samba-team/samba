@@ -472,7 +472,13 @@ void smbprofile_persvc_unref(int snum)
 
 	persvc = smbprofile_persvc_lookup(snum);
 	if (persvc != NULL) {
-		persvc->refcnt--;
+		if (persvc->refcnt > 0) {
+			persvc->refcnt--;
+		} else {
+			DBG_INFO("Profile persvc-entry with zero refcnt "
+				 "(snum %d)\n",
+				 snum);
+		}
 	}
 }
 
