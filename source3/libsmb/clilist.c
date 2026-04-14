@@ -22,6 +22,7 @@
 #include "source3/libsmb/proto.h"
 #include "source3/libsmb/cli_smb2_fnum.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "../lib/util/overflow.h"
 #include "async_smb.h"
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
@@ -97,8 +98,8 @@ static size_t calc_next_entry_offset(const char *base, const char *pdata_end)
 	size_t next_entry_offset = (size_t)IVAL(base,0);
 
 	if (next_entry_offset == 0 ||
-			base + next_entry_offset < base ||
-			base + next_entry_offset > pdata_end) {
+	    offset_outside_range(base, pdata_end, next_entry_offset))
+	{
 		next_entry_offset = pdata_end - base;
 	}
 	return next_entry_offset;
@@ -283,7 +284,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			p += 24; /* short name? */
-			if (p + namelen < p || p + namelen > pdata_end) {
+			if (offset_outside_range(p, pdata_end, namelen)) {
 				return pdata_end - base;
 			}
 			ret = pull_string_talloc(ctx,
