@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    simple kerberos5/SPNEGO routines
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Andrew Bartlett 2002-2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -40,7 +40,7 @@
   d = word (4 bytes)
   C = constant ascii string
  */
-NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx, 
+NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 	       DATA_BLOB *blob,
 	       const char *format, ...)
 {
@@ -182,7 +182,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 			break;
 		case 'd':
 			j = intargs[i];
-			SIVAL(blob->data, head_ofs, j); 
+			SIVAL(blob->data, head_ofs, j);
 			head_ofs += 4;
 			break;
 		case 'b':
@@ -204,7 +204,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 		}
 	}
 	va_end(ap);
-	
+
 	talloc_free(pointers);
 
 	return NT_STATUS_OK;
@@ -231,7 +231,7 @@ if ((head_ofs + amount) > blob->length) { \
   C = constant ascii string
  */
 
-bool msrpc_parse(TALLOC_CTX *mem_ctx, 
+bool msrpc_parse(TALLOC_CTX *mem_ctx,
 		 const DATA_BLOB *blob,
 		 const char *format, ...)
 {
@@ -317,8 +317,8 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 				if (0 < len1) {
 					size_t pull_len;
 
-					if (!convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
-								   blob->data + ptr, len1, 
+					if (!convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX,
+								   blob->data + ptr, len1,
 								   ps, &pull_len)) {
 						ret = false;
 						goto cleanup;
