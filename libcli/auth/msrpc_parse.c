@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/overflow.h"
 #include "libcli/auth/msrpc_parse.h"
 
 /*
@@ -274,8 +275,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 					ret = false;
 					goto cleanup;
 				}
-				if (blob->data + ptr < (uint8_t *)(uintptr_t)ptr ||
-						blob->data + ptr < blob->data) {
+				if (ptr_overflow(blob->data, ptr, uint8_t)) {
 					ret = false;
 					goto cleanup;
 				}
@@ -308,8 +308,8 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 					goto cleanup;
 				}
 
-				if (blob->data + ptr < (uint8_t *)(uintptr_t)ptr ||
-						blob->data + ptr < blob->data) {
+				if (ptr_overflow(blob->data, ptr, uint8_t))
+				{
 					ret = false;
 					goto cleanup;
 				}
@@ -348,8 +348,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 					goto cleanup;
 				}
 
-				if (blob->data + ptr < (uint8_t *)(uintptr_t)ptr ||
-						blob->data + ptr < blob->data) {
+				if (ptr_overflow(blob->data, ptr, uint8_t)) {
 					ret = false;
 					goto cleanup;
 				}
@@ -362,8 +361,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 			len1 = va_arg(ap, unsigned int);
 			/* make sure its in the right format - be strict */
 			NEED_DATA(len1);
-			if (blob->data + head_ofs < (uint8_t *)head_ofs ||
-					blob->data + head_ofs < blob->data) {
+			if (ptr_overflow(blob->data, head_ofs, uint8_t)) {
 				ret = false;
 				goto cleanup;
 			}
@@ -379,9 +377,9 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 		case 'C':
 			s = va_arg(ap, char *);
 
-			if (blob->data + head_ofs < (uint8_t *)head_ofs ||
-					blob->data + head_ofs < blob->data ||
-			    (head_ofs + (strlen(s) + 1)) > blob->length) {
+			if (ptr_overflow(blob->data, head_ofs, uint8_t) ||
+			    (head_ofs + (strlen(s) + 1)) > blob->length)
+			{
 				ret = false;
 				goto cleanup;
 			}
