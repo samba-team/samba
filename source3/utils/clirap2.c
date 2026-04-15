@@ -82,6 +82,7 @@
 #include "../librpc/gen_ndr/svcctl.h"
 #include "clirap2.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/util/overflow.h"
 
 #define WORDSIZE 2
 #define DWORDSIZE 4
@@ -212,7 +213,7 @@ static size_t rap_getstringp(TALLOC_CTX *ctx, char *p, char **dest, char *r, uin
 		off &= 0x0000FFFF; /* mask the obsolete segment number from the offset */
 		off -= c;
 	}
-	if (r+off > endp || r+off < r) {
+	if (offset_outside_range(r, endp, off)) {
 		src="";
 		len=1;
 	} else {
