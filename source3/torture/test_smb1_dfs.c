@@ -32,6 +32,7 @@
 #include "async_smb.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/util/time_basic.h"
+#include "lib/util/overflow.h"
 
 extern fstring host, workgroup, share, password, username, myname;
 extern struct cli_credentials *torture_creds;
@@ -1949,8 +1950,8 @@ static size_t calc_next_entry_offset(const uint8_t *base,
 	size_t next_entry_offset = (size_t)PULL_LE_U32(base,0);
 
 	if (next_entry_offset == 0 ||
-			base + next_entry_offset < base ||
-			base + next_entry_offset > pdata_end) {
+	    offset_outside_range(base, pdata_end, next_entry_offset))
+	{
 		next_entry_offset = pdata_end - base;
 	}
 	return next_entry_offset;
@@ -2009,7 +2010,7 @@ static size_t get_filename(TALLOC_CTX *ctx,
 		return pdata_end - base;
 	}
 	p += 24; /* short name */
-	if (p + namelen < p || p + namelen > pdata_end) {
+	if (offset_outside_range(p, pdata_end, namelen)) {
 		return pdata_end - base;
 	}
 	ret = pull_string_talloc(ctx,
