@@ -27,6 +27,7 @@
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "librpc/gen_ndr/ndr_quota.h"
+#include "lib/util/overflow.h"
 
 NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 {
@@ -137,7 +138,7 @@ NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 			break;
 		}
 
-		if (curdata + offset < curdata) {
+		if (ptr_overflow(curdata, offset, uint8_t)) {
 			DEBUG(1, ("Pointer overflow in quota record\n"));
 			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			break;
