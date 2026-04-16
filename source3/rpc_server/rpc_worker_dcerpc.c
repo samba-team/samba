@@ -26,6 +26,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/idtree_random.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/util/tjson.h"
 
 /*
  * This is the generic code that becomes the
@@ -60,7 +61,122 @@ struct rpc_worker_dcerpc_state {
 
 	struct dcesrv_context *dce_ctx;
 	struct dcesrv_context_callbacks cb;
+
+	const struct ndr_interface_table **ifaces;
+	size_t num_ifaces;
+	const char *daemon_config_name;
 };
+
+struct call_info {
+	uint64_t num_calls;
+	struct timeval last_called;
+	double slowest_call_duration;
+	double fastest_call_duration;
+	double total_call_duration;
+};
+
+struct interface_stats {
+	struct interface_stats *prev, *next;
+	const char *interface_name;
+	const struct ndr_interface_call *calls;
+	struct call_info **call_stats;
+};
+
+struct stats_info {
+	struct rpc_worker_dcerpc_state *dworker;
+	struct interface_stats *stats;
+};
+
+static struct interface_stats *find_or_create_ifstats(struct stats_info *info,
+						      const char *name)
+{
+	struct rpc_worker_dcerpc_state *dworker = info->dworker;
+	struct interface_stats *item = NULL;
+	size_t i;
+	if (dworker->ifaces == NULL) {
+		const struct ndr_interface_table **ifaces = NULL;
+		size_t num_ifaces;
+		num_ifaces = dworker->get_interfaces(
+				&ifaces, dworker->private_data);
+		dworker->ifaces = ifaces;
+		dworker->num_ifaces = num_ifaces;
+	}
+	for (item = info->stats; item; item = item->next) {
+		if (strequal(item->interface_name, name)) {
+			return item;
+		}
+	}
+
+	for (i = 0; i < dworker->num_ifaces; i++) {
+		const struct ndr_interface_table *table = dworker->ifaces[i];
+		if (strequal(table->name, name)) {
+			item = talloc_zero(info, struct interface_stats);
+			if (item == NULL) {
+				DBG_ERR("out of memory\n");
+				break;
+			}
+			item->interface_name = table->name;
+			item->calls = table->calls;
+			item->call_stats = talloc_zero_array(
+				item, struct call_info *, table->num_calls);
+			if (item->call_stats == NULL) {
+				DBG_ERR("out of memory\n");
+				TALLOC_FREE(item);
+				break;
+			}
+			DLIST_ADD(info->stats, item);
+			break;
+		}
+	}
+	return item;
+}
+
+static void rpc_worker_operation_called(struct dcesrv_call_state *call,
+					struct timeval *start,
+					struct timeval *end)
+{
+	uint16_t opnum = call->pkt.u.request.opnum;
+	const char *iface_name = call->context->iface->name;
+	struct dcerpc_ncacn_conn *ncacn_conn = talloc_get_type_abort(
+		call->conn->transport.private_data, struct dcerpc_ncacn_conn);
+	struct rpc_worker_connection *worker_conn = talloc_get_type_abort(
+		ncacn_conn->private_data, struct rpc_worker_connection);
+	struct stats_info *info = talloc_get_type_abort(
+		worker_conn->private_data, struct stats_info);
+	struct interface_stats *stats = find_or_create_ifstats(info,
+							       iface_name);
+	struct call_info *call_info = NULL;
+	double duration = timeval_elapsed2(start, end);
+
+	if (stats == NULL) {
+		DBG_ERR("out of memory\n");
+		return;
+	}
+
+	call_info = stats->call_stats[opnum];
+	if (call_info == NULL) {
+		call_info = talloc_zero(stats, struct call_info);
+		if (call_info == NULL) {
+			DBG_ERR("out of memory\n");
+			return;
+		}
+	}
+	call_info->total_call_duration =
+		call_info->total_call_duration + duration;
+	if (duration > call_info->slowest_call_duration) {
+		call_info->slowest_call_duration = duration;
+		/* initialise fastest call duration */
+		if (call_info->fastest_call_duration == 0.0) {
+			call_info->fastest_call_duration = duration;
+		}
+	}
+	if (duration < call_info->fastest_call_duration) {
+		call_info->fastest_call_duration = duration;
+	}
+	call_info->num_calls = call_info->num_calls + 1;
+	call_info->last_called = *start;
+	stats->call_stats[opnum] = call_info;
+}
 
 static int dcesrv_connection_destructor(struct dcesrv_connection *conn)
 {
@@ -139,7 +255,12 @@ static NTSTATUS rpc_worker_dcerpc_accept_client(
 	uint32_t npa_flags, state_flags;
 	bool found_npa_flags;
 	NTSTATUS status;
+	bool enable_call_stats;
 
+	enable_call_stats = lp_parm_bool(-1,
+					 dworker->daemon_config_name,
+					 "call_stats",
+					 false);
 	/* we don't have "int" in IDL, make sure we don't overflow */
 	SMB_ASSERT(effective_transport == _effective_transport);
 
@@ -247,6 +368,20 @@ static NTSTATUS rpc_worker_dcerpc_accept_client(
 		dcesrv_sock_report_output_data;
 	dcesrv_conn->transport.terminate_connection =
 		dcesrv_transport_terminate_connection;
+
+	if (enable_call_stats) {
+		struct stats_info *info = NULL;
+		info = talloc_zero(ncacn_conn, struct stats_info);
+		if (info == NULL) {
+			DBG_DEBUG("out of memory\n");
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		info->dworker = dworker;
+		worker_conn->private_data = info;
+		dcesrv_conn->transport
+			.report_call_stats = rpc_worker_operation_called;
+	}
 
 	dcesrv_conn->send_queue = tevent_queue_create(
 		dcesrv_conn, "dcesrv send queue");
@@ -570,6 +705,72 @@ static NTSTATUS rpc_worker_dcerpc_shutdown_servers(struct rpc_worker *worker,
 	return NT_STATUS_OK;
 }
 
+static char *get_stats(TALLOC_CTX *mem_ctx, void *priv)
+{
+	char *result = NULL;
+#if defined(HAVE_JSON_OBJECT)
+	struct rpc_worker_connection *worker_conn = talloc_get_type_abort(
+		priv, struct rpc_worker_connection);
+	struct interface_stats *item = NULL;
+	struct stats_info *info = NULL;
+	struct tjson *calls = NULL;
+	struct timeval_buf tvbuf = {0};
+
+	info = talloc_get_type_abort(worker_conn->private_data,
+				     struct stats_info);
+	calls = tjson_new_array(mem_ctx);
+	for (item = info->stats; item; item = item->next) {
+		uint32_t ncalls = talloc_array_length(item->call_stats);
+		uint32_t n;
+
+		for (n = 0; n < ncalls; n++) {
+			double avg_duration;
+			double slowest_duration;
+			double fastest_duration;
+			const char *op_name = NULL;
+			struct call_info *call_info = item->call_stats[n];
+			struct tjson *call = NULL;
+			if (call_info == NULL) {
+				continue;
+			}
+			call = tjson_new_object(mem_ctx);
+			avg_duration = call_info->total_call_duration /
+				       call_info->num_calls;
+			slowest_duration = call_info->slowest_call_duration;
+			fastest_duration = call_info->fastest_call_duration;
+			op_name = item->calls[n].name;
+			timeval_str_buf(&call_info->last_called,
+					false,
+					true,
+					&tvbuf);
+			tjson_add_string(call,
+					 "interface_name",
+					 item->interface_name);
+			tjson_add_string(call,
+					 "method_name",
+					 op_name);
+			tjson_add_int(call,
+				      "number_of_calls",
+				      call_info->num_calls);
+			tjson_add_string(call,
+					 "time_of_last_call",
+					 tvbuf.buf);
+			tjson_add_real(call,
+				       "avg_call_duration",
+				       avg_duration);
+			tjson_add_real(call,
+				       "slowest_call_duration",
+				       slowest_duration);
+			tjson_add_real(call,
+				       "fastest_call_duration",
+				       fastest_duration);
+			tjson_add_object(calls, NULL, &call);
+		}
+	}
+	result = tjson_to_string_flags(mem_ctx, calls, JSON_INDENT(2));
+#endif
+	return result;
+}
 /**
  * @brief Main function for RPC server implementations
  *
@@ -627,6 +828,7 @@ int rpc_worker_main(
 		.private_data = private_data,
 	};
 
+	dworker->daemon_config_name = daemon_config_name;
 	ret = rpc_worker_internal(argc,
 				  argv,
 				  daemon_config_name,
@@ -635,6 +837,7 @@ int rpc_worker_main(
 				  rpc_worker_dcerpc_get_interfaces,
 				  rpc_worker_dcerpc_setup_servers,
 				  rpc_worker_dcerpc_accept_client,
+				  get_stats,
 				  rpc_worker_dcerpc_shutdown_servers,
 				  dworker);
 

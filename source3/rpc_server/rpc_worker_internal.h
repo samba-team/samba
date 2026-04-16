@@ -37,6 +37,7 @@ struct rpc_worker_connection {
 	struct timeval tv;
 
 	struct tstream_context *tstream;
+	void *private_data;
 };
 
 struct rpc_worker {
@@ -53,7 +54,7 @@ struct rpc_worker {
 
 	bool is_npsd;
 	struct rpc_worker_connection *conns;
-
+	char *(*call_stats)(TALLOC_CTX *ctx, void *private_data);
 	/*
 	 * 1. Implementations should
 	 * allocate their own per connection
@@ -123,6 +124,7 @@ int rpc_worker_internal(
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr),
+	char *(*call_stats)(TALLOC_CTX *ctx, void *private_data),
 	NTSTATUS (*shutdown_servers)(
 		struct rpc_worker *worker,
 		void *private_data),

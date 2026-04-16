@@ -2009,6 +2009,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	struct ndr_pull *pull;
 	bool turn_winbind_on = false;
 	NTSTATUS status;
+	struct timeval call_start = {0};
+	struct timeval call_end = {0};
 
 	if (auth->auth_invalid) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
@@ -2156,9 +2158,18 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		}
 	}
 
+	if (call->conn->transport.report_call_stats) {
+		GetTimeOfDay(&call_start);
+	}
 	/* call the dispatch function */
 	status = call->context->iface->dispatch(call, call, call->r);
 
+	if (call->conn->transport.report_call_stats) {
+		GetTimeOfDay(&call_end);
+		call->conn->transport.report_call_stats(call,
+							&call_start,
+							&call_end);
+	}
 	if (turn_winbind_on) {
 		DBG_DEBUG("turning winbind on\n");
 		(void)winbind_on();

@@ -278,6 +278,7 @@ int nps_worker_main(
 				  rpc_worker_nps_get_interfaces,
 				  rpc_worker_nps_setup_servers,
 				  rpc_worker_nps_accept_client,
+				  NULL,
 				  rpc_worker_nps_shutdown_servers,
 				  nworker);
 

@@ -45,12 +45,13 @@
  *
  * This provides rpc_worker() which takes an argc/argv list,
  * the daemon_config_name, a number of workers, idle_seconds
- * and 4 functions and a private_data for them:
+ * and 5 functions and a private_data for them:
  *
  * get_interfaces() - List all interfaces that this server provides
  * setup_servers() - Initialize the service before accepting connections.
  * accept_client() - A function called when a new connection arrived.
  * shutdown_servers() - Shutdown the service global state.
+ * call_stats() - Return per-connection RPC call statistics.
  *
  * This is internal code which should be a wrapped into
  * higher level functions like rpc_worker_main(), which
@@ -474,6 +475,8 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 	for (conn = worker->conns; conn != NULL; conn = conn->next) {
 		struct tjson *connection = NULL;
 		struct timeval_buf tvbuf = {0};
+		struct tjson *calls = NULL;
+		json_error_t jerr = {};
 		timeval_str_buf(&conn->tv, false, true, &tvbuf);
 
 		connection = tjson_new_object(mem_ctx);
@@ -489,6 +492,27 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 		tjson_add_string(connection,
 				 "connected_at",
 				 tvbuf.buf);
+
+		if (conn->private_data && worker->call_stats) {
+			json_t *tmp = NULL;
+			char *json_string = worker->call_stats(mem_ctx, conn);
+			if (json_string != NULL && json_string[0] != '\0') {
+				tmp = json_loads(json_string, 0, &jerr);
+				if (tmp == NULL) {
+					DBG_ERR("can't create json object "
+						"from json stats string %s, "
+						"error: %s\n",
+						json_string,
+						jerr.text);
+					TALLOC_FREE(mem_ctx);
+					return;
+				}
+			}
+			calls = tjson_wrap(mem_ctx, &tmp);
+		}
+		if (calls != NULL) {
+			tjson_add_object(connection, "call_stats", &calls);
+		}
 		tjson_add_object(connections, NULL, &connection);
 	}
 	tjson_add_object(current_conn_info,
@@ -781,6 +805,7 @@ int rpc_worker_internal(
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr),
+	char *(*call_stats)(TALLOC_CTX *ctx, void *private_data),
 	NTSTATUS (*shutdown_servers)(
 		struct rpc_worker *worker,
 		void *private_data),
@@ -949,6 +974,7 @@ int rpc_worker_internal(
 		TALLOC_FREE(frame);
 		exit(1);
 	}
+	worker->call_stats = call_stats;
 	worker->accept_client = accept_client;
 	worker->private_data = private_data;
 

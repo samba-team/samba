@@ -291,6 +291,9 @@ struct dcesrv_connection {
 
 	struct {
 		void *private_data;
+		void (*report_call_stats)(struct dcesrv_call_state *,
+					  struct timeval *,
+					  struct timeval *);
 		void (*report_output_data)(struct dcesrv_connection *);
 		void (*terminate_connection)(struct dcesrv_connection *,
 					     const char *);
