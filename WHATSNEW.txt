@@ -1,4 +1,54 @@
                    ==============================
+                   Release Notes for Samba 4.24.1
+                           April 17, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.24 release series.
+
+
+Changes since 4.24.0
+--------------------
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 16057: autobuild fails if /proc/version contains trailing space
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 16035: use after free in streams_xattr_connect()
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 16042: rpc workers with long living clients grow server  memory keytab
+   * BUG 16058: vfs_snapper failing to access or enumerate files in subfolders
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 16040: Samba is not build with FORTIFY_SOURCE
+   * BUG 16055: Fix tests with MIT Kerberos 1.22.x
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.24.0
                            March 18, 2026
                    ==============================
