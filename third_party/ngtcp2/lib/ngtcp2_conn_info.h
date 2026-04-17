@@ -1,7 +1,7 @@
 /*
  * ngtcp2
  *
- * Copyright (c) 2017 ngtcp2 contributors
+ * Copyright (c) 2025 ngtcp2 contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,45 +22,24 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "ngtcp2_buf.h"
-#include "ngtcp2_mem.h"
+#ifndef NGTCP2_CONN_INFO_H
+#define NGTCP2_CONN_INFO_H
 
-void ngtcp2_buf_init(ngtcp2_buf *buf, uint8_t *begin, size_t len) {
-  *buf = (ngtcp2_buf){
-    .begin = begin,
-    .end = begin + len,
-    .pos = begin,
-    .last = begin,
-  };
-}
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif /* defined(HAVE_CONFIG_H) */
 
-void ngtcp2_buf_reset(ngtcp2_buf *buf) { buf->pos = buf->last = buf->begin; }
+#include <ngtcp2/ngtcp2.h>
 
-size_t ngtcp2_buf_cap(const ngtcp2_buf *buf) {
-  return (size_t)(buf->end - buf->begin);
-}
+typedef struct ngtcp2_conn_stat ngtcp2_conn_stat;
 
-void ngtcp2_buf_trunc(ngtcp2_buf *buf, size_t len) {
-  if (ngtcp2_buf_len(buf) > len) {
-    buf->last = buf->pos + len;
-  }
-}
+/*
+ * ngtcp2_conn_info_init_versioned initializes |cinfo| of version
+ * |conn_info_version| from |cstat|.  This function only fills the
+ * fields of |cinfo| that are available in the specified version.
+ */
+void ngtcp2_conn_info_init_versioned(int conn_info_version,
+                                     ngtcp2_conn_info *cinfo,
+                                     const ngtcp2_conn_stat *cstat);
 
-int ngtcp2_buf_chain_new(ngtcp2_buf_chain **pbufchain, size_t len,
-                         const ngtcp2_mem *mem) {
-  *pbufchain = ngtcp2_mem_malloc(mem, sizeof(ngtcp2_buf_chain) + len);
-  if (*pbufchain == NULL) {
-    return NGTCP2_ERR_NOMEM;
-  }
-
-  (*pbufchain)->next = NULL;
-
-  ngtcp2_buf_init(&(*pbufchain)->buf,
-                  (uint8_t *)(*pbufchain) + sizeof(ngtcp2_buf_chain), len);
-
-  return 0;
-}
-
-void ngtcp2_buf_chain_del(ngtcp2_buf_chain *bufchain, const ngtcp2_mem *mem) {
-  ngtcp2_mem_free(mem, bufchain);
-}
+#endif /* !defined(NGTCP2_CONN_INFO_H) */

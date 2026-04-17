@@ -78,9 +78,11 @@ def build(bld):
                       lib/ngtcp2_balloc.c
                       lib/ngtcp2_bbr.c
                       lib/ngtcp2_buf.c
+                      lib/ngtcp2_callbacks.c
                       lib/ngtcp2_cc.c
                       lib/ngtcp2_cid.c
                       lib/ngtcp2_conn.c
+                      lib/ngtcp2_conn_info.c
                       lib/ngtcp2_conv.c
                       lib/ngtcp2_crypto.c
                       lib/ngtcp2_dcidtr.c
@@ -95,6 +97,7 @@ def build(bld):
                       lib/ngtcp2_objalloc.c
                       lib/ngtcp2_opl.c
                       lib/ngtcp2_path.c
+                      lib/ngtcp2_pcg.c
                       lib/ngtcp2_pkt.c
                       lib/ngtcp2_pmtud.c
                       lib/ngtcp2_ppe.c
@@ -102,6 +105,7 @@ def build(bld):
                       lib/ngtcp2_pv.c
                       lib/ngtcp2_qlog.c
                       lib/ngtcp2_range.c
+                      lib/ngtcp2_ratelim.c
                       lib/ngtcp2_ringbuf.c
                       lib/ngtcp2_rob.c
                       lib/ngtcp2_rst.c

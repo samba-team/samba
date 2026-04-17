@@ -1,7 +1,8 @@
 /*
  * ngtcp2
  *
- * Copyright (c) 2019 ngtcp2 contributors
+ * Copyright (c) 2025 ngtcp2 contributors
+ * Copyright (c) 2023 nghttp2 contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,8 +23,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NGTCP2_PATH_H
-#define NGTCP2_PATH_H
+#ifndef NGTCP2_RATELIM_H
+#define NGTCP2_RATELIM_H
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -31,11 +32,28 @@
 
 #include <ngtcp2/ngtcp2.h>
 
-/*
- * ngtcp2_path_storage_init2 initializes |ps| using |path| as initial
- * data.
- */
-void ngtcp2_path_storage_init2(ngtcp2_path_storage *ps,
-                               const ngtcp2_path *path);
+typedef struct ngtcp2_ratelim {
+  /* burst is the maximum number of tokens. */
+  uint64_t burst;
+  /* rate is the rate of token generation measured by token /
+     second. */
+  uint64_t rate;
+  /* tokens is the amount of tokens available to drain. */
+  uint64_t tokens;
+  /* carry is the partial token gained in sub-second period.  It is
+     added to the computation in the next update round. */
+  uint64_t carry;
+  /* ts is the last timestamp that is known to this object. */
+  ngtcp2_tstamp ts;
+} ngtcp2_ratelim;
 
-#endif /* !defined(NGTCP2_PATH_H) */
+/* ngtcp2_ratelim_init initializes |rlim| with the given
+   parameters. */
+void ngtcp2_ratelim_init(ngtcp2_ratelim *rlim, uint64_t burst, uint64_t rate,
+                         ngtcp2_tstamp ts);
+
+/* ngtcp2_ratelim_drain drains |n| from rlim->tokens.  It returns 0 if
+   it succeeds, or -1. */
+int ngtcp2_ratelim_drain(ngtcp2_ratelim *rlim, uint64_t n, ngtcp2_tstamp ts);
+
+#endif /* !defined(NGTCP2_RATELIM_H) */
