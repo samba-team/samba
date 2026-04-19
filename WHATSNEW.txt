@@ -30,6 +30,19 @@ now corresponds to ‘aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96’ (both A
 encryption types) if the domain functional level is 2008 or higher. This
 addresses CVE-2026-20833.
 
+CTDB changes
+------------
+
+* Monitoring of (infrastructure) hosts is now supported.  A good use
+  of this is to monitor DNS servers.  See the NETWORK MONITORING
+  section in ctdb-script.options(5) for more details.
+
+* The detect_init_style() script function and associated
+  CTDB_INIT_STYLE variable are deprecated, so will be removed in a
+  future release.  Use the new, more general CTDB_PLATFORM_STYLE
+  variable instead.  This may affect site-local CTDB (event) scripts.
+  See ctdb.sysconfig(5) for more details.
+
 REMOVED FEATURES
 ================
 
