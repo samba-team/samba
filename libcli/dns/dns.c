@@ -43,7 +43,7 @@ struct dns_udp_request_state {
 #define DNS_REQUEST_TIMEOUT 10
 
 /* Declare callback functions used below. */
-static void dns_udp_request_get_reply(struct tevent_req *subreq);
+static void dns_udp_request_sent(struct tevent_req *subreq);
 static void dns_udp_request_done(struct tevent_req *subreq);
 
 static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
@@ -103,11 +103,11 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, dns_udp_request_get_reply, req);
+	tevent_req_set_callback(subreq, dns_udp_request_sent, req);
 	return req;
 }
 
-static void dns_udp_request_get_reply(struct tevent_req *subreq)
+static void dns_udp_request_sent(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 						struct tevent_req);
