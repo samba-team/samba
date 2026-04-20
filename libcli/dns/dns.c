@@ -34,6 +34,7 @@
 
 struct dns_udp_request_state {
 	struct tevent_context *ev;
+	const struct dns_name_packet *q;
 	struct tdgram_context *dgram;
 	size_t query_len;
 	uint8_t *reply;
@@ -46,14 +47,17 @@ struct dns_udp_request_state {
 static void dns_udp_request_sent(struct tevent_req *subreq);
 static void dns_udp_request_done(struct tevent_req *subreq);
 
-static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
-					       struct tevent_context *ev,
-					       const char *server_addr_string,
-					       const uint8_t *query,
-					       size_t query_len)
+static struct tevent_req *dns_udp_request_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	const char *server_addr_string,
+	const struct dns_name_packet *_q)
 {
 	struct tevent_req *req, *subreq;
 	struct dns_udp_request_state *state;
+	struct dns_name_packet *udp_q = NULL;
+	DATA_BLOB blob = {};
+	enum ndr_err_code ndr_err;
 	struct tsocket_address *local_addr, *server_addr;
 	int ret;
 
@@ -63,6 +67,50 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ev = ev;
+	state->q = _q;
+
+	if (_q->arcount == UINT16_MAX) {
+		tevent_req_error(req, EMSGSIZE);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * Add minimal EDNS0 OPT record to ADDITIONAL section when
+	 * sending a DNS request out, indicating we can accept DNS
+	 * packets up to 4Kb in size.
+	 */
+	udp_q = talloc_memdup(state, _q, sizeof(struct dns_name_packet));
+	if (tevent_req_nomem(udp_q, req)) {
+		return tevent_req_post(req, ev);
+	}
+	udp_q->additional = talloc_array(udp_q,
+					 struct dns_res_rec,
+					 _q->arcount + 1);
+	if (tevent_req_nomem(udp_q->additional, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memcpy(udp_q->additional,
+	       _q->additional,
+	       sizeof(struct dns_res_rec) * _q->arcount);
+
+	udp_q->additional[_q->arcount] = (struct dns_res_rec){
+		.name = "",
+		.rr_type = DNS_QTYPE_OPT,
+		.rr_class = 4096 /* 4096 bytes UDP buffer size */
+	};
+	udp_q->arcount += 1;
+
+	ndr_err = ndr_push_struct_blob(&blob,
+				       state,
+				       udp_q,
+				       (ndr_push_flags_fn_t)
+					       ndr_push_dns_name_packet);
+	TALLOC_FREE(udp_q);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		tevent_req_error(req, ndr_map_error2errno(ndr_err));
+		return tevent_req_post(req, ev);
+	}
 
 	/* Use connected UDP sockets */
 	ret = tsocket_address_inet_from_strings(state, "ip", NULL, 0,
@@ -88,12 +136,12 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->query_len = query_len;
+	state->query_len = blob.length;
 
-	dump_data(10, query, query_len);
+	dump_data(10, blob.data, blob.length);
 
 	subreq = tdgram_sendto_send(
-		state, ev, state->dgram, query, query_len, NULL);
+		state, ev, state->dgram, blob.data, blob.length, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -141,9 +189,8 @@ static void dns_udp_request_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 						struct tevent_req);
-	struct dns_udp_request_state *state = tevent_req_data(req,
-						struct dns_udp_request_state);
-
+	struct dns_udp_request_state *state = tevent_req_data(
+		req, struct dns_udp_request_state);
 	ssize_t len;
 	int err = 0;
 
@@ -183,9 +230,9 @@ static int dns_udp_request_recv(struct tevent_req *req,
 
 struct dns_tcp_request_state {
 	struct tevent_context *ev;
+	const struct dns_name_packet *q;
 	struct tstream_context *stream;
-	const uint8_t *query;
-	size_t query_len;
+	DATA_BLOB query;
 
 	uint8_t dns_msglen_hdr[2];
 	struct iovec iov[2];
@@ -204,11 +251,11 @@ static void dns_tcp_request_received(struct tevent_req *subreq);
 static struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       const char *server_addr_string,
-					       const uint8_t *query,
-					       size_t query_len)
+					       const struct dns_name_packet *q)
 {
 	struct tevent_req *req, *subreq;
 	struct dns_tcp_request_state *state;
+	enum ndr_err_code ndr_err;
 	struct tsocket_address *local, *remote;
 	int ret;
 
@@ -218,10 +265,19 @@ static struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
-	state->query = query;
-	state->query_len = query_len;
+	state->q = q;
 
-	if (query_len > UINT16_MAX) {
+	ndr_err = ndr_push_struct_blob(&state->query,
+				       state,
+				       q,
+				       (ndr_push_flags_fn_t)
+					       ndr_push_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		tevent_req_error(req, ndr_map_error2errno(ndr_err));
+		return tevent_req_post(req, ev);
+	}
+
+	if (state->query.length > UINT16_MAX) {
 		tevent_req_error(req, EMSGSIZE);
 		return tevent_req_post(req, ev);
 	}
@@ -265,14 +321,14 @@ static void dns_tcp_request_connected(struct tevent_req *subreq)
 		return;
 	}
 
-	RSSVAL(state->dns_msglen_hdr, 0, state->query_len);
+	RSSVAL(state->dns_msglen_hdr, 0, state->query.length);
 	state->iov[0] = (struct iovec) {
 		.iov_base = state->dns_msglen_hdr,
 		.iov_len = sizeof(state->dns_msglen_hdr)
 	};
-	state->iov[1] = (struct iovec) {
-		.iov_base = discard_const_p(void, state->query),
-		.iov_len = state->query_len
+	state->iov[1] = (struct iovec){
+		.iov_base = discard_const_p(void, state->query.data),
+		.iov_len = state->query.length,
 	};
 
 	subreq = tstream_writev_send(state, state->ev, state->stream,
@@ -369,14 +425,17 @@ struct dns_cli_request_state {
 	struct tevent_context *ev;
 	const char *nameserver;
 
-	uint16_t req_id;
+	struct tevent_req *udp_subreq;
+	struct tevent_req *tcp_subreq;
 
-	DATA_BLOB query;
+	struct dns_name_question question;
+	struct dns_name_packet out_packet;
 
-	struct dns_name_packet *reply;
+	DATA_BLOB reply;
 };
 
 static void dns_cli_request_udp_done(struct tevent_req *subreq);
+static void dns_cli_request_trigger_tcp(struct tevent_req *subreq);
 static void dns_cli_request_tcp_done(struct tevent_req *subreq);
 
 struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
@@ -386,12 +445,8 @@ struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 					enum dns_qclass qclass,
 					enum dns_qtype qtype)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req = NULL, *wakeup_subreq = NULL;
 	struct dns_cli_request_state *state;
-	struct dns_name_question question;
-	struct dns_name_packet out_packet;
-	struct dns_res_rec edns0_opt;
-	enum ndr_err_code ndr_err;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dns_cli_request_state);
@@ -404,43 +459,42 @@ struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 	DBG_DEBUG("Asking %s for %s/%d/%d via UDP\n", nameserver,
 		  name, (int)qclass, (int)qtype);
 
-	generate_random_buffer((uint8_t *)&state->req_id,
-			       sizeof(state->req_id));
-
-	question = (struct dns_name_question) {
+	state->question = (struct dns_name_question){
 		.name = discard_const_p(char, name),
-		.question_type = qtype, .question_class = qclass
+		.question_type = qtype,
+		.question_class = qclass,
 	};
 
-	edns0_opt = (struct dns_res_rec) {
-		.name = "",
-		.rr_type = DNS_QTYPE_OPT,
-		.rr_class = 4096 /* 4096 bytes UDP buffer size */
-	};
-
-	out_packet = (struct dns_name_packet) {
-		.id = state->req_id,
+	state->out_packet = (struct dns_name_packet){
 		.operation = DNS_OPCODE_QUERY | DNS_FLAG_RECURSION_DESIRED,
 		.qdcount = 1,
-		.questions = &question,
-		.arcount = 1,
-		.additional = &edns0_opt
+		.questions = &state->question,
 	};
 
-	ndr_err = ndr_push_struct_blob(
-		&state->query, state, &out_packet,
-		(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		tevent_req_error(req, ndr_map_error2errno(ndr_err));
-		return tevent_req_post(req, ev);
-	}
+	generate_random_buffer((uint8_t *)&state->out_packet.id,
+			       sizeof(state->out_packet.id));
 
-	subreq = dns_udp_request_send(state, state->ev, state->nameserver,
-				      state->query.data, state->query.length);
-	if (tevent_req_nomem(subreq, req)) {
+	state->udp_subreq = dns_udp_request_send(state,
+						 state->ev,
+						 state->nameserver,
+						 &state->out_packet);
+	if (tevent_req_nomem(state->udp_subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, dns_cli_request_udp_done, req);
+	tevent_req_set_callback(state->udp_subreq,
+				dns_cli_request_udp_done,
+				req);
+
+	wakeup_subreq = tevent_wakeup_send(state,
+					   state->ev,
+					   tevent_timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(wakeup_subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(wakeup_subreq,
+				dns_cli_request_trigger_tcp,
+				req);
+
 	return req;
 }
 
@@ -450,118 +504,171 @@ static void dns_cli_request_udp_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct dns_cli_request_state *state = tevent_req_data(
 		req, struct dns_cli_request_state);
-	DATA_BLOB reply;
-	enum ndr_err_code ndr_err;
 	uint16_t reply_id, operation;
 	int ret;
 
-	ret = dns_udp_request_recv(subreq, state, &reply.data, &reply.length);
+	SMB_ASSERT(subreq == state->udp_subreq);
+
+	ret = dns_udp_request_recv(subreq,
+				   state,
+				   &state->reply.data,
+				   &state->reply.length);
 	TALLOC_FREE(subreq);
-	if (tevent_req_error(req, ret)) {
-		return;
+	state->udp_subreq = NULL;
+
+	if (ret != 0) {
+		DBG_DEBUG("dns_udp_request_recv() returned %d (%s)\n",
+			  ret,
+			  strerror(ret));
+		goto tcp_fallback;
 	}
 
-	if (reply.length < 4) {
-		DBG_DEBUG("Short DNS packet: length=%zu\n", reply.length);
-		tevent_req_error(req, EINVAL);
-		return;
+	if (state->reply.length < 4) {
+		DBG_DEBUG("Short DNS packet: length=%zu\n",
+			  state->reply.length);
+		goto tcp_fallback;
 	}
 
-	reply_id = PULL_BE_U16(reply.data, 0);
-	if (reply_id != state->req_id) {
-		DBG_DEBUG("Got id %"PRIu16", expected %"PRIu16"\n",
-			  state->reply->id, state->req_id);
-		tevent_req_error(req, ENOMSG);
-		return;
+	reply_id = PULL_BE_U16(state->reply.data, 0);
+	if (reply_id != state->out_packet.id) {
+		DBG_DEBUG("Got id %" PRIu16 ", expected %" PRIu16 "\n",
+			  reply_id,
+			  state->out_packet.id);
+		goto tcp_fallback;
 	}
 
-	operation = PULL_BE_U16(reply.data, 2);
+	operation = PULL_BE_U16(state->reply.data, 2);
 	if ((operation & DNS_FLAG_TRUNCATION) != 0) {
-		DBG_DEBUG("Reply was truncated, retrying TCP\n");
-		subreq = dns_tcp_request_send(
-			state,
-			state->ev,
-			state->nameserver,
-			state->query.data,
-			state->query.length);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, dns_cli_request_tcp_done, req);
-		return;
+		DBG_DEBUG("Id %" PRIu16 ", truncated\n", state->out_packet.id);
+		goto tcp_fallback;
 	}
-
-	state->reply = talloc(state, struct dns_name_packet);
-	if (tevent_req_nomem(state->reply, req)) {
-		return;
-	}
-
-	ndr_err = ndr_pull_struct_blob(
-		&reply, state->reply, state->reply,
-		(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		tevent_req_error(req, ndr_map_error2errno(ndr_err));
-		return;
-	}
-	TALLOC_FREE(reply.data);
 
 	tevent_req_done(req);
+	return;
+
+tcp_fallback:
+	if (state->tcp_subreq != NULL) {
+		return;
+	}
+
+	state->tcp_subreq = dns_tcp_request_send(state,
+						 state->ev,
+						 state->nameserver,
+						 &state->out_packet);
+	if (tevent_req_nomem(state->tcp_subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(state->tcp_subreq,
+				dns_cli_request_tcp_done,
+				req);
 }
 
-static void dns_cli_request_tcp_done(struct tevent_req *subreq)
+static void dns_cli_request_trigger_tcp(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	struct dns_cli_request_state *state = tevent_req_data(
 		req, struct dns_cli_request_state);
-	DATA_BLOB reply;
-	enum ndr_err_code ndr_err;
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_oom(subreq);
+		return;
+	}
+
+	if (state->tcp_subreq != NULL) {
+		return;
+	}
+
+	state->tcp_subreq = dns_tcp_request_send(state,
+						 state->ev,
+						 state->nameserver,
+						 &state->out_packet);
+	if (tevent_req_nomem(state->tcp_subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(state->tcp_subreq,
+				dns_cli_request_tcp_done,
+				req);
+}
+
+static void dns_cli_request_tcp_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct dns_cli_request_state *state = tevent_req_data(
+		req, struct dns_cli_request_state);
 	int ret;
 
-	ret = dns_tcp_request_recv(subreq, state, &reply.data, &reply.length);
+	SMB_ASSERT(subreq == state->tcp_subreq);
+
+	ret = dns_tcp_request_recv(subreq,
+				   state,
+				   &state->reply.data,
+				   &state->reply.length);
 	TALLOC_FREE(subreq);
+	state->tcp_subreq = NULL;
+
+	if ((ret != 0) && (state->udp_subreq != NULL)) {
+		DBG_DEBUG("dns_tcp_request_recv() failed: (%s), "
+			  "waiting for UDP\n",
+			  strerror(ret));
+		return;
+	}
+
 	if (tevent_req_error(req, ret)) {
 		return;
 	}
-
-	state->reply = talloc(state, struct dns_name_packet);
-	if (tevent_req_nomem(state->reply, req)) {
-		return;
-	}
-
-	ndr_err = ndr_pull_struct_blob(
-		&reply, state->reply, state->reply,
-		(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		tevent_req_error(req, ndr_map_error2errno(ndr_err));
-		return;
-	}
-
-	if (state->reply->id != state->req_id) {
-		DBG_DEBUG("Got id %"PRIu16", expected %"PRIu16"\n",
-			  state->reply->id, state->req_id);
-		tevent_req_error(req, ENOMSG);
-		return;
-	}
-
-	DBG_DEBUG("Got op=%x %"PRIu16"/%"PRIu16"/%"PRIu16"/%"PRIu16
-		  " recs\n", (int)state->reply->operation,
-		  state->reply->qdcount, state->reply->ancount,
-		  state->reply->nscount, state->reply->nscount);
-
 	tevent_req_done(req);
 }
 
-int dns_cli_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 struct dns_name_packet **reply)
+int dns_cli_request_recv(struct tevent_req *req,
+			 TALLOC_CTX *mem_ctx,
+			 struct dns_name_packet **_reply)
 {
 	struct dns_cli_request_state *state = tevent_req_data(
 		req, struct dns_cli_request_state);
-	int err;
+	struct dns_name_packet *reply = NULL;
+	enum ndr_err_code ndr_err;
+	int ret, err;
 
 	if (tevent_req_is_unix_error(req, &err)) {
 		return err;
 	}
-	*reply = talloc_move(mem_ctx, &state->reply);
-	return 0;
+
+	reply = talloc(mem_ctx, struct dns_name_packet);
+	if (reply == NULL) {
+		ret = ENOMEM;
+		goto done;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&state->reply,
+				       reply,
+				       reply,
+				       (ndr_pull_flags_fn_t)
+					       ndr_pull_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(reply);
+		ret = ndr_map_error2errno(ndr_err);
+		goto done;
+	}
+
+	if (reply->id != state->out_packet.id) {
+		DBG_DEBUG("Got id %" PRIu16 ", expected %" PRIu16 "\n",
+			  reply->id,
+			  state->out_packet.id);
+		ret = ENOMSG;
+		goto done;
+	}
+
+	*_reply = reply;
+	ret = 0;
+done:
+	if (ret != 0) {
+		TALLOC_FREE(reply);
+	}
+	tevent_req_received(req);
+	return ret;
 }
