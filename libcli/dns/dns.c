@@ -55,7 +55,6 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct dns_udp_request_state *state;
 	struct tsocket_address *local_addr, *server_addr;
-	struct tdgram_context *dgram;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct dns_udp_request_state);
@@ -80,18 +79,21 @@ static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = tdgram_inet_udp_socket(local_addr, server_addr, state, &dgram);
+	ret = tdgram_inet_udp_socket(local_addr,
+				     server_addr,
+				     state,
+				     &state->dgram);
 	if (ret != 0) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
 
-	state->dgram = dgram;
 	state->query_len = query_len;
 
 	dump_data(10, query, query_len);
 
-	subreq = tdgram_sendto_send(state, ev, dgram, query, query_len, NULL);
+	subreq = tdgram_sendto_send(
+		state, ev, state->dgram, query, query_len, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
