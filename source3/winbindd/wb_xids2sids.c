@@ -192,6 +192,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 			continue;
 		}
 
+		SMB_ASSERT(dom_sid_idx < state->num_dom_xids);
 		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx]);
 		*id = state->dom_xids[dom_sid_idx];
 		D_DEBUG("%zu: XID %"PRIu32" mapped to SID %s.\n",
