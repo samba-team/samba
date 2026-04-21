@@ -37,6 +37,7 @@
 #include "libcli/security/security_token.h"
 #include "libcli/security/dom_sid.h"
 #include "source3/lib/substitute.h"
+#include "lib/util/tjson.h"
 
 /*
  * This is the generic code that becomes the
@@ -396,6 +397,7 @@ static bool rpc_worker_new_client_filter(
 	return false;
 }
 
+#if defined(HAVE_JSON_OBJECT)
 static void dump_worker_client_info(TALLOC_CTX *root,
 				    struct rpc_worker *worker,
 				    FILE *f)
@@ -403,49 +405,92 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 	struct rpc_worker_connection *conn = NULL;
 	struct timeval_buf buf_con = {0};
 	struct timeval_buf buf_discon = {0};
-	int i = 1;
-	fprintf(f,
-		"%s pid %u:\n"
-		"      num_connections = %" PRIu32 "\n"
-		"      num_association_groups = %" PRIu32 "\n"
-		"      last client connection %s\n"
-		"      last client disconnection %s\n",
-		getprogname(),
-		(unsigned int)getpid(),
-		worker->status.num_connections,
-		worker->status.num_association_groups,
-		(worker->last_connect.tv_sec != 0)
-			? timeval_str_buf(
-				  &worker->last_connect, false, true, &buf_con)
-			: "N/A",
-		(worker->last_disconnect.tv_sec != 0)
-			? timeval_str_buf(&worker->last_disconnect,
-					  false,
-					  true,
-					  &buf_discon)
-			: "N/A");
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct tjson *stats = NULL;
+	struct tjson *connections = NULL;
+	struct tjson *current_conn_info = NULL;
+	char *output = NULL;
+
+	if (mem_ctx == NULL) {
+		DBG_ERR("Out of memory\n");
+		return;
+	}
+
+	current_conn_info = tjson_new_object(mem_ctx);
+
+	tjson_add_int(current_conn_info,
+		      "num_connections",
+		      worker->status.num_connections);
+	tjson_add_int(current_conn_info,
+		      "num_association_groups",
+		      worker->status.num_association_groups);
+	tjson_add_string(current_conn_info,
+			 "last_client_connection",
+			 (worker->last_connect.tv_sec != 0)
+			 ? timeval_str_buf(&worker->last_connect,
+					   false,
+					   true,
+					   &buf_con)
+			 : "N/A");
+	tjson_add_string(current_conn_info,
+			 "last_client_disconnection",
+			 (worker->last_disconnect.tv_sec != 0)
+			 ? timeval_str_buf(&worker->last_disconnect,
+					   false,
+					   true,
+					   &buf_discon)
+			 : "N/A");
+
+
+	stats = tjson_new_object(mem_ctx);
+
+	tjson_add_string(stats,
+			 "name",
+			 getprogname());
+	tjson_add_int(stats,
+		      "pid",
+		      (unsigned int)getpid());
+
+	connections = tjson_new_array(mem_ctx);
 	for (conn = worker->conns; conn != NULL; conn = conn->next) {
+		struct tjson *connection = NULL;
 		struct timeval_buf tvbuf = {0};
 		timeval_str_buf(&conn->tv, false, true, &tvbuf);
-		if (i == 1) {
-			fprintf(f, "   active connections:\n");
-		}
-		fprintf(f,
-			"      [%d] endpoint=%s client addr=%s server=%s "
-			"connected at %s\n",
-			i++,
-			conn->endpoint,
-			conn->remote_client_addr,
-			conn->local_server_name,
-			tvbuf.buf);
+
+		connection = tjson_new_object(mem_ctx);
+		tjson_add_string(connection,
+				 "endpoint",
+				 conn->endpoint);
+		tjson_add_string(connection,
+				"client_addr",
+				conn->remote_client_addr);
+		tjson_add_string(connection,
+				 "local_server_name",
+				 conn->local_server_name);
+		tjson_add_string(connection,
+				 "connected_at",
+				 tvbuf.buf);
+		tjson_add_object(connections, NULL, &connection);
 	}
+	tjson_add_object(current_conn_info,
+			 "active_connections",
+			 &connections);
+	tjson_add_object(stats,
+			 "current_connection_info",
+			 &current_conn_info);
+	output = tjson_to_string_flags(mem_ctx, stats, JSON_INDENT(2));
+	if (output == NULL) {
+		DBG_ERR("Failed to create json object\n");
+	} else {
+		fprintf(f, "%s\n", output);
+	}
+	TALLOC_FREE(mem_ctx);
 }
+#endif
 
 static bool rpc_worker_client_info(struct messaging_rec *rec,
 				   void *private_data)
 {
-	struct rpc_worker *worker = talloc_get_type_abort(private_data,
-							  struct rpc_worker);
 	FILE *f = NULL;
 
 	if (rec->msg_type != MSG_RPC_WORKER_INFO) {
@@ -459,12 +504,19 @@ static bool rpc_worker_client_info(struct messaging_rec *rec,
 	}
 
 	f = fdopen_keepfd(rec->fds[0], "w");
-	if (f == NULL) {
+	if (f != NULL) {
+#if defined(HAVE_JSON_OBJECT)
+		struct rpc_worker *worker = talloc_get_type_abort(
+			private_data, struct rpc_worker);
+		dump_worker_client_info(NULL, worker, f);
+#else
+		fprintf(f, "rpc-dump-worker-status requires JSON support.\n");
+#endif
+		fclose(f);
+	} else {
+
 		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
-		return false;
 	}
-	dump_worker_client_info(NULL, worker, f);
-	fclose(f);
 	return false;
 }
 
