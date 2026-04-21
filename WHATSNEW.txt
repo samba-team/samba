@@ -1,4 +1,59 @@
                    ==============================
+                   Release Notes for Samba 4.23.7
+                           April 21, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.6
+--------------------
+
+o  Thales Antunes de Oliveira Barretto <thales.barretto.git@gmail.com>
+   * BUG 16043: Fix a directory file descriptor leak in vfs_glusterfs that
+     caused unbounded memory growth on the GlusterFS brick with
+     persistent SMB2 connections.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 16057: autobuild fails if /proc/version contains trailing space
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16019: incorrect behavior on rpcclient enumport with rpcd_spoolss
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 16042: rpc workers with long living clients grow server  memory keytab
+   * BUG 16058: vfs_snapper failing to access or enumerate files in subfolders
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15960: libsmbclient posix extensions with SMB3 don't work at all
+   * BUG 16040: Samba is not build with FORTIFY_SOURCE
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.23.6
                          February 27, 2026
                    ==============================
@@ -63,8 +118,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.23.5
                           January 23, 2026
