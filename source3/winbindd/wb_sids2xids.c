@@ -702,13 +702,11 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	}
 
 	state->map_ids_in.num_ids = 0;
-	if (NT_STATUS_IS_OK(status)) {
-		/*
-		 * If we got a valid response, we expect
-		 * state->map_ids_out.ids to be a new allocated
-		 * array, which we want to free early.
-		 */
-		SMB_ASSERT(state->map_ids_out.ids != state->map_ids_in.ids);
+	/*
+	 * If state->map_ids_out.ids is a newly allocated
+	 * array, we want to free it early.
+	 */
+	if (state->map_ids_out.ids != state->map_ids_in.ids) {
 		TALLOC_FREE(state->map_ids_out.ids);
 	}
 	state->map_ids_out = (struct wbint_TransIDArray) { .num_ids = 0, };
