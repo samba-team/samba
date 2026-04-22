@@ -133,7 +133,6 @@ unsigned char *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size
 unsigned char *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str);
 unsigned char *talloc_utf16_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t n);
 
-char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
  * destination charset) that would be needed to convert the input
@@ -184,9 +183,27 @@ bool strhaslower_handle(struct smb_iconv_handle *ic,
 bool strhaslower(const char *string);
 bool strhasupper_handle(struct smb_iconv_handle *ic,
 			const char *string);
-char *strrchr_m(const char *s, char c);
-char *strchr_m(const char *s, char c);
-char *strstr_m(const char *src, const char *findstr);
+const char *strchr_m_const(const char *s, char c);
+const char *strrchr_m_const(const char *s, char c);
+const char *strstr_m_const(const char *src, const char *findstr);
+char *strchr_m_nonconst(const char *s, char c);
+char *strrchr_m_nonconst(const char *s, char c);
+char *strstr_m_nonconst(const char *s, const char *findstr);
+
+#define strchr_m(s, c) _Generic((s), \
+	char *:       strchr_m_nonconst((s), (c)), \
+	const char *: strchr_m_const((s), (c)), \
+	default:      strchr_m_nonconst((s), (c)))
+
+#define strrchr_m(s, c) _Generic((s), \
+	char *:       strrchr_m_nonconst((s), (c)), \
+	const char *: strrchr_m_const((s), (c)), \
+	default:      strrchr_m_nonconst((s), (c)))
+
+#define strstr_m(s, f) _Generic((s), \
+	char *:       strstr_m_nonconst((s), (f)), \
+	const char *: strstr_m_const((s), (f)), \
+	default:      strstr_m_nonconst((s), (f)))
 
 bool utf8_check(const char *input, size_t maxlen,
 		size_t *byte_len,
