@@ -357,7 +357,7 @@ _PUBLIC_ size_t strlen_m_term_null(const char *s)
 /**
  Strchr and strrchr_m are a bit complex on general multi-byte strings.
 **/
-_PUBLIC_ char *strchr_m(const char *src, char c)
+_PUBLIC_ const char *strchr_m_const(const char *src, char c)
 {
 	const char *s;
 	struct smb_iconv_handle *ic = NULL;
@@ -377,7 +377,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return discard_const_p(char, s);
+			return s;
 	}
 
 	if (!*s)
@@ -394,7 +394,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 		size_t size;
 		codepoint_t c2 = next_codepoint_handle(ic, s, &size);
 		if (c2 == c) {
-			return discard_const_p(char, s);
+			return s;
 		}
 		s += size;
 	}
@@ -405,10 +405,10 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 /**
  * Multibyte-character version of strrchr
  */
-_PUBLIC_ char *strrchr_m(const char *s, char c)
+_PUBLIC_ const char *strrchr_m_const(const char *s, char c)
 {
 	struct smb_iconv_handle *ic;
-	char *ret = NULL;
+	const char *ret = NULL;
 
 	if (s == NULL) {
 		return NULL;
@@ -447,7 +447,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-				return discard_const_p(char , cp);
+				return cp;
 			}
 		} while (cp-- != s);
 		if (!got_mb)
@@ -460,12 +460,27 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 		size_t size;
 		codepoint_t c2 = next_codepoint_handle(ic, s, &size);
 		if (c2 == c) {
-			ret = discard_const_p(char, s);
+			ret = s;
 		}
 		s += size;
 	}
 
 	return ret;
+}
+
+_PUBLIC_ char *strchr_m_nonconst(const char *s, char c)
+{
+	return discard_const_p(char, strchr_m_const(s, c));
+}
+
+_PUBLIC_ char *strrchr_m_nonconst(const char *s, char c)
+{
+	return discard_const_p(char, strrchr_m_const(s, c));
+}
+
+_PUBLIC_ char *strstr_m_nonconst(const char *s, const char *findstr)
+{
+	return discard_const_p(char, strstr_m_const(s, findstr));
 }
 
 /**
@@ -532,24 +547,24 @@ _PUBLIC_ bool strhasupper(const char *string)
  strstr_m - We convert via ucs2 for now.
 ***********************************************************************/
 
-char *strstr_m(const char *src, const char *findstr)
+_PUBLIC_ const char *strstr_m_const(const char *src, const char *findstr)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	smb_ucs2_t *p;
 	smb_ucs2_t *src_w, *find_w;
 	const char *s;
 	char *s2;
-	char *retp = NULL;
+	const char *retp = NULL;
 	size_t converted_size, findstr_len = 0;
 
 	/* for correctness */
 	if (!findstr[0]) {
-		return discard_const_p(char, src);
+		return src;
 	}
 
 	/* Samba does single character findstr calls a *lot*. */
 	if (findstr[1] == '\0')
-		return strchr_m(src, *findstr);
+		return strchr_m_const(src, *findstr);
 
 	/* We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
@@ -561,7 +576,7 @@ char *strstr_m(const char *src, const char *findstr)
 				findstr_len = strlen(findstr);
 
 			if (strncmp(s, findstr, findstr_len) == 0) {
-				return discard_const_p(char, s);
+				return s;
 			}
 		}
 	}
@@ -604,7 +619,7 @@ char *strstr_m(const char *src, const char *findstr)
 	if (!pull_ucs2_talloc(mem_ctx, &s2, src_w, &converted_size)) {
 		goto done;
 	}
-	retp = discard_const_p(char, (s+strlen(s2)));
+	retp = s + strlen(s2);
 done:
 	TALLOC_FREE(mem_ctx);
 	return retp;
