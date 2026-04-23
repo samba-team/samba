@@ -26,7 +26,7 @@
 
 #include <talloc.h>
 
-#define STRING_SUB_UNSAFE_CHARACTERS "$`\"';%\r\n"
+#define STRING_SUB_UNSAFE_CHARACTERS "$`\"';%"
 
 /**
  Substitute a string for a pattern in another string. Make sure there is
@@ -35,8 +35,8 @@
  This routine looks for pattern in s and replaces it with
  insert. It may do multiple replacements.
 
- Any of STRING_SUB_UNSAFE_CHARACTERS (see above) in the
- insert string are replaced with _
+ Any of STRING_SUB_UNSAFE_CHARACTERS (see above) and any character
+ caught by calling iscntrl() in the insert string are replaced with _
 
  if len==0 then the string cannot be extended. This is different from the old
  use of len==0 which was for no length checks to be done.
