@@ -47,10 +47,9 @@
  use of len==0 which was for no length checks to be done.
 **/
 
-static void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
-			bool remove_unsafe_characters, bool replace_once,
-			bool allow_trailing_dollar)
+void string_sub(char *s, const char *pattern, const char *insert, size_t len)
 {
+	bool remove_unsafe_characters = true;
 	char *p;
 	size_t ls, lp, li, i;
 
@@ -79,13 +78,6 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
 			case '$':
-				/* allow a trailing $
-				 * (as in machine accounts) */
-				if (allow_trailing_dollar && (i == li - 1 )) {
-					p[i] = insert[i];
-					break;
-				}
-				FALL_THROUGH;
 			case '`':
 			case '"':
 			case '\'':
@@ -107,15 +99,7 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 		}
 		s = p + li;
 		ls = ls + li - lp;
-
-		if (replace_once)
-			break;
 	}
-}
-
-void string_sub(char *s,const char *pattern, const char *insert, size_t len)
-{
-	string_sub2( s, pattern, insert, len, true, false, false );
 }
 
 /**
