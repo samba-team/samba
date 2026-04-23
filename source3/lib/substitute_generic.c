@@ -37,71 +37,38 @@ char *realloc_string_sub2(char *string,
 			bool remove_unsafe_characters,
 			bool allow_trailing_dollar)
 {
-	char *p, *in;
-	char *s;
-	ssize_t ls,lp,li,ld, i;
+	const char *unsafe_characters = NULL;
+	char safe_character = '\0';
+	bool ok;
 
 	if (!insert || !pattern || !*pattern || !string || !*string)
 		return NULL;
 
-	s = string;
+	if (remove_unsafe_characters) {
+		unsafe_characters = STRING_SUB_UNSAFE_CHARACTERS;
+		safe_character = '_';
+	}
 
-	in = talloc_strdup(talloc_tos(), insert);
-	if (!in) {
-		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+	ok = realloc_string_sub_raw(&string,
+				    pattern,
+				    insert,
+				    false,  /* replace_once */
+				    allow_trailing_dollar,
+				    unsafe_characters,
+				    safe_character);
+	if (!ok) {
+		DBG_ERR("out of memory, realloc_string_sub_raw()!\n");
+		/*
+		 * The calling convention of realloc_string_sub2()
+		 * is very strange regarding stale string pointers.
+		 *
+		 * It is assumed the given string was allocated
+		 * on talloc_tos(), so we just don't touch
+		 * it at all here...
+		 */
 		return NULL;
 	}
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-	ld = li - lp;
-	for (i=0;i<li;i++) {
-		switch (in[i]) {
-			case '$':
-				/* allow a trailing $
-				 * (as in machine accounts) */
-				if (allow_trailing_dollar && (i == li - 1 )) {
-					break;
-				}
-				FALL_THROUGH;
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '%':
-			case '\r':
-			case '\n':
-				if ( remove_unsafe_characters ) {
-					in[i] = '_';
-					break;
-				}
-				FALL_THROUGH;
-			default:
-				/* ok */
-				break;
-		}
-	}
 
-	while ((p = strstr_m(s,pattern))) {
-		if (ld > 0) {
-			int offset = PTR_DIFF(s,string);
-			string = talloc_realloc(NULL, string, char, ls + ld + 1);
-			if (!string) {
-				DEBUG(0, ("realloc_string_sub: "
-					"out of memory!\n"));
-				talloc_free(in);
-				return NULL;
-			}
-			p = string + offset + (p - s);
-		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		memcpy(p, in, li);
-		s = p + li;
-		ls += ld;
-	}
-	talloc_free(in);
 	return string;
 }
 
