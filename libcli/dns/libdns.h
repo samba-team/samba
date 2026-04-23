@@ -33,11 +33,12 @@
 struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					const char *nameserver,
-					const char *name,
-					enum dns_qclass qclass,
-					enum dns_qtype qtype);
+					const struct dns_name_packet *q);
 int dns_cli_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 struct dns_name_packet **reply);
-
+struct dns_name_packet *dns_cli_create_query(TALLOC_CTX *mem_ctx,
+					     const char *name,
+					     enum dns_qclass qclass,
+					     enum dns_qtype qtype);
 
 #endif /*__LIBDNS_H__*/
