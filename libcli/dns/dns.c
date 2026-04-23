@@ -428,8 +428,7 @@ struct dns_cli_request_state {
 	struct tevent_req *udp_subreq;
 	struct tevent_req *tcp_subreq;
 
-	struct dns_name_question question;
-	struct dns_name_packet out_packet;
+	const struct dns_name_packet *q;
 
 	DATA_BLOB reply;
 };
@@ -441,9 +440,7 @@ static void dns_cli_request_tcp_done(struct tevent_req *subreq);
 struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					const char *nameserver,
-					const char *name,
-					enum dns_qclass qclass,
-					enum dns_qtype qtype)
+					const struct dns_name_packet *q)
 {
 	struct tevent_req *req = NULL, *wakeup_subreq = NULL;
 	struct dns_cli_request_state *state;
@@ -455,29 +452,12 @@ struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->nameserver = nameserver;
-
-	DBG_DEBUG("Asking %s for %s/%d/%d via UDP\n", nameserver,
-		  name, (int)qclass, (int)qtype);
-
-	state->question = (struct dns_name_question){
-		.name = discard_const_p(char, name),
-		.question_type = qtype,
-		.question_class = qclass,
-	};
-
-	state->out_packet = (struct dns_name_packet){
-		.operation = DNS_OPCODE_QUERY | DNS_FLAG_RECURSION_DESIRED,
-		.qdcount = 1,
-		.questions = &state->question,
-	};
-
-	generate_random_buffer((uint8_t *)&state->out_packet.id,
-			       sizeof(state->out_packet.id));
+	state->q = q;
 
 	state->udp_subreq = dns_udp_request_send(state,
 						 state->ev,
 						 state->nameserver,
-						 &state->out_packet);
+						 state->q);
 	if (tevent_req_nomem(state->udp_subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -530,16 +510,16 @@ static void dns_cli_request_udp_done(struct tevent_req *subreq)
 	}
 
 	reply_id = PULL_BE_U16(state->reply.data, 0);
-	if (reply_id != state->out_packet.id) {
+	if (reply_id != state->q->id) {
 		DBG_DEBUG("Got id %" PRIu16 ", expected %" PRIu16 "\n",
 			  reply_id,
-			  state->out_packet.id);
+			  state->q->id);
 		goto tcp_fallback;
 	}
 
 	operation = PULL_BE_U16(state->reply.data, 2);
 	if ((operation & DNS_FLAG_TRUNCATION) != 0) {
-		DBG_DEBUG("Id %" PRIu16 ", truncated\n", state->out_packet.id);
+		DBG_DEBUG("Id %" PRIu16 ", truncated\n", state->q->id);
 		goto tcp_fallback;
 	}
 
@@ -554,7 +534,7 @@ tcp_fallback:
 	state->tcp_subreq = dns_tcp_request_send(state,
 						 state->ev,
 						 state->nameserver,
-						 &state->out_packet);
+						 state->q);
 	if (tevent_req_nomem(state->tcp_subreq, req)) {
 		return;
 	}
@@ -585,7 +565,7 @@ static void dns_cli_request_trigger_tcp(struct tevent_req *subreq)
 	state->tcp_subreq = dns_tcp_request_send(state,
 						 state->ev,
 						 state->nameserver,
-						 &state->out_packet);
+						 state->q);
 	if (tevent_req_nomem(state->tcp_subreq, req)) {
 		return;
 	}
@@ -655,20 +635,61 @@ int dns_cli_request_recv(struct tevent_req *req,
 		goto done;
 	}
 
-	if (reply->id != state->out_packet.id) {
+	if (reply->id != state->q->id) {
 		DBG_DEBUG("Got id %" PRIu16 ", expected %" PRIu16 "\n",
 			  reply->id,
-			  state->out_packet.id);
+			  state->q->id);
 		ret = ENOMSG;
 		goto done;
 	}
 
 	*_reply = reply;
+	reply = NULL;
+
 	ret = 0;
 done:
-	if (ret != 0) {
-		TALLOC_FREE(reply);
-	}
+	TALLOC_FREE(reply);
 	tevent_req_received(req);
 	return ret;
+}
+
+struct dns_name_packet *dns_cli_create_query(TALLOC_CTX *mem_ctx,
+					     const char *name,
+					     enum dns_qclass qclass,
+					     enum dns_qtype qtype)
+{
+	struct dns_name_packet *p = NULL;
+	struct dns_name_question *q = NULL;
+
+	p = talloc(mem_ctx, struct dns_name_packet);
+	if (p == NULL) {
+		goto fail;
+	}
+
+	q = talloc(p, struct dns_name_question);
+	if (q == NULL) {
+		goto fail;
+	}
+
+	*q = (struct dns_name_question){
+		.name = talloc_strdup(q, name),
+		.question_class = qclass,
+		.question_type = qtype,
+	};
+	if (q->name == NULL) {
+		goto fail;
+	}
+
+	*p = (struct dns_name_packet){
+		.operation = DNS_OPCODE_QUERY | DNS_FLAG_RECURSION_DESIRED,
+		.qdcount = 1,
+		.questions = q,
+	};
+
+	generate_random_buffer((uint8_t *)&p->id, sizeof(p->id));
+
+	return p;
+fail:
+	TALLOC_FREE(p);
+	return NULL;
 }

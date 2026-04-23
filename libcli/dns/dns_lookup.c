@@ -27,9 +27,7 @@
 
 struct dns_lookup_state {
 	struct tevent_context *ev;
-	const char *name;
-	enum dns_qclass qclass;
-	enum dns_qtype qtype;
+	struct dns_name_packet *q;
 
 	char **nameservers;
 	size_t num_nameservers;
@@ -63,9 +61,11 @@ struct tevent_req *dns_lookup_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
-	state->name = name;
-	state->qclass = qclass;
-	state->qtype = qtype;
+
+	state->q = dns_cli_create_query(state, name, qclass, qtype);
+	if (tevent_req_nomem(state->q, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	if (resolv_conf_fp == NULL) {
 		const char *resolvconf = "/etc/resolv.conf";
@@ -140,9 +140,7 @@ static int dns_lookup_send_next(struct tevent_req *req)
 		state->dns_subreqs,
 		state->ev,
 		state->nameservers[state->num_sent],
-		state->name,
-		state->qclass,
-		state->qtype);
+		state->q);
 
 	if (state->dns_subreqs[state->num_sent] == NULL) {
 		return ENOMEM;

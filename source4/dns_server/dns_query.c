@@ -282,15 +282,22 @@ static struct tevent_req *ask_forwarder_send(
 {
 	struct tevent_req *req, *subreq;
 	struct ask_forwarder_state *state;
+	struct dns_name_packet *q = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct ask_forwarder_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	subreq = dns_cli_request_send(state, ev, forwarder,
-				      question->name, question->question_class,
-				      question->question_type);
+	q = dns_cli_create_query(state,
+				 question->name,
+				 question->question_class,
+				 question->question_type);
+	if (tevent_req_nomem(q, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dns_cli_request_send(state, ev, forwarder, q);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
