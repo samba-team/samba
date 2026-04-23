@@ -267,3 +267,41 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean)
 	}
 	return false;
 }
+
+_PUBLIC_ const char *strstr_for_invalid_account_characters(const char *name)
+{
+	/*
+	 * Return a pointer to the first invalid character in the
+	 * sAMAccountName, or NULL if the whole name is valid.
+	 *
+	 * The rules here are based on
+	 *
+	 * https://social.technet.microsoft.com/wiki/contents/articles/11216.active-directory-requirements-for-creating-objects.aspx
+	 */
+	size_t i;
+
+	for (i = 0; name[i] != '\0'; i++) {
+		uint8_t c = name[i];
+		const char *p = NULL;
+
+		if (iscntrl(c)) {
+			return &name[i];
+		}
+
+		p = strchr("\"[]:;|=+*?<>/\\,", c);
+		if (p != NULL) {
+			return &name[i];
+		}
+	}
+
+	if (i == 0) {
+		return &name[i];
+	}
+
+	if (name[i - 1] == '.') {
+		i -= 1;
+		return &name[i];
+	}
+
+	return NULL;
+}
