@@ -304,6 +304,15 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean);
 _PUBLIC_ bool conv_str_bool(const char * str, bool * val);
 
 /**
+ * Returns a pointer to the first invalid character in name.
+ *
+ * Passing a NULL pointer as name is not allowed!
+ *
+ * This returns NULL for a valid account name.
+ **/
+_PUBLIC_ const char *strstr_for_invalid_account_characters(const char *name);
+
+/**
  * Convert a size specification like 16K into an integral number of bytes.
  **/
 _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val);
