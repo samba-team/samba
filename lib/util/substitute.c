@@ -157,7 +157,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			bool replace_once,
 			bool allow_trailing_dollar)
 {
-	char *p, *in;
+	char *p;
 	char *s;
 	char *string;
 	ssize_t ls,lp,li,ld, i;
@@ -175,22 +175,32 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 
 	s = string;
 
-	in = talloc_strdup(mem_ctx, insert);
-	if (!in) {
-		DEBUG(0, ("talloc_string_sub2: ENOMEM\n"));
-		talloc_free(string);
-		return NULL;
-	}
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 	ld = li - lp;
 
-	for (i=0;i<li;i++) {
-		switch (in[i]) {
+	while ((p = strstr_m(s,pattern))) {
+		if (ld > 0) {
+			int offset = PTR_DIFF(s,string);
+			string = (char *)talloc_realloc_size(mem_ctx, string,
+							ls + ld + 1);
+			if (!string) {
+				DEBUG(0, ("talloc_string_sub: out of "
+					  "memory!\n"));
+				return NULL;
+			}
+			p = string + offset + (p - s);
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
+		for (i=0; i<li; i++) {
+			switch (insert[i]) {
 			case '$':
-				/* allow a trailing $
-				 * (as in machine accounts) */
+				/*
+				 * allow a trailing $ (as in machine accounts)
+				 */
 				if (allow_trailing_dollar && (i == li - 1 )) {
 					break;
 				}
@@ -204,34 +214,18 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			case '\r':
 			case '\n':
 				if (remove_unsafe_characters) {
-					in[i] = '_';
-					break;
+					p[i] = '_';
+					continue;
 				}
 
 				FALL_THROUGH;
 			default:
 				/* ok */
 				break;
-		}
-	}
-
-	while ((p = strstr_m(s,pattern))) {
-		if (ld > 0) {
-			int offset = PTR_DIFF(s,string);
-			string = (char *)talloc_realloc_size(mem_ctx, string,
-							ls + ld + 1);
-			if (!string) {
-				DEBUG(0, ("talloc_string_sub: out of "
-					  "memory!\n"));
-				TALLOC_FREE(in);
-				return NULL;
 			}
-			p = string + offset + (p - s);
+
+			p[i] = insert[i];
 		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		memcpy(p, in, li);
 		s = p + li;
 		ls += ld;
 
@@ -239,7 +233,6 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			break;
 		}
 	}
-	TALLOC_FREE(in);
 	return string;
 }
 
