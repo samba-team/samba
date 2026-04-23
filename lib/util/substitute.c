@@ -35,6 +35,33 @@
  * @brief Substitute utilities.
  **/
 
+static inline
+char mask_unsafe_character(char in,
+			   bool is_last,
+			   bool allow_trailing_dollar,
+			   const char *unsafe_characters,
+			   char safe_out)
+{
+	const char *unsafe = NULL;
+
+	if (unsafe_characters == NULL) {
+		return in;
+	}
+
+	/* allow a trailing $ (as in machine accounts) */
+	if (allow_trailing_dollar && is_last && in == '$') {
+		return in;
+	}
+
+	unsafe = strchr(unsafe_characters, in);
+	if (unsafe != NULL) {
+		return safe_out;
+	}
+
+	/* ok */
+	return in;
+}
+
 /**
  Substitute a string for a pattern in another string. Make sure there is
  enough room!
@@ -42,14 +69,16 @@
  This routine looks for pattern in s and replaces it with
  insert. It may do multiple replacements or just one.
 
- Any of " ; ' $ or ` in the insert string are replaced with _
+ Any of STRING_SUB_UNSAFE_CHARACTERS in the insert string are replaced with _
+
  if len==0 then the string cannot be extended. This is different from the old
  use of len==0 which was for no length checks to be done.
 **/
 
 void string_sub(char *s, const char *pattern, const char *insert, size_t len)
 {
-	bool remove_unsafe_characters = true;
+	const char *unsafe_characters = STRING_SUB_UNSAFE_CHARACTERS;
+	char safe_character = '_';
 	char *p;
 	size_t ls, lp, li, i;
 
@@ -76,26 +105,18 @@ void string_sub(char *s, const char *pattern, const char *insert, size_t len)
 			memmove(p+li,p+lp,strlen(p+lp)+1);
 		}
 		for (i=0;i<li;i++) {
-			switch (insert[i]) {
-			case '$':
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '%':
-			case '\r':
-			case '\n':
-				if ( remove_unsafe_characters ) {
-					p[i] = '_';
-					/* yes this break should be here
-					 * since we want to fall throw if
-					 * not replacing unsafe chars */
-					break;
-				}
-				FALL_THROUGH;
-			default:
-				p[i] = insert[i];
-			}
+			/*
+			 * Without allow_trailing_dollar we don't
+			 * need to calculate is_last...
+			 */
+			const bool is_last = false;
+			const bool allow_trailing_dollar = false;
+
+			p[i] = mask_unsafe_character(insert[i],
+						     is_last,
+						     allow_trailing_dollar,
+						     unsafe_characters,
+						     safe_character);
 		}
 		s = p + li;
 		ls = ls + li - lp;
@@ -157,9 +178,11 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			bool replace_once,
 			bool allow_trailing_dollar)
 {
-	char *p;
-	char *s;
-	char *string;
+	const char *unsafe_characters = STRING_SUB_UNSAFE_CHARACTERS;
+	const char safe_character = '_';
+	char *p = NULL,
+	char *s = NULL;
+	char *string = NULL;
 	ssize_t ls,lp,li,ld, i;
 
 	if (!insert || !pattern || !*pattern || !src) {
@@ -195,36 +218,14 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
 		}
-		for (i=0; i<li; i++) {
-			switch (insert[i]) {
-			case '$':
-				/*
-				 * allow a trailing $ (as in machine accounts)
-				 */
-				if (allow_trailing_dollar && (i == li - 1 )) {
-					break;
-				}
+		for (i=0; i < li; i++) {
+			bool is_last = (i == li - 1);
 
-				FALL_THROUGH;
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '%':
-			case '\r':
-			case '\n':
-				if (remove_unsafe_characters) {
-					p[i] = '_';
-					continue;
-				}
-
-				FALL_THROUGH;
-			default:
-				/* ok */
-				break;
-			}
-
-			p[i] = insert[i];
+			p[i] = mask_unsafe_character(insert[i],
+						     is_last,
+						     allow_trailing_dollar,
+						     unsafe_characters,
+						     safe_character);
 		}
 		s = p + li;
 		ls += ld;
