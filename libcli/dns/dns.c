@@ -653,6 +653,33 @@ done:
 	return ret;
 }
 
+int dns_cli_request(TALLOC_CTX *mem_ctx,
+		    const char *nameserver,
+		    const struct dns_name_packet *q,
+		    struct dns_name_packet **reply)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	int ret = ENOMEM;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = dns_cli_request_send(frame, ev, nameserver, q);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_unix(req, ev, &ret)) {
+		goto fail;
+	}
+	ret = dns_cli_request_recv(req, mem_ctx, reply);
+fail:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 struct dns_name_packet *dns_cli_create_query(TALLOC_CTX *mem_ctx,
 					     const char *name,
 					     enum dns_qclass qclass,
