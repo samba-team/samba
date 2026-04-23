@@ -26,7 +26,7 @@
 
 #include <talloc.h>
 
-#define STRING_SUB_UNSAFE_CHARACTERS "$`\"';%"
+#define STRING_SUB_UNSAFE_CHARACTERS "$`\"';%|&<>"
 
 /**
  Substitute a string for a pattern in another string. Make sure there is
