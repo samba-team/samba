@@ -2571,8 +2571,8 @@ retry:
 		goto anonymous;
 	}
 
-	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+	remote_name = domain->dcname;
+	remote_sockaddr = &domain->dcaddr;
 
 	/*
 	 * We have an authenticated connection. Use a SPNEGO
@@ -2846,8 +2846,8 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+	remote_name = domain->dcname;
+	remote_sockaddr = &domain->dcaddr;
 
 	status = winbindd_get_trust_credentials(domain,
 						talloc_tos(),
@@ -2937,8 +2937,8 @@ retry:
 		goto anonymous;
 	}
 
-	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+	remote_name = domain->dcname;
+	remote_sockaddr = &domain->dcaddr;
 
 	/*
 	 * We have an authenticated connection. Use a SPNEGO
@@ -3222,8 +3222,8 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	TALLOC_FREE(conn->netlogon_pipe);
 	TALLOC_FREE(conn->netlogon_creds_ctx);
 
-	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+	remote_name = domain->dcname;
+	remote_sockaddr = &domain->dcaddr;
 
 	result = winbindd_get_trust_credentials(domain,
 						talloc_tos(),
