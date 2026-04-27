@@ -94,7 +94,7 @@ static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerName,
 	return err;
 }
 
-DNS_ERROR DoDNSUpdate(char *pszServerName,
+DNS_ERROR DoDNSUpdate(const char *pszServerName,
 		      const char *pszDomainName,
 		      const char *pszHostName,
 		      struct cli_credentials *creds,
