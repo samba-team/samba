@@ -35,7 +35,9 @@
 #include "system/filesys.h"
 #include "lib/socket/socket.h"
 #include "libcli/composite/composite.h"
+#include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/ndr_dns.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_net.h"
 #include "lib/addns/dnsquery.h"
@@ -81,33 +83,37 @@ struct dns_records_container {
 	uint32_t count;
 };
 
-static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
-			  char ***cur_addrs, uint32_t total,
-			  struct dns_request *reply, int port)
+static int reply_to_addrs(TALLOC_CTX *mem_ctx,
+			  uint32_t *a_num,
+			  char ***cur_addrs,
+			  uint32_t total,
+			  const struct dns_name_packet *reply,
+			  int port)
 {
-	char addrstr[INET6_ADDRSTRLEN];
-	struct dns_rrec *rr;
-	char **addrs;
-	uint32_t i;
-	const char *addr;
+	struct dns_res_rec *rr = NULL;
+	const char *addr = NULL;
+	char **addrs = NULL;
+	uint16_t i;
 
 	/* at most we over-allocate here, but not by much */
-	addrs = talloc_realloc(mem_ctx, *cur_addrs, char *,
-				total + reply->num_answers);
+	addrs = talloc_realloc(mem_ctx,
+			       *cur_addrs,
+			       char *,
+			       total + reply->ancount);
 	if (!addrs) {
 		return 0;
 	}
 	*cur_addrs = addrs;
 
-	for (i = 0; i < reply->num_answers; i++) {
-		rr = reply->answers[i];
+	for (i = 0; i < reply->ancount; i++) {
+		rr = &reply->answers[i];
 
 		/* we are only interested in the IN class */
-		if (rr->r_class != DNS_CLASS_IN) {
+		if (rr->rr_class != DNS_CLASS_IN) {
 			continue;
 		}
 
-		if (rr->type == QTYPE_NS) {
+		if (rr->rr_type == QTYPE_NS) {
 			/*
 			 * After the record for NS will come the A or AAAA
 			 * record of the NS.
@@ -116,54 +122,29 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
 		}
 
 		/* verify we actually have a record here */
-		if (!rr->data) {
+		if (rr->length == 0) {
 			continue;
 		}
 
 		/* we are only interested in A and AAAA records */
-		switch (rr->type) {
+		switch (rr->rr_type) {
 		case QTYPE_A:
-			/*
-			 * rr->data will be correctly aligned as it's allocated
-			 * in dns_unmarshall_rr
-			 */
-			addr = inet_ntop(AF_INET,
-					 discard_align_p(struct in_addr,
-							 rr->data),
-					 addrstr,
-					 sizeof(addrstr));
-			if (addr == NULL) {
-				continue;
-			}
+			addr = rr->rdata.ipv4_record;
 			break;
-		case QTYPE_AAAA:
 #ifdef HAVE_IPV6
-			/*
-			 * rr->data will be correctly aligned as it's allocated
-			 * in dns_unmarshal_rr
-			 */
-			addr = inet_ntop(AF_INET6,
-					 discard_align_p(struct in6_addr,
-							 rr->data),
-					 addrstr,
-					 sizeof(addrstr));
-#else
-			addr = NULL;
-#endif
-			if (addr == NULL) {
-				continue;
-			}
+		case QTYPE_AAAA:
+			addr = rr->rdata.ipv6_record;
 			break;
+#endif
 		default:
 			continue;
 		}
 
-		addrs[total] = talloc_asprintf(addrs, "%s@%u/%s",
-						addrstr, port,
-						rr->name->pLabelList->label);
+		addrs[total] = talloc_asprintf(
+			addrs, "%s@%u/%s", addr, port, rr->name);
 		if (addrs[total]) {
 			total++;
-			if (rr->type == QTYPE_A) {
+			if (rr->rr_type == QTYPE_A) {
 				(*a_num)++;
 			}
 		}
@@ -172,26 +153,28 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
 	return total;
 }
 
-static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx, const char* name,
-			    uint16_t q_type, struct dns_request **reply)
+static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx,
+			    const char *name,
+			    uint16_t q_type,
+			    struct dns_name_packet **reply)
 {
 	int len, rlen;
-	uint8_t *answer;
 	bool loop;
-	struct dns_buffer buf;
-	DNS_ERROR err;
+	struct dns_name_packet *packet = NULL;
+	DATA_BLOB blob = {};
+	enum ndr_err_code ndr_err;
 
 	/* give space for a good sized answer by default */
-	answer = NULL;
 	len = 1500;
 	do {
-		answer = talloc_realloc(mem_ctx, answer, uint8_t, len);
-		if (!answer) {
+		bool ok = data_blob_realloc(mem_ctx, &blob, len);
+		if (!ok) {
 			return ERROR_DNS_NO_MEMORY;
 		}
-		rlen = res_search(name, DNS_CLASS_IN, q_type, answer, len);
+		rlen = res_search(name, DNS_CLASS_IN, q_type, blob.data, len);
 		if (rlen == -1) {
 			if (len >= 65535) {
+				data_blob_free(&blob);
 				return ERROR_DNS_SOCKET_ERROR;
 			}
 			/* retry once with max packet size */
@@ -205,22 +188,33 @@ static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx, const char* name,
 		}
 	} while(loop);
 
-	buf.data = answer;
-	buf.size = rlen;
-	buf.offset = 0;
-	buf.error = ERROR_DNS_SUCCESS;
+	packet = talloc(mem_ctx, struct dns_name_packet);
+	if (!packet) {
+		data_blob_free(&blob);
+		return ERROR_DNS_NO_MEMORY;
+	}
 
-	err = dns_unmarshall_request(mem_ctx, &buf, reply);
+	ndr_err = ndr_pull_struct_blob(&blob,
+				       packet,
+				       packet,
+				       (ndr_pull_flags_fn_t)
+					       ndr_pull_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		data_blob_free(&blob);
+		return ERROR_DNS_INVALID_MESSAGE;
+	}
 
-	TALLOC_FREE(answer);
-	return err;
+	*reply = packet;
+
+	data_blob_free(&blob);
+	return ERROR_DNS_SUCCESS;
 }
 
 static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 							const char* name,
 							int port)
 {
-	struct dns_request *reply;
+	struct dns_name_packet *reply;
 	struct dns_records_container ret;
 	char **addrs = NULL;
 	uint32_t a_num, total;
