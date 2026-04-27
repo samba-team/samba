@@ -252,6 +252,30 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 		return NT_STATUS_OK;
 	}
 
+	if (IS_DC && domain->primary && !domain->rodc) {
+		/*
+		 * target_domain_name might
+		 * be a subdomain of domain->alt_name,
+		 * that's why the 'sam' backend passed it along
+		 * to 'winbind' auth backend, but we need to bounce
+		 * it back to the 'sam_ignoredomain' backend.
+		 */
+		DBG_NOTICE("target_domain[%s] routed to primary domain[%s][%s]\n",
+			   target_domain_name, domain->name, domain->alt_name);
+		req->out.result = NT_STATUS_NO_SUCH_DOMAIN;
+		req->out.authoritative = 0;
+		return NT_STATUS_OK;
+	}
+
+	if (IS_DC && domain->internal && !domain->rodc) {
+		/*
+		 * Something strange happened
+		 */
+		DBG_ERR("target_domain[%s] routed to internal domain[%s\n",
+			target_domain_name, domain->name);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
 	DEBUG(5, ("wb_irpc_SamLogon called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
