@@ -1977,6 +1977,15 @@ static NTSTATUS init_dc_connection_rpc(struct winbindd_domain *domain, bool need
 		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 	}
 
+	if (domain->dcname == NULL) {
+		/*
+		 * This can happen on a DC itself trying to talk to itself,
+		 * which is currently not expected.
+		 */
+		DBG_WARNING("no dcname for domain %s\n", domain->name);
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+
 	return NT_STATUS_OK;
 }
 
