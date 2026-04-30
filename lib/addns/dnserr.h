@@ -65,23 +65,5 @@ typedef uint32_t DNS_ERROR;
 #define ERROR_DNS_SOCKET_ERROR		ERROR_DNS(10)
 #define ERROR_DNS_UPDATE_FAILED		ERROR_DNS(11)
 
-/*
- * About to be removed, transitional error
- */
-#define ERROR_DNS_UNSUCCESSFUL		ERROR_DNS(999)
-
-
-#define ERROR_BAD_RESPONSE		1
-#define ERROR_RECORD_NOT_FOUND		2
-#define ERROR_OUTOFMEMORY		8
-#if !defined(ERROR_INVALID_PARAMETER)
-#define ERROR_INVALID_PARAMETER         87
-#endif
-
-/*
- * About to be removed, transitional error
- */
-#define ERROR_UNSUCCESSFUL 999
-
 #endif	/* _DNSERR_H */
 

@@ -48,17 +48,11 @@
 #define DNS_TCP			1
 #define DNS_UDP			2
 
-#define DNS_OPCODE_UPDATE	1
-
 /* DNS Class Types */
 
 #define DNS_CLASS_IN		1
 #define DNS_CLASS_ANY		255
 #define DNS_CLASS_NONE		254
-
-/* DNS RR Types */
-
-#define DNS_RR_A		1
 
 #define DNS_TCP_PORT		53
 #define DNS_UDP_PORT		53
@@ -89,27 +83,6 @@ MX              15 mail exchange
 TXT             16 text strings
 */
 
-#define QR_QUERY	 0x0000
-#define QR_RESPONSE	 0x0001
-
-#define OPCODE_QUERY 0x00
-#define OPCODE_IQUERY	0x01
-#define OPCODE_STATUS	0x02
-
-#define AA			1
-
-#define RECURSION_DESIRED	0x01
-
-#define RCODE_NOERROR          0
-#define RCODE_FORMATERROR      1
-#define RCODE_SERVER_FAILURE   2
-#define RCODE_NAME_ERROR       3
-#define RCODE_NOTIMPLEMENTED   4
-#define RCODE_REFUSED          5
-
-#define SENDBUFFER_SIZE		65536
-#define RECVBUFFER_SIZE		65536
-
 /*
  * TKEY Modes from rfc2930
  */
@@ -120,21 +93,12 @@ TXT             16 text strings
 #define DNS_TKEY_MODE_RESOLVER 4
 #define DNS_TKEY_MODE_DELETE   5
 
-
-#define DNS_ONE_DAY_IN_SECS	86400
-#define DNS_TEN_HOURS_IN_SECS	36000
-
-#define SOCKET_ERROR 		-1
-#define INVALID_SOCKET		-1
-
 #define  DNS_NO_ERROR		0
 #define  DNS_FORMAT_ERROR	1
 #define  DNS_SERVER_FAILURE	2
 #define  DNS_NAME_ERROR		3
 #define  DNS_NOT_IMPLEMENTED	4
 #define  DNS_REFUSED		5
-
-typedef long HANDLE;
 
 enum dns_ServerType { DNS_SRV_ANY, DNS_SRV_WIN2000, DNS_SRV_WIN2003 };
 
