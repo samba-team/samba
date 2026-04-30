@@ -51,6 +51,24 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len);
 **/
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 
+/*
+ * If unsafe_characters is NULL all characters are allowed,
+ * if unsafe_characters is not NULL all characters caught
+ * by iscntrl() are also replaced by safe_character.
+ *
+ * *_string might be reallocated!
+ *
+ * On error *_string may still be reallocated and
+ * may contain partial replacements.
+ */
+bool realloc_string_sub_raw(char **_string,
+			    const char *pattern,
+			    const char *insert,
+			    bool replace_once,
+			    bool allow_trailing_dollar,
+			    const char *unsafe_characters,
+			    char safe_character);
+
 char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			const char *pattern,
 			const char *insert,
