@@ -574,7 +574,7 @@ static void dns_cli_request_trigger_tcp(struct tevent_req *subreq)
 	ok = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!ok) {
-		tevent_req_oom(subreq);
+		tevent_req_oom(req);
 		return;
 	}
 
