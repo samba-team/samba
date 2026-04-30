@@ -171,32 +171,24 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
  * talloc version of string_sub2.
  */
 
-char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
-			const char *pattern,
-			const char *insert,
-			bool remove_unsafe_characters,
-			bool replace_once,
-			bool allow_trailing_dollar)
+bool realloc_string_sub_raw(char **_string,
+			    const char *pattern,
+			    const char *insert,
+			    bool replace_once,
+			    bool allow_trailing_dollar,
+			    const char *unsafe_characters,
+			    char safe_character)
 {
-	const char *unsafe_characters = STRING_SUB_UNSAFE_CHARACTERS;
-	const char safe_character = '_';
-	char *p = NULL,
+	char *p = NULL;
 	char *s = NULL;
 	char *string = NULL;
 	ssize_t ls,lp,li,ld, i;
 
-	if (!insert || !pattern || !*pattern || !src) {
-		return NULL;
+	if (!insert || !pattern || !*pattern || !_string|| !*_string) {
+		return false;
 	}
 
-	string = talloc_strdup(mem_ctx, src);
-	if (string == NULL) {
-		DEBUG(0, ("talloc_string_sub2: "
-			"talloc_strdup failed\n"));
-		return NULL;
-	}
-
-	s = string;
+	s = string = *_string;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
@@ -205,14 +197,13 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
-			int offset = PTR_DIFF(s,string);
-			string = (char *)talloc_realloc_size(mem_ctx, string,
-							ls + ld + 1);
+			ptrdiff_t offset = PTR_DIFF(s,string);
+			string = talloc_realloc(NULL, string, char, ls + ld + 1);
 			if (!string) {
-				DEBUG(0, ("talloc_string_sub: out of "
-					  "memory!\n"));
-				return NULL;
+				DBG_ERR("out of memory(realloc)!\n");
+				return false;
 			}
+			*_string = string;
 			p = string + offset + (p - s);
 		}
 		if (li != lp) {
@@ -234,6 +225,50 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			break;
 		}
 	}
+	return true;
+}
+
+char *talloc_string_sub2(TALLOC_CTX *mem_ctx,
+			 const char *src,
+			 const char *pattern,
+			 const char *insert,
+			 bool remove_unsafe_characters,
+			 bool replace_once,
+			 bool allow_trailing_dollar)
+{
+	const char *unsafe_characters = NULL;
+	char safe_character = '\0';
+	char *string = NULL;
+	bool ok;
+
+	if (!insert || !pattern || !*pattern || !src) {
+		return NULL;
+	}
+
+	if (remove_unsafe_characters) {
+		unsafe_characters = STRING_SUB_UNSAFE_CHARACTERS;
+		safe_character = '_';
+	}
+
+	string = talloc_strdup(mem_ctx, src);
+	if (string == NULL) {
+		DBG_ERR("out of memory, talloc_strdup(src)!\n");
+		return NULL;
+	}
+
+	ok = realloc_string_sub_raw(&string,
+				    pattern,
+				    insert,
+				    replace_once,
+				    allow_trailing_dollar,
+				    unsafe_characters,
+				    safe_character);
+	if (!ok) {
+		TALLOC_FREE(string);
+		DBG_ERR("out of memory, realloc_string_sub_raw()!\n");
+		return NULL;
+	}
+
 	return string;
 }
 
