@@ -2718,6 +2718,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
+	/*
+	 * This node is the leader
+	 */
 
 	/* Get the nodemaps for all connected remote nodes */
 	ret = get_remote_nodemaps(rec, mem_ctx, &remote_nodemaps);
