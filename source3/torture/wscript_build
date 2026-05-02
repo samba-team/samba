@@ -133,3 +133,9 @@ bld.SAMBA3_BINARY('vfstest',
                       SMBREADLINE
                       ''',
                  for_selftest=True)
+
+bld.SAMBA3_BINARY('test_rpc_samr',
+                 source='test_rpc_samr.c',
+                 deps='''RPC_SERVICE cmocka
+                 ''',
+                 for_selftest=True)
