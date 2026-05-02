@@ -1009,10 +1009,10 @@ static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 /***********************************************************
 ************************************************************/
 
-static NTSTATUS check_password_complexity_internal(TALLOC_CTX *tosctx,
-						   const char *orig_cmd,
-						   const char *username,
-						   char **cmd_out)
+NTSTATUS check_password_complexity_internal(TALLOC_CTX *tosctx,
+					    const char *orig_cmd,
+					    const char *username,
+					    char **cmd_out)
 {
 	const char *fallback_username = "__CVE-2026-4408_FallbackUsername__";
 	const char *inv = NULL;
