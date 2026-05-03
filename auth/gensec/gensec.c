@@ -707,8 +707,8 @@ _PUBLIC_ const char *gensec_get_target_service_description(struct gensec_securit
 }
 
 /**
- * Set the target hostname (suitable for kerberos resolutation) on a GENSEC context - ensures it is talloc()ed
- *
+ * Set the target hostname (suitable for kerberos resolution) on a
+ * GENSEC context - ensures it is talloc()ed
  */
 
 _PUBLIC_ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname)
