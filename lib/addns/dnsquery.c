@@ -231,6 +231,40 @@ fail:
 	return status;
 }
 
+static bool ads_dns_add_ns_ip(struct dns_rr_ns *nss,
+			      size_t num_nss,
+			      const char *hostname,
+			      const struct samba_sockaddr *addr)
+{
+	size_t i;
+
+	for (i = 0; i < num_nss; i++) {
+		struct dns_rr_ns *ns = &nss[i];
+		size_t num_ips = talloc_array_length(ns->ss_s);
+		struct samba_sockaddr *tmp = NULL;
+
+		if (!strequal(ns->hostname, hostname)) {
+			continue;
+		}
+
+		if (num_ips == SIZE_MAX) {
+			continue;
+		}
+
+		tmp = talloc_realloc(nss,
+				     ns->ss_s,
+				     struct samba_sockaddr,
+				     num_ips + 1);
+		if (tmp == NULL) {
+			return false;
+		}
+		ns->ss_s = tmp;
+		ns->ss_s[num_ips] = *addr;
+	}
+
+	return true;
+}
+
 struct ads_dns_lookup_ns_state {
 	struct dns_rr_ns *nss;
 	size_t num_nss;
@@ -308,19 +342,19 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 		struct dns_res_rec *ar = &reply->additional[i];
 		struct samba_sockaddr addr = {};
 		bool ok;
-		size_t j;
 
 		ok = dns_res_rec_get_sockaddr(ar, &addr);
 		if (!ok) {
 			continue;
 		}
 
-		for (j=0; j<state->num_nss; j++) {
-			struct dns_rr_ns *ns = &state->nss[j];
-
-			if (strequal(ns->hostname, ar->name)) {
-				ns->ss = addr.u.ss;
-			}
+		ok = ads_dns_add_ns_ip(state->nss,
+				       state->num_nss,
+				       ar->name,
+				       &addr);
+		if (!ok) {
+			tevent_req_oom(req);
+			return;
 		}
 	}
 

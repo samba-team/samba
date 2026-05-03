@@ -58,7 +58,7 @@ struct dns_rr_srv {
 
 struct dns_rr_ns {
 	const char *hostname;
-	struct sockaddr_storage ss;
+	struct samba_sockaddr *ss_s; /* support multi-homed hosts */
 };
 
 #endif
