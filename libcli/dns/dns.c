@@ -47,6 +47,21 @@ struct dns_udp_request_state {
 static void dns_udp_request_sent(struct tevent_req *subreq);
 static void dns_udp_request_done(struct tevent_req *subreq);
 
+static bool has_crypto_rr(const struct dns_res_rec *rr, size_t num_rr)
+{
+	size_t i;
+
+	for (i = 0; i < num_rr; i++) {
+		enum dns_qtype type = rr[i].rr_type;
+
+		if ((type == DNS_QTYPE_TSIG) || (type == DNS_QTYPE_TKEY)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static struct tevent_req *dns_udp_request_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
@@ -68,6 +83,19 @@ static struct tevent_req *dns_udp_request_send(
 
 	state->ev = ev;
 	state->q = _q;
+
+	if (has_crypto_rr(_q->additional, _q->arcount) ||
+	    has_crypto_rr(_q->answers, _q->ancount))
+	{
+		/*
+		 * Don't add a UDP EDNS0 record for signed or other
+		 * crypto-related requests: Do DNS over TCP. Grep for
+		 * "DNS_SRV_WIN2000" to see why we also look at the
+		 * answers.
+		 */
+		tevent_req_error(req, EMSGSIZE);
+		return tevent_req_post(req, ev);
+	}
 
 	if (_q->arcount == UINT16_MAX) {
 		tevent_req_error(req, EMSGSIZE);
