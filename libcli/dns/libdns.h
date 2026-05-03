@@ -25,6 +25,10 @@
 #include "lib/util/data_blob.h"
 #include "lib/util/time.h"
 #include "librpc/gen_ndr/dns.h"
+#include "libcli/util/ntstatus.h"
+
+struct gensec_security;
+struct samba_sockaddr;
 
 /*
  * DNS request with fallback to TCP on truncation
@@ -44,5 +48,28 @@ struct dns_name_packet *dns_cli_create_query(TALLOC_CTX *mem_ctx,
 					     const char *name,
 					     enum dns_qclass qclass,
 					     enum dns_qtype qtype);
+struct dns_name_packet *dns_cli_create_probe(TALLOC_CTX *mem_ctx,
+					     const char *zone,
+					     const char *host,
+					     const struct samba_sockaddr *ips,
+					     size_t num_ips);
+struct dns_name_packet *dns_cli_create_update(TALLOC_CTX *mem_ctx,
+					      const char *zone,
+					      const char *host,
+					      const struct samba_sockaddr *ips,
+					      size_t num_ips,
+					      uint32_t ttl);
 
+int dns_cli_sign_packet(
+	struct dns_name_packet *p,
+	struct gensec_security *gensec,
+	NTSTATUS (*sign)(struct gensec_security *gensec_security,
+			 TALLOC_CTX *mem_ctx,
+			 const uint8_t *data,
+			 size_t length,
+			 const uint8_t *whole_pdu,
+			 size_t pdu_length,
+			 DATA_BLOB *sig),
+	const char *keyname,
+	const char *algorithmname);
 #endif /*__LIBDNS_H__*/

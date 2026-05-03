@@ -31,6 +31,8 @@
 #include "libcli/util/error.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_dns.h"
+#include "lib/util/util_net.h"
+#include "auth/gensec/gensec.h"
 
 struct dns_udp_request_state {
 	struct tevent_context *ev;
@@ -747,4 +749,347 @@ struct dns_name_packet *dns_cli_create_query(TALLOC_CTX *mem_ctx,
 fail:
 	TALLOC_FREE(p);
 	return NULL;
+}
+
+static struct dns_name_packet *dns_cli_create_update_base(TALLOC_CTX *mem_ctx,
+							  const char *zone,
+							  const char *host)
+{
+	struct dns_name_packet *p = NULL;
+	struct dns_name_question *q = NULL;
+	struct dns_res_rec *answer = NULL;
+
+	p = talloc(mem_ctx, struct dns_name_packet);
+	if (p == NULL) {
+		goto fail;
+	}
+
+	q = talloc(p, struct dns_name_question);
+	if (q == NULL) {
+		goto fail;
+	}
+	*q = (struct dns_name_question){
+		.name = talloc_strdup(q, zone),
+		.question_type = DNS_QTYPE_SOA,
+		.question_class = DNS_QCLASS_IN,
+	};
+	if (q->name == NULL) {
+		goto fail;
+	}
+
+	answer = talloc(p, struct dns_res_rec);
+	if (answer == NULL) {
+		goto fail;
+	}
+
+	/*
+	 * Prerequisite: Can't overwrite a cname
+	 */
+	*answer = (struct dns_res_rec){
+		.name = talloc_strdup(answer, host),
+		.rr_type = DNS_QTYPE_CNAME,
+		.rr_class = DNS_QCLASS_NONE,
+	};
+	if (answer->name == NULL) {
+		goto fail;
+	}
+
+	*p = (struct dns_name_packet){
+		.operation = DNS_OPCODE_UPDATE,
+		.qdcount = 1,
+		.ancount = 1,
+		.questions = q,
+		.answers = answer,
+	};
+
+	generate_random_buffer((uint8_t *)&p->id, sizeof(p->id));
+
+	return p;
+fail:
+	TALLOC_FREE(p);
+	return NULL;
+}
+
+static bool dns_cli_add_ip_records(TALLOC_CTX *parent,
+				   struct dns_res_rec **_recs,
+				   uint16_t *_num_recs,
+				   const char *host,
+				   const struct samba_sockaddr *ips,
+				   size_t num_ips,
+				   uint32_t ttl)
+{
+	size_t i;
+	size_t num_recs = *_num_recs;
+	struct dns_res_rec *recs = NULL;
+
+	if ((num_ips + num_recs < num_ips) ||
+	    (num_ips + num_recs > UINT16_MAX)) {
+		return false;
+	}
+
+	recs = talloc_realloc(parent,
+			      *_recs,
+			      struct dns_res_rec,
+			      num_recs + num_ips);
+	if (recs == NULL) {
+		return false;
+	}
+	*_recs = recs;
+
+	for (i = 0; i < num_ips; i++) {
+		struct dns_res_rec *rec = &recs[num_recs + i];
+		const struct samba_sockaddr *ip = &ips[i];
+		struct ssaddr_buf buf;
+		char *addrstr = NULL;
+
+		*rec = (struct dns_res_rec){
+			.name = talloc_strdup(parent, host),
+			.rr_class = DNS_QCLASS_IN,
+			.ttl = ttl,
+			.length = 1,
+		};
+		if (rec->name == NULL) {
+			return false;
+		}
+
+		addrstr = talloc_strdup(parent, ssaddr_str_buf(ip, &buf));
+		if (addrstr == NULL) {
+			return false;
+		}
+
+		switch (ip->u.sa.sa_family) {
+		case AF_INET:
+			rec->rr_type = DNS_QTYPE_A;
+			rec->rdata.ipv4_record = addrstr;
+			break;
+		case AF_INET6:
+			rec->rr_type = DNS_QTYPE_AAAA;
+			rec->rdata.ipv6_record = addrstr;
+			break;
+		default:
+			return false;
+		}
+	}
+
+	*_num_recs = num_recs + num_ips;
+	return true;
+}
+
+struct dns_name_packet *dns_cli_create_probe(TALLOC_CTX *mem_ctx,
+					     const char *zone,
+					     const char *host,
+					     const struct samba_sockaddr *ips,
+					     size_t num_ips)
+{
+	struct dns_name_packet *p = NULL;
+	bool ok;
+
+	p = dns_cli_create_update_base(mem_ctx, zone, host);
+	if (p == NULL) {
+		goto fail;
+	}
+
+	/* A/AAAA in use prerequisites */
+	ok = dns_cli_add_ip_records(
+		p, &p->answers, &p->ancount, host, ips, num_ips, 0);
+	if (!ok) {
+		goto fail;
+	}
+
+	return p;
+fail:
+	TALLOC_FREE(p);
+	return NULL;
+}
+
+struct dns_name_packet *dns_cli_create_update(TALLOC_CTX *mem_ctx,
+					      const char *zone,
+					      const char *host,
+					      const struct samba_sockaddr *ips,
+					      size_t num_ips,
+					      uint32_t ttl)
+{
+	struct dns_name_packet *p = NULL;
+	struct dns_res_rec *nsrec = NULL;
+	bool ok;
+
+	p = dns_cli_create_update_base(mem_ctx, zone, host);
+	if (p == NULL) {
+		goto fail;
+	}
+
+	nsrec = talloc(p, struct dns_res_rec);
+	if (nsrec == NULL) {
+		goto fail;
+	}
+
+	/* Delete any existing records */
+	*nsrec = (struct dns_res_rec){
+		.name = talloc_strdup(nsrec, host),
+		.rr_type = DNS_QTYPE_ALL,
+		.rr_class = DNS_QCLASS_ANY,
+	};
+	if (nsrec->name == NULL) {
+		goto fail;
+	}
+
+	p->nscount = 1;
+	p->nsrecs = nsrec;
+
+	/* Add A/AAAA records */
+	ok = dns_cli_add_ip_records(
+		p, &p->nsrecs, &p->nscount, host, ips, num_ips, ttl);
+	if (!ok) {
+		goto fail;
+	}
+
+	return p;
+
+fail:
+	TALLOC_FREE(p);
+	return NULL;
+}
+
+/*
+ * Pass in gensec_sign_packet() via a pointer so that we don't have to
+ * pull in gensec into the dependencies here.
+ */
+
+int dns_cli_sign_packet(
+	struct dns_name_packet *p,
+	struct gensec_security *gensec,
+	NTSTATUS (*sign)(struct gensec_security *gensec_security,
+			 TALLOC_CTX *mem_ctx,
+			 const uint8_t *data,
+			 size_t length,
+			 const uint8_t *whole_pdu,
+			 size_t pdu_length,
+			 DATA_BLOB *sig),
+	const char *keyname,
+	const char *algorithmname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB packet_blob = {};
+	DATA_BLOB tsig_blob = {};
+	DATA_BLOB mic = {};
+	struct dns_res_rec *additional = NULL;
+	struct dns_fake_tsig_rec fake_tsig = {};
+	struct dns_tsig_record tsig = {};
+	struct dns_res_rec *tsig_rec = NULL;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	time_t now = time(NULL);
+	int ret;
+	bool ok;
+
+	if (p->arcount >= UINT16_MAX) {
+		ret = ERANGE;
+		goto fail;
+	}
+
+	/* Marshal the packet to sign */
+	ndr_err = ndr_push_struct_blob(&packet_blob,
+				       frame,
+				       p,
+				       (ndr_push_flags_fn_t)
+					       ndr_push_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		ret = ndr_map_error2errno(ndr_err);
+		goto fail;
+	}
+
+	/* Create the fake TSIG record for hashing */
+	fake_tsig = (struct dns_fake_tsig_rec){
+		.name = keyname,
+		.rr_class = DNS_QCLASS_ANY,
+		.algorithm_name = algorithmname,
+		.time = now,
+		.fudge = 300,
+	};
+
+	ndr_err = ndr_push_struct_blob(&tsig_blob,
+				       frame,
+				       &fake_tsig,
+				       (ndr_push_flags_fn_t)
+					       ndr_push_dns_fake_tsig_rec);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		ret = ndr_map_error2errno(ndr_err);
+		goto fail;
+	}
+
+	ok = data_blob_append(frame,
+			      &packet_blob,
+			      tsig_blob.data,
+			      tsig_blob.length);
+	if (!ok) {
+		goto nomem;
+	}
+
+	status = sign(gensec,
+		      frame,
+		      packet_blob.data,
+		      packet_blob.length,
+		      packet_blob.data,
+		      packet_blob.length,
+		      &mic);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = map_errno_from_nt_status(status);
+		goto fail;
+	}
+
+	if (mic.length > UINT16_MAX) {
+		ret = ERANGE;
+		goto fail;
+	}
+
+	/* Add TSIG to additional records */
+
+	additional = talloc_realloc(p,
+				    p->additional,
+				    struct dns_res_rec,
+				    p->arcount + 1);
+	if (additional == NULL) {
+		goto nomem;
+	}
+
+	p->additional = additional;
+	tsig_rec = &p->additional[p->arcount];
+
+	tsig = (struct dns_tsig_record){
+		.algorithm_name = talloc_strdup(additional, algorithmname),
+		.time_prefix = 0,
+		.time = now,
+		.fudge = 300,
+		.mac_size = mic.length,
+		.mac = talloc_memdup(additional, mic.data, mic.length),
+		.original_id = p->id,
+	};
+
+	if (tsig.algorithm_name == NULL ||
+	    (mic.length > 0 && tsig.mac == NULL)) {
+		goto nomem;
+	}
+
+	*tsig_rec = (struct dns_res_rec){
+		.name = talloc_strdup(additional, keyname),
+		.rr_type = DNS_QTYPE_TSIG,
+		.rr_class = DNS_QCLASS_ANY,
+		.length = 1,
+		.rdata.tsig_record = tsig,
+	};
+	if (tsig_rec->name == NULL) {
+		goto nomem;
+	}
+
+	p->arcount += 1;
+
+	TALLOC_FREE(frame);
+
+	return 0;
+
+nomem:
+	ret = ENOMEM;
+fail:
+	TALLOC_FREE(frame);
+	return ret;
 }
