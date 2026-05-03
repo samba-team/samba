@@ -171,6 +171,7 @@ do_update:
 		fstrcpy( dns_server, nameservers[i].hostname );
 
 		dns_err = DoDNSUpdate(dns_server,
+				      dns_server,
 				      dnsdomain,
 				      machine_name,
 				      creds,

@@ -34,7 +34,8 @@
 
 struct cli_credentials;
 
-DNS_ERROR DoDNSUpdate(const char *pszServerName,
+DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
+		      const char *pszServerName,
 		      const char *pszDomainName,
 		      const char *pszHostName,
 		      struct cli_credentials *creds,

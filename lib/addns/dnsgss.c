@@ -149,7 +149,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int(struct dns_connection *conn,
 	return err;
 }
 
-DNS_ERROR dns_negotiate_sec_ctx(const char *servername,
+DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 				const char *keyname,
 				struct gensec_security *gensec,
 				enum dns_ServerType srv_type)
@@ -158,7 +158,7 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *servername,
 	DNS_ERROR err;
 	struct dns_connection *conn = NULL;
 
-	err = dns_open_connection( servername, DNS_TCP, frame, &conn );
+	err = dns_open_connection(serveraddress, DNS_TCP, frame, &conn);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_negotiate_gss_ctx_int(conn, keyname,

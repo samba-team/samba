@@ -31,7 +31,8 @@
 /*********************************************************************
 *********************************************************************/
 
-static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerName,
+static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerAddress,
+					    const char *pszServerName,
 					    const char *pszDomainName,
 					    const char *keyname,
 					    enum dns_ServerType srv_type,
@@ -79,7 +80,7 @@ static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerName,
 		goto error;
 	}
 
-	err = dns_negotiate_sec_ctx(pszServerName,
+	err = dns_negotiate_sec_ctx(pszServerAddress,
 				    keyname,
 				    ans->gensec_security,
 				    srv_type);
@@ -94,7 +95,8 @@ static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerName,
 	return err;
 }
 
-DNS_ERROR DoDNSUpdate(const char *pszServerName,
+DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
+		      const char *pszServerName,
 		      const char *pszDomainName,
 		      const char *pszHostName,
 		      struct cli_credentials *creds,
@@ -125,7 +127,7 @@ DNS_ERROR DoDNSUpdate(const char *pszServerName,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	err = dns_open_connection( pszServerName, DNS_TCP, mem_ctx, &conn );
+	err = dns_open_connection(pszServerAddress, DNS_TCP, mem_ctx, &conn);
 	if (!ERR_DNS_IS_OK(err)) {
 		goto error;
 	}
@@ -203,7 +205,8 @@ DNS_ERROR DoDNSUpdate(const char *pszServerName,
 			goto error;
 		}
 
-		err = DoDNSUpdateNegotiateGensec(pszServerName,
+		err = DoDNSUpdateNegotiateGensec(pszServerAddress,
+						 pszServerName,
 						 pszDomainName,
 						 keyname,
 						 DNS_SRV_ANY,
@@ -213,7 +216,8 @@ DNS_ERROR DoDNSUpdate(const char *pszServerName,
 
 		/* retry using the Windows 2000 DNS hack */
 		if (!ERR_DNS_IS_OK(err)) {
-			err = DoDNSUpdateNegotiateGensec(pszServerName,
+			err = DoDNSUpdateNegotiateGensec(pszServerAddress,
+							 pszServerName,
 							 pszDomainName,
 							 keyname,
 							 DNS_SRV_WIN2000,

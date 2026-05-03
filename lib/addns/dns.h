@@ -301,7 +301,7 @@ const char *dns_errstr(DNS_ERROR err);
 
 struct gensec_security;
 
-DNS_ERROR dns_negotiate_sec_ctx(const char *servername,
+DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 				const char *keyname,
 				struct gensec_security *gensec,
 				enum dns_ServerType srv_type);
