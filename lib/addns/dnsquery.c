@@ -266,12 +266,15 @@ static bool ads_dns_add_ns_ip(struct dns_rr_ns *nss,
 }
 
 struct ads_dns_lookup_ns_state {
+	struct tevent_context *ev;
 	uint32_t timeout;
 	struct dns_rr_ns *nss;
 	size_t num_nss;
+	size_t num_pending;
 };
 
 static void ads_dns_lookup_ns_done(struct tevent_req *subreq);
+static void ads_dns_lookup_ns_in_done(struct tevent_req *subreq);
 
 struct tevent_req *ads_dns_lookup_ns_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
@@ -286,6 +289,7 @@ struct tevent_req *ads_dns_lookup_ns_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->timeout = timeout;
 
 	subreq = dns_lookup_send(state, ev, NULL, name, DNS_QCLASS_IN,
@@ -306,6 +310,7 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 	int ret;
 	struct dns_name_packet *reply;
 	uint16_t i, idx;
+	struct timeval endtime;
 
 	ret = dns_lookup_recv(subreq, state, &reply);
 	TALLOC_FREE(subreq);
@@ -361,7 +366,94 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 		}
 	}
 
-	tevent_req_done(req);
+	if (state->timeout == 0) {
+		/*
+		 * Queries for IPs don't have time, don't schedule
+		 * them.
+		 */
+		tevent_req_done(req);
+		return;
+	}
+	endtime = tevent_timeval_current_ofs(state->timeout, 0);
+
+	/*
+	 * Launch address queries for any NS records that don't have
+	 * IP addresses from the additional section
+	 */
+	for (i = 0; i < state->num_nss; i++) {
+		struct dns_rr_ns *ns = &state->nss[i];
+		size_t num_ips = talloc_array_length(ns->ss_s);
+		bool ok;
+
+		if (num_ips > 0) {
+			/* Already have IPs from additional records */
+			continue;
+		}
+
+		subreq = ads_dns_lookup_in_send(state,
+						state->ev,
+						ns->hostname);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					ads_dns_lookup_ns_in_done,
+					req);
+
+		ok = tevent_req_set_endtime(subreq, state->ev, endtime);
+		if (!ok) {
+			tevent_req_oom(req);
+			return;
+		}
+
+		state->num_pending += 1;
+	}
+
+	if (state->num_pending == 0) {
+		/* All NS records already have IPs, we're done */
+		tevent_req_done(req);
+		return;
+	}
+}
+
+static void ads_dns_lookup_ns_in_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct ads_dns_lookup_ns_state *state = tevent_req_data(
+		req, struct ads_dns_lookup_ns_state);
+	size_t num_addrs = 0;
+	char **hostnames = NULL;
+	struct samba_sockaddr *addrs = NULL;
+	NTSTATUS status;
+
+	status = ads_dns_lookup_in_recv(subreq, state, &hostnames, &addrs);
+	TALLOC_FREE(subreq);
+
+	state->num_pending -= 1;
+
+	num_addrs = talloc_array_length(addrs);
+
+	if (NT_STATUS_IS_OK(status) && num_addrs > 0) {
+		size_t j;
+		bool ok;
+
+		/* Add all A records for this hostname */
+		for (j = 0; j < num_addrs; j++) {
+			ok = ads_dns_add_ns_ip(state->nss,
+					       state->num_nss,
+					       hostnames[0],
+					       &addrs[j]);
+			if (!ok) {
+				tevent_req_oom(req);
+				return;
+			}
+		}
+	}
+
+	if (state->num_pending == 0) {
+		tevent_req_done(req);
+	}
 }
 
 NTSTATUS ads_dns_lookup_ns_recv(struct tevent_req *req,
