@@ -297,8 +297,10 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 			continue;
 		}
 
-		state->nss[idx].hostname = talloc_move(state->nss,
-						       &an->rdata.ns_record);
+		state->nss[idx] = (struct dns_rr_ns){
+			.hostname = talloc_move(state->nss,
+						&an->rdata.ns_record),
+		};
 		idx += 1;
 	}
 
