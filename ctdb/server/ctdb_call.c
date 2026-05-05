@@ -1958,7 +1958,7 @@ child_finished:
 
 	if (rev_hdl->fde == NULL) {
 		D_ERR("Failed to set up fd event for revokechild process\n");
-		talloc_free(rev_hdl);
+		goto err_out;
 	}
 	tevent_fd_set_auto_close(rev_hdl->fde);
 
