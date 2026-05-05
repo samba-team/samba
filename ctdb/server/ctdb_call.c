@@ -1635,6 +1635,17 @@ static int deferred_call_destructor(struct revokechild_deferred_call *dcall)
 	return 0;
 }
 
+static void revokechild_finish(struct revokechild_handle *rev_hdl)
+{
+	if (rev_hdl->fd[0] != -1) {
+		close(rev_hdl->fd[0]);
+	}
+	if (rev_hdl->fd[1] != -1) {
+		close(rev_hdl->fd[1]);
+	}
+	ctdb_kill(rev_hdl->ctdb, rev_hdl->child, SIGKILL);
+}
+
 static int revokechild_destructor(struct revokechild_handle *rev_hdl)
 {
 	struct revokechild_deferred_call *now_list = NULL;
@@ -1644,13 +1655,7 @@ static int revokechild_destructor(struct revokechild_handle *rev_hdl)
 		talloc_free(rev_hdl->fde);
 	}
 
-	if (rev_hdl->fd[0] != -1) {
-		close(rev_hdl->fd[0]);
-	}
-	if (rev_hdl->fd[1] != -1) {
-		close(rev_hdl->fd[1]);
-	}
-	ctdb_kill(rev_hdl->ctdb, rev_hdl->child, SIGKILL);
+	revokechild_finish(rev_hdl);
 
 	DLIST_REMOVE(rev_hdl->ctdb_db->revokechild_active, rev_hdl);
 
@@ -1958,6 +1963,7 @@ child_finished:
 
 	if (rev_hdl->fde == NULL) {
 		D_ERR("Failed to set up fd event for revokechild process\n");
+		revokechild_finish(rev_hdl);
 		goto err_out;
 	}
 	tevent_fd_set_auto_close(rev_hdl->fde);
