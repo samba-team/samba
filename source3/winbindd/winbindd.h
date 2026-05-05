@@ -113,6 +113,7 @@ struct getgrent_state {
 /* Our connection to the DC */
 
 struct winbindd_cm_conn {
+	bool ignore_smb_disconnected;
 	struct cli_state *cli;
 
 	enum dcerpc_AuthLevel auth_level;
