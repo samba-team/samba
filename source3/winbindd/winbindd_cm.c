@@ -619,6 +619,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 				      struct smbXcli_transport **ptransport,
 				      const char *controller,
 				      struct cli_state **cli,
+				      bool *ignore_smb_disconnected,
 				      bool *retry)
 {
 	bool try_ipc_auth = false;
@@ -634,6 +635,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS tmp_status;
 	NTSTATUS tcon_status = NT_STATUS_NETWORK_NAME_DELETED;
+	bool require_smb = true;
 
 	enum smb_signing_setting smb_sign_client_connections = lp_client_ipc_signing();
 
@@ -747,6 +749,24 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		 * an anonymous IPC$ connection anyway.
 		 */
 		try_ipc_auth = false;
+
+		/*
+		 * Unless we have an NT4 trust we don't
+		 * need an smb connection.
+		 */
+		switch (domain->secure_channel_type) {
+		case SEC_CHAN_BDC:
+			if (!IS_AD_DC) {
+				break;
+			}
+			FALL_THROUGH;
+		case SEC_CHAN_RODC:
+		case SEC_CHAN_DNS_DOMAIN:
+			require_smb = false;
+			break;
+		default:
+			break;
+		}
 	}
 
 	if (try_ipc_auth) {
@@ -897,6 +917,25 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		goto session_setup_done;
 	}
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) && !require_smb) {
+		/*
+		 * This likely means we're on a DC
+		 * and the peer has 'Require NTLMv2 session security'
+		 * which means anonymous NTLMSSP is not supported
+		 * or it disabled NTLMSSP completely.
+		 *
+		 * If the destination domain is an AD domain
+		 * we won't use the smb connection anyway
+		 * only ncacn_ip_tcp.
+		 *
+		 * So disconnect the smb connection and
+		 * pretent everything went fine.
+		 */
+		DBG_NOTICE("ignore unsupported anon session to %s\n",
+			   controller);
+		goto ignore_anon_error;
+	}
+
 	DEBUG(1, ("anonymous session setup to %s failed with %s\n",
 		  controller, nt_errstr(result)));
 
@@ -918,6 +957,23 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	result = cli_tree_connect(*cli, "IPC$", "IPC", NULL);
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) && !require_smb) {
+		/*
+		 * This likely means we're on a DC
+		 * and the peer is Samba with 'restrict anonymous = 2'
+		 * which means anonymous tree connect to IPC$ fails.
+		 *
+		 * If the destination domain is an AD domain
+		 * we won't use the smb connection anyway
+		 * only ncacn_ip_tcp.
+		 *
+		 * So disconnect the smb connection and
+		 * pretent everything went fine.
+		 */
+		DBG_NOTICE("ignore unsupported anon tcon to %s\n",
+			   controller);
+		goto ignore_anon_error;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));
 		goto done;
@@ -925,7 +981,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	tcon_status = result;
 
 	/* cache the server name for later connections */
-
+store_cache:
 	saf_store(domain->name, controller);
 	if (domain->alt_name) {
 		saf_store(domain->alt_name, controller);
@@ -957,6 +1013,13 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	return result;
+
+ignore_anon_error:
+	smbXcli_conn_disconnect((*cli)->conn,
+				NT_STATUS_CANT_OPEN_ANONYMOUS);
+	*ignore_smb_disconnected = true;
+	result = tcon_status = NT_STATUS_OK;
+	goto store_cache;
 }
 
 /*******************************************************************
@@ -1729,10 +1792,13 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			break;
 		}
 
+		new_conn->ignore_smb_disconnected = false;
 		new_conn->cli = NULL;
 
 		result = cm_prepare_connection(domain, &xtp, domain->dcname,
-			&new_conn->cli, &retry);
+			&new_conn->cli,
+			&new_conn->ignore_smb_disconnected,
+			&retry);
 		TALLOC_FREE(xtp);
 		if (NT_STATUS_IS_OK(result)) {
 			break;
@@ -1892,9 +1958,11 @@ void close_conns_after_fork(void)
 
 static bool connection_ok(struct winbindd_domain *domain)
 {
-	bool ok;
+	bool ok = true;
 
-	ok = cli_state_is_connected(domain->conn.cli);
+	if (!domain->conn.ignore_smb_disconnected) {
+		ok = cli_state_is_connected(domain->conn.cli);
+	}
 	if (!ok) {
 		DEBUG(3, ("connection_ok: Connection to %s for domain %s is not connected\n",
 			  domain->dcname, domain->name));
