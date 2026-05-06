@@ -317,6 +317,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
+	a_string = talloc_steal(tmp_ctx, a_string);
 
 	for (s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
@@ -478,6 +479,7 @@ error:
 	TALLOC_FREE(a_string);
 
 done:
+	a_string = talloc_steal(mem_ctx, a_string);
 	TALLOC_FREE(tmp_ctx);
 	return a_string;
 }
