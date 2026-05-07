@@ -25,6 +25,8 @@
 #include "system/locale.h"
 #include "debug.h"
 #ifndef SAMBA_UTIL_CORE_ONLY
+#include "lib/util/fault.h"
+#include "lib/util/talloc_stack.h"
 #include "charset/charset.h"
 #else
 #include "charset_compat.h"
@@ -297,3 +299,261 @@ char *talloc_all_string_sub(TALLOC_CTX *ctx,
 	return talloc_string_sub2(ctx, src, pattern, insert,
 			false, false, false);
 }
+
+#ifndef SAMBA_UTIL_CORE_ONLY
+
+bool talloc_string_sub_mixed_quoting(const char *full_cmd, char variable_char)
+{
+	/*
+	 * Try to make sure talloc_string_sub_unsafe()
+	 * won't return NULL, instead talloc_stackframe_pool()
+	 * would panic
+	 */
+	size_t cmd_len = full_cmd != NULL ? strlen(full_cmd) : 0;
+	size_t pool_size = 512 + cmd_len;
+	TALLOC_CTX *frame = talloc_stackframe_pool(pool_size);
+	char *cmd = NULL;
+	bool modified = false;
+	bool masked = false;
+	bool mixed_fallback = false;
+
+	cmd = talloc_string_sub_unsafe(frame,
+				       full_cmd,
+				       variable_char,
+				       "U",  /* unsafe_value */
+				       "'\"%", /* unsafe_characters */
+				       '_',    /* safe_character */
+				       "F",  /* fallback_value */
+				       &modified,
+				       &masked,
+				       &mixed_fallback);
+	if (cmd == NULL) {
+		mixed_fallback = false;
+	}
+	TALLOC_FREE(frame);
+	return mixed_fallback;
+}
+
+char *talloc_string_sub_unsafe(TALLOC_CTX *mem_ctx,
+			       const char *orig_cmd,
+			       char variable_char,
+			       const char *unsafe_value,
+			       const char *unsafe_characters,
+			       char safe_character,
+			       const char *fallback_value,
+			       bool *_modified,
+			       bool *_masked,
+			       bool *_mixed_fallback)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char variable[3] =
+		{ '%', variable_char, '\0' };
+	const char variable_s_quoted[5] =
+		{ '\'', '%', variable_char, '\'', '\0' };
+	const char variable_d_quoted[5] =
+		{ '"', '%', variable_char, '"', '\0' };
+	char *cmd = NULL;
+	char *masked_value = NULL;
+	char *quoted_value = NULL;
+	bool has_s_quotes;
+	bool has_d_quotes;
+	bool has_variable;
+	bool has_variable_s_quoted;
+	bool has_variable_d_quoted;
+	bool modified = false;
+	bool masked = false;
+	bool mixed_fallback = false;
+	bool ok;
+
+	/*
+	 * The unsafe_characters argument should contain
+	 * single and double quotes.
+	 * Otherwise We can't safely handle this.
+	 */
+	SMB_ASSERT(unsafe_characters != NULL);
+	SMB_ASSERT(strchr(unsafe_characters, '\'') != NULL);
+	SMB_ASSERT(strchr(unsafe_characters, '"') != NULL);
+	SMB_ASSERT(strchr(unsafe_characters, '%') != NULL);
+
+	cmd = talloc_strdup(mem_ctx, orig_cmd);
+	if (cmd == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	cmd = talloc_steal(frame, cmd);
+
+	has_variable = strstr(orig_cmd, variable) != NULL;
+	if (!has_variable) {
+		/*
+		 * Nothing to do...
+		 */
+		goto done;
+	}
+	modified = true;
+
+	/*
+	 * Replace all unsafe characters as well as control
+	 * characters.
+	 *
+	 * Note that we start with masked_value = "%u"
+	 * and then replace "%u" with unsafe_value,
+	 * as a result we have a masked version of
+	 * unsafe_value.
+	 *
+	 * And don't allow option injected like
+	 *
+	 * '-h value'
+	 * '--help value'
+	 *
+	 */
+	masked_value = talloc_strdup(frame, variable);
+	if (masked_value == NULL) {
+		goto nomem;
+	}
+	ok = realloc_string_sub_raw(&masked_value,
+				    variable,
+				    unsafe_value,
+				    false, /* replace_once */
+				    false, /* allow_trailing_dollar */
+				    unsafe_characters,
+				    safe_character);
+	if (!ok) {
+		goto nomem;
+	}
+	if (masked_value[0] == '-') {
+		masked_value[0] = safe_character;
+	}
+	masked = strcmp(masked_value, unsafe_value) != 0;
+
+retry:
+
+	has_s_quotes = strchr(cmd, '\'') != NULL;
+	has_d_quotes = strchr(cmd, '"') != NULL;
+	has_variable = strstr(cmd, variable) != NULL;
+	has_variable_s_quoted = strstr(cmd, variable_s_quoted) != NULL;
+	has_variable_d_quoted = strstr(cmd, variable_d_quoted) != NULL;
+
+	if (has_variable_s_quoted) {
+		/*
+		 * In smb.conf we have something like
+		 *
+		 * some script = /usr/bin/script '%u'
+		 *
+		 * It is safe to replace '%u' (or '%J' etc, depending
+		 * on variable_char) with '<masked_value>' if
+		 * masked_value does not contain single quotes. We
+		 * have checked that.
+		 */
+
+		if (quoted_value == NULL) {
+			quoted_value = talloc_asprintf(frame, "'%s'",
+						       masked_value);
+			if (quoted_value == NULL) {
+				goto nomem;
+			}
+		}
+
+		ok = realloc_string_sub_raw(&cmd,
+					    variable_s_quoted,
+					    quoted_value,
+					    false, /* replace_once */
+					    false, /* allow_trailing_dollar */
+					    NULL,  /* unsafe_characters */
+					    '\0'); /* safe_character */
+		if (!ok) {
+			goto nomem;
+		}
+
+		goto retry;
+	}
+
+	if (has_variable_d_quoted && !has_s_quotes) {
+		/*
+		 * replace the "%u"
+		 *
+		 * some script = /usr/bin/script "%u"
+		 *
+		 * with '%u' and try the '%u' -> 'variable' substitution
+		 * again.
+		 */
+
+		ok = realloc_string_sub_raw(&cmd,
+					    variable_d_quoted,
+					    variable_s_quoted,
+					    false, /* replace_once */
+					    false, /* allow_trailing_dollar */
+					    NULL,  /* unsafe_characters */
+					    '\0'); /* safe_character */
+		if (!ok) {
+			goto nomem;
+		}
+
+		goto retry;
+	}
+
+	if (has_variable && !has_s_quotes && !has_d_quotes) {
+		/*
+		 * In this case:
+		 *
+		 * some script = /usr/bin/script %u
+		 *
+		 * we can safely substitute %u -> '%u' and try the
+		 * single quote test again.
+		 */
+
+		ok = realloc_string_sub_raw(&cmd,
+					    variable,
+					    variable_s_quoted,
+					    false, /* replace_once */
+					    false, /* allow_trailing_dollar */
+					    NULL,  /* unsafe_characters */
+					    '\0'); /* safe_character */
+		if (!ok) {
+			goto nomem;
+		}
+
+		goto retry;
+	}
+
+	if (has_variable) {
+		/*
+		 * There are single or double quotes, but not tightly
+		 * bound around a %u.
+		 *
+		 * Or there's a mix of single and double quotes.
+		 *
+		 * We just use a generic fallback value.
+		 * and let the caller warn about this
+		 * and give the admin a hind to fix the smb.conf
+		 * option.
+		 */
+		mixed_fallback = true;
+
+		ok = realloc_string_sub_raw(&cmd,
+					    variable,
+					    fallback_value,
+					    false, /* replace_once */
+					    false, /* allow_trailing_dollar */
+					    NULL,  /* unsafe_characters */
+					    '\0'); /* safe_character */
+		if (!ok) {
+			goto nomem;
+		}
+	}
+
+done:
+	*_modified = modified;
+	*_masked = masked;
+	*_mixed_fallback = mixed_fallback;
+	cmd = talloc_steal(mem_ctx, cmd);
+	TALLOC_FREE(frame);
+	return cmd;
+
+nomem:
+	*_modified = false;
+	*_masked = false;
+	*_mixed_fallback = false;
+	TALLOC_FREE(frame);
+	return NULL;
+}
+#endif /* ! SAMBA_UTIL_CORE_ONLY */
