@@ -83,4 +83,21 @@ char *talloc_all_string_sub(TALLOC_CTX *ctx,
 				const char *src,
 				const char *pattern,
 				const char *insert);
+
+#ifndef SAMBA_UTIL_CORE_ONLY
+bool talloc_string_sub_mixed_quoting(const char *full_cmd, char variable_char);
+
+char *talloc_string_sub_unsafe(TALLOC_CTX *mem_ctx,
+			       const char *orig_cmd,
+			       char variable_char,
+			       const char *unsafe_value,
+			       const char *unsafe_characters,
+			       char safe_character,
+			       const char *fallback_value,
+			       bool *_modified,
+			       bool *_masked,
+			       bool *_mixed_fallback);
+
+#endif /* ! SAMBA_UTIL_CORE_ONLY */
+
 #endif /* _SAMBA_SUBSTITUTE_H_ */
