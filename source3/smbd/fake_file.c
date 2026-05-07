@@ -96,15 +96,14 @@ enum FAKE_FILE_TYPE is_fake_file_path(const char *path)
 enum FAKE_FILE_TYPE is_fake_file(const struct smb_filename *smb_fname)
 {
 	char *fname = NULL;
-	NTSTATUS status;
 	enum FAKE_FILE_TYPE ret;
 
 	if (!smb_fname) {
 		return FAKE_FILE_TYPE_NONE;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	fname = get_full_smb_filename(talloc_tos(), smb_fname);
+	if (fname == NULL) {
 		return FAKE_FILE_TYPE_NONE;
 	}
 

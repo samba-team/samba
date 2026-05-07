@@ -3996,7 +3996,6 @@ static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_str
 static bool vfswrap_is_offline(struct connection_struct *conn,
 			       const struct smb_filename *fname)
 {
-	NTSTATUS status;
 	char *path;
 	bool offline = false;
 
@@ -4011,11 +4010,11 @@ static bool vfswrap_is_offline(struct connection_struct *conn,
 		return false;
 	}
 
-        status = get_full_smb_filename(talloc_tos(), fname, &path);
-        if (!NT_STATUS_IS_OK(status)) {
-                errno = map_errno_from_nt_status(status);
-                return false;
-        }
+	path = get_full_smb_filename(talloc_tos(), fname);
+	if (path == NULL) {
+		errno = ENOMEM;
+		return false;
+	}
 
 	offline = (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
 

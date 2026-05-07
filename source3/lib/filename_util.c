@@ -24,25 +24,19 @@
  * The one legitimate caller currently is smb_fname_str_dbg(), which this
  * could be made static for.
  */
-NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx,
-			       const struct smb_filename *smb_fname,
-			       char **full_name)
+char *get_full_smb_filename(TALLOC_CTX *ctx,
+			    const struct smb_filename *smb_fname)
 {
+	char *ret = talloc_strdup(ctx, smb_fname->base_name);
+
 	if (smb_fname->stream_name) {
 		/* stream_name must always be NULL if there is no stream. */
 		SMB_ASSERT(smb_fname->stream_name[0] != '\0');
 
-		*full_name = talloc_asprintf(ctx, "%s%s", smb_fname->base_name,
-					     smb_fname->stream_name);
-	} else {
-		*full_name = talloc_strdup(ctx, smb_fname->base_name);
+		talloc_asprintf_addbuf(&ret, "%s", smb_fname->stream_name);
 	}
 
-	if (!*full_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
+	return ret;
 }
 
 /**
@@ -136,13 +130,12 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 	struct tm *ptm = NULL;
 	fstring tstr;
 	ssize_t slen;
-	NTSTATUS status;
 
 	if (smb_fname == NULL) {
 		return "";
 	}
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	fname = get_full_smb_filename(talloc_tos(), smb_fname);
+	if (fname == NULL) {
 		return "";
 	}
 	if (smb_fname->twrp == 0) {

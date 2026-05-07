@@ -166,14 +166,13 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	bool offline;
 	char *buf = NULL;
 	size_t buflen;
-	NTSTATUS status;
 	char *path;
 
-        status = get_full_smb_filename(talloc_tos(), fname, &path);
-        if (!NT_STATUS_IS_OK(status)) {
-                errno = map_errno_from_nt_status(status);
-                return false;
-        }
+	path = get_full_smb_filename(talloc_tos(), fname);
+	if (path == NULL) {
+		errno = ENOMEM;
+		return false;
+	}
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
@@ -507,10 +506,10 @@ static NTSTATUS tsmsm_set_offline(struct vfs_handle_struct *handle,
 		return NT_STATUS_OK;
 	}
 
-        status = get_full_smb_filename(talloc_tos(), fname, &path);
-        if (!NT_STATUS_IS_OK(status)) {
-		return status;
-        }
+	path = get_full_smb_filename(talloc_tos(), fname);
+	if (path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Now, call the script */
 	command = talloc_asprintf(tsmd, "%s offline \"%s\"", tsmd->hsmscript, path);

@@ -676,7 +676,6 @@ static const char *smb_fname_str_do_log(struct connection_struct *conn,
 				const struct smb_filename *smb_fname)
 {
 	char *fname = NULL;
-	NTSTATUS status;
 
 	if (smb_fname == NULL) {
 		return "";
@@ -707,8 +706,8 @@ static const char *smb_fname_str_do_log(struct connection_struct *conn,
 		smb_fname = fname_copy;
 	}
 
-	status = get_full_smb_filename(do_log_ctx(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	fname = get_full_smb_filename(do_log_ctx(), smb_fname);
+	if (fname == NULL) {
 		return "";
 	}
 	return fname;
