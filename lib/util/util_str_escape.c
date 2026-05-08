@@ -18,6 +18,7 @@
 */
 
 #include "replace.h"
+#include "system/locale.h"
 #include "lib/util/debug.h"
 #include "lib/util/util_str_escape.h"
 
@@ -28,7 +29,7 @@
  */
 static size_t encoded_length(unsigned char c)
 {
-	if (c != '\\' &&  c > 0x1F) {
+	if (c != '\\' && !iscntrl(c)) {
 		return 1;
 	} else {
 		switch (c) {
@@ -79,7 +80,7 @@ char *log_escape(TALLOC_CTX *frame, const char *in)
 	c = in;
 	e = encoded;
 	while (*c) {
-		if (*c != '\\' && (unsigned char)(*c) > 0x1F) {
+		if (*c != '\\' && !iscntrl((unsigned char)(*c))) {
 			*e++ = *c++;
 		} else {
 			switch (*c) {
