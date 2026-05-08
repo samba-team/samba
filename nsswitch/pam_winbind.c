@@ -1569,12 +1569,32 @@ static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
 
 static int _pam_create_homedir(struct pwb_context *ctx,
 			       const char *dirname,
-			       mode_t mode)
+			       mode_t mode,
+			       uid_t uid,
+			       gid_t gid)
 {
 	int ret;
 
 	ret = mkdir(dirname, mode);
-	if (ret != 0 && errno == EEXIST) {
+	if (ret == 0) {
+		if (uid == 0 && gid == 0) {
+			return PAM_SUCCESS;
+		}
+
+		ret = chown(dirname, uid, gid);
+		if (ret == 0) {
+			return PAM_SUCCESS;
+		}
+
+		_make_remark_format(ctx, PAM_TEXT_INFO,
+				    _("Change owner of user homedir: %s failed: %s"),
+				    dirname, strerror(errno));
+		_pam_log(ctx, LOG_ERR, "failed to chown user homedir: %s (%s)",
+			 dirname, strerror(errno));
+		return PAM_PERM_DENIED;
+	}
+
+	if (errno == EEXIST) {
 		struct stat sbuf;
 
 		ret = stat(dirname, &sbuf);
@@ -1585,32 +1605,16 @@ static int _pam_create_homedir(struct pwb_context *ctx,
 		if (!S_ISDIR(sbuf.st_mode)) {
 			return PAM_PERM_DENIED;
 		}
+
+		return PAM_SUCCESS;
 	}
 
-	if (ret != 0) {
-		_make_remark_format(ctx, PAM_TEXT_INFO,
-				    _("Creating directory: %s failed: %s"),
-				    dirname, strerror(errno));
-		_pam_log(ctx, LOG_ERR, "could not create dir: %s (%s)",
+	_make_remark_format(ctx, PAM_TEXT_INFO,
+			    _("Creating directory: %s failed: %s"),
+			    dirname, strerror(errno));
+	_pam_log(ctx, LOG_ERR, "could not create dir: %s (%s)",
 		 dirname, strerror(errno));
-		 return PAM_PERM_DENIED;
-	}
-
-	return PAM_SUCCESS;
-}
-
-static int _pam_chown_homedir(struct pwb_context *ctx,
-			      const char *dirname,
-			      uid_t uid,
-			      gid_t gid)
-{
-	if (chown(dirname, uid, gid) != 0) {
-		_pam_log(ctx, LOG_ERR, "failed to chown user homedir: %s (%s)",
-			 dirname, strerror(errno));
-		return PAM_PERM_DENIED;
-	}
-
-	return PAM_SUCCESS;
+	return PAM_PERM_DENIED;
 }
 
 static int _pam_mkhomedir(struct pwb_context *ctx)
@@ -1621,7 +1625,6 @@ static int _pam_mkhomedir(struct pwb_context *ctx)
 	char *user_dir = NULL;
 	int ret;
 	const char *username;
-	mode_t mode = 0700;
 	char *safe_ptr = NULL;
 	char *p = NULL;
 
@@ -1638,14 +1641,18 @@ static int _pam_mkhomedir(struct pwb_context *ctx)
 		return PAM_USER_UNKNOWN;
 	}
 	_pam_log_debug(ctx, LOG_DEBUG, "homedir is: %s", pwd->pw_dir);
-
-	ret = _pam_create_homedir(ctx, pwd->pw_dir, 0700);
-	if (ret == PAM_SUCCESS) {
-		ret = _pam_chown_homedir(ctx, pwd->pw_dir,
-					 pwd->pw_uid,
-					 pwd->pw_gid);
+	if (pwd->pw_uid == 0 && pwd->pw_gid == 0) {
+		/*
+		 * Just skip this for root.
+		 */
+		return PAM_SUCCESS;
 	}
 
+	ret = _pam_create_homedir(ctx,
+				  pwd->pw_dir,
+				  0700,
+				  pwd->pw_uid,
+				  pwd->pw_gid);
 	if (ret == PAM_SUCCESS) {
 		return ret;
 	}
@@ -1668,8 +1675,9 @@ static int _pam_mkhomedir(struct pwb_context *ctx)
 	p = pwd->pw_dir;
 
 	while ((token = strtok_r(p, "/", &safe_ptr)) != NULL) {
-
-		mode = 0755;
+		mode_t mode = 0755;
+		uid_t uid = 0;
+		gid_t gid = 0;
 
 		p = NULL;
 
@@ -1684,17 +1692,17 @@ static int _pam_mkhomedir(struct pwb_context *ctx)
 		if (strcmp(token, user_dir) == 0) {
 			_pam_log_debug(ctx, LOG_DEBUG, "assuming last directory: %s", token);
 			mode = 0700;
+			uid = pwd->pw_uid;
+			gid = pwd->pw_gid;
 		}
 
-		ret = _pam_create_homedir(ctx, create_dir, mode);
+		ret = _pam_create_homedir(ctx, create_dir, mode, uid, gid);
 		if (ret != PAM_SUCCESS) {
 			return ret;
 		}
 	}
 
-	return _pam_chown_homedir(ctx, create_dir,
-				  pwd->pw_uid,
-				  pwd->pw_gid);
+	return PAM_SUCCESS;
 }
 
 /* talk to winbindd */
