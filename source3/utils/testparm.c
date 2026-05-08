@@ -928,6 +928,14 @@ static void do_per_share_checks(int s)
 			"parameter is ignored when using CUPS libraries.\n\n",
 			lp_servicename(talloc_tos(), lp_sub, s));
 	}
+	if (talloc_string_sub_mixed_quoting(lp_print_command(s), 'J')) {
+		fprintf(stderr,
+			"WARNING: Service %s defines a 'print command' "
+			"with mixed quoting and %%J.\n"
+			"CVE-2026-4480 changed the way %%J substitution works.\n"
+			"You should use single quotes (directly) around '%%J'.\n\n",
+			lp_servicename(talloc_tos(), lp_sub, s));
+	}
 
 	vfs_objects = lp_vfs_objects(s);
 	if (vfs_objects && str_list_check(vfs_objects, "fruit")) {
