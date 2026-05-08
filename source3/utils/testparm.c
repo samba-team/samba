@@ -384,6 +384,7 @@ static int do_global_checks(void)
 	const char **lp_ptr = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	const char *check_pw_script = NULL;
 	int ival;
 
 	fprintf(stderr, "\n");
@@ -854,6 +855,17 @@ static int do_global_checks(void)
 			"(--with-systemd-userdb). This option will not "
 			"have any effect.\n\n");
 #endif
+	}
+
+	check_pw_script = lp_check_password_script(talloc_tos(), lp_sub);
+	if (talloc_string_sub_mixed_quoting(check_pw_script, 'u')) {
+		fprintf(stderr,
+			"WARNING: You are using 'check password script' "
+			"with mixed quoting and %%u.\n"
+			"CVE-2026-4408 changed the way %%u substitution works. \n"
+			"You should use the SAMBA_CPS_ACCOUNT_NAME "
+			"environment variable exported to the script, or\n"
+			"at least use single quotes (directly) around '%%u'.\n\n");
 	}
 
 	return ret;
