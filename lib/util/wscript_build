@@ -420,3 +420,9 @@ else:
                      deps='cmocka replace talloc stable_sort',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA3_BINARY('test_string_sub',
+                      source='tests/test_string_sub.c',
+                      deps='''cmocka replace talloc samba-util
+                      ''',
+                      for_selftest=True)

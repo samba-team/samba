@@ -569,6 +569,8 @@ plantestsuite("samba.unittests.sys_rw", "none",
               [os.path.join(bindir(), "default/lib/util/test_sys_rw")])
 plantestsuite("samba.unittests.stable_sort", "none",
               [os.path.join(bindir(), "default/lib/util/test_stable_sort")])
+plantestsuite("samba.unittests.test_string_sub", "none",
+              [os.path.join(bindir(), "test_string_sub")])
 plantestsuite("samba.unittests.ntlm_check", "none",
               [os.path.join(bindir(), "default/libcli/auth/test_ntlm_check")])
 plantestsuite("samba.unittests.gnutls", "none",
