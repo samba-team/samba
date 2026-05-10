@@ -1095,7 +1095,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	if (pid == 0) {
 		enum smb_transport_type transport_type = s->transport.type;
 		struct tstream_tls_params *quic_tlsp = NULL;
-		char addrstr[INET6_ADDRSTRLEN];
+		struct ssaddr_buf buf;
 		NTSTATUS status = NT_STATUS_OK;
 
 		if (transport_type == SMB_TRANSPORT_TYPE_QUIC) {
@@ -1138,8 +1138,8 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
-		print_sockaddr(addrstr, sizeof(addrstr), &caddr.u.ss);
-		process_set_title("smbd[%s]", "client [%s]", addrstr);
+		process_set_title("smbd[%s]", "client [%s]",
+				  ssaddr_str_buf(&caddr, &buf));
 
 		if (transport_type == SMB_TRANSPORT_TYPE_QUIC) {
 			/*
@@ -1818,13 +1818,13 @@ static void smbd_close_socket_for_ip(struct smbd_parent_context *parent,
 			continue;
 		}
 		if (sockaddr_equal(&saddr.u.sa, &addr->u.sa)) {
-			char addrstr[INET6_ADDRSTRLEN];
+			struct ssaddr_buf addrstr_buf;
+			char *addrstr = ssaddr_str_buf(addr, &addrstr_buf);
 			DATA_BLOB blob;
 			NTSTATUS status;
 
 			DLIST_REMOVE(parent->sockets, s);
 			TALLOC_FREE(s);
-			print_sockaddr(addrstr, sizeof(addrstr), &addr->u.ss);
 			DBG_NOTICE("smbd: Closed listening socket for %s\n",
 				   addrstr);
 
@@ -1873,13 +1873,12 @@ static void smbd_addr_changed(struct tevent_req *req)
 	}
 
 	if (type == ADDRCHANGE_DEL) {
-		char addrstr[INET6_ADDRSTRLEN];
-
-		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
+		struct ssaddr_buf addrstr_buf;
 
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s "
 			   "on if_index %u\n",
-			   addrstr, if_index);
+			   ssaddr_str_buf(&addr, &addrstr_buf),
+			   if_index);
 
 		smbd_close_socket_for_ip(state->parent, state->msg_ctx, &addr);
 
@@ -1887,10 +1886,9 @@ static void smbd_addr_changed(struct tevent_req *req)
 	}
 
 	if (type == ADDRCHANGE_ADD) {
-		char addrstr[INET6_ADDRSTRLEN];
+		struct ssaddr_buf addrstr_buf;
+		char *addrstr = ssaddr_str_buf(&addr, &addrstr_buf);
 		size_t num_ok;
-
-		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
 
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s "
 			   "on if_index %u\n",
