@@ -885,6 +885,38 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	return dest;
 }
 
+char *ssaddr_str_buf(const struct samba_sockaddr *addr, struct ssaddr_buf *dst)
+{
+	socklen_t salen;
+
+	switch (addr->u.ss.ss_family) {
+	case AF_INET:
+		salen = sizeof(addr->u.in);
+		break;
+	case AF_INET6:
+		salen = sizeof(addr->u.in6);
+		break;
+	case AF_UNIX:
+		/*
+		 * Not sure what getnameinfo does for AF_UNIX, but
+		 * lets put it in for completeness.
+		 */
+		salen = sizeof(addr->u.un);
+		break;
+	default:
+		snprintf(dst->buf,
+			 sizeof(dst->buf),
+			 "AF %d unknown",
+			 addr->u.ss.ss_family);
+		return dst->buf;
+	}
+
+	return print_sockaddr_len(dst->buf,
+				  sizeof(dst->buf),
+				  &addr->u.sa,
+				  salen);
+}
+
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
 typedef struct smb_socket_option {

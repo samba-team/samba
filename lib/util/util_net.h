@@ -112,6 +112,10 @@ char *print_sockaddr(char *dest,
 char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 			const struct sockaddr_storage *pss);
 
+struct ssaddr_buf { char buf[INET6_ADDRSTRLEN]; };
+char *ssaddr_str_buf(const struct samba_sockaddr *addr,
+		     struct ssaddr_buf *dst);
+
 void set_socket_options(int fd, const char *options);
 
 bool sockaddr_storage_to_samba_sockaddr(
