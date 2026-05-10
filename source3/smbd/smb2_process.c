@@ -111,11 +111,11 @@ NTSTATUS read_packet_remainder(int fd, char *buffer,
 
 	status = read_fd_with_timeout(fd, buffer, len, len, timeout, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		char addr[INET6_ADDRSTRLEN];
-		DEBUG(0, ("read_fd_with_timeout failed for client %s read "
-			  "error = %s.\n",
-			  get_peer_addr(fd, addr, sizeof(addr)),
-			  nt_errstr(status)));
+		struct ssaddr_buf buf;
+		DBG_ERR("read_fd_with_timeout failed for client %s read "
+			"error = %s.\n",
+			get_peer_addr(fd, &buf),
+			nt_errstr(status));
 	}
 	return status;
 }

@@ -560,45 +560,6 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 }
 
 /*******************************************************************
- Return the IP addr of the remote end of a socket as a string.
- Optionally return the struct sockaddr_storage.
- ******************************************************************/
-
-static const char *get_peer_addr_internal(int fd,
-				char *addr_buf,
-				size_t addr_buf_len,
-				struct sockaddr *pss,
-				socklen_t *plength)
-{
-	struct sockaddr_storage ss;
-	socklen_t length = sizeof(ss);
-
-	strlcpy(addr_buf,"0.0.0.0",addr_buf_len);
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-
-	if (pss == NULL) {
-		pss = (struct sockaddr *)&ss;
-		plength = &length;
-	}
-
-	if (getpeername(fd, (struct sockaddr *)pss, plength) < 0) {
-		int level = (errno == ENOTCONN) ? 2 : 0;
-		DEBUG(level, ("getpeername failed. Error was %s\n",
-			       strerror(errno)));
-		return addr_buf;
-	}
-
-	print_sockaddr_len(addr_buf,
-			addr_buf_len,
-			pss,
-			*plength);
-	return addr_buf;
-}
-
-/*******************************************************************
  Matchname - determine if host name matches IP address. Used to
  confirm a hostname lookup to prevent spoof attacks.
 ******************************************************************/
@@ -725,9 +686,28 @@ static void store_nc(const struct name_addr_pair *nc)
  Return the IP addr of the remote end of a socket as a string.
  ******************************************************************/
 
-const char *get_peer_addr(int fd, char *addr, size_t addr_len)
+const char *get_peer_addr(int fd, struct ssaddr_buf *buf)
 {
-	return get_peer_addr_internal(fd, addr, addr_len, NULL, NULL);
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
+	int ret;
+
+	(void)strlcpy(buf->buf, "0.0.0.0", sizeof(buf->buf));
+
+	if (fd == -1) {
+		return buf->buf;
+	}
+
+	ret = getpeername(fd, &addr.u.sa, &addr.sa_socklen);
+	if (ret == -1) {
+		int level = (errno == ENOTCONN) ? 2 : 0;
+		DEBUG(level, ("getpeername failed. Error was %s\n",
+			       strerror(errno)));
+		return buf->buf;
+	}
+
+	return ssaddr_str_buf(&addr, buf);
 }
 
 int get_remote_hostname(const struct tsocket_address *remote_address,

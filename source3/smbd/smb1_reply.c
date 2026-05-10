@@ -3833,13 +3833,13 @@ static NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 		status = read_smb_length_return_keepalive(fd, inbuf, timeout,
 							  len);
 		if (!NT_STATUS_IS_OK(status)) {
-			char addr[INET6_ADDRSTRLEN];
+			struct ssaddr_buf buf;
 			/* Try and give an error message
 			 * saying what client failed. */
-			DEBUG(0, ("read_smb_length_return_keepalive failed for "
-				  "client %s read error = %s.\n",
-				  get_peer_addr(fd,addr,sizeof(addr)),
-				  nt_errstr(status)));
+			DBG_ERR("read_smb_length_return_keepalive failed for "
+				"client %s read error = %s.\n",
+				get_peer_addr(fd, &buf),
+				nt_errstr(status));
 			return status;
 		}
 

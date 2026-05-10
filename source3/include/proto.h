@@ -507,7 +507,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					void (*after_connect)(int fd, void *private_data),
 					void *private_data);
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd);
-const char *get_peer_addr(int fd, char *addr, size_t addr_len);
+const char *get_peer_addr(int fd, struct ssaddr_buf *buf);
 
 struct tsocket_address;
 
