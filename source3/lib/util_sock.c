@@ -330,13 +330,12 @@ int open_socket_in_protocol(
 	/* now we've got a socket - we need to bind it */
 	ret = bind(sock, &addr.u.sa, addr.sa_socklen);
 	if (ret == -1) {
-		char addrstr[INET6_ADDRSTRLEN];
+		struct ssaddr_buf buf;
 
 		ret = -errno;
 
-		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
-		DBG_DEBUG("bind for %s port %"PRIu16" failed: %s\n",
-			  addrstr,
+		DBG_DEBUG("bind for %s port %" PRIu16 " failed: %s\n",
+			  ssaddr_str_buf(&addr, &buf),
 			  port,
 			  strerror(-ret));
 		goto fail;
@@ -412,7 +411,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					void (*after_connect)(int fd, void *private_data),
 					void *private_data)
 {
-	char addr[INET6_ADDRSTRLEN];
+	struct ssaddr_buf buf;
 	struct tevent_req *req;
 	struct open_socket_out_state *state;
 	NTSTATUS status;
@@ -470,8 +469,9 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		state->saddr.sa_socklen = sizeof(struct sockaddr_un);
 	}
 
-	print_sockaddr(addr, sizeof(addr), &state->saddr.u.ss);
-	DEBUG(3,("Connecting to %s at port %u\n", addr,	(unsigned int)port));
+	DBG_NOTICE("Connecting to %s at port %" PRIu16 "\n",
+		   ssaddr_str_buf(&state->saddr, &buf),
+		   port);
 
 	state->connect_subreq = async_connect_send(
 		state, state->ev, state->fd, &state->saddr.u.sa,

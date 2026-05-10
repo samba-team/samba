@@ -215,14 +215,13 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<count; i++) {
-		char addr[INET6_ADDRSTRLEN];
 		struct ip_service_name *r = &dclist[i];
-
-		print_sockaddr(addr, sizeof(addr),
-			       &salist[i].u.ss);
+		struct ssaddr_buf addr_buf;
 
 		r->sa = salist[i];
-		r->hostname = talloc_strdup(mem_ctx, addr);
+		r->hostname = talloc_strdup(mem_ctx,
+					    ssaddr_str_buf(&salist[i],
+							   &addr_buf));
 		if (!r->hostname) {
 			TALLOC_FREE(salist);
 			TALLOC_FREE(dclist);
@@ -514,8 +513,7 @@ static NTSTATUS make_dc_info_from_cldap_reply(
 	struct GUID *dc_domain_guid = NULL;
 	const char *dc_server_site = NULL;
 	const char *dc_client_site = NULL;
-
-	char addr[INET6_ADDRSTRLEN];
+	struct ssaddr_buf addr_buf;
 
 	if (r->command == LOGON_SAM_LOGON_PAUSE_RESPONSE ||
 	    r->command == LOGON_SAM_LOGON_PAUSE_RESPONSE_EX)
@@ -524,8 +522,7 @@ static NTSTATUS make_dc_info_from_cldap_reply(
 	}
 
 	if (sa != NULL) {
-		print_sockaddr(addr, sizeof(addr), &sa->u.ss);
-		dc_address = addr;
+		dc_address = ssaddr_str_buf(sa, &addr_buf);
 		dc_address_type = DS_ADDRESS_TYPE_INET;
 	} else {
 		if (r->sockaddr.pdc_ip) {

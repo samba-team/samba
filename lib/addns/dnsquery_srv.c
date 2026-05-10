@@ -182,12 +182,12 @@ static void dns_rr_srv_fill_done(
 	srv->ss_s = tmp;
 
 	for (i=0; i<num_addrs; i++) {
-		char addr[INET6_ADDRSTRLEN];
+		struct ssaddr_buf addr_buf;
 		DBG_INFO("async DNS lookup for %s [%zu] got %s -> %s\n",
 			 srv->hostname,
 			 i,
 			 hostnames_out[i],
-			 print_sockaddr(addr, sizeof(addr), &addrs[i].u.ss));
+			 ssaddr_str_buf(&addrs[i], &addr_buf));
 		tmp[num_ips + i] = addrs[i];
 	}
 	srv->num_ips = num_ips + num_addrs;

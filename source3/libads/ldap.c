@@ -448,15 +448,14 @@ again:
 	num_requests = 0;
 
 	for (i = 0; i < count; i++) {
-		char server[INET6_ADDRSTRLEN];
+		struct ssaddr_buf server_buf;
+		char *server = ssaddr_str_buf(&sa_list[i], &server_buf);
 		bool has_entry = false;
 		int ret;
 
 		if (is_zero_addr(&sa_list[i].u.ss)) {
 			continue;
 		}
-
-		print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
 		has_entry = has_negative_conn_cache_entry(domain, server);
 		if (has_entry) {
@@ -519,9 +518,8 @@ again:
 
 	for (i = 0; i < num_requests; i++) {
 		struct NETLOGON_SAM_LOGON_RESPONSE_EX *cldap_reply = NULL;
-		char server[INET6_ADDRSTRLEN];
-
-		print_sockaddr(server, sizeof(server), &req_sa_list[i]->u.ss);
+		struct ssaddr_buf server_buf;
+		char *server = ssaddr_str_buf(req_sa_list[i], &server_buf);
 
 		if (responses[i] == NULL) {
 			add_failed_connection_entry(
@@ -644,10 +642,10 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 	   the corresponding DNS method */
 	if (*realm) {
 		for (i = 0; i < count; ++i) {
-			char server[INET6_ADDRSTRLEN];
+			struct ssaddr_buf server_buf;
+			char *server = ssaddr_str_buf(&sa_list[i],
+						      &server_buf);
 			bool has_entry;
-
-			print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
 			has_entry = has_negative_conn_cache_entry(
 					realm,

@@ -2231,11 +2231,10 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (src_sa.u.ss.ss_family != AF_INET) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &src_sa.u.ss);
+		struct ssaddr_buf addr_buf;
 		DEBUG(3,("resolve_wins: cannot receive WINS replies "
 			"on IPv6 address %s\n",
-			addr));
+			ssaddr_str_buf(&src_sa, &addr_buf)));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		goto fail;
 	}

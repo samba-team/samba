@@ -404,12 +404,11 @@ static void swn_service_interface_changed(struct swn_service_globals *swn,
 					  struct swn_service_interface *iface)
 {
 	struct swn_service_registration *reg = NULL;
-	char addr[INET6_ADDRSTRLEN] = { 0, };
+	struct ssaddr_buf buf;
 
-	print_sockaddr(addr, sizeof(addr), &iface->addr.u.ss);
 	DBG_NOTICE("addr[%s] state[%u] local_iface[%u] "
 		   "current_vnn[%"PRIu32"] generation[%"PRIu64"][%"PRIu64"]\n",
-		   addr,
+		   ssaddr_str_buf(&iface->addr, &buf),
 		   iface->state,
 		   iface->local_iface,
 		   iface->current_vnn,
