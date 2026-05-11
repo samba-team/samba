@@ -698,7 +698,7 @@ struct swn_dcesrv_connection {
 	struct dcesrv_connection *conn;
 	struct samba_sockaddr cli_addr;
 	struct samba_sockaddr srv_addr;
-	char addr[INET6_ADDRSTRLEN];
+	struct ssaddr_buf addr;
 };
 
 static int swn_dcesrv_connection_release_ip(struct tevent_context *ev,
@@ -714,7 +714,7 @@ static int swn_dcesrv_connection_release_ip(struct tevent_context *ev,
 		struct swn_dcesrv_connection);
 	struct dcesrv_connection *conn = sc->conn;
 	const char *ip = NULL;
-	const char *addr = sc->addr;
+	const char *addr = sc->addr.buf;
 	const char *p = addr;
 
 	if (conn->terminate != NULL) {
@@ -787,7 +787,6 @@ static NTSTATUS dcesrv_interface_witness_register_ips(struct dcesrv_connection *
 	uintptr_t conn_ptr = (uintptr_t)conn;
 	struct swn_dcesrv_connection *sc = NULL;
 	uintptr_t sc_ptr;
-	const char *addr = NULL;
 	TDB_DATA key;
 	TDB_DATA val;
 	bool exists;
@@ -841,11 +840,7 @@ static NTSTATUS dcesrv_interface_witness_register_ips(struct dcesrv_connection *
 		sc->srv_addr.sa_socklen = sret;
 	}
 
-	addr = print_sockaddr(sc->addr, sizeof(sc->addr), &sc->srv_addr.u.ss);
-	if (addr == NULL) {
-		TALLOC_FREE(sc);
-		return NT_STATUS_NO_MEMORY;
-	}
+	ssaddr_str_buf(&sc->srv_addr, &sc->addr);
 
 	sc_ptr = (uintptr_t)sc;
 	val = make_tdb_data((uint8_t *)&sc_ptr, sizeof(sc_ptr));
