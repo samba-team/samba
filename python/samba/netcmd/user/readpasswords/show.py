@@ -58,7 +58,7 @@ by adding ";format=formatSpecifier" to the requested attribute name, whereby
 The following format specifiers are available:
   - GeneralizedTime (e.g. 20210224113259.0Z)
   - UnixTime        (e.g. 1614166392)
-  - TimeSpec        (e.g. 161416639.267546892)
+  - TimeSpec        (e.g. 1614166392.267546892)
 
 Attributes with an original NTTIME value of 0 and 9223372036854775807 are
 treated as non-existing value.
@@ -101,8 +101,10 @@ specified format:
         Option("--attributes",
                help=("Comma separated list of attributes, "
                      "which will be printed. "
-                     "Possible supported virtual attributes: "
-                     "virtualGeneralizedTime, virtualUnixTime, virtualTimeSpec."),
+                     "Possible format specifiers for timestamp attributes are: "
+                     "GeneralizedTime, UnixTime, TimeSpec. The format specifier "
+                     "needs to be appended like ';format=UnixTime' "
+                     "to the desired attribute."),
                type=str, dest="user_attrs"),
     ]
 
