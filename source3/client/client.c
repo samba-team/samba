@@ -85,7 +85,6 @@ bool lowercase = false;
 static bool backup_intent = false;
 
 static struct sockaddr_storage dest_ss;
-static char dest_ss_str[INET6_ADDRSTRLEN];
 
 #define SEPARATORS " \t\n\r"
 
@@ -6672,7 +6671,6 @@ int main(int argc,char *argv[])
 					exit(1);
 				}
 				have_ip = true;
-				print_sockaddr(dest_ss_str, sizeof(dest_ss_str), &dest_ss);
 			}
 			break;
 		case 'E':
