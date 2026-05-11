@@ -1219,13 +1219,12 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smbXsrv_connection *xconn;
-	struct sockaddr_storage ss_srv;
-	void *sp_srv = (void *)&ss_srv;
-	struct sockaddr *sa_srv = (struct sockaddr *)sp_srv;
-	struct sockaddr_storage ss_clnt;
-	void *sp_clnt = (void *)&ss_clnt;
-	struct sockaddr *sa_clnt = (struct sockaddr *)sp_clnt;
-	socklen_t sa_socklen;
+	struct samba_sockaddr ss_srv = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
+	struct samba_sockaddr ss_clnt = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	struct tsocket_address *local_address = NULL;
 	struct tsocket_address *remote_address = NULL;
 	const char *remaddr = NULL;
@@ -1265,8 +1264,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	set_socket_options(sock_fd, "SO_KEEPALIVE");
 	set_socket_options(sock_fd, lp_socket_options());
 
-	sa_socklen = sizeof(ss_clnt);
-	ret = getpeername(sock_fd, sa_clnt, &sa_socklen);
+	ret = getpeername(sock_fd, &ss_clnt.u.sa, &ss_clnt.sa_socklen);
 	if (ret != 0) {
 		int saved_errno = errno;
 		int level = (errno == ENOTCONN)?2:0;
@@ -1276,7 +1274,8 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		return map_nt_error_from_unix_common(saved_errno);
 	}
 	ret = tsocket_address_bsd_from_sockaddr(xconn,
-						sa_clnt, sa_socklen,
+						&ss_clnt.u.sa,
+						ss_clnt.sa_socklen,
 						&remote_address);
 	if (ret != 0) {
 		int saved_errno = errno;
@@ -1286,8 +1285,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		return map_nt_error_from_unix_common(saved_errno);
 	}
 
-	sa_socklen = sizeof(ss_srv);
-	ret = getsockname(sock_fd, sa_srv, &sa_socklen);
+	ret = getsockname(sock_fd, &ss_srv.u.sa, &ss_srv.sa_socklen);
 	if (ret != 0) {
 		int saved_errno = errno;
 		int level = (errno == ENOTCONN)?2:0;
@@ -1297,7 +1295,8 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		return map_nt_error_from_unix_common(saved_errno);
 	}
 	ret = tsocket_address_bsd_from_sockaddr(xconn,
-						sa_srv, sa_socklen,
+						&ss_srv.u.sa,
+						ss_srv.sa_socklen,
 						&local_address);
 	if (ret != 0) {
 		int saved_errno = errno;
@@ -1387,7 +1386,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		 */
 		NTSTATUS status;
 
-		status = smbd_register_ips(xconn, &ss_srv, &ss_clnt);
+		status = smbd_register_ips(xconn, &ss_srv.u.ss, &ss_clnt.u.ss);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("ctdbd_register_ips failed: %s\n",
 				  nt_errstr(status)));
