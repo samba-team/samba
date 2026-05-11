@@ -7485,6 +7485,14 @@ NTSTATUS _samr_ValidatePassword(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (lp_server_role() <= ROLE_DOMAIN_MEMBER) {
+		/*
+		 * We only want this on DCs
+		 */
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (r->in.level < 1 || r->in.level > 3) {
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
