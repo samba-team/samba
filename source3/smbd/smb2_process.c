@@ -1003,9 +1003,9 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 struct smbd_release_ip_state {
 	struct smbXsrv_connection *xconn;
 	struct tevent_immediate *im;
-	struct sockaddr_storage srv;
-	struct sockaddr_storage clnt;
-	char addr[INET6_ADDRSTRLEN];
+	struct samba_sockaddr srv;
+	struct samba_sockaddr clnt;
+	struct ssaddr_buf addr;
 };
 
 static int release_ip(struct tevent_context *ev,
@@ -1026,9 +1026,11 @@ static int smbd_release_ip_state_destructor(struct smbd_release_ip_state *s)
 	}
 
 	if (NT_STATUS_EQUAL(xconn->transport.status, NT_STATUS_CONNECTION_IN_USE)) {
-		ctdbd_passed_ips(cconn, &s->srv, &s->clnt, release_ip, s);
+		ctdbd_passed_ips(
+			cconn, &s->srv.u.ss, &s->clnt.u.ss, release_ip, s);
 	} else {
-		ctdbd_unregister_ips(cconn, &s->srv, &s->clnt, release_ip, s);
+		ctdbd_unregister_ips(
+			cconn, &s->srv.u.ss, &s->clnt.u.ss, release_ip, s);
 	}
 
 	return 0;
@@ -1067,7 +1069,7 @@ static int release_ip(struct tevent_context *ev,
 		struct smbd_release_ip_state);
 	struct smbXsrv_connection *xconn = state->xconn;
 	const char *ip;
-	const char *addr = state->addr;
+	const char *addr = state->addr.buf;
 	const char *p = addr;
 
 	if (msglen == 0) {
@@ -1155,8 +1157,8 @@ static int match_cluster_movable_ip(uint32_t total_ip_count,
 }
 
 static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
-				  struct sockaddr_storage *srv,
-				  struct sockaddr_storage *clnt)
+				  struct samba_sockaddr *srv,
+				  struct samba_sockaddr *clnt)
 {
 	struct smbd_release_ip_state *state;
 	struct ctdbd_connection *cconn;
@@ -1178,14 +1180,12 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 	}
 	state->srv = *srv;
 	state->clnt = *clnt;
-	if (print_sockaddr(state->addr, sizeof(state->addr), srv) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ssaddr_str_buf(srv, &state->addr);
 
 	if (xconn->client->server_multi_channel_enabled) {
 		ret = ctdbd_public_ip_foreach(cconn,
 					      match_cluster_movable_ip,
-					      srv);
+					      &srv->u.ss);
 		if (ret == EADDRNOTAVAIL) {
 			xconn->has_cluster_movable_ip = true;
 			DBG_DEBUG("cluster movable IP on %s\n",
@@ -1197,7 +1197,8 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 		}
 	}
 
-	ret = ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
+	ret = ctdbd_register_ips(
+		cconn, &srv->u.ss, &clnt->u.ss, release_ip, state);
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
@@ -1386,7 +1387,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		 */
 		NTSTATUS status;
 
-		status = smbd_register_ips(xconn, &ss_srv.u.ss, &ss_clnt.u.ss);
+		status = smbd_register_ips(xconn, &ss_srv, &ss_clnt);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("ctdbd_register_ips failed: %s\n",
 				  nt_errstr(status)));
