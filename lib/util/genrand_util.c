@@ -231,7 +231,7 @@ _PUBLIC_ char *generate_random_str_list_buf(char *buf,
 	generate_secret_buffer((uint8_t *)buf, len);
 
 	for (i=0; i<len; i++) {
-		buf[i] = list[buf[i] % list_len];
+		buf[i] = list[(uint8_t)buf[i] % list_len];
 	}
 
 	return buf;
