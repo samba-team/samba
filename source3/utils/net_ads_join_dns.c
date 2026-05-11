@@ -50,7 +50,6 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 	size_t ns_count = 0, i;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DNS_ERROR dns_err;
-	fstring dns_server;
 	const char *dnsdomain = NULL;
 	char *root_domain = NULL;
 	uint32_t ttl = 3600;
@@ -155,6 +154,8 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 
 do_update:
 	for (i=0; i < ns_count; i++) {
+		struct dns_rr_ns *ns = &nameservers[i];
+		struct ssaddr_buf addstrbuf;
 
 		uint32_t flags = DNS_UPDATE_SIGNED |
 				 DNS_UPDATE_UNSIGNED |
@@ -177,13 +178,20 @@ do_update:
 
 		status = NT_STATUS_UNSUCCESSFUL;
 
+		if (talloc_array_length(ns->ss_s) == 0) {
+			/*
+			 * ads_dns_lookup_ns gave no addresses even
+			 * though it tries to find them if they did
+			 * not come with the NS query reply
+			 */
+			continue;
+		}
+
 		/* Now perform the dns update - we'll try non-secure and if we fail,
 		   we'll follow it up with a secure update */
 
-		fstrcpy( dns_server, nameservers[i].hostname );
-
-		dns_err = DoDNSUpdate(dns_server,
-				      dns_server,
+		dns_err = DoDNSUpdate(ssaddr_str_buf(&ns->ss_s[0], &addstrbuf),
+				      ns->hostname,
 				      dnsdomain,
 				      machine_name,
 				      creds,
