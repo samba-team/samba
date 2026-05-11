@@ -75,7 +75,6 @@ time_t newer_than = 0;
 static int archive_level = 0;
 
 static bool translation = false;
-static bool have_ip;
 
 static bool prompt = true;
 
@@ -85,6 +84,7 @@ bool lowercase = false;
 static bool backup_intent = false;
 
 static struct sockaddr_storage dest_ss;
+static struct sockaddr_storage *dest_ss_ptr = NULL;
 
 #define SEPARATORS " \t\n\r"
 
@@ -5812,7 +5812,7 @@ static int process_command_string(TALLOC_CTX *mem_ctx, const char *cmd_in)
 				     desthost,
 				     service,
 				     creds,
-				     have_ip ? &dest_ss : NULL,
+				     dest_ss_ptr,
 				     &ts,
 				     name_type,
 				     &cli);
@@ -6249,7 +6249,7 @@ static int process(TALLOC_CTX *mem_ctx, const char *base_directory)
 			     desthost,
 			     service,
 			     creds,
-			     have_ip ? &dest_ss : NULL,
+			     dest_ss_ptr,
 			     &ts,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6292,7 +6292,7 @@ static int do_host_query(TALLOC_CTX *mem_ctx,
 			     query_host,
 			     "IPC$",
 			     creds,
-			     have_ip ? &dest_ss : NULL,
+			     dest_ss_ptr,
 			     &ts,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6342,7 +6342,7 @@ static int do_host_query(TALLOC_CTX *mem_ctx,
 				     query_host,
 				     "IPC$",
 				     creds,
-				     have_ip ? &dest_ss : NULL,
+				     dest_ss_ptr,
 				     &nbt_ts,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6379,7 +6379,7 @@ static int do_tar_op(TALLOC_CTX *mem_ctx, const char *base_directory)
 				     desthost,
 				     service,
 				     creds,
-				     have_ip ? &dest_ss : NULL,
+				     dest_ss_ptr,
 				     &ts,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6422,7 +6422,8 @@ static int do_message_op(TALLOC_CTX *mem_ctx, struct cli_credentials *creds)
 	}
 
 	status = cli_connect_nb(mem_ctx,
-				desthost, have_ip ? &dest_ss : NULL,
+				desthost,
+				dest_ss_ptr,
 				&ts,
 				name_type,
 				lp_netbios_name(),
@@ -6670,7 +6671,7 @@ int main(int argc,char *argv[])
 				if (!interpret_string_addr(&dest_ss, poptGetOptArg(pc), 0)) {
 					exit(1);
 				}
-				have_ip = true;
+				dest_ss_ptr = &dest_ss;
 			}
 			break;
 		case 'E':
