@@ -21,8 +21,11 @@
     <para>%p - the appropriate printer 
     name</para>
 
-    <para>%J - the job 
-    name as transmitted by the client.</para>
+    <para>%J - the job name as transmitted by the client,
+    but with dangerous characters being replaced by _.
+    You should use single quotes (directly) around %J, e.g. '%J',
+    see CVE-2026-4480 for more details.
+    </para>
 
     <para>%c - The number of printed pages
     of the spooled job (if known).</para>
