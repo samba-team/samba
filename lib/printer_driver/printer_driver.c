@@ -69,7 +69,7 @@ static const char *get_string_token(struct gp_inifile_context *ctx,
 	char *key;
 	const char *s2;
 
-	if (s != NULL &&  s[0] != '%' && s[strlen(s)-1] != '%') {
+	if (s != NULL && s[0] != '\0' && s[0] != '%' && s[strlen(s)-1] != '%') {
 		return s;
 	}
 
