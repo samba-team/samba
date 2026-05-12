@@ -1,4 +1,81 @@
                    ==============================
+                   Release Notes for Samba 4.24.2
+                            May 12, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.24 release series.
+
+
+Changes since 4.24.1
+--------------------
+
+o  Vinit Agnihotri <vagnihot@redhat.com>
+   * BUG 16038: Samba 4.24 with cups can't get queue and shows errors about
+     fetch_share_cache_time
+
+o  Thales Antunes de Oliveira Barretto <thales.barretto.git@gmail.com>
+   * BUG 16043: Fix a directory file descriptor leak in vfs_glusterfs that
+     caused      unbounded memory growth on the GlusterFS brick with
+     persistent SMB2      connections.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 16030: Windows Offline Files fails with permission error when directory
+     has the read‑only attribute set
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15991: samba not triggering mount of zfs snapshot in dataset
+     .zfs/snapshots/<snapname> directory
+   * BUG 15999: net ads join still fails with multiple DCs
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 16076: samba-tool shows wrong format specifiers for timestamp
+     attributes
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14638: restrict anonymous = 2 breaks RODC functionality
+   * BUG 15973: smbpasswd can crash winbindd on an AD DC
+   * BUG 15995: smbd does not cleanup on disconnect of the transport connection
+     on lease break errors
+   * BUG 16059: CVE-2026-40170: thirdparty ngtcp2 needs to be updated
+   * BUG 16067: Require NTLMv2 session security on Windows makes trusts to Samba
+     unusable
+   * BUG 16073: Winbind can change Ownership Of / To A User Who has Homedir / In
+     passwd
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15987: Winbind lsa_OpenPolicy() fails on lsa connection setup with:
+     NT_STATUS_RPC_CANNOT_SUPPORT
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 16068: CTDB read-only record handling contains use after free and
+     resource leak bugs
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.24.1
                            April 17, 2026
                    ==============================
@@ -46,8 +123,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.24.0
                            March 18, 2026
