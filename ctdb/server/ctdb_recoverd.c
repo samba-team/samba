@@ -1918,6 +1918,11 @@ static void force_election(struct ctdb_recoverd *rec)
 
 	D_ERR("Start election\n");
 
+	/* Do not allow nested elections */
+	if (rec->election_in_progress) {
+		return;
+	}
+
 	/* set all nodes to recovery mode to stop all internode traffic */
 	ret = set_recovery_mode(ctdb, rec, rec->nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
