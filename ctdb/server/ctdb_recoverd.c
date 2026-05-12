@@ -864,11 +864,6 @@ static uint32_t new_generation(void)
 	return generation;
 }
 
-static bool cluster_lock_held(struct ctdb_recoverd *rec)
-{
-	return (rec->cluster_lock_handle != NULL);
-}
-
 struct ctdb_cluster_lock_handle {
 	bool done;
 	bool locked;
@@ -876,6 +871,12 @@ struct ctdb_cluster_lock_handle {
 	struct ctdb_cluster_mutex_handle *h;
 	struct ctdb_recoverd *rec;
 };
+
+static bool cluster_lock_held(struct ctdb_recoverd *rec)
+{
+	return (rec->cluster_lock_handle != NULL &&
+		rec->cluster_lock_handle->locked);
+}
 
 static void take_cluster_lock_handler(char status,
 				      double latency,
