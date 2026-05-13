@@ -1275,6 +1275,37 @@ done:
 	return ok;
 }
 
+static struct ctdb_node_map_old *update_node_map_and_flags(
+	struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	struct ctdb_node_map_old *nodemap = NULL;
+	unsigned int i = 0;
+	int ret = 0;
+
+	ret = ctdb_ctrl_getnodemap(ctdb,
+				   CONTROL_TIMEOUT(),
+				   rec->pnn,
+				   rec,
+				   &nodemap);
+	if (ret != 0) {
+		return NULL;
+	}
+
+	talloc_free(rec->nodemap);
+	rec->nodemap = nodemap;
+
+	/* Remember this node's flags */
+	for (i = 0; i < nodemap->num; i++) {
+		if (nodemap->nodes[i].pnn == rec->pnn) {
+			rec->node_flags = nodemap->nodes[i].flags;
+			break;
+		}
+	}
+
+	return nodemap;
+}
+
 static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 {
 	const char *arg;
@@ -2590,21 +2621,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* get nodemap */
-	ret = ctdb_ctrl_getnodemap(ctdb,
-				   CONTROL_TIMEOUT(),
-				   rec->pnn,
-				   rec,
-				   &nodemap);
-	if (ret != 0) {
+	nodemap = update_node_map_and_flags(rec);
+	if (nodemap == NULL) {
 		DBG_ERR("Unable to get nodemap from node %"PRIu32"\n", rec->pnn);
 		return;
 	}
-	talloc_free(rec->nodemap);
-	rec->nodemap = nodemap;
-
-	/* remember our own node flags */
-	rec->node_flags = nodemap->nodes[rec->pnn].flags;
 
 	ban_misbehaving_nodes(rec, &self_ban);
 	if (self_ban) {
