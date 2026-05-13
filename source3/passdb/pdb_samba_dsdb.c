@@ -888,6 +888,10 @@ static NTSTATUS pdb_samba_dsdb_update_sam_account(struct pdb_methods *m,
 		m, sam);
 	int ret;
 
+	if (msg == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	ret = pdb_samba_dsdb_replace_by_sam(state, pdb_element_is_changed, msg->dn,
 					sam);
 	return dsdb_ldb_err_to_ntstatus(ret);
