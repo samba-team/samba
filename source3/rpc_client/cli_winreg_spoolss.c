@@ -1701,13 +1701,15 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		CHECK_ERROR(result);
 	}
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (num_values > 0 && !W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_get_printer: winreg_enumval_to_TYPE() failed "
 					"for %s: %s\n",
 					v->value_name,
 					win_errstr(result)));
 		goto done;
 	}
+
+	result = WERR_OK;
 
 	/* Construct the Device Mode */
 	status = dcerpc_winreg_query_binary(tmp_ctx,
