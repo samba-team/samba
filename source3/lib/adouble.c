@@ -2662,6 +2662,7 @@ struct adouble *ad_get(TALLOC_CTX *ctx,
 struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 			files_struct *fsp, adouble_type_t type)
 {
+	SMB_ASSERT(fsp != NULL);
 	return ad_get_internal(ctx, handle, fsp, NULL, type);
 }
 
