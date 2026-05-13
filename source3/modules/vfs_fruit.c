@@ -3252,7 +3252,7 @@ static int fruit_fstatat_meta(struct vfs_handle_struct *handle,
 	{
 		/* Populate the stat struct with info from the base file. */
 
-		struct smb_filename base_name = *smb_relname;
+		struct smb_filename base_name = *_smb_relname;
 		base_name.stream_name = NULL;
 
 		ret = SMB_VFS_NEXT_FSTATAT(
@@ -3263,11 +3263,11 @@ static int fruit_fstatat_meta(struct vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	ino = hash_inode(sbuf, smb_relname->stream_name);
+	ino = hash_inode(sbuf, _smb_relname->stream_name);
 
 	if (config->meta == FRUIT_META_STREAM) {
 		ret = SMB_VFS_NEXT_FSTATAT(
-			handle, dirfsp, smb_relname, sbuf, flags);
+			handle, dirfsp, _smb_relname, sbuf, flags);
 		if (ret == -1) {
 			goto fail;
 		}
