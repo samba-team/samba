@@ -1617,8 +1617,10 @@ do_delete:
 		  state->global_id,
 		  dbwrap_name(dbwrap_record_get_db(rec)));
 	state->status = NT_STATUS_OK;
-	state->client_guid = global->client_guid;
-	state->create_guid = global->create_guid;
+	if (global != NULL) {
+		state->client_guid = global->client_guid;
+		state->create_guid = global->create_guid;
+	}
 }
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
