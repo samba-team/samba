@@ -83,16 +83,6 @@ MX              15 mail exchange
 TXT             16 text strings
 */
 
-/*
- * TKEY Modes from rfc2930
- */
-
-#define DNS_TKEY_MODE_SERVER   1
-#define DNS_TKEY_MODE_DH       2
-#define DNS_TKEY_MODE_GSSAPI   3
-#define DNS_TKEY_MODE_RESOLVER 4
-#define DNS_TKEY_MODE_DELETE   5
-
 #define  DNS_NO_ERROR		0
 #define  DNS_FORMAT_ERROR	1
 #define  DNS_SERVER_FAILURE	2
@@ -137,16 +127,6 @@ struct dns_rrec {
 	uint32_t ttl;
 	uint16_t data_length;
 	uint8_t *data;
-};
-
-struct addns_tkey_record {
-	struct dns_domain_name *algorithm;
-	time_t inception;
-	time_t expiration;
-	uint16_t mode;
-	uint16_t error;
-	uint16_t key_length;
-	uint8_t *key;
 };
 
 struct dns_request {
@@ -208,42 +188,18 @@ DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 			    struct dns_request **preq );
 DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 			     struct dns_update_request **preq );
-DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
-			   const char *host, int num_ips,
-			   const struct sockaddr_storage *sslist,
-			   struct dns_update_request **preq);
 DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 			  uint16_t type, uint16_t r_class, uint32_t ttl,
 			  uint16_t data_length, uint8_t *data,
 			  struct dns_rrec **prec);
 DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 		       uint16_t *num_records, struct dns_rrec ***records);
-DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
-				 const char *algorithm_name, time_t inception,
-				 time_t expiration, uint16_t mode, uint16_t error,
-				 uint16_t key_length, const uint8_t *key,
-				 struct dns_rrec **prec);
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 			      uint32_t ttl, const struct sockaddr_storage *pss,
 			      struct dns_rrec **prec);
 DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 				 uint32_t ttl, const struct sockaddr_storage *pss,
 				 struct dns_rrec **prec);
-DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-				     struct addns_tkey_record **ptkey);
-DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
-				 const char *algorithm_name,
-				 time_t time_signed, uint16_t fudge,
-				 uint16_t mac_length, const uint8_t *mac,
-				 uint16_t original_id, uint16_t error,
-				 struct dns_rrec **prec);
-DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
-				    const char *domainname,
-				    const char *hostname,
-				    const struct sockaddr_storage *ip_addr,
-				    size_t num_adds,
-				    uint32_t ttl,
-				    struct dns_update_request **preq);
 
 /* from dnssock.c */
 
@@ -289,9 +245,6 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 DNS_ERROR dns_marshall_update_request(TALLOC_CTX *mem_ctx,
 				      struct dns_update_request *update,
 				      struct dns_buffer **pbuf);
-DNS_ERROR dns_unmarshall_update_request(TALLOC_CTX *mem_ctx,
-					struct dns_buffer *buf,
-					struct dns_update_request **pupreq);
 struct dns_request *dns_update2request(struct dns_update_request *update);
 struct dns_update_request *dns_request2update(struct dns_request *request);
 uint16_t dns_response_code(uint16_t flags);
@@ -305,10 +258,5 @@ DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 				const char *keyname,
 				struct gensec_security *gensec,
 				enum dns_ServerType srv_type);
-DNS_ERROR dns_sign_update(struct dns_update_request *req,
-			  struct gensec_security *gensec,
-			  const char *keyname,
-			  const char *algorithmname,
-			  time_t time_signed, uint16_t fudge);
 
 #endif	/* _DNS_H */

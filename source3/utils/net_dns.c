@@ -25,6 +25,7 @@
 #include "utils/net_dns.h"
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"
+#include "libcli/dns/libdns.h"
 
 #if defined(HAVE_KRB5)
 
@@ -100,7 +101,7 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 		      const char *pszDomainName,
 		      const char *pszHostName,
 		      struct cli_credentials *creds,
-		      const struct sockaddr_storage *sslist,
+		      const struct sockaddr_storage *_sslist,
 		      size_t num_addrs,
 		      uint32_t flags,
 		      uint32_t ttl,
@@ -109,7 +110,8 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 	DNS_ERROR err;
 	struct dns_connection *conn;
 	TALLOC_CTX *mem_ctx;
-	struct dns_update_request *req, *resp;
+	struct samba_sockaddr sslist[num_addrs];
+	size_t i;
 
 	DEBUG(10,("DoDNSUpdate called with flags: 0x%08x\n", flags));
 
@@ -119,12 +121,16 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 		return ERROR_DNS_INVALID_PARAMETER;
 	}
 
-	if ( !remove_host && ((num_addrs <= 0) || !sslist) ) {
+	if (!remove_host && ((num_addrs <= 0) || !_sslist)) {
 		return ERROR_DNS_INVALID_PARAMETER;
 	}
 
 	if (!(mem_ctx = talloc_init("DoDNSUpdate"))) {
 		return ERROR_DNS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_addrs; i++) {
+		sslist[i] = (struct samba_sockaddr){.u.ss = _sslist[i]};
 	}
 
 	err = dns_open_connection(pszServerAddress, DNS_TCP, mem_ctx, &conn);
@@ -134,23 +140,31 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 
 	if (flags & DNS_UPDATE_PROBE) {
 
-		/*
-		 * Probe if everything's fine
-		 */
+		struct dns_name_packet *probe = NULL, *reply = NULL;
+		int ret;
 
-		err = dns_create_probe(mem_ctx, pszDomainName, pszHostName,
-				       num_addrs, sslist, &req);
-		if (!ERR_DNS_IS_OK(err)) goto error;
-
-		err = dns_update_transaction(mem_ctx, conn, req, &resp);
-
-		if (!ERR_DNS_IS_OK(err)) {
-			DEBUG(3,("DoDNSUpdate: failed to probe DNS\n"));
-			goto error;
+		probe = dns_cli_create_probe(mem_ctx,
+					     pszDomainName,
+					     pszHostName,
+					     sslist,
+					     num_addrs);
+		if (probe == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_NO_MEMORY;
 		}
 
-		if ((dns_response_code(resp->flags) == DNS_NO_ERROR) &&
-		    (flags & DNS_UPDATE_PROBE_SUFFICIENT)) {
+		ret = dns_cli_request(mem_ctx,
+				      pszServerAddress,
+				      probe,
+				      &reply);
+		if (ret != 0) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_SOCKET_ERROR;
+		}
+
+		if ((flags & DNS_UPDATE_PROBE_SUFFICIENT) &&
+		    ((reply->operation & DNS_RCODE) == DNS_RCODE_OK))
+		{
 			TALLOC_FREE(mem_ctx);
 			return ERROR_DNS_SUCCESS;
 		}
@@ -158,27 +172,32 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 
 	if (flags & DNS_UPDATE_UNSIGNED) {
 
-		/*
-		 * First try without signing
-		 */
+		struct dns_name_packet *update = NULL, *reply = NULL;
+		int ret;
 
-		err = dns_create_update_request(mem_ctx,
-						pszDomainName,
-						pszHostName,
-						sslist,
-						num_addrs,
-						ttl,
-						&req);
-		if (!ERR_DNS_IS_OK(err)) goto error;
-
-		err = dns_update_transaction(mem_ctx, conn, req, &resp);
-		if (!ERR_DNS_IS_OK(err)) {
-			DEBUG(3,("DoDNSUpdate: unsigned update failed\n"));
-			goto error;
+		update = dns_cli_create_update(mem_ctx,
+					       pszDomainName,
+					       pszHostName,
+					       sslist,
+					       num_addrs,
+					       ttl);
+		if (update == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_NO_MEMORY;
 		}
 
-		if ((dns_response_code(resp->flags) == DNS_NO_ERROR) &&
-		    (flags & DNS_UPDATE_UNSIGNED_SUFFICIENT)) {
+		ret = dns_cli_request(mem_ctx,
+				      pszServerAddress,
+				      update,
+				      &reply);
+		if (ret != 0) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_SOCKET_ERROR;
+		}
+
+		if ((flags & DNS_UPDATE_UNSIGNED_SUFFICIENT) &&
+		    ((reply->operation & DNS_RCODE) == DNS_RCODE_OK))
+		{
 			TALLOC_FREE(mem_ctx);
 			return ERROR_DNS_SUCCESS;
 		}
@@ -190,15 +209,19 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 	if (flags & DNS_UPDATE_SIGNED) {
 		struct gensec_security *gensec = NULL;
 		char *keyname = NULL;
+		struct dns_name_packet *update = NULL, *reply = NULL;
+		int ret;
 
-		err = dns_create_update_request(mem_ctx,
-						pszDomainName,
-						pszHostName,
-						sslist,
-						num_addrs,
-						ttl,
-						&req);
-		if (!ERR_DNS_IS_OK(err)) goto error;
+		update = dns_cli_create_update(mem_ctx,
+					       pszDomainName,
+					       pszHostName,
+					       sslist,
+					       num_addrs,
+					       ttl);
+		if (update == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_NO_MEMORY;
+		}
 
 		if (!(keyname = dns_generate_keyname( mem_ctx ))) {
 			err = ERROR_DNS_NO_MEMORY;
@@ -229,16 +252,28 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 		if (!ERR_DNS_IS_OK(err))
 			goto error;
 
-		err = dns_sign_update(req, gensec, keyname,
-				      "gss.microsoft.com", time(NULL), 3600);
+		ret = dns_cli_sign_packet(update,
+					  gensec,
+					  gensec_sign_packet,
+					  keyname,
+					  "gss.microsoft.com");
+		if (ret != 0) {
+			err = ERROR_DNS_GSS_ERROR;
+			goto error;
+		}
 
-		if (!ERR_DNS_IS_OK(err)) goto error;
+		ret = dns_cli_request(mem_ctx,
+				      pszServerAddress,
+				      update,
+				      &reply);
+		if (ret != 0) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_SOCKET_ERROR;
+		}
 
-		err = dns_update_transaction(mem_ctx, conn, req, &resp);
-		if (!ERR_DNS_IS_OK(err)) goto error;
-
-		err = (dns_response_code(resp->flags) == DNS_NO_ERROR) ?
-			ERROR_DNS_SUCCESS : ERROR_DNS_UPDATE_FAILED;
+		err = ((reply->operation & DNS_RCODE) == DNS_RCODE_OK)
+			      ? ERROR_DNS_SUCCESS
+			      : ERROR_DNS_UPDATE_FAILED;
 
 		if (!ERR_DNS_IS_OK(err)) {
 			DEBUG(3,("DoDNSUpdate: signed update failed\n"));

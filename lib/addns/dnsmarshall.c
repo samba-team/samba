@@ -515,19 +515,6 @@ DNS_ERROR dns_marshall_update_request(TALLOC_CTX *mem_ctx,
 	return dns_marshall_request(mem_ctx, dns_update2request(update), pbuf);
 }
 
-DNS_ERROR dns_unmarshall_update_request(TALLOC_CTX *mem_ctx,
-					struct dns_buffer *buf,
-					struct dns_update_request **pupreq)
-{
-	/*
-	 * See comments above about portability. If the above works, this will
-	 * as well.
-	 */
-
-	return dns_unmarshall_request(mem_ctx, buf,
-				      (struct dns_request **)(void *)pupreq);
-}
-
 uint16_t dns_response_code(uint16_t flags)
 {
 	return flags & 0xF;

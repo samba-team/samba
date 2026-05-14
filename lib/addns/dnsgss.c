@@ -30,17 +30,18 @@
 #include "lib/util/charset/charset.h"
 #include "libcli/util/ntstatus.h"
 #include "auth/gensec/gensec.h"
-
+#include "dnserr.h"
+#include "librpc/gen_ndr/dns.h"
 #include "dns.h"
+#include "libcli/dns/libdns.h"
 
-static DNS_ERROR dns_negotiate_gss_ctx_int(struct dns_connection *conn,
-					   const char *keyname,
-					   struct gensec_security *gensec,
-					   enum dns_ServerType srv_type)
+DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
+				const char *keyname,
+				struct gensec_security *gensec,
+				enum dns_ServerType srv_type)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct dns_request *req = NULL;
-	struct dns_buffer *buf = NULL;
+	struct dns_name_packet *reply = NULL;
 	DATA_BLOB in = { .length = 0, };
 	DATA_BLOB out = { .length = 0, };
 	NTSTATUS status;
@@ -48,93 +49,88 @@ static DNS_ERROR dns_negotiate_gss_ctx_int(struct dns_connection *conn,
 
 	do {
 		status = gensec_update(gensec, frame, in, &out);
-		data_blob_free(&in);
+		TALLOC_FREE(reply);
 		if (GENSEC_UPDATE_IS_NTERROR(status)) {
 			err = ERROR_DNS_GSS_ERROR;
 			goto error;
 		}
 
 		if (out.length != 0) {
-			struct dns_rrec *rec;
-
+			int ret;
 			time_t t = time(NULL);
 
-			err = dns_create_query(frame, keyname, QTYPE_TKEY,
-					       DNS_CLASS_IN, &req);
-			if (!ERR_DNS_IS_OK(err)) goto error;
-
-			err = dns_create_tkey_record(
-				req, keyname, "gss.microsoft.com", t,
-				t + 86400, DNS_TKEY_MODE_GSSAPI, 0,
-				out.length, out.data,
-				&rec );
-			if (!ERR_DNS_IS_OK(err)) goto error;
+			struct dns_res_rec tkey = {
+				.name = keyname,
+				.rr_type = QTYPE_TKEY,
+				.rr_class = DNS_CLASS_ANY,
+				.length = 1,
+				.rdata.tkey_record
+					.algorithm = "gss.microsoft.com",
+				.rdata.tkey_record.inception = t,
+				.rdata.tkey_record.expiration = t + 86400,
+				.rdata.tkey_record.mode = DNS_TKEY_MODE_GSSAPI,
+				.rdata.tkey_record.key_size = out.length,
+				.rdata.tkey_record.key_data = out.data,
+			};
+			struct dns_name_question question = {
+				.name = keyname,
+				.question_class = DNS_CLASS_IN,
+				.question_type = QTYPE_TKEY,
+			};
+			struct dns_name_packet rec = {
+				.operation = DNS_OPCODE_QUERY,
+				.qdcount = 1,
+				.questions = &question,
+			};
 
 			/* Windows 2000 DNS is broken and requires the
 			   TKEY payload in the Answer section instead
 			   of the Additional section like Windows 2003 */
 
 			if ( srv_type == DNS_SRV_WIN2000 ) {
-				err = dns_add_rrec(req, rec, &req->num_answers,
-						   &req->answers);
+				rec.ancount = 1;
+				rec.answers = &tkey;
 			} else {
-				err = dns_add_rrec(req, rec, &req->num_additionals,
-						   &req->additional);
+				rec.arcount = 1;
+				rec.additional = &tkey;
 			}
-			
-			if (!ERR_DNS_IS_OK(err)) goto error;
 
-			err = dns_marshall_request(frame, req, &buf);
-			if (!ERR_DNS_IS_OK(err)) goto error;
-
-			err = dns_send(conn, buf);
-			if (!ERR_DNS_IS_OK(err)) goto error;
-
-			TALLOC_FREE(buf);
-			TALLOC_FREE(req);
-
-			err = dns_receive(frame, conn, &buf);
-			if (!ERR_DNS_IS_OK(err)) goto error;
+			ret = dns_cli_request(frame,
+					      serveraddress,
+					      &rec,
+					      &reply);
+			if (ret != 0) {
+				err = ERROR_DNS_SOCKET_ERROR;
+				goto error;
+			}
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			struct dns_request *resp;
-			struct addns_tkey_record *tkey;
-			struct dns_rrec *tkey_answer = NULL;
+			struct dns_res_rec *tkey_answer = NULL;
+			struct dns_tkey_record *tkey = NULL;
+
 			uint16_t i;
-
-			if (buf == NULL) {
-				err = ERROR_DNS_BAD_RESPONSE;
-				goto error;
-			}
-
-			err = dns_unmarshall_request(buf, buf, &resp);
-			if (!ERR_DNS_IS_OK(err)) goto error;
 
 			/*
 			 * TODO: Compare id and keyname
 			 */
 
-			for (i=0; i < resp->num_answers; i++) {
-				if (resp->answers[i]->type != QTYPE_TKEY) {
-					continue;
-				}
+			for (i = 0; i < reply->ancount; i++) {
+				tkey_answer = &reply->answers[i];
 
-				tkey_answer = resp->answers[i];
+				if (tkey_answer->rr_type == QTYPE_TKEY) {
+					break;
+				}
 			}
 
-			if (tkey_answer == NULL) {
+			if (i == reply->ancount) {
 				err = ERROR_DNS_INVALID_MESSAGE;
 				goto error;
 			}
 
-			err = dns_unmarshall_tkey_record(
-				frame, resp->answers[0], &tkey);
-			if (!ERR_DNS_IS_OK(err)) goto error;
+			tkey = &tkey_answer->rdata.tkey_record;
 
-			in = data_blob_const(tkey->key, tkey->key_length);
-
-			TALLOC_FREE(buf);
+			in = data_blob_const(tkey->key_data, tkey->key_size);
 		}
 
 	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
@@ -145,94 +141,6 @@ static DNS_ERROR dns_negotiate_gss_ctx_int(struct dns_connection *conn,
 
       error:
 
-	TALLOC_FREE(frame);
-	return err;
-}
-
-DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
-				const char *keyname,
-				struct gensec_security *gensec,
-				enum dns_ServerType srv_type)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	DNS_ERROR err;
-	struct dns_connection *conn = NULL;
-
-	err = dns_open_connection(serveraddress, DNS_TCP, frame, &conn);
-	if (!ERR_DNS_IS_OK(err)) goto error;
-
-	err = dns_negotiate_gss_ctx_int(conn, keyname,
-					gensec,
-					srv_type);
-	if (!ERR_DNS_IS_OK(err)) goto error;
-
- error:
-	TALLOC_FREE(frame);
-
-	return err;
-}
-
-DNS_ERROR dns_sign_update(struct dns_update_request *req,
-			  struct gensec_security *gensec,
-			  const char *keyname,
-			  const char *algorithmname,
-			  time_t time_signed, uint16_t fudge)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct dns_buffer *buf;
-	DNS_ERROR err;
-	struct dns_domain_name *key, *algorithm;
-	struct dns_rrec *rec;
-	DATA_BLOB mic = { .length = 0, };
-	NTSTATUS status;
-
-	err = dns_marshall_update_request(frame, req, &buf);
-	if (!ERR_DNS_IS_OK(err)) return err;
-
-	err = dns_domain_name_from_string(frame, keyname, &key);
-	if (!ERR_DNS_IS_OK(err)) goto error;
-
-	err = dns_domain_name_from_string(frame, algorithmname, &algorithm);
-	if (!ERR_DNS_IS_OK(err)) goto error;
-
-	dns_marshall_domain_name(buf, key);
-	dns_marshall_uint16(buf, DNS_CLASS_ANY);
-	dns_marshall_uint32(buf, 0); /* TTL */
-	dns_marshall_domain_name(buf, algorithm);
-	dns_marshall_uint16(buf, 0); /* Time prefix for 48-bit time_t */
-	dns_marshall_uint32(buf, time_signed);
-	dns_marshall_uint16(buf, fudge);
-	dns_marshall_uint16(buf, 0); /* error */
-	dns_marshall_uint16(buf, 0); /* other len */
-
-	err = buf->error;
-	if (!ERR_DNS_IS_OK(buf->error)) goto error;
-
-	status = gensec_sign_packet(gensec,
-				    frame,
-				    buf->data,
-				    buf->offset,
-				    buf->data,
-				    buf->offset,
-				    &mic);
-	if (!NT_STATUS_IS_OK(status)) {
-		err = ERROR_DNS_GSS_ERROR;
-		goto error;
-	}
-
-	if (mic.length > 0xffff) {
-		err = ERROR_DNS_GSS_ERROR;
-		goto error;
-	}
-
-	err = dns_create_tsig_record(frame, keyname, algorithmname, time_signed,
-				     fudge, mic.length, mic.data,
-				     req->id, 0, &rec);
-	if (!ERR_DNS_IS_OK(err)) goto error;
-
-	err = dns_add_rrec(req, rec, &req->num_additionals, &req->additional);
-
- error:
 	TALLOC_FREE(frame);
 	return err;
 }
