@@ -91,7 +91,7 @@ DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 	return ERROR_DNS_SUCCESS;
 }
 
-DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
+static DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 			  uint16_t type, uint16_t r_class, uint32_t ttl,
 			  uint16_t data_length, uint8_t *data,
 			  struct dns_rrec **prec)

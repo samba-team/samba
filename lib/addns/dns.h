@@ -188,10 +188,6 @@ DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 			    struct dns_request **preq );
 DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 			     struct dns_update_request **preq );
-DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
-			  uint16_t type, uint16_t r_class, uint32_t ttl,
-			  uint16_t data_length, uint8_t *data,
-			  struct dns_rrec **prec);
 DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 		       uint16_t *num_records, struct dns_rrec ***records);
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
@@ -206,9 +202,6 @@ DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 DNS_ERROR dns_open_connection( const char *nameserver, int32_t dwType,
 		    TALLOC_CTX *mem_ctx,
 		    struct dns_connection **conn );
-DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf);
-DNS_ERROR dns_receive(TALLOC_CTX *mem_ctx, struct dns_connection *conn,
-		      struct dns_buffer **presult);
 DNS_ERROR dns_transaction(TALLOC_CTX *mem_ctx, struct dns_connection *conn,
 			  const struct dns_request *req,
 			  struct dns_request **resp);
@@ -219,32 +212,12 @@ DNS_ERROR dns_update_transaction(TALLOC_CTX *mem_ctx,
 
 /* from dnsmarshall.c */
 
-struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx);
-void dns_marshall_buffer(struct dns_buffer *buf, const uint8_t *data,
-			 size_t len);
-void dns_marshall_uint16(struct dns_buffer *buf, uint16_t val);
-void dns_marshall_uint32(struct dns_buffer *buf, uint32_t val);
-void dns_unmarshall_buffer(struct dns_buffer *buf, uint8_t *data,
-			   size_t len);
-void dns_unmarshall_uint16(struct dns_buffer *buf, uint16_t *val);
-void dns_unmarshall_uint32(struct dns_buffer *buf, uint32_t *val);
-void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
-				struct dns_buffer *buf,
-				struct dns_domain_name **pname);
-void dns_marshall_domain_name(struct dns_buffer *buf,
-			      const struct dns_domain_name *name);
-void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
-				struct dns_buffer *buf,
-				struct dns_domain_name **pname);
 DNS_ERROR dns_marshall_request(TALLOC_CTX *mem_ctx,
 			       const struct dns_request *req,
 			       struct dns_buffer **pbuf);
 DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 				 struct dns_buffer *buf,
 				 struct dns_request **preq);
-DNS_ERROR dns_marshall_update_request(TALLOC_CTX *mem_ctx,
-				      struct dns_update_request *update,
-				      struct dns_buffer **pbuf);
 struct dns_request *dns_update2request(struct dns_update_request *update);
 struct dns_update_request *dns_request2update(struct dns_request *request);
 uint16_t dns_response_code(uint16_t flags);

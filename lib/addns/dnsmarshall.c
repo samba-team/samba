@@ -23,7 +23,7 @@
 #include "dns.h"
 #include "assert.h"
 
-struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
+static struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 {
 	struct dns_buffer *result;
 
@@ -47,8 +47,9 @@ struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-void dns_marshall_buffer(struct dns_buffer *buf, const uint8_t *data,
-			 size_t len)
+static void dns_marshall_buffer(struct dns_buffer *buf,
+				const uint8_t *data,
+				size_t len)
 {
 	if (!ERR_DNS_IS_OK(buf->error)) return;
 
@@ -95,20 +96,21 @@ void dns_marshall_buffer(struct dns_buffer *buf, const uint8_t *data,
 	return;
 }
 
-void dns_marshall_uint16(struct dns_buffer *buf, uint16_t val)
+static void dns_marshall_uint16(struct dns_buffer *buf, uint16_t val)
 {
 	uint16_t n_val = htons(val);
 	dns_marshall_buffer(buf, (uint8_t *)&n_val, sizeof(n_val));
 }
 
-void dns_marshall_uint32(struct dns_buffer *buf, uint32_t val)
+static void dns_marshall_uint32(struct dns_buffer *buf, uint32_t val)
 {
 	uint32_t n_val = htonl(val);
 	dns_marshall_buffer(buf, (uint8_t *)&n_val, sizeof(n_val));
 }
 
-void dns_unmarshall_buffer(struct dns_buffer *buf, uint8_t *data,
-			   size_t len)
+static void dns_unmarshall_buffer(struct dns_buffer *buf,
+				  uint8_t *data,
+				  size_t len)
 {
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
@@ -123,7 +125,7 @@ void dns_unmarshall_buffer(struct dns_buffer *buf, uint8_t *data,
 	return;
 }
 
-void dns_unmarshall_uint16(struct dns_buffer *buf, uint16_t *val)
+static void dns_unmarshall_uint16(struct dns_buffer *buf, uint16_t *val)
 {
 	uint16_t n_val;
 
@@ -133,7 +135,7 @@ void dns_unmarshall_uint16(struct dns_buffer *buf, uint16_t *val)
 	*val = ntohs(n_val);
 }
 
-void dns_unmarshall_uint32(struct dns_buffer *buf, uint32_t *val)
+static void dns_unmarshall_uint32(struct dns_buffer *buf, uint32_t *val)
 {
 	uint32_t n_val;
 
@@ -143,8 +145,8 @@ void dns_unmarshall_uint32(struct dns_buffer *buf, uint32_t *val)
 	*val = ntohl(n_val);
 }
 
-void dns_marshall_domain_name(struct dns_buffer *buf,
-			      const struct dns_domain_name *name)
+static void dns_marshall_domain_name(struct dns_buffer *buf,
+				     const struct dns_domain_name *name)
 {
 	struct dns_domain_label *label;
 	char end_char = '\0';
@@ -244,9 +246,9 @@ static void dns_unmarshall_label(TALLOC_CTX *mem_ctx,
 	return;
 }
 
-void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
-				struct dns_buffer *buf,
-				struct dns_domain_name **pname)
+static void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
+				       struct dns_buffer *buf,
+				       struct dns_domain_name **pname)
 {
 	struct dns_domain_name *name;
 
@@ -506,13 +508,6 @@ struct dns_update_request *dns_request2update(struct dns_request *request)
 	 * For portability concerns see dns_update2request;
 	 */
 	return (struct dns_update_request *)(void *)request;
-}
-
-DNS_ERROR dns_marshall_update_request(TALLOC_CTX *mem_ctx,
-				      struct dns_update_request *update,
-				      struct dns_buffer **pbuf)
-{
-	return dns_marshall_request(mem_ctx, dns_update2request(update), pbuf);
 }
 
 uint16_t dns_response_code(uint16_t flags)

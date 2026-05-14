@@ -231,7 +231,8 @@ static DNS_ERROR dns_send_udp(struct dns_connection *conn,
 	return ERROR_DNS_SUCCESS;
 }
 
-DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf)
+static DNS_ERROR dns_send(struct dns_connection *conn,
+			  const struct dns_buffer *buf)
 {
 	if (conn->hType == DNS_TCP) {
 		return dns_send_tcp(conn, buf);
@@ -364,8 +365,9 @@ static DNS_ERROR dns_receive_udp(TALLOC_CTX *mem_ctx,
 	return ERROR_DNS_SUCCESS;
 }
 
-DNS_ERROR dns_receive(TALLOC_CTX *mem_ctx, struct dns_connection *conn,
-		      struct dns_buffer **presult)
+static DNS_ERROR dns_receive(TALLOC_CTX *mem_ctx,
+			     struct dns_connection *conn,
+			     struct dns_buffer **presult)
 {
 	if (conn->hType == DNS_TCP) {
 		return dns_receive_tcp(mem_ctx, conn, presult);
