@@ -558,7 +558,6 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
 	struct junction_map *jn = NULL;
-	struct referral *old_referral_list = NULL;
 	bool self_ref = False;
 	size_t consumedcnt = 0;
 	char *altpath = NULL;
@@ -607,21 +606,17 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	}
 
 	jn->referral_count += 1;
-	old_referral_list = jn->referral_list;
-
 	if (jn->referral_count < 1) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	jn->referral_list = talloc_array(ctx, struct referral, jn->referral_count);
+	jn->referral_list = talloc_realloc(ctx,
+					   jn->referral_list,
+					   struct referral,
+					   jn->referral_count);
 	if(jn->referral_list == NULL) {
 		DBG_ERR("talloc failed for referral list!\n");
 		return WERR_NERR_DFSINTERNALERROR;
-	}
-
-	if(old_referral_list && jn->referral_list) {
-		memcpy(jn->referral_list, old_referral_list,
-				sizeof(struct referral)*jn->referral_count-1);
 	}
 
 	jn->referral_list[jn->referral_count-1].proximity = 0;
