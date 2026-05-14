@@ -441,6 +441,9 @@ static WERROR get_format_functional_filtering_param(struct ldb_context *sam_ctx,
 			s[0] = '\0';
 			s++;
 
+			account = ldb_binary_encode_string(mem_ctx, account);
+			W_ERROR_HAVE_NO_MEMORY(account);
+
 			ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 						tmp_dn,
 						LDB_SCOPE_ONELEVEL,
