@@ -1,4 +1,126 @@
                    ==============================
+                   Release Notes for Samba 4.23.8
+                            May 26, 2026
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2026-1933:   Missing access checks on reparse point operations
+
+                   On a share marked "read only = yes" and
+                   on file handles opened R/O users can set
+                   or delete the reparse point xattrs on files
+                   that the user has write-access in the file
+                   system for.
+
+                   https://www.samba.org/samba/security/CVE-2026-1933.html
+
+
+o CVE-2026-2340:   WORM vfs module does not block overwrites
+
+                   The WORM (Write-Once, Read Many) vfs module
+                   is supposed to lock write access to shared
+                   files, so they cannot be altered after initial
+                   writes. It was allowing files to be overwritten
+                   by renaming a newly created file over a protected
+                   file.
+
+                   https://www.samba.org/samba/security/CVE-2026-2340.html
+
+
+o CVE-2026-3012:   auto-enrolment GPO installing CA certificate over http
+                   without verification
+
+                   To bootstrap a certificate chain a domain member must
+                   fetch a certificate without TLS. It was trusting HTTP
+                   for this when a more secure encrypted LDAP channel
+                   was also available.
+
+                   https://www.samba.org/samba/security/CVE-2026-3012.html
+
+
+o CVE-2026-3238:   Denial of service against AD DC WINS server
+
+                   The WINS server component of the Active
+                   Directory Domain controller code in Samba
+                   is vulnerable to a NULL pointer dereference
+                   and crash caused by a unauthenticated UDP
+                   packet.
+
+                   https://www.samba.org/samba/security/CVE-2026-3238.html
+
+
+o CVE-2026-4408:   Unauthenticated Remote Code Execution in Samba DCE/RPC SAMR
+                   server
+
+                   Samba file servers and classic (non-AD) domain controllers
+                   with samba-dcerpcd started as a system service and with a
+                   "check password script" that has the %u substitution
+                   character are vulnerable to a remote code execution.
+
+                   https://www.samba.org/samba/security/CVE-2026-4408.html
+
+
+o CVE-2026-4480:   Unauthenticated Remote Code Execution in Samba printing
+                   subsystem
+
+                   Samba print servers with a "print command"
+                   that has the %J substitution character
+                   are vulnerable to a Remote Code Execution.
+
+                   https://www.samba.org/samba/security/CVE-2026-4480.html
+
+
+Changes since 4.23.7
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15997: CVE-2026-2340
+   * BUG 16003: CVE-2026-3012
+   * BUG 16033: CVE-2026-4480
+   * BUG 16034: CVE-2026-4408
+
+o  Pavel Kohout <pavel@aisle.com>
+   * BUG 15997: CVE-2026-2340
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15992: CVE-2026-1933
+   * BUG 16012: CVE-2026-3238
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15992: CVE-2026-1933
+   * BUG 16033: CVE-2026-4480
+   * BUG 16034: CVE-2026-4408
+   * BUG 16059: CVE-2026-40170: thirdparty ngtcp2 needs to be updated
+   * BUG 16073: Winbind can change Ownership Of / To A User Who has Homedir / In
+     passwd
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.23.7
                            April 21, 2026
                    ==============================
@@ -51,8 +173,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.23.6
                          February 27, 2026
