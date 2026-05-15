@@ -1687,6 +1687,53 @@ out:
 	return status_code(rc);
 }
 
+static uint64_t vfs_ceph_rgw_disk_free(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       uint64_t *bsize,
+				       uint64_t *dfree,
+				       uint64_t *dsize)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct vfs_ceph_rgw_fh *fh = NULL;
+	struct rgw_statvfs vfs_st = {0};
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get handle for [%s]\n",
+			fsp_str_dbg(fsp));
+		goto out;
+	}
+
+	rc = rgw_statfs(config->rgw_root_fs,
+			fh->rgw_fh,
+			&vfs_st,
+			RGW_STATFS_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get fs stat\n");
+		goto out;
+	}
+
+	*bsize = (uint64_t)vfs_st.f_bsize;
+	*dfree = (uint64_t)vfs_st.f_bavail;
+	*dsize = (uint64_t)vfs_st.f_blocks;
+
+	DBG_DEBUG("[CEPH_RGW] disk_free: bsize=%" PRIu64 " dfree=%" PRIu64
+		  " dsize=%" PRIu64 "\n",
+		  *bsize,
+		  *dfree,
+		  *dsize);
+	return *dfree;
+out:
+	errno = -rc;
+	return (uint64_t)(-1);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -1906,7 +1953,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 
 	.connect_fn = vfs_ceph_rgw_connect,
 	.disconnect_fn = vfs_ceph_rgw_disconnect,
-	.disk_free_fn = vfs_not_implemented_disk_free,
+	.disk_free_fn = vfs_ceph_rgw_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
 	.fstatvfs_fn = vfs_not_implemented_fstatvfs,
