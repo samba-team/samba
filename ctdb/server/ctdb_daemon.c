@@ -311,17 +311,17 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	int res;
 	if (client == NULL) {
-		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_register_message_handler\n"));
+		DBG_ERR("Bad client_id\n");
 		return -1;
 	}
 	res = srvid_register(ctdb->srv, client, srvid, daemon_message_handler,
 			     client);
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to register handler %llu in daemon\n",
-			 (unsigned long long)srvid));
+		DBG_ERR("Failed to register handler %llu in daemon\n",
+			(unsigned long long)srvid);
 	} else {
-		DEBUG(DEBUG_INFO,(__location__ " Registered message handler for srvid=%llu\n",
-			 (unsigned long long)srvid));
+		D_INFO("Registered message handler for srvid=%llu\n",
+		       (unsigned long long)srvid);
 	}
 
 	return res;
@@ -335,7 +335,7 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 {
 	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	if (client == NULL) {
-		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_deregister_message_handler\n"));
+		DBG_ERR("Bad client_id\n");
 		return -1;
 	}
 	return srvid_deregister(ctdb->srv, srvid, client);
