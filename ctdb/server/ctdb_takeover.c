@@ -289,21 +289,20 @@ static int32_t ctdb_vnn_assign_iface(struct ctdb_context *ctdb,
 	best->references++;
 	vnn->pnn = ctdb->pnn;
 
-	DBG_INFO("public address '%s' now assigned to iface '%s' refs[%d]\n",
-		 ctdb_vnn_address_string(vnn),
-		 ctdb_vnn_iface_string(vnn),
-		 best->references);
+	D_INFO("Assigned: %s (now on %s[refs=%d])\n",
+	       ctdb_vnn_address_string(vnn),
+	       ctdb_vnn_iface_string(vnn),
+	       best->references);
 	return 0;
 }
 
 static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
 				    struct ctdb_vnn *vnn)
 {
-	DBG_INFO("public address '%s' "
-		 "now unassigned (old iface '%s' refs[%d])\n",
-		 ctdb_vnn_address_string(vnn),
-		 ctdb_vnn_iface_string(vnn),
-		 vnn->iface != NULL ? vnn->iface->references : 0);
+	D_INFO("Unassigned: %s (was on %s[refs=%d])\n",
+	       ctdb_vnn_address_string(vnn),
+	       ctdb_vnn_iface_string(vnn),
+	       vnn->iface != NULL ? vnn->iface->references : 0);
 	if (vnn->iface) {
 		vnn->iface->references--;
 	}
