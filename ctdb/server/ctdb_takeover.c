@@ -2497,8 +2497,6 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 	state = talloc(ctdb, struct ipreallocated_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	DEBUG(DEBUG_INFO,(__location__ " Running \"ipreallocated\" event\n"));
-
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_ipreallocated_callback, state,
 					 CTDB_EVENT_IPREALLOCATED,
@@ -2567,8 +2565,6 @@ int32_t ctdb_control_start_ipreallocate(struct ctdb_context *ctdb,
 		DBG_ERR("Memory allocation error\n");
 		return -1;
 	}
-
-	DBG_INFO("Running \"startipreallocate\" event\n");
 
 	ret = ctdb_event_script_callback(ctdb,
 					 state,
