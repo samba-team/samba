@@ -642,9 +642,16 @@ int ctdb_event_script_run(struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	DEBUG(DEBUG_INFO,
-	      (__location__ " Running event %s with arguments %s\n",
-	       ctdb_event_to_string(event), arg_str));
+	if (DEBUGLEVEL >= DBGLVL_INFO) {
+		if (arg_str == NULL || arg_str[0] == '\0') {
+			D_INFO("Running event: %s\n",
+			       ctdb_event_to_string(event));
+		} else {
+			D_INFO("Running event: %s [%s]\n",
+			       ctdb_event_to_string(event),
+			       arg_str);
+		}
+	}
 
 	talloc_free(arg_str);
 	return 0;
