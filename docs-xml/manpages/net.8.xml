@@ -2670,13 +2670,16 @@ standard output.
 <para>
 This command imports configuration from a file in smb.conf format.
 If a section encountered in the input file is present in registry,
-its contents is replaced. Sections of registry configuration that have
-no counterpart in the input file are not affected. If you want to delete these,
-you will have to use the "net conf drop" or "net conf delshare" commands.
-Optionally, a section may be specified to restrict the effect of the
-import command to that specific section. A test mode is enabled by specifying
-the parameter "-T" on the commandline. In test mode, no changes are made to the
-registry, and the resulting configuration is printed to standard output instead.
+its contents are replaced. However, when no section (share name)
+is specified on the command line, the existing registry configuration
+is first cleared and then re-populated entirely from the input file.
+Sections of registry configuration that have no counterpart in the
+input file are not retained in this case. If a section is specified
+on the command line, the import operation is limited to that specific
+section, and only that section is replaced. A test mode is enabled
+by specifying the parameter "-T" on the commandline. In test mode, no changes
+are made to the registry, and the resulting configuration is printed
+to standard output instead.
 </para>
 </refsect3>
 
