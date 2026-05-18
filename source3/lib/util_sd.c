@@ -432,9 +432,9 @@ bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 		return False;
 	}
 
-	if (strncmp(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
+	if (strcmp(tok, "ALLOWED") == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
+	} else if (strcmp(tok, "DENIED") == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_DENIED;
 
 	} else if (strnequal(tok, "0x", 2)) {
