@@ -513,7 +513,7 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 	data.dptr  = (uint8_t *)discard_const(
 		ctdb_vnn_address_string(state->vnn));
 	data.dsize = strlen((char *)data.dptr) + 1;
-	DEBUG(DEBUG_INFO,(__location__ " sending TAKE_IP for '%s'\n", data.dptr));
+	D_INFO("Sending TAKE_IP message [%s]\n", data.dptr);
 
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_TAKE_IP, data);
 
@@ -887,7 +887,7 @@ static struct ctdb_vnn *release_ip_post(struct ctdb_context *ctdb,
 	 */
 	data.dptr = (uint8_t *)ctdb_addr_to_str(addr);
 	data.dsize = strlen((char *)data.dptr)+1;
-	DEBUG(DEBUG_INFO, ("Sending RELEASE_IP message for %s\n", data.dptr));
+	D_INFO("Sending RELEASE_IP message [%s]\n", data.dptr);
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
 
 	ctdb_vnn_unassign_iface(ctdb, vnn);
