@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture tester utility functions
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Jelmer Vernooij 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -92,7 +92,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 
 /**
   sometimes we need a fairly complex file to work with, so we can test
-  all possible attributes. 
+  all possible attributes.
 */
 _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname)
 {
@@ -104,12 +104,12 @@ _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 	NTSTATUS status;
 
 	smbcli_unlink(cli->tree, fname);
-	fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0,
 				     SEC_RIGHTS_FILE_ALL,
 				     FILE_ATTRIBUTE_NORMAL,
 				     NTCREATEX_SHARE_ACCESS_DELETE|
 				     NTCREATEX_SHARE_ACCESS_READ|
-				     NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_SHARE_ACCESS_WRITE,
 				     NTCREATEX_DISP_OVERWRITE_IF,
 				     0, 0);
 	if (fnum == -1) return -1;
@@ -120,7 +120,7 @@ _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 		/* setup some EAs */
 		setfile.generic.level = RAW_SFILEINFO_EA_SET;
 		setfile.generic.in.file.fnum = fnum;
-		setfile.ea_set.in.num_eas = 2;	
+		setfile.ea_set.in.num_eas = 2;
 		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 		setfile.ea_set.in.eas[0].flags = 0;
 		setfile.ea_set.in.eas[0].name.s = "EAONE";
@@ -176,7 +176,7 @@ _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 
 /*
   sometimes we need a fairly complex directory to work with, so we can test
-  all possible attributes. 
+  all possible attributes.
 */
 int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *dname)
 {
@@ -187,11 +187,11 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 	NTSTATUS status;
 
 	smbcli_deltree(cli->tree, dname);
-	fnum = smbcli_nt_create_full(cli->tree, dname, 0, 
+	fnum = smbcli_nt_create_full(cli->tree, dname, 0,
 				     SEC_RIGHTS_DIR_ALL,
 				     FILE_ATTRIBUTE_DIRECTORY,
 				     NTCREATEX_SHARE_ACCESS_READ|
-				     NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_SHARE_ACCESS_WRITE,
 				     NTCREATEX_DISP_OPEN_IF,
 				     NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (fnum == -1) return -1;
@@ -200,7 +200,7 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 		/* setup some EAs */
 		setfile.generic.level = RAW_SFILEINFO_EA_SET;
 		setfile.generic.in.file.fnum = fnum;
-		setfile.ea_set.in.num_eas = 2;	
+		setfile.ea_set.in.num_eas = 2;
 		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 		setfile.ea_set.in.eas[0].flags = 0;
 		setfile.ea_set.in.eas[0].name.s = "EAONE";
@@ -254,10 +254,10 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 }
 
 /**
-  check that a wire string matches the flags specified 
+  check that a wire string matches the flags specified
   not 100% accurate, but close enough for testing
 */
-bool wire_bad_flags(struct smb_wire_string *str, int flags, 
+bool wire_bad_flags(struct smb_wire_string *str, int flags,
 		    struct smbcli_transport *transport)
 {
 	bool server_unicode;
@@ -277,7 +277,7 @@ bool wire_bad_flags(struct smb_wire_string *str, int flags,
 		len++;
 	}
 	if (str->private_length != len) {
-		printf("Expected wire_length %d but got %d for '%s'\n", 
+		printf("Expected wire_length %d but got %d for '%s'\n",
 		       len, str->private_length, str->s);
 		return true;
 	}
@@ -373,9 +373,9 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 }
 
 /*
-  check that an EA has the right value 
+  check that an EA has the right value
 */
-NTSTATUS torture_check_ea(struct smbcli_state *cli, 
+NTSTATUS torture_check_ea(struct smbcli_state *cli,
 			  const char *fname, const char *eaname, const char *value)
 {
 	union smb_fileinfo info;
@@ -427,7 +427,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 	}
 
 	printf("Expected value '%s' not '%*.*s' for ea %s\n",
-	       value, 
+	       value,
 	       (int)info.ea_list.out.eas[0].value.length,
 	       (int)info.ea_list.out.eas[0].value.length,
 	       info.ea_list.out.eas[0].value.data,
@@ -439,9 +439,9 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 }
 
 _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
-				   struct smbcli_state **c, 
+				   struct smbcli_state **c,
 				   struct torture_context *tctx,
-				   const char *hostname, 
+				   const char *hostname,
 				   const char *sharename,
 				   struct tevent_context *ev)
 {
@@ -456,7 +456,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	options.use_oplocks = torture_setting_bool(tctx, "use_oplocks", true);
 	options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", true);
 
-	status = smbcli_full_connection(mem_ctx, c, hostname, 
+	status = smbcli_full_connection(mem_ctx, c, hostname,
 					sharename, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),
@@ -483,7 +483,7 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 
 	(*host) = talloc_strdup(mem_ctx, torture_setting_string(tctx, "host", NULL));
 	(*share) = talloc_strdup(mem_ctx, torture_setting_string(tctx, "share", NULL));
-	
+
 	p = torture_setting_string(tctx, "unclist", NULL);
 	if (!p) {
 		return true;
@@ -551,11 +551,11 @@ _PUBLIC_ bool torture_close_connection(struct smbcli_state *c)
 
 
 /* check if the server produced the expected error code */
-_PUBLIC_ bool check_error(const char *location, struct smbcli_state *c, 
+_PUBLIC_ bool check_error(const char *location, struct smbcli_state *c,
 		 uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
 {
 	NTSTATUS status;
-	
+
 	status = smbcli_nt_error(c->tree);
 	if (NT_STATUS_IS_DOS(status)) {
 		int classnum, num;
@@ -563,8 +563,8 @@ _PUBLIC_ bool check_error(const char *location, struct smbcli_state *c,
 		num = NT_STATUS_DOS_CODE(status);
                 if (eclass != classnum || ecode != num) {
                         printf("unexpected error code %s\n", nt_errstr(status));
-                        printf(" expected %s or %s (at %s)\n", 
-			       nt_errstr(NT_STATUS_DOS(eclass, ecode)), 
+                        printf(" expected %s or %s (at %s)\n",
+			       nt_errstr(NT_STATUS_DOS(eclass, ecode)),
                                nt_errstr(nterr), location);
                         return false;
                 }
@@ -650,7 +650,7 @@ double torture_create_procs(struct torture_context *tctx,
 					printf("pid %d failed to start\n", (int)getpid());
 					_exit(1);
 				}
-				smb_msleep(100);	
+				smb_msleep(100);
 			}
 
 			child_status[i].pid = getpid();
@@ -775,9 +775,9 @@ _PUBLIC_ struct torture_test *torture_suite_add_smb_multi_test(
 												 struct smbcli_state *,
 												int i))
 {
-	struct torture_test *test; 
+	struct torture_test *test;
 	struct torture_tcase *tcase;
-	
+
 	tcase = torture_suite_add_tcase(suite, name);
 
 	test = talloc(tcase, struct torture_test);
@@ -826,9 +826,9 @@ _PUBLIC_ struct torture_test *torture_suite_add_2smb_test(
 												struct smbcli_state *,
 												struct smbcli_state *))
 {
-	struct torture_test *test; 
+	struct torture_test *test;
 	struct torture_tcase *tcase;
-	
+
 	tcase = torture_suite_add_tcase(suite, name);
 
 	test = talloc(tcase, struct torture_test);
@@ -870,9 +870,9 @@ _PUBLIC_ struct torture_test *torture_suite_add_1smb_test(
 				const char *name,
 				bool (*run) (struct torture_context *, struct smbcli_state *))
 {
-	struct torture_test *test; 
+	struct torture_test *test;
 	struct torture_tcase *tcase;
-	
+
 	tcase = torture_suite_add_tcase(suite, name);
 
 	test = talloc(tcase, struct torture_test);
@@ -935,13 +935,13 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* 
+/*
    a wrapper around smblsa_sid_check_privilege, that tries to take
    account of the fact that the lsa privileges calls don't expand
    group memberships, using an explicit check for administrator. There
    must be a better way ...
  */
-NTSTATUS torture_check_privilege(struct smbcli_state *cli, 
+NTSTATUS torture_check_privilege(struct smbcli_state *cli,
 				 const char *sid_str,
 				 const char *privilege)
 {
