@@ -322,6 +322,10 @@ static const char **attribute_list_from_class(TALLOC_CTX *mem_ctx,
 	const char **recursive_list;
 	const char **attr_list;
 
+	if (sclass == NULL) {
+		return NULL;
+	}
+
 	this_class_list = dsdb_attribute_list(mem_ctx, sclass, query);
 
 	recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema,
