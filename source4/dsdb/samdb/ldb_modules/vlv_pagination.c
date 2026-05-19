@@ -458,13 +458,26 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 			ret = vlv_search_by_dn_guid(ac->module, ac, &result, guid,
 						    ac->req->op.search.attrs);
 
-			if (ret == LDAP_NO_SUCH_OBJECT
-			    || result->count != 1) {
+			if (ret == LDAP_NO_SUCH_OBJECT) {
 				/*
 				 * The thing isn't there, which we quietly
 				 * ignore and go on to send an extra one
 				 * instead.
-				 *
+				 */
+				if (last_i < ac->store->num_entries - 1) {
+					last_i++;
+				}
+				continue;
+			} else if (ret != LDB_SUCCESS) {
+				return ldb_module_done(
+					ac->req,
+					ac->controls,
+					response,
+					ret);
+			}
+
+			if (result->count != 1) {
+				/*
 				 * result->count == 0 or > 1 can only
 				 * happen if ASQ (which breaks all the
 				 * rules) is somehow invoked (as this
@@ -477,12 +490,6 @@ static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 					last_i++;
 				}
 				continue;
-			} else if (ret != LDB_SUCCESS) {
-				return ldb_module_done(
-					ac->req,
-					ac->controls,
-					response,
-					ret);
 			}
 
 			ret = ldb_module_send_entry(ac->req, result->msgs[0],
