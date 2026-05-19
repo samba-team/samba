@@ -428,5 +428,9 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_auth_connection(struct dcerpc_pipe *p,
 
 	c = dcerpc_secondary_auth_connection_send(p, binding, table,
 						  credentials, lp_ctx);
+	if (c == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	return dcerpc_secondary_auth_connection_recv(c, mem_ctx, p2);
 }
