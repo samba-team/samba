@@ -2825,12 +2825,10 @@ fail:
  * lock is released and then acquire it. JRA.
  */
 
-static bool got_alarm;
 static struct cli_state *alarm_cli;
 
 static void alarm_handler(int dummy)
 {
-        got_alarm = True;
 }
 
 static void alarm_handler_parent(int dummy)
