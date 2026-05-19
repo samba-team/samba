@@ -537,11 +537,9 @@ static int print_hexkey(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void 
 	return 0;
 }
 
-static int total_bytes;
 
 static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	total_bytes += dbuf.dsize;
 	return 0;
 }
 
