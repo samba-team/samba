@@ -1073,7 +1073,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 		if (j == LSA_REF_DOMAIN_LIST_MULTIPLIER) {
 			/* TODO: What's the right error message here? */
-			result = NT_STATUS_NONE_MAPPED;
+			result = NT_STATUS_TOO_MANY_CONTEXT_IDS;
 			goto fail;
 		}
 
