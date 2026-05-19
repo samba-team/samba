@@ -115,7 +115,6 @@ static double private_timeval_elapsed(struct timeval *tv)
 	} \
 } while (0)
 
-static unsigned int test_abort_count;
 
 #if 0
 static void test_abort_fn(const char *reason)
@@ -133,7 +132,6 @@ static void test_abort_start(void)
 
 static void test_abort_stop(void)
 {
-	test_abort_count = 0;
 	talloc_set_abort_fn(NULL);
 }
 
