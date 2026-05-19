@@ -35,7 +35,6 @@
 
 static int nconnections;
 static int numstates;
-static int num_connected;
 static int test_failed;
 extern int torture_numops;
 extern int torture_entries;
@@ -325,7 +324,6 @@ static void echo_completion(struct smbcli_request *req)
 	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
 		talloc_free(state->tree);
 		state->tree = NULL;
-		num_connected--;
 		DEBUG(0,("lost connection\n"));
 		test_failed++;
 	}
@@ -429,7 +427,6 @@ bool torture_test_offline(struct torture_context *torture)
 		state[i].client = i;
 	}
 
-	num_connected = i;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		goto failed;
