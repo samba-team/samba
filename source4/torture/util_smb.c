@@ -580,7 +580,6 @@ _PUBLIC_ bool check_error(const char *location, struct smbcli_state *c,
 }
 
 static struct smbcli_state *current_cli;
-static int procnum; /* records process count number when forking */
 
 static void sigcont(int sig)
 {
@@ -626,7 +625,6 @@ double torture_create_procs(struct torture_context *tctx,
 	tv = timeval_current();
 
 	for (i=0;i<torture_nprocs;i++) {
-		procnum = i;
 		if (fork() == 0) {
 			char *myname;
 			bool ok;
