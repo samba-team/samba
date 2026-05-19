@@ -702,6 +702,18 @@ static void log_membership_changes(struct ldb_module *module,
 
 	old_values = get_parsed_dns(ctx, old_el);
 	new_values = get_parsed_dns(ctx, el);
+
+	if (old_num_values > 0 && old_values == NULL) {
+		DBG_ERR("Failed to parse old member DNs, skipping audit\n");
+		TALLOC_FREE(ctx);
+		return;
+	}
+	if (new_num_values > 0 && new_values == NULL) {
+		DBG_ERR("Failed to parse new member DNs, skipping audit\n");
+		TALLOC_FREE(ctx);
+		return;
+	}
+
 	ldb = ldb_module_get_ctx(module);
 
 	old_i = 0;
