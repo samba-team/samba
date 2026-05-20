@@ -72,6 +72,7 @@ parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--current-ip", action="append", help="IP address to update DNS to match (helpful if behind NAT, valid multiple times, defaults to values from interfaces=)")
 parser.add_option("--rpc-server-ip", type="string", help="IP address of server to use with samba-tool (defaults to first --current-ip)")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
+parser.add_option("--sync-file", type="string", help="sync to a file, in addition to real DNS calls")
 parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
 parser.add_option("--update-cache", type="string", help="Cache database of already registered records")
 parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
@@ -975,6 +976,16 @@ if rebuild_cache:
         wfile.write(str(d)+"\n")
     wfile.close()
     os.rename(tmpfile, dns_update_cache)
+
+if opts.sync_file is not None:
+    for d in delete_list:
+        if opts.verbose:
+            print("delete (sync file): %s" % d)
+        update_file(opts.sync_file, d, op="delete")
+    for d in dns_list:
+        if opts.verbose:
+            print("Add (sync file): %s" % d)
+        update_file(opts.sync_file, d, op="add")
 
 # delete the ccache if we created it
 if ccachename is not None:
