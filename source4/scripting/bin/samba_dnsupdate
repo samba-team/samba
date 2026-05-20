@@ -428,17 +428,29 @@ def update_file(write_file, d, op):
     (file_dir, file_name) = os.path.split(write_file)
     (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
     wfile = os.fdopen(tmp_fd, 'a')
+    modified = False
     for line in rfile:
+        l = parse_dns_line(line, {})
+        if str(l).lower() != str(d).lower():
+            wfile.write(line)
+            continue
         if op == "delete":
-            l = parse_dns_line(line, {})
-            if str(l).lower() == str(d).lower():
-                continue
-        wfile.write(line)
+            modified = True
+            continue
+        if op == "add":
+            op = "skip_add"
+            wfile.write(line)
+            continue
+        continue
     if op == "add":
         wfile.write(str(d)+"\n")
+        modified = True
     rfile.close()
     wfile.close()
-    os.rename(tmpfile, write_file)
+    if modified:
+        os.rename(tmpfile, write_file)
+    else:
+        os.remove(tmpfile)
     return
 
 def call_nsupdate(d, op="add"):
