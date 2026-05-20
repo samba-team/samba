@@ -3511,7 +3511,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			/* Pathname with leading '\'. */
 			{
 				size_t byte_len;
-				byte_len = dos_PutUniCode(pdata+4,dos_fname,(size_t)max_data_bytes,False);
+				byte_len = dos_PutUniCode(
+					pdata + 4,
+					dos_fname,
+					(size_t)max_data_bytes);
 				DBG_DEBUG("SMB_FILE_NAME_INFORMATION\n");
 				SIVAL(pdata,0,byte_len);
 				data_size = 4 + byte_len;

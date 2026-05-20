@@ -60,7 +60,7 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
 			const void *src,
 			size_t src_len,
 			int flags);
-size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
+size_t dos_PutUniCode(char *dst, const char *src, size_t len);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 
 /* The following definitions come from lib/dmallocmsg.c  */

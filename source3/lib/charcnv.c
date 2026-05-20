@@ -512,11 +512,9 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
  null termination if applied
 ********************************************************************/
 
-size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate)
+size_t dos_PutUniCode(char *dst, const char *src, size_t len)
 {
-	int flags = null_terminate ? STR_UNICODE|STR_NOALIGN|STR_TERMINATE
-				   : STR_UNICODE|STR_NOALIGN;
-	return push_ucs2(NULL, dst, src, len, flags);
+	return push_ucs2(NULL, dst, src, len, STR_UNICODE | STR_NOALIGN);
 }
 
 
