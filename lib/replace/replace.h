@@ -476,6 +476,14 @@ int rep_dlclose(void *handle);
 #endif
 #endif
 
+#ifndef _ALIGNED_
+#if __has_attribute(aligned) || (__GNUC__ >= 3)
+#define _ALIGNED_(n) __attribute__((aligned(n)))
+#else
+#define _ALIGNED_(n)
+#endif
+#endif
+
 #if !defined(HAVE_VDPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define vdprintf rep_vdprintf
 int rep_vdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
