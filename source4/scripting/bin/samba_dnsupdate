@@ -414,6 +414,32 @@ def get_subst_vars(samdb):
 
     return vars
 
+def update_file(write_file, d, op):
+    assert(op in ["add", "delete"])
+
+    try:
+        rfile = open(write_file, 'r+')
+    except IOError:
+        # Perhaps create it
+        open(write_file, 'w+').close()
+        # Open it for reading again, in case someone else got to it first
+        rfile = open(write_file, 'r+')
+    fcntl.lockf(rfile, fcntl.LOCK_EX)
+    (file_dir, file_name) = os.path.split(write_file)
+    (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
+    wfile = os.fdopen(tmp_fd, 'a')
+    for line in rfile:
+        if op == "delete":
+            l = parse_dns_line(line, {})
+            if str(l).lower() == str(d).lower():
+                continue
+        wfile.write(line)
+    if op == "add":
+        wfile.write(str(d)+"\n")
+    rfile.close()
+    wfile.close()
+    os.rename(tmpfile, write_file)
+    return
 
 def call_nsupdate(d, op="add"):
     """call nsupdate for an entry."""
@@ -425,28 +451,7 @@ def call_nsupdate(d, op="add"):
         if opts.verbose:
             print("Use File instead of nsupdate for %s (%s)" % (d, op))
 
-        try:
-            rfile = open(opts.use_file, 'r+')
-        except IOError:
-            # Perhaps create it
-            open(opts.use_file, 'w+').close()
-            # Open it for reading again, in case someone else got to it first
-            rfile = open(opts.use_file, 'r+')
-        fcntl.lockf(rfile, fcntl.LOCK_EX)
-        (file_dir, file_name) = os.path.split(opts.use_file)
-        (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
-        wfile = os.fdopen(tmp_fd, 'a')
-        for line in rfile:
-            if op == "delete":
-                l = parse_dns_line(line, {})
-                if str(l).lower() == str(d).lower():
-                    continue
-            wfile.write(line)
-        if op == "add":
-            wfile.write(str(d)+"\n")
-        rfile.close()
-        wfile.close()
-        os.rename(tmpfile, opts.use_file)
+        update_file(opts.use_file, d, op)
         return
 
     if opts.verbose:
