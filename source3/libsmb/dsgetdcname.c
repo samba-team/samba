@@ -797,6 +797,30 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 					     &dclist, &num_dcs);
 		NT_STATUS_NOT_OK_RETURN(status);
 
+		/*
+		 * It's 2026 try CLDAP even if dns lookups
+		 * had some problems.
+		 *
+		 * We may not have nmbd nor nbt_server
+		 * running and we better try CLDAP before
+		 * falling back to name_status_find().
+		 *
+		 * The CLDAP filter doesn't support
+		 * a netbios domain name as DnsDomain=NBTDOM,
+		 * so we pass a NULL domain_name.
+		 */
+		if (num_dcs != 0) {
+			status = process_dc_dns(mem_ctx,
+						NULL, /* domain_name */
+						flags,
+						dclist,
+						num_dcs,
+						info);
+			if (NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+
 		return process_dc_netbios(mem_ctx, msg_ctx, domain_name, flags,
 					  dclist, num_dcs, info);
 	}
@@ -830,6 +854,30 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 	status = discover_dc_netbios(mem_ctx, domain_name, flags, &dclist,
 				     &num_dcs);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	/*
+	 * It's 2026 try CLDAP even if dns lookups
+	 * had some problems.
+	 *
+	 * We may not have nmbd nor nbt_server
+	 * running and we better try CLDAP before
+	 * falling back to name_status_find().
+	 *
+	 * The CLDAP filter doesn't support
+	 * a netbios domain name as DnsDomain=NBTDOM,
+	 * so we pass a NULL domain_name.
+	 */
+	if (num_dcs != 0) {
+		status = process_dc_dns(mem_ctx,
+					NULL, /* domain_name */
+					flags,
+					dclist,
+					num_dcs,
+					info);
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return process_dc_netbios(mem_ctx, msg_ctx, domain_name, flags, dclist,
 				  num_dcs, info);
