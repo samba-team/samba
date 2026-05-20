@@ -1426,7 +1426,7 @@ static ssize_t _encode_pwd_buffer_from_str(uint8_t buf[PASSWORD_BUFFER_LEN],
 				 PASSWORD_BUFFER_LEN,
 				 string_flags);
 	if (new_pw_len < 0) {
-		BURN_DATA_SIZE(buf, PASSWORD_BUFFER_LEN);
+		BURN_PTR_SIZE(buf, PASSWORD_BUFFER_LEN);
 		return -1;
 	}
 
