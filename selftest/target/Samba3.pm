@@ -741,7 +741,8 @@ sub provision_ad_member
 	    $force_fips_mode,
 	    $offline_logon,
 	    $no_nss_winbind,
-	    $sync_pw2keytab) = @_;
+	    $sync_pw2keytab,
+	    $join_args) = @_;
 
 	if (defined($offline_logon) && defined($no_nss_winbind)) {
 		warn ("Offline logon incompatible with no nss winbind\n");
@@ -943,6 +944,9 @@ sub provision_ad_member
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD} --use-kerberos=required";
+	if (defined($join_args)) {
+		$cmd .= ${join_args};
+	}
 
 	if (system($cmd) != 0) {
 	    warn("Join failed\n$cmd");
@@ -1126,13 +1130,21 @@ sub setup_ad_member_s3_join
                 return "UNKNOWN";
         }
 
-        print "PROVISIONING AD MEMBER...";
+        print "PROVISIONING AD MEMBER S3 JOIN...";
+
+        my $join_args = " --server=$dcvars->{SERVER}.$dcvars->{REALM}";
 
         return $self->provision_ad_member($prefix,
                                           "LOCALADMEMBER2",
                                           $dcvars,
                                           $trustvars_f,
-                                          $trustvars_e);
+                                          $trustvars_e,
+                                          undef, # extra_member_options
+                                          undef, # force_fips_mode
+                                          undef, # offline_logon
+                                          undef, # no_nss_winbind
+                                          undef, # sync_pw2keytab
+                                          ${join_args});
 }
 
 sub setup_ad_member_rfc2307
