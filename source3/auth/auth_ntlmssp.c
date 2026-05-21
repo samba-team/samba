@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 3.0
    handle NLTMSSP, server side
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -90,7 +90,7 @@ NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 }
 
 /**
- * Return the challenge as determined by the authentication subsystem 
+ * Return the challenge as determined by the authentication subsystem
  * @return an 8 byte random challenge
  */
 
@@ -104,7 +104,7 @@ NTSTATUS auth3_get_challenge(struct auth4_context *auth4_context,
 }
 
 /**
- * NTLM2 authentication modifies the effective challenge, 
+ * NTLM2 authentication modifies the effective challenge,
  * @param challenge The new challenge value
  */
 NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t *chal,
@@ -129,7 +129,7 @@ NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t 
 }
 
 /**
- * Check the password on an NTLMSSP login.  
+ * Check the password on an NTLMSSP login.
  *
  * Return the session keys used on the connection.
  */

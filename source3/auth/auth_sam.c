@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Tridgell              1992-2000

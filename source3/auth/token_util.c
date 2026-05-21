@@ -307,7 +307,7 @@ NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,
 	return NT_STATUS_OK;
 }
 
-static struct security_token *init_local_nt_token(TALLOC_CTX *mem_ctx) 
+static struct security_token *init_local_nt_token(TALLOC_CTX *mem_ctx)
 {
 	/*
 	 * We do not have a method to populate the claims into this

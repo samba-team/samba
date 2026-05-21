@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Generic authentication types
    Copyright (C) Andrew Bartlett         2001-2002
@@ -106,7 +106,7 @@ static NTSTATUS auth_init_anonymous(
 }
 
 #ifdef DEVELOPER
-/** 
+/**
  * Return an error based on username
  *
  * This function allows the testing of obscure errors, as well as the generation
@@ -120,7 +120,7 @@ static NTSTATUS auth_init_anonymous(
  **/
 
 static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_context,
-						void *my_private_data, 
+						void *my_private_data,
 						TALLOC_CTX *mem_ctx,
 						const struct auth_usersupplied_info *user_info,
 						struct auth_serversupplied_info **server_info)

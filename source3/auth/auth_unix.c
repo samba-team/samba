@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett              2001
@@ -32,7 +32,7 @@
  **/
 
 static NTSTATUS check_unix_security(const struct auth_context *auth_context,
-			     void *my_private_data, 
+			     void *my_private_data,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info,
 			     struct auth_serversupplied_info **server_info)
@@ -56,7 +56,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	become_root();
 	pass = Get_Pwnam_alloc(talloc_tos(), user_info->mapped.account_name);
 
-	/** @todo This call assumes a ASCII password, no charset transformation is 
+	/** @todo This call assumes a ASCII password, no charset transformation is
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->mapped.account_name,

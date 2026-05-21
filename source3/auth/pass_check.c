@@ -125,7 +125,7 @@ static NTSTATUS password_check(const char *user, const char *password, const voi
 /****************************************************************************
 CHECK if a username/password is OK
 the function pointer fn() points to a function to call when a successful
-match is found and is used to update the encrypted password file 
+match is found and is used to update the encrypted password file
 return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
@@ -149,10 +149,10 @@ NTSTATUS pass_check(const struct passwd *pass,
 	if ((!*password) && !lp_null_passwords())
 		return NT_STATUS_LOGON_FAILURE;
 
-#if defined(WITH_PAM) 
+#if defined(WITH_PAM)
 
 	/*
-	 * If we're using PAM we want to short-circuit all the 
+	 * If we're using PAM we want to short-circuit all the
 	 * checks below and dive straight into the PAM code.
 	 */
 

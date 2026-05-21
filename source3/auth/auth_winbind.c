@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind authentication mechanism
@@ -31,7 +31,7 @@
 /* Authenticate a user with a challenge/response */
 
 static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
-				       void *my_private_data, 
+				       void *my_private_data,
 				       TALLOC_CTX *mem_ctx,
 				       const struct auth_usersupplied_info *user_info,
 				       struct auth_serversupplied_info **server_info)
@@ -51,10 +51,10 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
 	if (!auth_context) {
-		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
+		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n",
 			 user_info->mapped.account_name));
 		return NT_STATUS_INVALID_PARAMETER;
-	}		
+	}
 
 	if (strequal(user_info->mapped.domain_name, get_global_sam_name())) {
 		DEBUG(3,("check_winbind_security: Not using winbind, requested domain [%s] was for this SAM.\n",

@@ -96,7 +96,7 @@ static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
  * behaviour.
  */
 
-/* 
+/*
  * This hook is currently used by winbindd only, as all other NTLM
  * logins go via the hooks provided by make_auth4_context_s4() below.
  *
@@ -129,7 +129,7 @@ static NTSTATUS check_samba4_security(
 		TALLOC_FREE(frame);
 		goto done;
 	}
-		
+
 	nt_status = auth_context_set_challenge(auth4_context, auth_context->challenge.data, "auth_samba4");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(auth4_context);
