@@ -56,6 +56,7 @@ class JoinMemberCmdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("domain", "join",
                                     os.environ["REALM"], "member",
                                     "-s", smb_conf,
+                                    "--server=%s.%s" % (os.environ["DC_SERVER"], os.environ["REALM"]),
                                     "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                   os.environ["DC_PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Failed to join member')
