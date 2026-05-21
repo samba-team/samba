@@ -45,6 +45,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 					int num_addrs, bool remove_host)
 {
 	struct dns_rr_ns *nameservers = NULL;
+	struct dns_rr_ns _nameserver = {};
 	size_t ns_count = 0, i;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DNS_ERROR dns_err;
@@ -64,6 +65,19 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 		goto done;
 	}
 	dnsdomain++;
+
+	if (c->opt_host != NULL) {
+		/*
+		 * _nameserver.ss is not used
+		 * otherwise we would need
+		 * ads_dns_lookup_a and
+		 * ads_dns_lookup_aaaa here.
+		 */
+		_nameserver.hostname = c->opt_host;
+		nameservers = &_nameserver;
+		ns_count = 1;
+		goto do_update;
+	}
 
 	status = ads_dns_lookup_ns(ctx,
 				   dnsdomain,
@@ -127,6 +141,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 
 	}
 
+do_update:
 	for (i=0; i < ns_count; i++) {
 
 		uint32_t flags = DNS_UPDATE_SIGNED |
