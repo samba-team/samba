@@ -8,15 +8,36 @@
 #include <talloc.h>
 #include "lib/util/talloc_keep_secret.h"
 
-int rep_memset_explicit(void *dest, int ch, size_t count);
-
-int rep_memset_explicit(void *dest, int ch, size_t count)
+void *memset_explicit(void *dest, int ch, size_t count);
+void *memset_explicit(void *dest, int ch, size_t count)
 {
 	check_expected_ptr(dest);
 	check_expected(ch);
 	check_expected(count);
 
-	return 0;
+	return dest;
+}
+
+/*
+ * when optimized memset_explicit gets replaced
+ * by __memset_explicit_chk in
+ * /usr/include/x86_64-linux-gnu/bits/string_fortified.h
+ *
+ * So we need to do the same.
+ */
+void *__memset_explicit_chk (void *__s, int __c, size_t __n, size_t __destlen);
+void *__memset_explicit_chk (void *__s, int __c, size_t __n, size_t __destlen)
+{
+	return memset_explicit(__s, __c, __n);
+}
+
+/*
+ * libreplace may injects rep_memset_explicit, so we do
+ */
+void *rep_memset_explicit(void *dest, int ch, size_t count);
+void *rep_memset_explicit(void *dest, int ch, size_t count)
+{
+	return memset_explicit(dest, ch, count);
 }
 
 static void test_talloc_keep_secret(void ** state)
@@ -52,9 +73,9 @@ static void test_talloc_keep_secret(void ** state)
 	ptr1_size = talloc_get_size(ptr1);
 	assert_int_equal(ptr1_size, strlen(ptr1) + 1);
 
-	expect_string(rep_memset_explicit, dest, "secret");
-	expect_value(rep_memset_explicit, ch, (int)'\0');
-	expect_value(rep_memset_explicit, count, strlen(ptr1) + 1);
+	expect_string(memset_explicit, dest, "secret");
+	expect_value(memset_explicit, ch, (int)'\0');
+	expect_value(memset_explicit, count, strlen(ptr1) + 1);
 
 	talloc_free(ptr1);
 
@@ -79,9 +100,9 @@ static void test_talloc_keep_secret(void ** state)
 	ptr3_talloc_name = talloc_get_name(ptr3);
 	assert_string_equal(ptr3_talloc_name, "char");
 
-	expect_string(rep_memset_explicit, dest, "");
-	expect_value(rep_memset_explicit, ch, (int)'\0');
-	expect_value(rep_memset_explicit, count, 1);
+	expect_string(memset_explicit, dest, "");
+	expect_value(memset_explicit, ch, (int)'\0');
+	expect_value(memset_explicit, count, 1);
 
 	talloc_free(pool);
 }
@@ -98,9 +119,9 @@ static void test_talloc_keep_secret_validate_memset(void **state)
 	assert_non_null(password);
 	talloc_keep_secret(password);
 
-	expect_string(rep_memset_explicit, dest, "secret");
-	expect_value(rep_memset_explicit, ch, (int)'\0');
-	expect_value(rep_memset_explicit, count, strlen(password) + 1);
+	expect_string(memset_explicit, dest, "secret");
+	expect_value(memset_explicit, ch, (int)'\0');
+	expect_value(memset_explicit, count, strlen(password) + 1);
 
 	talloc_free(mem_ctx);
 }
