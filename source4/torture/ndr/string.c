@@ -63,7 +63,7 @@ test_ndr_push_string (struct torture_context *tctx, const char *string,
 		               "ndr_push_string: succeeded but NULL data");
 
 		torture_assert(tctx,
-			       strcmp_pass == !strcmp(string, (char *)ndr->data),
+			       strcmp_pass == !strncmp(string, (char *)ndr->data, expected_offset),
 		               "ndr_push_string: post-push strcmp");
 
 	}
