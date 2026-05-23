@@ -25,6 +25,7 @@
 #include <tevent.h>
 #include "lib/util/data_blob.h"
 #include "lib/util/time.h"
+#include "lib/util/util_net.h"
 #include "librpc/gen_ndr/dns.h"
 
 struct tevent_req *dns_lookup_send(TALLOC_CTX *mem_ctx,
@@ -43,6 +44,6 @@ int dns_lookup(FILE *resolv_conf_fp,
 	       struct dns_name_packet **reply);
 
 bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
-			      struct sockaddr_storage *addr);
+			      struct samba_sockaddr *addr);
 
 #endif

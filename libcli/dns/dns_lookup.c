@@ -337,7 +337,7 @@ fail:
 }
 
 bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
-			      struct sockaddr_storage *addr)
+			      struct samba_sockaddr *addr)
 {
 	sa_family_t family;
 	const char *src;
@@ -346,23 +346,29 @@ bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
 
 	switch (rec->rr_type) {
 	    case DNS_QTYPE_A:
+		    *addr = (struct samba_sockaddr){
+			    .sa_socklen = sizeof(struct sockaddr_in),
+			    .u.in.sin_family = AF_INET,
+		    };
 		    family = AF_INET;
 		    src = rec->rdata.ipv4_record;
-		    dst = &(((struct sockaddr_in *)addr)->sin_addr);
+		    dst = &addr->u.in.sin_addr;
 		    break;
 #ifdef HAVE_IPV6
 	    case DNS_QTYPE_AAAA:
+		    *addr = (struct samba_sockaddr){
+			    .sa_socklen = sizeof(struct sockaddr_in6),
+			    .u.in6.sin6_family = AF_INET6,
+		    };
 		    family = AF_INET6;
 		    src = rec->rdata.ipv6_record;
-		    dst = &(((struct sockaddr_in6 *)addr)->sin6_addr);
+		    dst = &addr->u.in6.sin6_addr;
 		    break;
 #endif
 	    default:
 		    /* We only care about IP addresses */
 		    return false;
 	}
-
-	*addr = (struct sockaddr_storage) { .ss_family = family };
 
 	ret = inet_pton(family, src, dst);
 	if (ret != 1) {

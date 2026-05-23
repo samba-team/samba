@@ -138,7 +138,7 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 
 	for (i=0; i<reply->arcount; i++) {
 		struct dns_res_rec *ar = &reply->additional[i];
-		struct sockaddr_storage addr;
+		struct samba_sockaddr addr = {};
 		bool ok;
 		size_t j;
 
@@ -170,7 +170,7 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 			}
 			srv->ss_s = tmp;
 
-			srv->ss_s[srv->num_ips] = addr;
+			srv->ss_s[srv->num_ips] = addr.u.ss;
 			srv->num_ips += 1;
 		}
 	}
@@ -305,7 +305,7 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 
 	for (i=0; i<reply->arcount; i++) {
 		struct dns_res_rec *ar = &reply->additional[i];
-		struct sockaddr_storage addr;
+		struct samba_sockaddr addr = {};
 		bool ok;
 		size_t j;
 
@@ -318,7 +318,7 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 			struct dns_rr_ns *ns = &state->nss[j];
 
 			if (strcmp(ns->hostname, ar->name) == 0) {
-				ns->ss = addr;
+				ns->ss = addr.u.ss;
 			}
 		}
 	}
@@ -468,7 +468,7 @@ static void ads_dns_lookup_a_done(struct tevent_req *subreq)
 
 	for (i = 0; i < reply->ancount; i++) {
 		bool ok;
-		struct sockaddr_storage ss = {0};
+		struct samba_sockaddr ss = {};
 		struct dns_res_rec *an = &reply->answers[i];
 
 		if (an->rr_type != DNS_QTYPE_A) {
@@ -487,12 +487,10 @@ static void ads_dns_lookup_a_done(struct tevent_req *subreq)
 		if (!ok) {
 			continue;
 		}
-		if (is_zero_addr(&ss)) {
+		if (is_zero_addr(&ss.u.ss)) {
 			continue;
 		}
-		state->addrs[state->num_names].u.ss = ss;
-		state->addrs[state->num_names].sa_socklen =
-					sizeof(struct sockaddr_in);
+		state->addrs[state->num_names] = ss;
 		state->hostnames[state->num_names] = talloc_strdup(
 							state->hostnames,
 							an->name);
@@ -672,7 +670,7 @@ static void ads_dns_lookup_aaaa_done(struct tevent_req *subreq)
 
 	for (i = 0; i < reply->ancount; i++) {
 		bool ok;
-		struct sockaddr_storage ss = {0};
+		struct samba_sockaddr ss = {};
 		struct dns_res_rec *an = &reply->answers[i];
 
 		if (an->rr_type != DNS_QTYPE_AAAA) {
@@ -691,12 +689,10 @@ static void ads_dns_lookup_aaaa_done(struct tevent_req *subreq)
 		if (!ok) {
 			continue;
 		}
-		if (is_zero_addr(&ss)) {
+		if (is_zero_addr(&ss.u.ss)) {
 			continue;
 		}
-		state->addrs[state->num_names].u.ss = ss;
-		state->addrs[state->num_names].sa_socklen =
-					sizeof(struct sockaddr_in6);
+		state->addrs[state->num_names] = ss;
 
 		state->hostnames[state->num_names] = talloc_strdup(
 							state->hostnames,
