@@ -340,8 +340,8 @@ bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
 			      struct samba_sockaddr *addr)
 {
 	sa_family_t family;
-	const char *src;
-	void *dst;
+	const char *src = NULL;
+	void *dst = NULL;
 	int ret;
 
 	switch (rec->rr_type) {
@@ -368,6 +368,11 @@ bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
 	    default:
 		    /* We only care about IP addresses */
 		    return false;
+	}
+
+	if (src == NULL) {
+		DBG_DEBUG("No address\n");
+		return false;
 	}
 
 	ret = inet_pton(family, src, dst);
