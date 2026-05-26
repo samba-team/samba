@@ -6890,13 +6890,13 @@ NTSTATUS create_file_default(connection_struct *conn,
 	NTSTATUS status;
 	bool stream_name = false;
 
-	DBG_DEBUG("access_mask = 0x%" PRIu32
-		  " file_attributes = 0x%" PRIu32
-		  " share_access = 0x%" PRIu32
-		  " create_disposition = 0x%" PRIu32
-		  " create_options = 0x%" PRIu32
-		  " oplock_request = 0x%" PRIu32
-		  " private_flags = 0x%" PRIu32
+	DBG_DEBUG("access_mask = 0x%" PRIx32
+		  " file_attributes = 0x%" PRIx32
+		  " share_access = 0x%" PRIx32
+		  " create_disposition = 0x%" PRIx32
+		  " create_options = 0x%" PRIx32
+		  " oplock_request = 0x%" PRIx32
+		  " private_flags = 0x%" PRIx32
 		  " ea_list = %p, sd = %p, fname = %s\n",
 		  access_mask,
 		  file_attributes,
