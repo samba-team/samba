@@ -175,7 +175,7 @@ struct dns_rrec {
 	uint8_t *data;
 };
 
-struct dns_tkey_record {
+struct addns_tkey_record {
 	struct dns_domain_name *algorithm;
 	time_t inception;
 	time_t expiration;
@@ -266,7 +266,7 @@ DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 				 uint32_t ttl, const struct sockaddr_storage *pss,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-				     struct dns_tkey_record **ptkey);
+				     struct addns_tkey_record **ptkey);
 DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 const char *algorithm_name,
 				 time_t time_signed, uint16_t fudge,

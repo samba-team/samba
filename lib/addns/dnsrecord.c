@@ -260,13 +260,13 @@ DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 }
 
 DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-				     struct dns_tkey_record **ptkey)
+				     struct addns_tkey_record **ptkey)
 {
-	struct dns_tkey_record *tkey;
+	struct addns_tkey_record *tkey;
 	struct dns_buffer buf;
 	uint32_t tmp_inception, tmp_expiration;
 	
-	if (!(tkey = talloc(mem_ctx, struct dns_tkey_record))) {
+	if (!(tkey = talloc(mem_ctx, struct addns_tkey_record))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
 

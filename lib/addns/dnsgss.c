@@ -99,7 +99,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int(struct dns_connection *conn,
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			struct dns_request *resp;
-			struct dns_tkey_record *tkey;
+			struct addns_tkey_record *tkey;
 			struct dns_rrec *tkey_answer = NULL;
 			uint16_t i;
 
