@@ -583,12 +583,22 @@ static int dmaster_defer_add(struct ctdb_db_context *ctdb_db,
 void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_dmaster_old *c = (struct ctdb_req_dmaster_old *)hdr;
+	size_t req_dmaster_header_len = offsetof(struct ctdb_req_dmaster_old,
+						 data);
+	size_t buf_len = hdr->length;
 	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header header;
 	struct ctdb_db_context *ctdb_db;
 	uint32_t record_flags = 0;
 	size_t len;
 	int ret;
+
+	if (buf_len < req_dmaster_header_len ||
+	    c->keylen > buf_len - req_dmaster_header_len ||
+	    c->datalen > buf_len - req_dmaster_header_len - c->keylen) {
+		DBG_WARNING("Invalid packet\n");
+		return;
+	}
 
 	key.dptr = c->data;
 	key.dsize = c->keylen;
@@ -917,6 +927,8 @@ sort_keys:
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_call_old *c = (struct ctdb_req_call_old *)hdr;
+	size_t req_call_header_len = offsetof(struct ctdb_req_call_old, data);
+	size_t buf_len = hdr->length;
 	TDB_DATA data;
 	struct ctdb_reply_call_old *r;
 	int ret, len;
@@ -924,6 +936,13 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call *call;
 	struct ctdb_db_context *ctdb_db;
 	int tmp_count, bucket;
+
+	if (buf_len < req_call_header_len ||
+	    c->keylen > buf_len - req_call_header_len  ||
+	    c->calldatalen > buf_len - req_call_header_len - c->keylen) {
+		DBG_WARNING("Invalid packet\n");
+		return;
+	}
 
 	if (ctdb->methods == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " Failed ctdb_request_call. Transport is DOWN\n"));
@@ -1199,7 +1218,16 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_call_old *c = (struct ctdb_reply_call_old *)hdr;
+	size_t reply_call_header_len = offsetof(struct ctdb_reply_call_old,
+						data);
+	size_t buf_len = hdr->length;
 	struct ctdb_call_state *state;
+
+	if (buf_len < reply_call_header_len ||
+	    c->datalen > buf_len - reply_call_header_len) {
+		DBG_WARNING("Invalid packet\n");
+		return;
+	}
 
 	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
@@ -1296,11 +1324,21 @@ finished_ro:
 void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_reply_dmaster_old *c = (struct ctdb_reply_dmaster_old *)hdr;
+	size_t reply_dmaster_header_len = offsetof(struct ctdb_reply_dmaster_old,
+						   data);
+	size_t buf_len = hdr->length;
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key, data;
 	uint32_t record_flags = 0;
 	size_t len;
 	int ret;
+
+	if (buf_len < reply_dmaster_header_len ||
+	    c->keylen > buf_len - reply_dmaster_header_len ||
+	    c->datalen > buf_len - reply_dmaster_header_len - c->keylen) {
+		DBG_WARNING("Invalid packet\n");
+		return;
+	}
 
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (ctdb_db == NULL) {
