@@ -36,10 +36,7 @@ struct dns_rr_srv_fill_state {
 	size_t num_outstanding;
 };
 
-static void dns_rr_srv_fill_done_a(struct tevent_req *subreq);
-#if defined(HAVE_IPV6)
-static void dns_rr_srv_fill_done_aaaa(struct tevent_req *subreq);
-#endif
+static void dns_rr_srv_fill_done(struct tevent_req *subreq);
 static void dns_rr_srv_fill_timedout(struct tevent_req *subreq);
 
 static struct tevent_req *dns_rr_srv_fill_send(
@@ -51,7 +48,7 @@ static struct tevent_req *dns_rr_srv_fill_send(
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct dns_rr_srv_fill_state *state = NULL;
-	size_t i, num_subreqs;
+	size_t i;
 
 	req = tevent_req_create(mem_ctx, &state, struct dns_rr_srv_fill_state);
 	if (req == NULL) {
@@ -60,14 +57,8 @@ static struct tevent_req *dns_rr_srv_fill_send(
 	state->srvs = srvs;
 	state->num_srvs = num_srvs;
 
-	/*
-	 * Without IPv6 we only use half of this, but who does not
-	 * have IPv6 these days?
-	 */
-	num_subreqs = num_srvs * 2;
-
 	state->subreqs = talloc_zero_array(
-		state, struct tevent_req *, num_subreqs);
+		state, struct tevent_req *, num_srvs);
 	if (tevent_req_nomem(state->subreqs, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -82,31 +73,17 @@ static struct tevent_req *dns_rr_srv_fill_send(
 			continue;
 		}
 
-		subreq = ads_dns_lookup_a_send(
+		subreq = ads_dns_lookup_in_send(
 			state->subreqs, ev, srvs[i].hostname);
 		if (tevent_req_nomem(subreq, req)) {
 			TALLOC_FREE(state->subreqs);
 			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(
-			subreq, dns_rr_srv_fill_done_a, req);
+			subreq, dns_rr_srv_fill_done, req);
 
-		state->subreqs[i*2] = subreq;
+		state->subreqs[i] = subreq;
 		state->num_outstanding += 1;
-
-#if defined(HAVE_IPV6)
-		subreq = ads_dns_lookup_aaaa_send(
-			state->subreqs, ev, srvs[i].hostname);
-		if (tevent_req_nomem(subreq, req)) {
-			TALLOC_FREE(state->subreqs);
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(
-			subreq, dns_rr_srv_fill_done_aaaa, req);
-
-		state->subreqs[i*2+1] = subreq;
-		state->num_outstanding += 1;
-#endif
 	}
 
 	if (state->num_outstanding == 0) {
@@ -127,14 +104,7 @@ static struct tevent_req *dns_rr_srv_fill_send(
 }
 
 static void dns_rr_srv_fill_done(
-	struct tevent_req *subreq,
-	NTSTATUS (*recv_fn)(
-		struct tevent_req *req,
-		TALLOC_CTX *mem_ctx,
-		uint8_t *rcode_out,
-		size_t *num_names_out,
-		char ***hostnames_out,
-		struct samba_sockaddr **addrs_out))
+	struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -144,14 +114,11 @@ static void dns_rr_srv_fill_done(
 	struct dns_rr_srv *srv = NULL;
 	size_t num_ips;
 	struct sockaddr_storage *tmp = NULL;
-	uint8_t rcode = 0;
 	char **hostnames_out = NULL;
 	struct samba_sockaddr *addrs = NULL;
 	size_t num_addrs = 0;
 	NTSTATUS status;
 	size_t i;
-	const char *ip_dbg_str = (recv_fn == ads_dns_lookup_a_recv) ?
-				 "A" : "AAAA";
 
 	/*
 	 * This loop walks all potential subreqs. Typical setups won't
@@ -174,39 +141,26 @@ static void dns_rr_srv_fill_done(
 		return;
 	}
 
-	srv = &state->srvs[i/2]; /* 2 subreq per srv */
+	srv = &state->srvs[i];
 
-	status = recv_fn(
+	status = ads_dns_lookup_in_recv(
 		subreq,
 		state,
-		&rcode,
-		&num_addrs,
 		&hostnames_out,
 		&addrs);
 	TALLOC_FREE(subreq);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("async DNS %s lookup for %s returned %s\n",
-			 ip_dbg_str,
+		DBG_INFO("async DNS lookup for %s returned %s\n",
 			 srv->hostname,
 			 nt_errstr(status));
 		num_addrs = 0;
 		goto done;
 	}
 
-	if (rcode != DNS_RCODE_OK) {
-		DBG_INFO("async DNS %s lookup for %s returned DNS code "
-			 "%"PRIu8"\n",
-			 ip_dbg_str,
-			 srv->hostname,
-			 rcode);
-		num_addrs = 0;
-		goto done;
-	}
-
+	num_addrs = talloc_array_length(addrs);
 	if (num_addrs == 0) {
-		DBG_INFO("async DNS %s lookup for %s returned 0 addresses.\n",
-			 ip_dbg_str,
+		DBG_INFO("async DNS lookup for %s returned 0 addresses.\n",
 			 srv->hostname);
 		goto done;
 	}
@@ -226,18 +180,17 @@ static void dns_rr_srv_fill_done(
 	if (tmp == NULL) {
 		goto done;
 	}
+	srv->ss_s = tmp;
 
 	for (i=0; i<num_addrs; i++) {
 		char addr[INET6_ADDRSTRLEN];
-		DBG_INFO("async DNS %s lookup for %s [%zu] got %s -> %s\n",
-			 ip_dbg_str,
+		DBG_INFO("async DNS lookup for %s [%zu] got %s -> %s\n",
 			 srv->hostname,
 			 i,
 			 hostnames_out[i],
 			 print_sockaddr(addr, sizeof(addr), &addrs[i].u.ss));
 		tmp[num_ips + i] = addrs[i].u.ss;
 	}
-	srv->ss_s = tmp;
 	srv->num_ips = num_ips + num_addrs;
 
 done:
@@ -246,18 +199,6 @@ done:
 		tevent_req_done(req);
 	}
 }
-
-static void dns_rr_srv_fill_done_a(struct tevent_req *subreq)
-{
-	dns_rr_srv_fill_done(subreq, ads_dns_lookup_a_recv);
-}
-
-#if defined(HAVE_IPV6)
-static void dns_rr_srv_fill_done_aaaa(struct tevent_req *subreq)
-{
-	dns_rr_srv_fill_done(subreq, ads_dns_lookup_aaaa_recv);
-}
-#endif
 
 static void dns_rr_srv_fill_timedout(struct tevent_req *subreq)
 {
