@@ -25,6 +25,7 @@
 #include "libcli/dns/dns.h"
 #include "lib/util/util_net.h"
 #include "libcli/util/ntstatus.h"
+#include "librpc/gen_ndr/dns.h"
 
 /* The following definitions come from libads/dns.c  */
 
@@ -80,5 +81,17 @@ NTSTATUS ads_dns_lookup_aaaa(TALLOC_CTX *ctx,
 			char ***hostnames_out,
 			struct samba_sockaddr **addrs_out);
 #endif
+
+struct tevent_req *ads_dns_lookup_in_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  const char *name);
+NTSTATUS ads_dns_lookup_in_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				char ***_names,
+				struct samba_sockaddr **_addrs);
+NTSTATUS ads_dns_lookup_in(TALLOC_CTX *ctx,
+			   const char *name,
+			   char ***_names,
+			   struct samba_sockaddr **_addrs);
 
 #endif	/* __LIB_ADDNS_DNSQUERY_H__ */
