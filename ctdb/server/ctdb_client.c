@@ -193,7 +193,16 @@ void ctdb_request_message(struct ctdb_context *ctdb,
 			  struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message_old *c = (struct ctdb_req_message_old *)hdr;
+	size_t req_message_header_len = offsetof(struct ctdb_req_message_old,
+						 data);
+	size_t buf_len = hdr->length;
 	TDB_DATA data;
+
+	if (buf_len < req_message_header_len ||
+	    c->datalen > buf_len - req_message_header_len) {
+		DBG_WARNING("Invalid packet\n");
+		return;
+	}
 
 	data.dsize = c->datalen;
 	data.dptr = talloc_memdup(c, &c->data[0], c->datalen);
