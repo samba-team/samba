@@ -104,7 +104,6 @@ apt-get -y install \
     python3-iso8601 \
     python3-markdown \
     python3-pyasn1 \
-    python3-requests \
     python3-setproctitle \
     rng-tools \
     rsync \

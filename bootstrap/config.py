@@ -156,7 +156,6 @@ PKGS = [
     ('python3-dnspython', 'python3-dns'),
     ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
     ('python3-setproctitle', 'python3-setproctitle'),
-    ('python3-requests', 'python3-requests'), # for cert auto enroll
 
     ('', 'python3-libsemanage'),
     ('', 'python3-policycoreutils'),
