@@ -1734,8 +1734,9 @@ sub setup_ad_member_idmap_nss
 	# jane:x:65520:65531:localjane gecos:/:/bin/false
 	# jackthemapper:x:65519:65531:localjackthemaper gecos:/:/bin/false
 	# jacknomapper:x:65518:65531:localjacknomaper gecos:/:/bin/false
+	# systemuser:x:65517:65531:localsystemuser gecos:/:/bin/false
 	idmap config $dcvars->{DOMAIN} : backend = nss
-	idmap config $dcvars->{DOMAIN} : range = 65518-65521
+	idmap config $dcvars->{DOMAIN} : range = 65517-65521
 
 	# Support SMB1 so that we can use posix_whoami().
 	client min protocol = CORE
@@ -2935,6 +2936,7 @@ sub provision($$)
 	my ($gid_force_user);
 	my ($gid_jackthemapper);
 	my ($gid_jacknomapper);
+	my ($gid_systemuser);
 	my ($gid_group1);
 	my ($gid_group2);
 	my ($uid_user1);
@@ -2946,6 +2948,7 @@ sub provision($$)
 	my ($uid_localjane);
 	my ($uid_localjackthemapper);
 	my ($uid_localjacknomapper);
+	my ($uid_localsystemuser);
 
 	if ($unix_uid < 0xffff - 13) {
 		$max_uid = 0xffff;
@@ -2970,6 +2973,7 @@ sub provision($$)
 	$uid_localjane = $max_uid - 15;
 	$uid_localjackthemapper = $max_uid - 16;
 	$uid_localjacknomapper = $max_uid - 17;
+	$uid_localsystemuser = $max_uid - 18;
 
 	if ($unix_gids[0] < 0xffff - 8) {
 		$max_gid = 0xffff;
@@ -2989,6 +2993,7 @@ sub provision($$)
 	$gid_jacknomapper = $max_gid - 10;
 	$gid_group1 = $max_gid - 11;
 	$gid_group2 = $max_gid - 12;
+	$gid_systemuser = $max_gid - 13;
 
 	##
 	## create conffile
@@ -3858,6 +3863,7 @@ bob:x:$uid_localbob:$gid_domusers:localbob gecos:/:/bin/false
 jane:x:$uid_localjane:$gid_domusers:localjane gecos:/:/bin/false
 jackthemapper:x:$uid_localjackthemapper:$gid_domusers:localjackthemaper gecos:/:/bin/false
 jacknomapper:x:$uid_localjacknomapper:$gid_domusers:localjacknomaper gecos:/:/bin/false
+systemuser:x:$uid_localsystemuser:$gid_systemuser:localsystemuser gecos:/:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix:/bin/false
@@ -3881,6 +3887,7 @@ jackthemappergroup:x:$gid_jackthemapper:jackthemapper
 jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 group1:x:$gid_group1:user1
 group2:x:$gid_group2:user2
+systemusergroup:x:$gid_systemuser:systemuser
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
@@ -3928,6 +3935,7 @@ group2:x:$gid_group2:user2
 	createuser($self, "slashuser", $password, $conffile, \%createuser_env) || die("Unable to create slashuser");
 	createuser($self, "jackthemapper", "mApsEcrEt", $conffile, \%createuser_env) || die("Unable to create jackthemapper");
 	createuser($self, "jacknomapper", "nOmApsEcrEt", $conffile, \%createuser_env) || die("Unable to create jacknomapper");
+	createuser($self, "systemuser", "ag67aca0wcbhritu1", $conffile, \%createuser_env) || die("Unable to create systemuser");
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
@@ -4131,6 +4139,28 @@ sub wait_for_start($$$$$)
 	}
 
 	$cmd = $netcmd . "groupmap add sid=S-1-1-0 unixgroup=everyone type=builtin";
+	$ret = system($cmd);
+	if ($ret != 0) {
+		print("\"$cmd\" failed\n");
+		return 1;
+	}
+
+	$cmd = $netcmd . "groupmap add sid=S-1-5-32-544 unixgroup=systemusergroup type=builtin";
+	$ret = system($cmd);
+	if ($ret != 0) {
+		print("\"$cmd\" failed\n");
+		return 1;
+	}
+
+	my $systemusersid;
+	$cmd = $netcmd . "lookup name systemuser |";
+	open(IN, $cmd) or die ("Unable to lookup systemuser");
+	while (<IN>) {
+	    $systemusersid = (split / /, $_)[0];
+	}
+	close IN;
+
+	$cmd = $netcmd . "groupmap addmem S-1-5-32-544 $systemusersid";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
