@@ -69,7 +69,6 @@ import ldb as _ldb
 from samba.auth import system_session
 import json
 from shutil import which
-import requests
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
@@ -103,22 +102,6 @@ def dummy_certificate():
 
     return cert.public_bytes(encoding=Encoding.DER)
 
-# Dummy requests structure for Certificate Auto Enrollment
-class dummy_requests(object):
-    class exceptions(object):
-        ConnectionError = Exception
-
-    def __init__(self, want_exception=False):
-        self.want_exception = want_exception
-
-    def get(self, url=None, params=None):
-        if self.want_exception:
-            raise self.exceptions.ConnectionError
-
-        dummy = requests.Response()
-        dummy._content = dummy_certificate()
-        dummy.headers = {'Content-Type': 'application/x-x509-ca-cert'}
-        return dummy
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -6925,7 +6908,6 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        cae.requests = dummy_requests(want_exception=True)
         ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
                                           machine_creds.get_username(), store)
 
@@ -7032,7 +7014,6 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        cae.requests = dummy_requests()
         ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
                                           machine_creds.get_username(), store)
 
@@ -7633,7 +7614,6 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        cae.requests = dummy_requests()
         ext = cae.gp_cert_auto_enroll_ext(self.lp, machine_creds,
                                           machine_creds.get_username(), store)
 
