@@ -83,7 +83,7 @@ static void print_ldap_srvlist(struct dns_rr_srv *dclist, size_t numdcs)
 		size_t j;
 
 		for (j=0; j<dc->num_ips; j++) {
-			struct sockaddr_storage *ss = &dc->ss_s[j];
+			struct sockaddr_storage *ss = &dc->ss_s[j].u.ss;
 			char addr[INET6_ADDRSTRLEN];
 
 			print_sockaddr(addr, sizeof(addr), ss);

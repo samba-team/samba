@@ -113,7 +113,7 @@ static void dns_rr_srv_fill_done(
 	size_t num_subreqs = talloc_array_length(state->subreqs);
 	struct dns_rr_srv *srv = NULL;
 	size_t num_ips;
-	struct sockaddr_storage *tmp = NULL;
+	struct samba_sockaddr *tmp = NULL;
 	char **hostnames_out = NULL;
 	struct samba_sockaddr *addrs = NULL;
 	size_t num_addrs = 0;
@@ -172,11 +172,10 @@ static void dns_rr_srv_fill_done(
 		goto done;
 	}
 
-	tmp = talloc_realloc(
-		state->srvs,
-		srv->ss_s,
-		struct sockaddr_storage,
-		num_ips + num_addrs);
+	tmp = talloc_realloc(state->srvs,
+			     srv->ss_s,
+			     struct samba_sockaddr,
+			     num_ips + num_addrs);
 	if (tmp == NULL) {
 		goto done;
 	}
@@ -189,7 +188,7 @@ static void dns_rr_srv_fill_done(
 			 i,
 			 hostnames_out[i],
 			 print_sockaddr(addr, sizeof(addr), &addrs[i].u.ss));
-		tmp[num_ips + i] = addrs[i].u.ss;
+		tmp[num_ips + i] = addrs[i];
 	}
 	srv->num_ips = num_ips + num_addrs;
 

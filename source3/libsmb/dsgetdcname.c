@@ -337,28 +337,33 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		 * Too complex to maintain :-(.
 		 */
 		for (j = 0; j < dcs[i].num_ips; j++) {
-			if ((dcs[i].ss_s[j].ss_family == AF_INET && !have_v4_addr) ||
-			    (dcs[i].ss_s[j].ss_family == AF_INET6 && !have_v6_addr)) {
-				bool ok;
-				dclist[ret_count].hostname =
-					talloc_strdup(dclist, dcs[i].hostname);
-				ok = sockaddr_storage_to_samba_sockaddr(
-					&dclist[ret_count].sa,
-					&dcs[i].ss_s[j]);
-				if (!ok) {
-					TALLOC_FREE(dcs);
-					TALLOC_FREE(dclist);
-					return NT_STATUS_INVALID_PARAMETER;
-				}
-				ret_count++;
-				if (dcs[i].ss_s[j].ss_family == AF_INET) {
-					have_v4_addr = true;
-				} else {
-					have_v6_addr = true;
-				}
-				if (have_v4_addr && have_v6_addr) {
-					break;
-				}
+			struct samba_sockaddr *addr = &dcs[i].ss_s[j];
+			sa_family_t family = addr->u.ss.ss_family;
+
+			if ((family == AF_INET) && have_v4_addr) {
+				continue;
+			}
+			if ((family == AF_INET6) && have_v6_addr) {
+				continue;
+			}
+
+			dclist[ret_count].sa = *addr;
+			dclist[ret_count].hostname = talloc_strdup(
+				dclist, dcs[i].hostname);
+			if (dclist[ret_count].hostname == NULL) {
+				TALLOC_FREE(dclist);
+				TALLOC_FREE(dcs);
+				return NT_STATUS_NO_MEMORY;
+			}
+			ret_count++;
+
+			if (family == AF_INET) {
+				have_v4_addr = true;
+			} else {
+				have_v6_addr = true;
+			}
+			if (have_v4_addr && have_v6_addr) {
+				break;
 			}
 		}
 	}

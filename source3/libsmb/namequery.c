@@ -2630,7 +2630,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		for (j = 0; j < dcs[i].num_ips; j++) {
 			char addr[INET6_ADDRSTRLEN];
 
-			srv_addrs[num_srv_addrs] = dcs[i].ss_s[j];
+			srv_addrs[num_srv_addrs] = dcs[i].ss_s[j].u.ss;
 			if (is_zero_addr(&srv_addrs[num_srv_addrs])) {
 				continue;
 			}

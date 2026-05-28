@@ -149,7 +149,7 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 
 		for (j=0; j<state->num_srvs; j++) {
 			struct dns_rr_srv *srv = &state->srvs[j];
-			struct sockaddr_storage *tmp;
+			struct samba_sockaddr *tmp = NULL;
 
 			/*
 			 * sometimes the name gets messed up
@@ -159,18 +159,17 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 				continue;
 			}
 			/* uint16_t can't wrap here. */
-			tmp = talloc_realloc(
-				state->srvs,
-				srv->ss_s,
-				struct sockaddr_storage,
-				srv->num_ips+1);
+			tmp = talloc_realloc(state->srvs,
+					     srv->ss_s,
+					     struct samba_sockaddr,
+					     srv->num_ips + 1);
 
 			if (tevent_req_nomem(tmp, req)) {
 				return;
 			}
 			srv->ss_s = tmp;
 
-			srv->ss_s[srv->num_ips] = addr.u.ss;
+			srv->ss_s[srv->num_ips] = addr;
 			srv->num_ips += 1;
 		}
 	}
