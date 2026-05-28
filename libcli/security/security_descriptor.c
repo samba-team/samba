@@ -22,6 +22,7 @@
 #include "replace.h"
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   return a blank security descriptor (no owners, dacl or sacl)
@@ -53,6 +54,7 @@ struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 					     const struct security_acl *oacl)
 {
 	struct security_acl *nacl;
+	enum ndr_err_code ndr_err;
 
 	if (oacl == NULL) {
 		return NULL;
@@ -67,17 +69,8 @@ struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	*nacl = (struct security_acl) {
-		.revision = oacl->revision,
-		.size     = oacl->size,
-		.num_aces = oacl->num_aces,
-	};
-	if (nacl->num_aces == 0) {
-		return nacl;
-	}
-
-	nacl->aces = (struct security_ace *)talloc_memdup (nacl, oacl->aces, sizeof(struct security_ace) * oacl->num_aces);
-	if (nacl->aces == NULL) {
+	ndr_err = ndr_deepcopy_struct(security_acl, oacl, nacl, nacl);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		goto failed;
 	}
 
