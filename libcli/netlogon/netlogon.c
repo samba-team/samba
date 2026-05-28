@@ -51,7 +51,7 @@ NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
+NTSTATUS pull_netlogon_samlogon_response(const DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct netlogon_samlogon_response *response)
 {
 	uint32_t ntver;
@@ -222,7 +222,7 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 }
 
 
-NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
+NTSTATUS pull_nbt_netlogon_response(const DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct nbt_netlogon_response *response)
 {
 	NTSTATUS status;

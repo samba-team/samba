@@ -20,12 +20,12 @@ struct nbt_netlogon_response;
 
 NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct netlogon_samlogon_response *response);
-NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
+NTSTATUS pull_netlogon_samlogon_response(const DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct netlogon_samlogon_response *response);
 void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response);
 NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 				    struct nbt_netlogon_response *response);
-NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
+NTSTATUS pull_nbt_netlogon_response(const DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct nbt_netlogon_response *response);
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
