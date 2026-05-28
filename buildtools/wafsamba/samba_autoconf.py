@@ -812,7 +812,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=old-style-definition -Wold-style-definition',
                         testflags=True)
-
+        conf.ADD_CFLAGS('-Werror=tautological-compare',
+                        testflags=True)
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
         conf.ADD_CFLAGS('-Wno-format-zero-length', testflags=True)
         conf.ADD_CFLAGS('-Werror=format-security -Wformat-security',
