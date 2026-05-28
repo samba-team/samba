@@ -816,6 +816,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=stringop-overflow',
                         testflags=True)
+        conf.ADD_CFLAGS('-Werror=tautological-compare',
+                        testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
         conf.ADD_CFLAGS('-Wno-format-zero-length', testflags=True)
