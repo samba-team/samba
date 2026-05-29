@@ -38,6 +38,7 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import NTSTATUSError
 import samba.tests
 import samba.tests.libsmb
+from samba.tests import BlackboxTestCase
 
 
 class NtaclResourceAttrAceTests(samba.tests.libsmb.LibsmbTests):
@@ -98,3 +99,21 @@ class NtaclResourceAttrAceTests(samba.tests.libsmb.LibsmbTests):
         # Assert we don't lose anything
         sd_out = self.conn.get_acl(self.test_file, security.SECINFO_SACL|security.SECINFO_DACL)
         self.assertEqual(sd_out.as_sddl(), 'D:(A;;FA;;;SY)S:(RA;;;;;WD;("Secret",TU,0x0,+42))')
+
+class NtaclCheckBrokenXattr(BlackboxTestCase):
+    def test_broken_4_18_sd(self):
+        """Test that we can ndr-parse a broken ACL written by Samba before 4.19
+        """
+        try:
+            self.check_run("ndrdump --input=BAAEAAAAAgAEAAIAAQDTUqgmaU3l3XQ" \
+                           "iIvhobT/RmQ8qA1P4Ao5OARKbhEkaqQAAAAAAAAAAAAAAAA" \
+                           "AAAAAAAAAAAAAAAAAAAAAAAAAAcG9zaXhfYWNsAG6gQRFE7" \
+                           "9wBuX0c98dZv+qO/cof92D0EaIkn1cf3JUJ8jckslpjE5IA" \
+                           "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAFIC" \
+                           "0AAAA0AAAAOwAAAAIAQAAAQUAAAAAAAUVAAAAGzK0UbnSA4" \
+                           "sRk/P16AMAAAEFAAAAAAAFFQAAABsytFG50gOLEZPz9QECA" \
+                           "AAEABwAAQAAABIAFAAAAAAAAQEAAAAAAAEAAAAABAAcAAEA" \
+                           "AAAAABQA/wEfAAEBAAAAAAAFEgAAAA== " \
+                           "--base64-input xattr xattr_NTACL struct")
+        except:
+            self.fail()
