@@ -311,7 +311,7 @@ struct dns_tcp_call {
 	struct dns_tcp_connection *dns_conn;
 	DATA_BLOB in;
 	DATA_BLOB out;
-	uint8_t out_hdr[4];
+	uint8_t out_hdr[2];
 	struct iovec out_iov[2];
 };
 
@@ -407,7 +407,7 @@ static void dns_tcp_call_process_done(struct tevent_req *subreq)
 	}
 
 	/* First add the length of the out buffer */
-	RSSVAL(call->out_hdr, 0, call->out.length);
+	PUSH_BE_U16(call->out_hdr, 0, call->out.length);
 	call->out_iov[0].iov_base = (char *) call->out_hdr;
 	call->out_iov[0].iov_len = 2;
 
