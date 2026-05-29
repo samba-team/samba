@@ -251,6 +251,12 @@ interface dns
 	} dns_rdata;
 
 	typedef [flag(LIBNDR_PRINT_ARRAY_HEX|NDR_NOALIGN),nopush,nopull] struct {
+		/*
+		 * This is the start offset of this
+		 * dns_res_rec relative to the start of
+		 * dns_name_packet buffer.
+		 */
+		[ignore] uint32 start_ndr_offset;
 		dns_string name;
 		dns_qtype  rr_type;
 		dns_qclass rr_class;
