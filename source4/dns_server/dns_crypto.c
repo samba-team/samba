@@ -36,6 +36,8 @@ static WERROR dns_copy_tsig(TALLOC_CTX *mem_ctx,
 			    struct dns_res_rec *old,
 			    struct dns_res_rec *new_rec)
 {
+	new_rec->start_ndr_offset = 0;
+
 	new_rec->name = talloc_strdup(mem_ctx, old->name);
 	W_ERROR_HAVE_NO_MEMORY(new_rec->name);
 
@@ -101,7 +103,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	uint16_t i, arcount = 0;
-	DATA_BLOB tsig_blob, fake_tsig_blob, sig;
+	DATA_BLOB fake_tsig_blob, sig;
 	uint8_t *buffer = NULL;
 	size_t buffer_len = 0, packet_len = 0;
 	struct dns_server_tkey *tkey = NULL;
@@ -130,6 +132,22 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	/* We got a TSIG, so we need to sign our reply */
 	state->sign = true;
 	DBG_DEBUG("Got TSIG\n");
+
+	/*
+	 * We need to keep the input packet exactly like we got it,
+	 * but we need to cut off the tsig record.
+	 *
+	 * DNS packets can not be larger than UINT16_MAX,
+	 * the size of the UDP payload is uint16_t and
+	 * there's a uint16_t length header for TCP.
+	 *
+	 * And the start offset of the last
+	 * additional record can't be larger than
+	 * the whole packet.
+	 */
+	packet_len = packet->additional[i].start_ndr_offset;
+	SMB_ASSERT(in->length <= UINT16_MAX);
+	SMB_ASSERT(in->length > packet_len);
 
 	state->tsig = talloc_zero(state->mem_ctx, struct dns_res_rec);
 	if (state->tsig == NULL) {
@@ -205,14 +223,6 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	check_rec->other_size = 0;
 	check_rec->other_data = NULL;
 
-	ndr_err = ndr_push_struct_blob(&tsig_blob, mem_ctx, state->tsig,
-		(ndr_push_flags_fn_t)ndr_push_dns_res_rec);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1, ("Failed to push packet: %s!\n",
-			  ndr_errstr(ndr_err)));
-		return DNS_ERR(SERVER_FAILURE);
-	}
-
 	ndr_err = ndr_push_struct_blob(&fake_tsig_blob, mem_ctx, check_rec,
 		(ndr_push_flags_fn_t)ndr_push_dns_fake_tsig_rec);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -221,9 +231,19 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return DNS_ERR(SERVER_FAILURE);
 	}
 
-	/* we need to work some magic here. we need to keep the input packet
-	 * exactly like we got it, but we need to cut off the tsig record */
-	packet_len = in->length - tsig_blob.length;
+	/*
+	 * We already asserted packet_len < UINT16_MAX
+	 * above, and struct ndr_push has alloc_size and
+	 * offset as uint32_t, so it's really unlikely
+	 * to overflow buffer_len. For SIZE_MAX == UINT32_MAX,
+	 * the following check might be important, but
+	 * just lets do it always.
+	 */
+	if (fake_tsig_blob.length > (SIZE_MAX - UINT16_MAX)) {
+		DBG_WARNING("fake_tsig_blob.length=%zu too large!\n",
+			    fake_tsig_blob.length);
+		return DNS_ERR(SERVER_FAILURE);
+	}
 	buffer_len = packet_len + fake_tsig_blob.length;
 	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
 	if (buffer == NULL) {
