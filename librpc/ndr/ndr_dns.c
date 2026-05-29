@@ -183,6 +183,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_res_rec(struct ndr_pull *ndr,
 	ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX |
 				   LIBNDR_FLAG_NOALIGN);
 	if (ndr_flags & NDR_SCALARS) {
+		/*
+		 * Remember the start offset in order
+		 * to know how to truncate before the
+		 * last dns_res_rec in order to do
+		 * the correct TSIG calculation.
+		 *
+		 * Note that we just set LIBNDR_FLAG_NOALIGN
+		 * above, so ndr_pull_align is a no-op.
+		 */
+		r->start_ndr_offset = ndr->offset;
+
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_dns_string(ndr, NDR_SCALARS, &r->name));
 		NDR_CHECK(ndr_pull_dns_qtype(ndr, NDR_SCALARS, &r->rr_type));

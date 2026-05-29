@@ -21,6 +21,7 @@ pull returned Success
         answers: ARRAY(0)
         nsrecs: ARRAY(1)
             nsrecs: struct dns_res_rec
+                start_ndr_offset         : 0x00000027 (39)
                 name                     : 'cnamedotprefix0.samba2003.example.com'
                 rr_type                  : DNS_QTYPE_CNAME (0x5)
                 rr_class                 : DNS_QCLASS_IN (0x1)
