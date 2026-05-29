@@ -113,7 +113,36 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 		NDR_CHECK(ndr_maybe_pull_security_ace_object_ctr(ndr, NDR_SCALARS, r));
 		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
 		sub_size = ndr_subcontext_size_of_ace_coda(r, r->size, ndr->flags);
-		if (sub_size == 0 && !sec_ace_has_extra_blob(r->type)) {
+		if ((sub_size == 0) &&
+		    (r->type == SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE)) {
+			/*
+			 * Samba < 4.19 dropped the
+			 * CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1
+			 * from SYSTEM_RESOURCE_ATTRIBUTE_ACEs
+			 * when storing on disk. We need to
+			 * fake a meaningless but valid struct
+			 * so that file servers with that
+			 * broken xattr will continue to
+			 * function.
+			 */
+
+			r->coda.claim = (struct
+					 CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1){
+				.name = talloc_strdup(ndr->current_mem_ctx,
+						      ""),
+				.value_type =
+					CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64,
+			};
+			if (r->coda.claim.name == NULL) {
+				return ndr_pull_error(
+					ndr,
+					NDR_ERR_ALLOC,
+					"out of memory synthesising "
+					"empty claim for zero-coda "
+					"SYSTEM_RESOURCE_ATTRIBUTE_"
+					"ACE");
+			}
+		} else if ((sub_size == 0) && !sec_ace_has_extra_blob(r->type)) {
 			r->coda.ignored.data = NULL;
 			r->coda.ignored.length = 0;
 		} else {
