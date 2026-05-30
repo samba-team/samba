@@ -318,6 +318,16 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	struct childwrite_handle *handle;
 	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
 
+	if (recdata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
+		DBG_ERR("Invalid packet\n");
+		return -1;
+	}
+	if (m->count >
+	    recdata.dsize - offsetof(struct ctdb_marshall_buffer, data)) {
+		DBG_ERR("Invalid packet\n");
+		return -1;
+	}
+
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		DEBUG(DEBUG_INFO,("rejecting ctdb_control_update_record when recovery active\n"));
 		return -1;
