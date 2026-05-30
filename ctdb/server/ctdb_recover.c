@@ -36,6 +36,8 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
+#include "protocol/protocol_private.h"
+
 #include "common/system.h"
 #include "common/common.h"
 #include "common/logging.h"
@@ -67,24 +69,32 @@ ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 int
 ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
-	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
+	struct ctdb_vnn_map *new = NULL;
+	size_t npull = 0;
+	int ret = 0;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_ACTIVE) {
 		DEBUG(DEBUG_ERR, ("Attempt to set vnnmap when not in recovery\n"));
 		return -1;
 	}
 
+	ret = ctdb_vnn_map_pull(indata.dptr, indata.dsize, ctdb, &new, &npull);
+	if (ret != 0) {
+		switch (ret) {
+		case ENOMEM:
+			DBG_ERR("Memory allocation error\n");
+			break;
+		case EMSGSIZE:
+			DBG_ERR("Invalid packet\n");
+			break;
+		default:
+			DBG_ERR("Unexpected error (%d)\n", ret);
+		}
+		return -1;
+	}
+
 	talloc_free(ctdb->vnn_map);
-
-	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
-	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map);
-
-	ctdb->vnn_map->generation = map->generation;
-	ctdb->vnn_map->size       = map->size;
-	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, map->size);
-	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
-
-	memcpy(ctdb->vnn_map->map, map->map, sizeof(uint32_t)*map->size);
+	ctdb->vnn_map = new;
 
 	return 0;
 }
