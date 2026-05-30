@@ -925,6 +925,7 @@ int ctdb_vnn_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	struct ctdb_vnn_map *val;
 	size_t offset = 0, np;
 	uint32_t i;
+	uint32_t dummy = 0;
 	int ret;
 
 	val = talloc(mem_ctx, struct ctdb_vnn_map);
@@ -948,6 +949,11 @@ int ctdb_vnn_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->size == 0) {
 		val->map = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->size * ctdb_uint32_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->map = talloc_array(val, uint32_t, val->size);
