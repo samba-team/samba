@@ -1109,7 +1109,14 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb,
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	struct ctdb_client *client = NULL;
+	char *t = NULL;
 	uint32_t opcode;
+
+	t = memchr(indata.dptr, '\0', indata.dsize);
+	if (t == NULL) {
+		DBG_ERR("Invalid packet\n");
+		return -1;
+	}
 
 	if (ctdb->tunable.allow_client_db_attach == 0) {
 		DEBUG(DEBUG_ERR, ("DB Attach to database %s denied by tunable "
