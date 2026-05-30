@@ -1062,6 +1062,12 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 		return -1;
 	}
 
+	if (reply->count >
+	    indata.dsize - offsetof(struct ctdb_marshall_buffer, data)) {
+		DBG_ERR("Invalid packet\n");
+		return -1;
+	}
+
 	ctdb_db = find_ctdb_db(ctdb, reply->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", reply->db_id));
