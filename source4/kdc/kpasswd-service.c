@@ -137,7 +137,7 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 
 	ap_req_blob = data_blob_const(&request->data[HEADER_LEN], ap_req_len);
 
-	enc_data_len = len - ap_req_len;
+	enc_data_len = len - (ap_req_len + HEADER_LEN);
 	enc_data_blob = data_blob_const(&request->data[HEADER_LEN + ap_req_len],
 					enc_data_len);
 
