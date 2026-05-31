@@ -182,6 +182,16 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
 	struct ctdb_db_context *ctdb_db;
 
+	if (recdata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
+		DBG_ERR("Invalid packet\n");
+		return -1;
+	}
+	if (m->count >
+	    recdata.dsize - offsetof(struct ctdb_marshall_buffer, data)) {
+		DBG_ERR("Invalid packet\n");
+		return -1;
+	}
+
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		DEBUG(DEBUG_INFO,("rejecting ctdb_control_trans3_commit when recovery active\n"));
 		return -1;
