@@ -614,10 +614,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_get_capabilities(ctdb, outdata);
 
 	case CTDB_CONTROL_START_PERSISTENT_UPDATE:
-		return ctdb_control_start_persistent_update(ctdb, c, indata);
+		return control_not_implemented("START_PERSISTENT_UPDATE", NULL);
 
 	case CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE:
-		return ctdb_control_cancel_persistent_update(ctdb, c, indata);
+		return control_not_implemented("CANCEL_PERSISTENT_UPDATE", NULL);
 
 	case CTDB_CONTROL_TRANS2_COMMIT:
 	case CTDB_CONTROL_TRANS2_COMMIT_RETRY:

@@ -286,55 +286,6 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 	return 0;
 }
 
-
-/*
-  backwards compatibility:
-
-  start a persistent store operation. passing both the key, header and
-  data to the daemon. If the client disconnects before it has issued
-  a persistent_update call to the daemon we trigger a full recovery
-  to ensure the databases are brought back in sync.
-  for now we ignore the recdata that the client has passed to us.
- */
-int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
-				      struct ctdb_req_control_old *c,
-				      TDB_DATA recdata)
-{
-	struct ctdb_client *client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);
-
-	if (client == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " can not match start_persistent_update to a client. Returning error\n"));
-		return -1;
-	}
-
-	client->num_persistent_updates++;
-
-	return 0;
-}
-
-/* 
-  backwards compatibility:
-
-  called to tell ctdbd that it is no longer doing a persistent update 
-*/
-int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb, 
-					      struct ctdb_req_control_old *c,
-					      TDB_DATA recdata)
-{
-	struct ctdb_client *client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);
-
-	if (client == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " can not match cancel_persistent_update to a client. Returning error\n"));
-		return -1;
-	}
-
-	if (client->num_persistent_updates > 0) {
-		client->num_persistent_updates--;
-	}
-
-	return 0;
-}
-
 static int32_t ctdb_get_db_seqnum(struct ctdb_context *ctdb,
 				  uint32_t db_id,
 				  uint64_t *seqnum)

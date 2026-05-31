@@ -781,13 +781,6 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 				   struct ctdb_req_control_old *c,
 				   TDB_DATA recdata, bool *async_reply);
 
-int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb,
-					     struct ctdb_req_control_old *c,
-					     TDB_DATA recdata);
-int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
-					      struct ctdb_req_control_old *c,
-					      TDB_DATA recdata);
-
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata, TDB_DATA *outdata);
 
