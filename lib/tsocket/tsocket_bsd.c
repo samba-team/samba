@@ -1460,8 +1460,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 		errno = saved_errno;
 		return -1;
 	}
-	ZERO_STRUCTP(bsds);
-	bsds->fd = fd;
+	*bsds = (struct tdgram_bsd){.fd = fd};
 	talloc_set_destructor(bsds, tdgram_bsd_destructor);
 
 #ifdef HAVE_IPV6
