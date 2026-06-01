@@ -352,12 +352,11 @@ int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
 				       struct tsocket_address **_addr,
 				       const char *location)
 {
-	struct addrinfo hints;
+	struct addrinfo hints = {};
 	struct addrinfo *result = NULL;
 	char port_str[6];
 	int ret;
 
-	ZERO_STRUCT(hints);
 	/*
 	 * we use SOCKET_STREAM here to get just one result
 	 * back from getaddrinfo().
