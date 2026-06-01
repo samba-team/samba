@@ -92,8 +92,6 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(state->domain_name, req)) {
 			return tevent_req_post(req, event_ctx);
 		}
-	} else {
-		state->domain_name = NULL;
 	}
 
 	if (io->in.domain_sid) {
@@ -101,8 +99,6 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(state->domain_sid, req)) {
 			return tevent_req_post(req, event_ctx);
 		}
-	} else {
-		state->domain_sid = NULL;
 	}
 
 	if (io->in.server_address) {
