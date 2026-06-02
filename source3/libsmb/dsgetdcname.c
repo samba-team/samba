@@ -1209,19 +1209,12 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct netr_DsRGetDCNameInfo **info)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
-	const char *query_site = NULL;
-	char *ptr_to_free = NULL;
-	bool retry_query_with_null = false;
+	const char *query_site = site_name;
 
-	if ((site_name == NULL) || (site_name[0] == '\0')) {
-		ptr_to_free = sitename_fetch(mem_ctx, domain_name);
-		if (ptr_to_free != NULL) {
-			retry_query_with_null = true;
-		}
-		query_site = ptr_to_free;
-	} else {
-		query_site = site_name;
+	if ((query_site == NULL) || (query_site[0] == '\0')) {
+		query_site = sitename_fetch(frame, domain_name);
 	}
 
 	status = dsgetdcname_internal(mem_ctx,
@@ -1232,14 +1225,11 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 				flags,
 				info);
 
-	TALLOC_FREE(ptr_to_free);
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
-		return status;
-	}
-
-	/* Should we try again with site_name == NULL ? */
-	if (retry_query_with_null) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
+	    (query_site != NULL)) {
+		/*
+		 * No DC in our site, retry site-lookup
+		 */
 		status = dsgetdcname_internal(mem_ctx,
 					msg_ctx,
 					domain_name,
@@ -1249,6 +1239,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 					info);
 	}
 
+	TALLOC_FREE(frame);
 	return status;
 }
 
