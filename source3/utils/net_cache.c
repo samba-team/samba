@@ -44,7 +44,7 @@ static void print_cache_entry(const char* keystr, DATA_BLOB value,
 {
 	char *timeout_str;
 	char *alloc_str = NULL;
-	const char *datastr;
+	const char *datastr = NULL;
 	char *datastr_free = NULL;
 	time_t now_t = time(NULL);
 	struct tm timeout_tm, now_tm;
@@ -77,8 +77,6 @@ static void print_cache_entry(const char* keystr, DATA_BLOB value,
 		timeout_str = alloc_str;
 	}
 
-	datastr = (char *)value.data;
-
 	if (strnequal(keystr, "NAME2SID/", strlen("NAME2SID/"))) {
 		const char *strv = (char *)value.data;
 		size_t strv_len = value.length;
@@ -97,7 +95,21 @@ static void print_cache_entry(const char* keystr, DATA_BLOB value,
 					  domain, name, type);
 	}
 
-	if ((value.length > 0) && (value.data[value.length-1] != '\0')) {
+	if ((datastr == NULL) && (value.length > 0)) {
+		const size_t len = value.length - 1;
+		bool print = (value.data[len] == '\0');
+		size_t i;
+
+		for (i = 0; print && i < len; i++) {
+			print = isprint(value.data[i]);
+		}
+
+		if (print) {
+			datastr = (char *)value.data;
+		}
+	}
+
+	if (datastr == NULL) {
 		datastr_free = talloc_asprintf(
 			talloc_tos(), "<binary length %d>",
 			(int)value.length);
