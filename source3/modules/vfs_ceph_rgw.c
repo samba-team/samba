@@ -1844,6 +1844,67 @@ out:
 	return status_code(rc);
 }
 
+static int vfs_ceph_rgw_lchown(struct vfs_handle_struct *handle,
+			       const struct smb_filename *smb_fname,
+			       uid_t uid,
+			       gid_t gid)
+{
+	int rc = -ENOMEM;
+	bool do_release = false;
+	uint32_t mask = RGW_SETATTR_UID | RGW_SETATTR_GID;
+	struct stat st = {0};
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct rgw_file_handle *rgw_fh = NULL;
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_lchown);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	if (smb_fname->stream_name) {
+		rc = -ENOENT;
+		goto out;
+	}
+
+	rc = rgw_lookup(config->rgw_root_fs,
+			config->rgw_root_fh,
+			smb_fname->base_name,
+			&rgw_fh,
+			&st,
+			0,
+			RGW_LOOKUP_TYPE_FLAGS);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get handle for [%s]. rc = %d\n",
+			smb_fname->base_name,
+			rc);
+		goto out;
+	}
+	do_release = true;
+
+	st.st_uid = uid;
+	st.st_gid = gid;
+	rc = rgw_setattr(
+		config->rgw_root_fs, rgw_fh, &st, mask, RGW_SETATTR_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to set attributes. rc = %d\n", rc);
+		/* fall through */
+	}
+
+out:
+	if (do_release) {
+		(void)rgw_fh_rele(config->rgw_root_fs,
+				  rgw_fh,
+				  RGW_FH_RELE_FLAG_NONE);
+	}
+	DBG_DEBUG("[CEPH_RGW] lchown: name=%s result=%d\n",
+		  smb_fname->base_name,
+		  rc);
+	END_PROFILE_X(syscall_lchown);
+	return status_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -2102,7 +2163,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.unlinkat_fn = vfs_ceph_rgw_unlinkat,
 	.fchmod_fn = vfs_ceph_rgw_fchmod,
 	.fchown_fn = vfs_ceph_rgw_fchown,
-	.lchown_fn = vfs_not_implemented_lchown,
+	.lchown_fn = vfs_ceph_rgw_lchown,
 	.chdir_fn = vfs_ceph_rgw_chdir,
 	.fntimes_fn = vfs_ceph_rgw_fntimes,
 	.ftruncate_fn = vfs_ceph_rgw_ftruncate,
