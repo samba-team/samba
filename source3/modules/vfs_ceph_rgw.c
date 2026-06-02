@@ -25,6 +25,7 @@
  */
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "lib/util/statvfs.h"
 #include "system/filesys.h"
 #include <dirent.h>
 #include "smbprofile.h"
@@ -1734,6 +1735,64 @@ out:
 	return (uint64_t)(-1);
 }
 
+static int vfs_ceph_rgw_fstatvfs(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 struct vfs_statvfs_struct *statbuf)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct vfs_ceph_rgw_fh *fh = NULL;
+	struct rgw_statvfs statvfs_buf = {0};
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get handle for [%s]\n",
+			fsp_str_dbg(fsp));
+		goto out;
+	}
+
+	rc = rgw_statfs(config->rgw_root_fs,
+			fh->rgw_fh,
+			&statvfs_buf,
+			RGW_STATFS_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to get fs stat\n");
+		goto out;
+	}
+
+	statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
+	statbuf->BlockSize = statvfs_buf.f_bsize;
+	statbuf->TotalBlocks = statvfs_buf.f_blocks;
+	statbuf->BlocksAvail = statvfs_buf.f_bfree;
+	statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
+	statbuf->TotalFileNodes = statvfs_buf.f_files;
+	statbuf->FreeFileNodes = statvfs_buf.f_ffree;
+	/* Since fsIdentifier is 'unsigned long int' and statvfs_buf.f_fsid
+	 * is uint64_t[2] array, FsIdentifier can't hold full contents.
+	 * Thus returning -1, instead.
+	 */
+	statbuf->FsIdentifier = (unsigned long int)-1;
+
+	/* We do not have any capabilities defined, returning 0 */
+	statbuf->FsCapabilities = 0;
+
+	DBG_DEBUG("[CEPH_RGW] fstatvfs: name=%s f_bsize=%" PRIu64
+		  " f_blocks=%" PRIu64 " f_bfree=%" PRIu64 " f_bavail=%" PRIu64
+		  "\n",
+		  fsp_str_dbg(fsp),
+		  statvfs_buf.f_bsize,
+		  statvfs_buf.f_blocks,
+		  statvfs_buf.f_bfree,
+		  statvfs_buf.f_bavail);
+out:
+	return status_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -1956,7 +2015,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.disk_free_fn = vfs_ceph_rgw_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
-	.fstatvfs_fn = vfs_not_implemented_fstatvfs,
+	.fstatvfs_fn = vfs_ceph_rgw_fstatvfs,
 	.fs_capabilities_fn = vfs_not_implemented_fs_capabilities,
 
 	/* Directory operations */
