@@ -1817,6 +1817,33 @@ out:
 	return status_code(rc);
 }
 
+static int vfs_ceph_rgw_fchown(struct vfs_handle_struct *handle,
+			       files_struct *fsp,
+			       uid_t uid,
+			       gid_t gid)
+{
+	int rc = -ENOMEM;
+	uint32_t mask = RGW_SETATTR_UID | RGW_SETATTR_GID;
+	struct stat st = {0};
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fchown);
+
+	st.st_uid = uid;
+	st.st_gid = gid;
+	rc = vfs_ceph_rgw_setattr(handle, fsp, mask, &st);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to change owner. rc = %d\n", rc);
+		goto out;
+	}
+
+out:
+	DBG_DEBUG("[CEPH_RGW] fchown: fsp_name=%s result=%d\n",
+		  fsp_str_dbg(fsp),
+		  rc);
+	END_PROFILE_X(syscall_fchown);
+	return status_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -2074,7 +2101,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.fstatat_fn = vfs_not_implemented_fstatat,
 	.unlinkat_fn = vfs_ceph_rgw_unlinkat,
 	.fchmod_fn = vfs_ceph_rgw_fchmod,
-	.fchown_fn = vfs_not_implemented_fchown,
+	.fchown_fn = vfs_ceph_rgw_fchown,
 	.lchown_fn = vfs_not_implemented_lchown,
 	.chdir_fn = vfs_ceph_rgw_chdir,
 	.fntimes_fn = vfs_ceph_rgw_fntimes,
