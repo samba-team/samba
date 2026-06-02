@@ -539,7 +539,7 @@ struct durable_reconnect_state {
 	struct share_mode_entry *e;
 };
 
-static bool durable_reconnect_fn(
+static bool share_mode_entry_durable_reconnect_cb(
 	struct share_mode_entry *e,
 	bool *modified,
 	void *private_data)
@@ -593,7 +593,9 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	int ret;
 	bool ok;
 
-	ok = share_mode_forall_entries(lck, durable_reconnect_fn, &rstate);
+	ok = share_mode_forall_entries(lck,
+				       share_mode_entry_durable_reconnect_cb,
+				       &rstate);
 	if (!ok) {
 		DBG_WARNING("share_mode_forall_entries failed\n");
 		state->status = NT_STATUS_INTERNAL_DB_ERROR;
