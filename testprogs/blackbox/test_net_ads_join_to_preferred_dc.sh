@@ -54,7 +54,7 @@ EOF
 
 testit "join" $VALGRIND $net_tool ads join -S$SERVER -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
-testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
+testit "leave" $VALGRIND $net_tool ads leave -S$SERVER -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
 
 rm -rf $BASEDIR/$WORKDIR
 
