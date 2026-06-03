@@ -139,6 +139,7 @@ class dbcheck(object):
         self.fixable_wrong_domains_in_gplinks = {}
         self.fixable_wrong_hosts_in_gpo_file_path = {}
         self.fixable_wrong_directories_in_gpo_file_path = {}
+        self.fixable_wrong_hosts_in_gpc_wql_filter = {}
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -2533,6 +2534,78 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return error_count
 
+    def check_gpcwqlfilter(self, obj, attrname):
+        """Check the dns-like portions of a GPO gPCWQLFilter, which
+        may have become misaligned following a domain rename."""
+
+        if attrname.lower() != 'gpcwqlfilter':
+            return 0
+
+        # gPCWQLFilter looks like
+        # "[example.com;{D6539382-0485-4C58-A5DF-5CE317299716};0]".
+        # Almost certainly the dns-like portions should be our
+        # domain's name, but we ask for each instance. There are not
+        # likely to be many -- this only occurs on Group Policy
+        # Containers.
+        #
+        # This could be wrong due to a domain rename in a lab domain
+        # based on a live domain backup.
+        oldfilter = str(obj[attrname])
+
+        filter_match = re.compile(r'^\[([^;]+);({[0-9-a-fA-F]{36}});0\]$')
+
+        m = filter_match.match(oldfilter)
+        if not m:
+            self.report(
+                "WARNING: "
+                f"ignoring unrecognisable gPCWQLFilter: '{oldfilter}'.")
+            return 1
+
+        oldhost = m.group(1)
+        oldguid = m.group(2)
+
+        dnsname = self.samdb.domain_dns_name().lower()
+
+        if oldhost != oldhost.lower():
+            self.report(
+                "WARNING: "
+                f"gPCWQLFilter dns host not lower case: '{oldfilter}'")
+
+        if oldhost == dnsname:
+            # nothing to do
+            return 0
+
+        self.report(f"WARNING: gPCWQLFilter {oldfilter} host "
+                    f"does not match domain DNS name {dnsname}, "
+                    "which may be due to a domain rename")
+
+        replace = self.confirm_and_remember(
+            (f'replace host "{oldhost}" in gPCWQLFilter "{oldfilter}" '
+             f'with "{dnsname}" ("all" for all "{oldhost}")?'),
+            self.fixable_wrong_hosts_in_gpc_wql_filter,
+            oldhost)
+        if not replace:
+            return 0
+
+        newfilter = f"[{dnsname};{oldguid};0]"
+        if not filter_match.match(newfilter):
+            # programmer error, or perhaps dnsname contains ';'.
+            self.report(f"ERROR: new gPCWQLFilter '{newfilter}' "
+                        "seems invalid. Not fixing.")
+            self.unfixable_errors += 1
+            return 0
+
+        obj[attrname] = newfilter
+        msg = ldb.Message()
+        msg.dn = obj.dn
+        msg[attrname] = ldb.MessageElement(newfilter,
+                                           ldb.FLAG_MOD_REPLACE,
+                                           attrname)
+        self.do_modify(msg, [],
+                       f"resetting gPCWQLFilter {oldfilter} to {newfilter}")
+
+        return 1
+
     def check_object(self, dn, requested_attrs=None):
         """check one object"""
         if self.verbose:
@@ -2779,6 +2852,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                 elif attrname.lower() == 'gpcfilesyspath':
                     self.check_gpcfilesyspath(obj, attrname)
+
+                elif attrname.lower() == 'gpcwqlfilter':
+                    self.check_gpcwqlfilter(obj, attrname)
 
             # check for empty attributes
             for val in obj[attrname]:
