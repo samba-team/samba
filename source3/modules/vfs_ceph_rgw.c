@@ -1905,6 +1905,50 @@ out:
 	return status_code(rc);
 }
 
+static int vfs_ceph_rgw_fremovexattr(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp,
+				     const char *name)
+{
+	int rc = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct vfs_ceph_rgw_fh *fh = NULL;
+	rgw_xattr attr = {{0}, {0}};
+	rgw_xattrlist attr_list = {&attr, 1};
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_fremovexattr);
+
+	DBG_DEBUG("[CEPH_RGW] fremovexattr: fsp_name=%s name=%s\n",
+		  fsp_str_dbg(fsp),
+		  name);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to fetch handle\n");
+		goto out;
+	}
+
+	prepare_xattr_list(&attr_list, discard_const(name), NULL, 0);
+
+	rc = rgw_rmxattrs(config->rgw_root_fs,
+			  fh->rgw_fh,
+			  &attr_list,
+			  RGW_RMXATTR_FLAG_NONE);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to remove xattr\n");
+		goto out;
+	}
+
+out:
+	DBG_DEBUG("[CEPH_RGW] fremovexattr done: rc=%d\n", rc);
+	END_PROFILE_X(syscall_fremovexattr);
+	return status_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -2188,7 +2232,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vfs_ceph_rgw_fgetxattr,
 	.flistxattr_fn = vfs_not_implemented_flistxattr,
-	.fremovexattr_fn = vfs_not_implemented_fremovexattr,
+	.fremovexattr_fn = vfs_ceph_rgw_fremovexattr,
 	.fsetxattr_fn = vfs_ceph_rgw_fsetxattr,
 
 	/* Posix ACL Operations */
