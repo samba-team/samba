@@ -1033,6 +1033,9 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		if (unix_pw.pw_gecos == NULL) {
 			unix_pw.pw_gecos = fullname;
 		}
+		if (unix_pw.pw_gecos == NULL) {
+			unix_pw.pw_gecos = discard_const_p(char, "");
+		}
 		unix_pw.pw_dir = smbldap_talloc_single_attribute(
 				priv2ld(ldap_state),
 				entry,
