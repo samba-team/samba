@@ -71,7 +71,8 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (fsp->fsp_flags.is_directory) {
+	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+		/* We only support Durable Handles on regular files */
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
