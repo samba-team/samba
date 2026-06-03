@@ -377,7 +377,18 @@ def string_is_guid(string, lower_case_only=False):
 
 
 def parse_unc(unc):
-    """Parse UNC string into a hostname, a service, and a filepath"""
+    r"""Parse UNC string into a hostname, a service, and a filepath.
+
+    For example,
+
+    "\\samba.example.com\sysvol\samba.example.com\Policies\{long-guid}"
+
+    becomes
+
+    ["samba.example.com",
+     "sysvol",
+     "samba.example.com\Policies\{long-guid}"]
+    """
     tmp = []
     if unc.startswith('\\\\'):
         tmp = unc[2:].split('\\', 2)
