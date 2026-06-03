@@ -249,9 +249,13 @@ static void help(void)
 "\n");
 }
 
-static void terror(const char *why)
+PRINTF_ATTRIBUTE(1, 2) static void terror(const char *fmt, ...)
 {
-	printf("%s\n", why);
+	va_list ap;
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+	printf("\n");
 }
 
 static int create_tdb(const char *tdbname)
@@ -324,7 +328,7 @@ static int insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 	dbuf.dsize = datalen;
 
 	if (tdb_store(tdb, key, dbuf, TDB_INSERT) != 0) {
-		terror("insert failed");
+		terror("insert failed: %s", tdb_errorstr(tdb));
 		return -1;
 	}
 
@@ -354,7 +358,7 @@ static int store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 	print_rec(tdb, key, dbuf, NULL);
 
 	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) != 0) {
-		terror("store failed");
+		terror("store failed: %s", tdb_errorstr(tdb));
 		return -1;
 	}
 
@@ -416,7 +420,7 @@ static int store_hex_tdb(char *keystr, size_t keylen,
 		print_data((char *)data.dptr, data.dsize);
 
 		if (tdb_store(tdb, key, data, TDB_REPLACE) != 0) {
-			terror("store failed");
+			terror("store failed: %s", tdb_errorstr(tdb));
 			return -1;
 		}
 	}
@@ -438,8 +442,8 @@ static int show_tdb(char *keyname, size_t keylen)
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
-	    terror("fetch failed");
-	    return -1;
+		terror("fetch failed: %s", tdb_errorstr(tdb));
+		return -1;
 	}
 
 	print_rec(tdb, key, dbuf, NULL);
@@ -462,7 +466,7 @@ static int delete_tdb(char *keyname, size_t keylen)
 	key.dsize = keylen;
 
 	if (tdb_delete(tdb, key) != 0) {
-		terror("delete failed");
+		terror("delete failed: %s", tdb_errorstr(tdb));
 		return -1;
 	}
 
@@ -489,7 +493,7 @@ static int move_rec(char *keyname, size_t keylen, char* tdbname)
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
-		terror("fetch failed");
+		terror("fetch failed: %s", tdb_errorstr(tdb));
 		return -1;
 	}
 
@@ -497,12 +501,12 @@ static int move_rec(char *keyname, size_t keylen, char* tdbname)
 
 	dst_tdb = tdb_open(tdbname, 0, 0, O_RDWR, 0600);
 	if ( !dst_tdb ) {
-		terror("unable to open destination tdb");
+		terror("unable to open destination tdb: %s", strerror(errno));
 		return -1;
 	}
 
 	if (tdb_store( dst_tdb, key, dbuf, TDB_REPLACE ) != 0) {
-		terror("failed to move record");
+		terror("failed to move record: %s", tdb_errorstr(dst_tdb));
 	}
 	else
 		printf("record moved\n");
@@ -653,7 +657,7 @@ static int first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 
 	dbuf = tdb_fetch(the_tdb, *pkey);
 	if (!dbuf.dptr) {
-		terror("fetch failed");
+		terror("fetch failed: %s", tdb_errorstr(the_tdb));
 		return -1;
 	} else {
 		print_rec(the_tdb, *pkey, dbuf, NULL);
@@ -668,7 +672,7 @@ static int next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 
 	dbuf = tdb_fetch(the_tdb, *pkey);
 	if (!dbuf.dptr) {
-		terror("fetch failed");
+		terror("fetch failed: %s", tdb_errorstr(the_tdb));
 		return -1;
 	} else {
 		print_rec(the_tdb, *pkey, dbuf, NULL);
