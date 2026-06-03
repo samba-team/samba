@@ -72,8 +72,14 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	}
 
 	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
-		/* We only support Durable Handles on regular files */
-		return NT_STATUS_NOT_SUPPORTED;
+		/* We only support Durable Handles on regular files ... */
+		if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+		/* ... but we do support Persistent Handles on directories */
+		if (!fsp->op->global->persistent) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
 	}
 
 	if (fsp_is_alternate_stream(fsp)) {
@@ -610,8 +616,13 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	fsp_apply_share_entry_flags(fsp, e.flags);
 	fsp->open_time = e.time;
 	fsp->access_mask = e.access_mask;
-	fsp->fsp_flags.can_read = ((fsp->access_mask & FILE_READ_DATA) != 0);
-	fsp->fsp_flags.can_write = ((fsp->access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) != 0);
+	if (S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+		fsp->fsp_flags.can_read = ((fsp->access_mask & FILE_READ_DATA) != 0);
+		fsp->fsp_flags.can_write = ((fsp->access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) != 0);
+	} else {
+		fsp->fsp_flags.can_read = false;
+		fsp->fsp_flags.can_write = false;
+	}
 
 	fsp->oplock_type = e.op_type;
 
@@ -688,7 +699,9 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	/*
 	 * TODO: properly calculate open flags
 	 */
-	if (fsp->fsp_flags.can_write && fsp->fsp_flags.can_read) {
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		how.flags = O_RDONLY | O_DIRECTORY;
+	} else if (fsp->fsp_flags.can_write && fsp->fsp_flags.can_read) {
 		how.flags = O_RDWR;
 	} else if (fsp->fsp_flags.can_write) {
 		how.flags = O_WRONLY;
@@ -720,7 +733,9 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 		goto fail;
 	}
 
-	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode) &&
+	    !fsp->op->global->persistent)
+	{
 		state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto fail;
 	}
@@ -868,7 +883,12 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		if (!op->global->persistent) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
 	}
 
 	file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
@@ -899,14 +919,11 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	 * Do we need to store the modified flag in the DB?
 	 */
 	state.fsp->fsp_flags.modified = false;
-	/*
-	 * no durables for directories
-	 */
-	state.fsp->fsp_flags.is_directory = false;
+	state.fsp->fsp_flags.is_directory = S_ISDIR(smb_fname->st.st_ex_mode);
 	/*
 	 * For normal files, can_lock == !is_directory
 	 */
-	state.fsp->fsp_flags.can_lock = true;
+	state.fsp->fsp_flags.can_lock = !state.fsp->fsp_flags.is_directory;
 	/*
 	 * We do not support aio write behind for smb2
 	 */
