@@ -884,10 +884,11 @@ static NTSTATUS process_driver_driverver(struct gp_inifile_context *ctx,
 	}
 
 	p = discard_const_p(char, strchr_m(str, ','));
-	if (p) {
-		*p = '\0';
-		p++;
+	if (p == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+	*p = '\0';
+	p++;
 
 	ok = spoolss_timestr_to_NTTIME(str, &r->driver_date);
 	if (!ok) {
