@@ -131,13 +131,13 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 	 * Simple heuristic, strlen by two should give enough room for NFC to
 	 * NFD conversion.
 	 */
-	nfd_buf_size = nfc_len * 2;
+	nfd_buf_size = nfc_len * 2 + 1;
 	nfd_path = talloc_array(meta, char, nfd_buf_size);
 	if (nfd_path == NULL) {
 		return false;
 	}
 	dest = nfd_path;
-	dest_remaining = talloc_array_length(dest);
+	dest_remaining = talloc_array_length(dest) - 1;
 
 	nconv = smb_iconv(mds_ctx->ic_nfc_to_nfd,
 			  &nfc_path,
@@ -147,6 +147,7 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 	if (nconv == (size_t)-1) {
 		return false;
 	}
+	*dest = '\0';
 
 	for (i = 0; i < metacount; i++) {
 		attribute = dalloc_get_object(reqinfo, i);

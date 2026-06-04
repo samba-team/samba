@@ -603,6 +603,11 @@ static struct tevent_req *mds_es_search_send(TALLOC_CTX *mem_ctx,
 	char *elastic_query_len_str = NULL;
 	char *hostname = NULL;
 	bool pretty = false;
+	const char *nfd_path = NULL;
+	char nfc_buf[PATH_MAX] = {};
+	char *nfc_path = nfc_buf;
+	size_t nfd_len, nfc_remaining;
+	size_t nconv;
 
 	req = tevent_req_create(mem_ctx, &state, struct mds_es_search_state);
 	if (req == NULL) {
@@ -636,6 +641,27 @@ static struct tevent_req *mds_es_search_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(uri, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	nfd_path = s->slq->path_scope;
+	nfc_remaining = sizeof(nfc_buf);
+	nfd_len = strlen(nfd_path);
+	nconv = smb_iconv(s->mds_es_ctx->mds_ctx->ic_nfd_to_nfc,
+			  &nfd_path,
+			  &nfd_len,
+			  &nfc_path,
+			  &nfc_remaining);
+	if (nconv == (size_t)-1) {
+		DBG_ERR("smb_iconv NFD to NFC failed for: %s\n",
+			  s->slq->path_scope);
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
+	*nfc_path = '\0';
+	s->slq->path_scope = talloc_strdup(s->slq, nfc_buf);
+	if (tevent_req_nomem(s->slq->path_scope, req)) {
+		return tevent_req_post(req, ev);
+	}
+	DBG_DEBUG("Converted path_scope to NFC: %s\n", s->slq->path_scope);
 
 	elastic_query = talloc_asprintf(
 		state,
