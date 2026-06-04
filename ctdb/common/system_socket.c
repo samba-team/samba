@@ -266,7 +266,13 @@ static uint16_t ip6_checksum(uint8_t *data, size_t n, struct ip6_hdr *ip6)
  * Send gratuitous ARP request/reply or IPv6 neighbor advertisement
  */
 
+/* For readability */
+#undef CTDB_CAN_SEND_ARPS
 #ifdef HAVE_PACKETSOCKET
+#define CTDB_CAN_SEND_ARPS
+#endif
+
+#ifdef CTDB_CAN_SEND_ARPS
 
 static inline socklen_t sall_len(struct sockaddr_ll *sll)
 {
@@ -693,7 +699,9 @@ done:
 	return ret;
 }
 
-#else /* HAVE_PACKETSOCKET */
+#else /* CTDB_CAN_SEND_ARPS */
+
+#warning "CTDB will be unable to send ARPs"
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
@@ -701,7 +709,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	return ENOSYS;
 }
 
-#endif /* HAVE_PACKETSOCKET */
+#endif /* CTDB_CAN_SEND_ARPS */
 
 
 #define IP4_TCP_BUFFER_SIZE sizeof(struct ip) + \

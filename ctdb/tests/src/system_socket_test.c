@@ -69,7 +69,7 @@ static void test_types(void)
 	assert(sizeof(ip4pkt) == sizeof(struct ip) + sizeof(struct tcphdr));
 }
 
-#ifdef HAVE_PACKETSOCKET
+#ifdef CTDB_CAN_SEND_ARPS
 
 static void test_arp(const char *addr_str,
 		     const char *hwaddr_str,
@@ -104,14 +104,14 @@ static void test_arp(const char *addr_str,
 	hexdump(buf, len);
 }
 
-#else /* HAVE_PACKETSOCKET  */
+#else /* CTDB_CAN_SEND_ARPS  */
 
 static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
 {
-	fprintf(stderr, "PACKETSOCKET not supported\n");
+	fprintf(stderr, "Sending ARPs not supported\n");
 }
 
-#endif /* HAVE_PACKETSOCKET */
+#endif /* CTDB_CAN_SEND_ARPS */
 
 static void test_tcp(const char *src_str,
 		     const char *dst_str,
