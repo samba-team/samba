@@ -17,6 +17,7 @@
 from samba import provision, param
 import os
 import random
+import secrets
 import shutil
 import subprocess
 from samba.tests import (env_loadparm, create_test_ou, BlackboxProcessError,
@@ -221,6 +222,8 @@ class DomainBackupBase(BlackboxTestCase, GkdiBaseTest):
         # Assert that the confidential material is still present.
         for msg in restored_root_keys:
             self.assertTrue(confidential_values_present(msg))
+
+        return restored_samdb
 
     def _test_backup_restore_no_secrets(self):
         """Does a backup/restore with secrets excluded from the resulting DB"""
@@ -752,6 +755,90 @@ class DomainBackupRename(DomainBackupBase):
         res = samdb.search(base=dn, scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res), 1, "Lookup of new domain's DNS zone failed")
         return samdb
+
+
+class DomainBackupRenameGpoDbcheck(DomainBackupRename):
+    def test_backup_restore(self):
+        self.use_backend("tdb")
+        self.gpo_name = f'test-gpo-{secrets.token_hex(8)}'
+        credstring = f'-U{os.environ["USERNAME"]}%{os.environ["PASSWORD"]}'
+
+        self.addCleanup(self.rm_dirs, "policy", allow_missing=True)
+        out = self.run_cmd(["gpo", "create", self.gpo_name,
+                            credstring,
+                            '--tmpdir', self.tempdir,
+                            '-H', f'ldap://{os.getenv("SERVER")}',
+                            "-s", os.getenv('SERVERCONFFILE')])
+        out = self.run_cmd(["dbcheck",
+                            "--check-gpo-links",
+                            "--yes", "--fix",
+                            "-s", os.getenv('SERVERCONFFILE'),
+                            credstring])
+        self._test_backup_restore()
+
+    def test_dbcheck_gpos(self):
+        self.gpo_name = f'test-gpo-{secrets.token_hex(8)}'
+        credstring = f'-U{os.environ["USERNAME"]}%{os.environ["PASSWORD"]}'
+
+        self.addCleanup(self.rm_dirs, "policy", allow_missing=True)
+        out = self.run_cmd(["gpo", "create", self.gpo_name,
+                            credstring,
+                            '--tmpdir', self.tempdir,
+                            '-H', f'ldap://{os.getenv("SERVER")}',
+                            "-s", os.getenv('SERVERCONFFILE')])
+        # do the backup/restore
+        restored_ldb = self._test_backup_restore()
+
+        def _samba_tool(args):
+            args = list(args) + ["-H", restored_ldb.url, credstring]
+            self.run_cmd(args)
+
+        # work out what the new DNs should be
+        old_basedn = str(self.ldb.get_default_basedn())
+        new_policies_dn = f"CN=Policies,CN=System,{self.new_basedn}"
+        res = restored_ldb.search(base=self.new_basedn,
+                                  expression='(gplink=*)',
+                                  attrs=["gPLink"])
+
+        self.assertEqual(len(res), 2, "Expected 2 gPLinks")
+        for msg in res:
+            # The gplinks will still have the old base dn.
+            # (it's OK if we fix this)
+            gplink = str(msg["gPLink"][0])
+            self.assertNotIn(self.new_basedn, gplink)
+            self.assertIn(old_basedn, gplink)
+            self.assertNotIn(new_policies_dn, gplink)
+
+        # first we run it without --fix --yes, so there should be no
+        # change.
+
+        out = _samba_tool(["dbcheck", "--check-gpo-links"])
+
+        res = restored_ldb.search(base=self.new_basedn,
+                                  expression='(gplink=*)',
+                                  attrs=["gPLink"])
+
+        for msg in res:
+            gplink = str(msg["gPLink"][0])
+            self.assertNotIn(self.new_basedn, gplink)
+            self.assertIn(old_basedn, gplink)
+            self.assertNotIn(new_policies_dn, gplink)
+
+        # now we fix it.
+        out = _samba_tool(["dbcheck",
+                           "--check-gpo-links",
+                           "--yes", "--fix"])
+
+        res2 = restored_ldb.search(base=self.new_basedn,
+                                   expression='(gplink=*)',
+                                   attrs=["gPLink"])
+
+        for msg in res2:
+            # The gplinks should have the new base dn.
+            gplink = str(msg["gPLink"][0])
+            self.assertIn(self.new_basedn, gplink)
+            self.assertNotIn(old_basedn, gplink)
+            self.assertIn(new_policies_dn, gplink)
 
 
 class DomainBackupOffline(DomainBackupBase):
