@@ -73,21 +73,50 @@ static void test_types(void)
 
 static void hwaddr_to_sockaddr_ll(const char *asc, struct sockaddr_ll *sall)
 {
-	struct ether_addr *hw = NULL;
+	/*
+	 * If initializing this, some (older) compilers report:
+	 *   error: variable-sized object may not be initialized
+	 * However, strlcpy() overwrites the entire buffer a few lines
+	 * in, so no initialization needed.
+	 */
+	char in[strlen(asc) + 1];
+	char *t = NULL;
+	char *tok = NULL;
 
 	*sall = (struct sockaddr_ll) {
 		.sll_family = AF_PACKET,
 		.sll_protocol = htons(ETH_P_ALL),
 		.sll_ifindex = 2,
 		.sll_pkttype = PACKET_HOST,
-		.sll_hatype = ARPHRD_ETHER,
-		.sll_halen = ETH_ALEN,
 	};
 
-	hw = ether_aton(asc);
-	assert(hw != NULL);
+	(void)strlcpy(in, asc, sizeof(in));
+	t = in;
+	while ((tok = strtok(t, ":")) != NULL) {
+		char *end = NULL;
+		unsigned long octet = strtoul(tok, &end, 16);
 
-	memcpy(&sall->sll_addr[0], hw, ETH_ALEN);
+		assert(end != NULL && *end == '\0');
+		assert(octet <= 0xff);
+		sall->sll_addr[sall->sll_halen] = (uint8_t)octet;
+		sall->sll_halen++;
+
+		t = NULL;
+	}
+
+	switch (sall->sll_halen) {
+	case 6:
+		sall->sll_hatype = ARPHRD_ETHER;
+		break;
+	case 20:
+		sall->sll_hatype = ARPHRD_INFINIBAND;
+		break;
+	default:
+		fprintf(stderr,
+			"Unknown hardware address length (%d)\n",
+			(int)sall->sll_halen);
+		abort();
+	}
 }
 
 static void test_arp(const char *addr_str,
@@ -97,7 +126,7 @@ static void test_arp(const char *addr_str,
 	ctdb_sock_addr addr;
 	struct sockaddr_storage hardware_addr = {};
 	struct sockaddr_ll *sall = (struct sockaddr_ll *)&hardware_addr;
-	uint8_t buf[512];
+	uint8_t buf[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
 	size_t buflen = sizeof(buf);
 	size_t len;
 	int ret;
