@@ -102,7 +102,7 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 	/* Prefer canonicalised name from client entry */
 	client_princ = client ? client->princ : kdcreq->client;
 
-	if (client_princ == NULL || ks_is_kadmin(context, client_princ)) {
+	if (client == NULL || client_princ == NULL || ks_is_kadmin(context, client_princ)) {
 		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	}
 
