@@ -246,6 +246,7 @@ static void usage(const char *prog)
 	fprintf(stderr, "    types\n");
 	fprintf(stderr, "    arp <ipaddr> <hwaddr> [reply]\n");
 	fprintf(stderr, "    haveip <ipaddr>\n");
+	fprintf(stderr, "    sendarp <ipaddr> <iface>\n");
 	fprintf(stderr, "    tcp <src> <dst> <seq> <ack> <rst>\n");
 
 	exit(1);
@@ -276,6 +277,16 @@ int main(int argc, char **argv)
 			usage(argv[0]);
 		}
 		test_tcp(argv[2], argv[3], argv[4], argv[5], argv[6]);
+	} else if (strcmp(argv[1], "sendarp") == 0) {
+		ctdb_sock_addr addr = {};
+		int ret = 0;
+		if (argc != 4) {
+			usage(argv[0]);
+		}
+		ret = ctdb_sock_addr_from_string(argv[2], &addr, false);
+		assert(ret == 0);
+		ret = ctdb_sys_send_arp(&addr, argv[3]);
+		assert(ret == 0);
 	} else if (strcmp(argv[1], "haveip") == 0) {
 		if (argc != 3) {
 			usage(argv[0]);
