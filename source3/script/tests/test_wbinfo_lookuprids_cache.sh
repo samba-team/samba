@@ -36,7 +36,7 @@ echo "$ndr_keys" | while IFS= read -r k; do
 	echo "  key='${k}' (length=${#k})"
 done
 
-key=$(echo "$ndr_keys" | head -1)
+key=$(echo "$ndr_keys" | head -1 | sed 's/ /\\20/g')
 echo "DEBUG: Using key='${key}' (length=${#key})"
 
 if [ -n "$key" ]; then
