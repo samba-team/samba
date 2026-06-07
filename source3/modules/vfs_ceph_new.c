@@ -3639,7 +3639,7 @@ static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
 			     int flags)
 {
 	struct vfs_ceph_fh *dircfh = NULL;
-	const char *name = smb_fname_str_dbg(smb_fname);
+	const char *name = smb_fname->base_name;
 	int result = -1;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_unlinkat);
@@ -3662,7 +3662,7 @@ static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
 out:
 	DBG_DEBUG("[CEPH] unlinkat: dirfsp_name=%s name=%s result=%d\n",
 		  fsp_str_dbg(dirfsp),
-		  name,
+		  smb_fname_str_dbg(smb_fname),
 		  result);
 	END_PROFILE_X(syscall_unlinkat);
 	return status_code(result);
