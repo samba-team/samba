@@ -3295,9 +3295,9 @@ done:
 /*
    basic testing of SMB2 ACLs
 */
-struct torture_suite *torture_smb2_acls_init(TALLOC_CTX *ctx)
+struct torture_suite *torture_smb2_acls_with_sysacl_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(ctx, "acls");
+	struct torture_suite *suite = torture_suite_create(ctx, "acls-with-sysacl");
 
 	torture_suite_add_1smb2_test(suite, "CREATOR", test_creator_sid);
 	torture_suite_add_1smb2_test(suite, "GENERIC", test_generic_bits);
@@ -3314,15 +3314,28 @@ struct torture_suite *torture_smb2_acls_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "OWNER-RIGHTS", test_owner_rights);
 	torture_suite_add_1smb2_test(suite, "OWNER-RIGHTS-DENY",
 			test_owner_rights_deny);
-	torture_suite_add_1smb2_test(suite, "OWNER-RIGHTS-DENY1",
-			test_owner_rights_deny1);
-	torture_suite_add_1smb2_test(suite, "DENY1",
-			test_deny1);
 	torture_suite_add_1smb2_test(suite, "MXAC-NOT-GRANTED",
 			test_mxac_not_granted);
 	torture_suite_add_1smb2_test(suite, "OVERWRITE_READ_ONLY_FILE", test_overwrite_read_only_file);
 
-	suite->description = talloc_strdup(suite, "SMB2-ACLS tests");
+	suite->description = talloc_strdup(suite, "SMB2-ACLS-WITH-SYSACL tests");
+
+	return suite;
+}
+
+/*
+   basic testing of SMB2 ACLs
+*/
+struct torture_suite *torture_smb2_acls_ignore_sysacl_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "acls-ignore-sysacl");
+
+	torture_suite_add_1smb2_test(suite, "OWNER-RIGHTS-DENY1",
+			test_owner_rights_deny1);
+	torture_suite_add_1smb2_test(suite, "DENY1",
+			test_deny1);
+
+	suite->description = talloc_strdup(suite, "SMB2-ACLS-IGNORE-SYSACL tests");
 
 	return suite;
 }
