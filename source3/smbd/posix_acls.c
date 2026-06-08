@@ -2421,7 +2421,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	if(security_info_sent == 0) {
 		DEBUG(0,("unpack_canon_ace: no security info sent !\n"));
-		return False;
+		return True;
 	}
 
 	/*
