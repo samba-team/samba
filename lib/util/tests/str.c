@@ -136,6 +136,134 @@ static bool test_talloc_string_sub_tricky_utf8_2(struct torture_context *tctx)
 	return true;
 }
 
+static const struct {
+	const char *str;
+	bool ok;
+	uint64_t val;
+} conv_str_size_tests[] = {
+	/* plain integers, with and without a suffix */
+	{ "0",			true,	0 },
+	{ "1",			true,	1 },
+	{ "16K",		true,	16384 },
+	{ "2T",			true,	2199023255552ULL },
+	{ "8P",			true,	9007199254740992ULL },
+	{ "18446744073709551615", true,	UINT64_MAX },
+
+	/* fractional values, truncated towards zero */
+	{ "0.5K",		true,	512 },
+	{ "1.5G",		true,	1610612736ULL },
+	{ "14.5M",		true,	15204352ULL },
+	{ "2.2T",		true,	2418925581107ULL },
+	{ "1.0K",		true,	1024 },
+
+	/* without a suffix a fraction is truncated away entirely */
+	{ "1.5",		true,	1 },
+
+	/*
+	 * Only the first CONV_STR_SIZE_MAX_SCALE digits are looked at,
+	 * the rest cannot influence the result.
+	 */
+	{ "3.999999999999999K",	true,	4095 },
+	{ "1.0000000001K",	true,	1024 },
+
+	/* a lower case suffix means the same thing */
+	{ "1.5g",		true,	1610612736ULL },
+
+	/* rejected input */
+	{ "",			false,	0 },
+	{ "M",			false,	0 },
+	{ "-1",			false,	0 },
+	{ ".",			false,	0 },
+	{ "1.",			false,	0 },
+	{ "1.0.0",		false,	0 },
+	{ "1.5X",		false,	0 },
+
+	/* a digit is required before the separator, as before */
+	{ ".5K",		false,	0 },
+
+	{ "0x10",		false,	0 },
+	{ "nan",		false,	0 },
+	{ "inf",		false,	0 },
+	{ "16E",		false,	0 },
+	{ "18446744073709551616", false, 0 },
+	{ "16777216P",		false,	0 },
+
+	/*
+	 * A comma is not a decimal separator, no matter what
+	 * LC_NUMERIC says.
+	 */
+	{ "1,5M",		false,	0 },
+};
+
+static bool test_conv_str_size_values(struct torture_context *tctx)
+{
+	uint64_t nullval = UINT64_MAX;
+	size_t i;
+
+	torture_assert(tctx, !conv_str_size_error(NULL, &nullval),
+		       "NULL should not be accepted");
+
+	for (i = 0; i < ARRAY_SIZE(conv_str_size_tests); i++) {
+		const char *str = conv_str_size_tests[i].str;
+		uint64_t val = UINT64_MAX;
+		bool ok;
+
+		ok = conv_str_size_error(str, &val);
+		torture_assert_int_equal(tctx, ok, conv_str_size_tests[i].ok,
+					 talloc_asprintf(tctx,
+						"unexpected result for '%s'",
+						str));
+		if (!conv_str_size_tests[i].ok) {
+			continue;
+		}
+		torture_assert_u64_equal(tctx, val, conv_str_size_tests[i].val,
+					 talloc_asprintf(tctx,
+						"unexpected value for '%s'",
+						str));
+	}
+
+	return true;
+}
+
+/*
+ * smbd runs setlocale(LC_ALL, "") via smb_init_locale(), so an smb.conf
+ * must not parse differently depending on the locale smbd was started
+ * in. Re-run the same table under a locale that uses a comma as its
+ * decimal separator.
+ */
+static bool test_conv_str_size_locale(struct torture_context *tctx)
+{
+	static const char * const locales[] = {
+		"de_DE.UTF-8", "de_DE.utf8", "de_DE", "fr_FR.UTF-8",
+	};
+	const char *old = NULL;
+	char *saved = NULL;
+	bool found = false;
+	size_t i;
+	bool ok;
+
+	old = setlocale(LC_NUMERIC, NULL);
+	saved = talloc_strdup(tctx, old != NULL ? old : "C");
+	torture_assert(tctx, saved != NULL, "talloc_strdup failed");
+
+	for (i = 0; i < ARRAY_SIZE(locales); i++) {
+		if (setlocale(LC_NUMERIC, locales[i]) != NULL) {
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		setlocale(LC_NUMERIC, saved);
+		torture_skip(tctx, "no comma-decimal locale available");
+	}
+
+	ok = test_conv_str_size_values(tctx);
+
+	setlocale(LC_NUMERIC, saved);
+
+	return ok;
+}
+
 
 
 
@@ -175,6 +303,14 @@ struct torture_suite *torture_local_util_str(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "test_talloc_string_sub_tricky_utf8_2",
 				      test_talloc_string_sub_tricky_utf8_2);
+
+	torture_suite_add_simple_test(suite,
+				      "conv_str_size",
+				      test_conv_str_size_values);
+
+	torture_suite_add_simple_test(suite,
+				      "conv_str_size_locale",
+				      test_conv_str_size_locale);
 
 	return suite;
 }
