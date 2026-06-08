@@ -3691,17 +3691,16 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 	acl_perms = unpack_canon_ace(fsp, &fsp->fsp_name->st, &file_owner_sid,
 				     &file_grp_sid, &file_ace_list,
 				     &dir_ace_list, security_info_sent, psd);
-
-	/* Ignore W2K traverse DACL set. */
-	if (!file_ace_list && !dir_ace_list) {
-		return NT_STATUS_OK;
-	}
-
 	if (!acl_perms) {
 		DEBUG(3,("set_nt_acl: cannot set permissions\n"));
 		free_canon_ace_list(file_ace_list);
 		free_canon_ace_list(dir_ace_list);
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* Ignore W2K traverse DACL set. */
+	if (!file_ace_list && !dir_ace_list) {
+		return NT_STATUS_OK;
 	}
 
 	/*
