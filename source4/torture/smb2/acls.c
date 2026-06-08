@@ -3292,6 +3292,96 @@ done:
 	return ret;
 }
 
+static bool test_non_canonical_order(struct torture_context *tctx,
+				     struct smb2_tree *tree)
+{
+	const char *fname = BASEDIR "\\test_non_canonical_order.dat";
+	struct smb2_create cr = {};
+	struct smb2_handle testdirh = {};
+	struct smb2_handle handle = {};
+	union smb_setfileinfo si;
+	struct security_descriptor *sd = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	status = smb2_util_close(tree, testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(testdirh);
+
+	/*
+	 * Create an ACL with an allow ACE before a deny ACE. That is
+	 * non-canonical order, Windows allows this but our POSIX ACL mapping
+	 * code chokes on this.
+	 */
+
+	sd = security_descriptor_dacl_create(tctx,
+					     0,
+					     NULL,
+					     NULL,
+					     SID_WORLD,
+					     SEC_ACE_TYPE_ACCESS_ALLOWED,
+					     SEC_RIGHTS_DIR_ALL,
+					     SEC_ACE_FLAG_OBJECT_INHERIT
+					     | SEC_ACE_FLAG_CONTAINER_INHERIT,
+
+					     SID_WORLD,
+					     SEC_ACE_TYPE_ACCESS_DENIED,
+					     SEC_RIGHTS_DIR_ALL,
+					     SEC_ACE_FLAG_OBJECT_INHERIT
+					     | SEC_ACE_FLAG_CONTAINER_INHERIT,
+
+					     NULL);
+	torture_assert_not_null_goto(tctx, sd, ret, done, "SD create failed\n");
+
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_STD_WRITE_DAC,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = cr.out.file.handle;
+
+	si = (union smb_setfileinfo) {
+		.set_secdesc.level = RAW_SFILEINFO_SEC_DESC,
+		.set_secdesc.in.file.handle = handle,
+		.set_secdesc.in.secinfo_flags = SECINFO_DACL,
+		.set_secdesc.in.sd = sd,
+	};
+
+	status = smb2_setinfo_file(tree, &si);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_ACCESS_DENIED,
+					   ret, done,
+					   "smb2_setinfo_file failed\n");
+
+	status = smb2_util_close(tree, handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(handle);
+
+done:
+	if (!smb2_util_handle_empty(testdirh)) {
+		smb2_util_close(tree, testdirh);
+	}
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 /*
    basic testing of SMB2 ACLs
 */
@@ -3317,6 +3407,7 @@ struct torture_suite *torture_smb2_acls_with_sysacl_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "MXAC-NOT-GRANTED",
 			test_mxac_not_granted);
 	torture_suite_add_1smb2_test(suite, "OVERWRITE_READ_ONLY_FILE", test_overwrite_read_only_file);
+	torture_suite_add_1smb2_test(suite, "NON-CANONICAL-ORDER", test_non_canonical_order);
 
 	suite->description = talloc_strdup(suite, "SMB2-ACLS-WITH-SYSACL tests");
 
