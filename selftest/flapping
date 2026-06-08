@@ -19,8 +19,8 @@
 ^samba3.rpc.spoolss.printer.addprinterex.print_job_enum # fails on some hosts due to bug 10930
 ^samba3.rpc.lsa.privileges.lsa.Privileges\(nt4_dc\) # fails sometimes on sn-devel
 ^samba4.blackbox.gentest # is flakey due to timing
-^samba3.smb2.acls.INHERITANCE\(ad_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba3.smb2.acls.DYNAMIC\(ad_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.smb2.acls-with-sysacl.INHERITANCE\(ad_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.smb2.acls-with-sysacl.DYNAMIC\(ad_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.acls.dynamic\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.acls.inheritance\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.samba3checkfsp.samba3checkfsp\(ad_dc_smb1\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16

@@ -143,6 +143,9 @@ for t in fileserver_tests:
     fileserver_env = "fileserver_smb1"
     if "SMB2" in t:
         fileserver_env = "fileserver"
+    if t == "OWNER-RIGHTS":
+        plantestsuite("samba3.smbtorture_s3.plain.%s" % t, fileserver_env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/acl_xattr_ign_sysacl_windows', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+        continue
     plantestsuite("samba3.smbtorture_s3.plain.%s" % t, fileserver_env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
     plantestsuite("samba3.smbtorture_s3.crypt_client.%s" % t, "nt4_dc_smb1", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "-e", "-l $LOCAL_PATH"])
     if t == "TORTURE":
@@ -1384,6 +1387,10 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.fileid":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_xattr -U$USERNAME%$PASSWORD')
+    elif t == "smb2.acls-with-sysacl":
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+    elif t == "smb2.acls-ignore-sysacl":
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/acl_xattr_ign_sysacl_windows -U$USERNAME%$PASSWORD')
     elif t == "smb2.acls_non_canonical":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/acls_non_canonical -U$USERNAME%$PASSWORD')
     elif t == "smb2.async_dosmode":
