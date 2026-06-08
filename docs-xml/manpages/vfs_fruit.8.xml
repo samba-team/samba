@@ -229,7 +229,11 @@
 	    <listitem>
 	      <para>Useful for Time Machine: limits the reported disksize, thus
 	      preventing Time Machine from using the whole real disk space for
-	      backup. The option takes a number plus an optional unit.</para>
+	      backup. The option takes a number plus an optional unit. The
+	      number may have a fractional part, which is truncated towards
+	      zero, so <emphasis>2.5T</emphasis> is accepted and means the
+	      same as <emphasis>2560G</emphasis>. A period is always the
+	      decimal separator, independent of the locale.</para>
 	      <para><emphasis>IMPORTANT</emphasis>: This is an approximated
 	      calculation that only takes into account the contents of Time
 	      Machine sparsebundle images. Therefore you <emphasis>MUST

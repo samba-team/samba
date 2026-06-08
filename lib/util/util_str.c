@@ -33,13 +33,28 @@
  * @brief String utilities.
  **/
 
+/*
+ * The number of fractional digits we take into account in
+ * conv_str_size_error(). Everything beyond that is truncated, as it
+ * cannot influence the resulting byte count anyway. The limit keeps
+ * the scale below 10^9, which is what the overflow reasoning in
+ * conv_str_size_error() relies on.
+ */
+#define CONV_STR_SIZE_MAX_SCALE 1000000000ULL
+
 /**
- * Convert a size specification like 16K into an integral number of bytes.
+ * Convert a size specification like 16K or 16.5M into a number of bytes.
+ * Both integer and fractional values are accepted, with an optional
+ * K/M/G/T/P suffix. Fractional parts are truncated towards zero.
  **/
 _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 {
-	char *		    end = NULL;
-	unsigned long long  lval;
+	char *end = NULL;
+	unsigned long long lval;
+	uint64_t mult = 1;
+	uint64_t frac = 0;	/* the fractional digits as an integer */
+	uint64_t scale = 1;	/* 10^(number of fractional digits) */
+	uint64_t bytes;
 	int error = 0;
 
 	if (str == NULL || *str == '\0') {
@@ -51,23 +66,65 @@ _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 		return false;
 	}
 
-	if (*end) {
+	/*
+	 * Parse the optional fractional part ourselves instead of using
+	 * strtod(). strtod() honours LC_NUMERIC, and smbd calls
+	 * setlocale(LC_ALL, "") via smb_init_locale(), so "1.5M" would be
+	 * rejected and "1,5M" accepted when smbd happens to run in e.g. a
+	 * de_DE locale. An smb.conf has to parse identically everywhere.
+	 */
+	if (*end == '.') {
+		end++;
+		if (!isdigit((unsigned char)*end)) {
+			return false;
+		}
+		while (isdigit((unsigned char)*end)) {
+			if (scale < CONV_STR_SIZE_MAX_SCALE) {
+				frac = frac * 10 + (uint64_t)(*end - '0');
+				scale *= 10;
+			}
+			end++;
+		}
+	}
+
+	if (*end != '\0') {
 		if (strwicmp(end, "K") == 0) {
-			lval *= 1024ULL;
+			mult = 1024ULL;
 		} else if (strwicmp(end, "M") == 0) {
-			lval *= (1024ULL * 1024ULL);
+			mult = 1024ULL * 1024ULL;
 		} else if (strwicmp(end, "G") == 0) {
-			lval *= (1024ULL * 1024ULL * 1024ULL);
+			mult = 1024ULL * 1024ULL * 1024ULL;
 		} else if (strwicmp(end, "T") == 0) {
-			lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+			mult = 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 		} else if (strwicmp(end, "P") == 0) {
-			lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL);
+			mult = 1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 		} else {
 			return false;
 		}
 	}
 
-	*val = (uint64_t)lval;
+	if (lval > UINT64_MAX / mult) {
+		return false;
+	}
+	bytes = (uint64_t)lval * mult;
+
+	if (frac != 0) {
+		/*
+		 * Add frac/scale * mult without leaving integer
+		 * arithmetic. Both terms are bounded: frac < scale, so
+		 * (mult / scale) * frac <= mult, and (mult % scale) and
+		 * frac are both below 10^9, so their product fits.
+		 */
+		uint64_t add = (mult / scale) * frac +
+			       ((mult % scale) * frac) / scale;
+
+		if (add > UINT64_MAX - bytes) {
+			return false;
+		}
+		bytes += add;
+	}
+
+	*val = bytes;
 	return true;
 }
 
