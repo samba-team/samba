@@ -1977,7 +1977,7 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
 						state->binding_handle,
@@ -2177,7 +2177,7 @@ static void netlogon_creds_cli_check_negotiate_caps(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
 						state->binding_handle,
@@ -2569,7 +2569,7 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
 
@@ -3013,7 +3013,7 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	state->logon = netlogon_creds_shallow_copy_logon(state,
 						state->logon_level,
@@ -3440,7 +3440,7 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_locked(struct t
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	subreq = dcerpc_netr_DsrUpdateReadOnlyServerDnsRecords_send(state, state->ev,
 								    state->binding_handle,
@@ -3689,7 +3689,7 @@ static void netlogon_creds_cli_ServerGetTrustInfo_locked(struct tevent_req *subr
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	subreq = dcerpc_netr_ServerGetTrustInfo_send(state, state->ev,
 						     state->binding_handle,
@@ -3975,7 +3975,7 @@ static void netlogon_creds_cli_GetForestTrustInformation_locked(struct tevent_re
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	subreq = dcerpc_netr_GetForestTrustInformation_send(state, state->ev,
 						state->binding_handle,
@@ -4234,7 +4234,7 @@ static void netlogon_creds_cli_SendToSam_locked(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	status = netlogon_creds_encrypt_SendToSam(&state->tmp_creds,
 						  state->opaque.data,
@@ -4490,7 +4490,7 @@ static void netlogon_creds_cli_LogonGetDomainInfo_locked(struct tevent_req *subr
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	ZERO_STRUCT(state->rep_auth);
+	state->rep_auth = (struct netr_Authenticator){0};
 
 	subreq = dcerpc_netr_LogonGetDomainInfo_send(state, state->ev,
 						state->binding_handle,
