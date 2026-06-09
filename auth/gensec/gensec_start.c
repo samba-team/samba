@@ -677,29 +677,58 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
  * @note Used by SPNEGO in particular, for the actual implementation mechanism
  */
 
-_PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
-				 struct gensec_security *parent,
-				 struct gensec_security **gensec_security)
+_PUBLIC_ NTSTATUS
+gensec_subcontext_start(TALLOC_CTX *mem_ctx,
+			struct gensec_security *parent,
+			struct gensec_security **_gensec_security)
 {
+	struct gensec_security *gensec_security = NULL;
+
 	if (parent->child_security != NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
-	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
+	gensec_security = talloc(mem_ctx, struct gensec_security);
+	if (gensec_security == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	(**gensec_security) = *parent;
-	(*gensec_security)->ops = NULL;
-	(*gensec_security)->private_data = NULL;
-	(*gensec_security)->update_busy_ptr = NULL;
+	*gensec_security = *parent;
+	gensec_security->ops = NULL;
+	gensec_security->private_data = NULL;
+	gensec_security->update_busy_ptr = NULL;
 
-	(*gensec_security)->subcontext = true;
-	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
-	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
-	(*gensec_security)->channel_bindings = talloc_reference(*gensec_security, parent->channel_bindings);
+	gensec_security->subcontext = true;
 
-	talloc_set_destructor((*gensec_security), gensec_security_destructor);
+	gensec_security->auth_context = talloc_reference(gensec_security,
+							 parent->auth_context);
+	if ((parent->auth_context != NULL) &&
+	    (gensec_security->auth_context == NULL))
+	{
+		goto nomem;
+	}
+
+	gensec_security->settings = talloc_reference(gensec_security,
+						     parent->settings);
+	if ((parent->settings != NULL) && (gensec_security->settings == NULL))
+	{
+		goto nomem;
+	}
+
+	gensec_security->channel_bindings = talloc_reference(
+		gensec_security, parent->channel_bindings);
+	if ((parent->channel_bindings != NULL) &&
+	    (gensec_security->channel_bindings == NULL))
+	{
+		goto nomem;
+	}
+
+	talloc_set_destructor(gensec_security, gensec_security_destructor);
+	*_gensec_security = gensec_security;
 	return NT_STATUS_OK;
+nomem:
+	TALLOC_FREE(gensec_security);
+	return NT_STATUS_NO_MEMORY;
 }
 
 _PUBLIC_ NTSTATUS gensec_child_ready(struct gensec_security *parent,
