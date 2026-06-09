@@ -247,7 +247,8 @@ void ctdb_string_push(const char **in, uint8_t *buf, size_t *npush)
 int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		     const char **out, size_t *npull)
 {
-	const char *str;
+	const char *str = NULL;
+	size_t len = 0;
 
 	if (buflen > UINT32_MAX) {
 		return EMSGSIZE;
@@ -265,7 +266,14 @@ int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	}
 
 	*out = str;
-	*npull = ctdb_string_len(&str);
+	/*
+	 * Avoid claiming to have consumed more than buflen.
+	 * ctdb_string_len() returns buflen + 1 if there is no
+	 * NUL-terminator within buflen, so no NUL was actually
+	 * consumed (so no +1 needed).
+	 */
+	len = ctdb_string_len(&str);
+	*npull = MIN(buflen, len);
 	return 0;
 }
 
