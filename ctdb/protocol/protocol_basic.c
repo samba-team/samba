@@ -319,7 +319,8 @@ int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		return ret;
 	}
-	offset += np;
+	/* Always consume the specified number bytes */
+	offset += u32;
 
 	*npull = offset;
 	return 0;
