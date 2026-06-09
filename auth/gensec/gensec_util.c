@@ -401,8 +401,7 @@ NTSTATUS gensec_kerberos_possible(struct gensec_security *gensec_security)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-#define STAR_SMBSERVER "*SMBSERVER"
-	if (strcmp(hostname, STAR_SMBSERVER) == 0) {
+	if (strcmp(hostname, "*SMBSERVER") == 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
