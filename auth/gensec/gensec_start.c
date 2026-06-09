@@ -694,9 +694,6 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->update_busy_ptr = NULL;
 
 	(*gensec_security)->subcontext = true;
-	(*gensec_security)->want_features = parent->want_features;
-	(*gensec_security)->max_update_size = parent->max_update_size;
-	(*gensec_security)->dcerpc_auth_level = parent->dcerpc_auth_level;
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
