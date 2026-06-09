@@ -561,13 +561,17 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata)
 {
 	struct ctdb_rec_data_old *d = (struct ctdb_rec_data_old *)data.dptr;
+	size_t rec_data_header_len = offsetof(struct ctdb_rec_data_old, data);
 	struct ctdb_traverse_all_handle *state;
 	TDB_DATA key;
 	ctdb_traverse_fn_t callback;
 	void *private_data;
 
-	if (data.dsize < sizeof(uint32_t) || data.dsize != d->length) {
-		DEBUG(DEBUG_ERR,("Bad record size in ctdb_control_traverse_data\n"));
+	if (data.dsize < rec_data_header_len ||
+	    data.dsize != d->length ||
+	    d->keylen > d->length - rec_data_header_len ||
+	    d->datalen > d->length - rec_data_header_len - d->keylen) {
+		DBG_ERR("Invalid packet\n");
 		return -1;
 	}
 
