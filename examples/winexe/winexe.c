@@ -250,6 +250,11 @@ static void parse_args(int argc, const char *argv[],
 		}
 	}
 
+	if (options->runas != NULL && strchr(options->runas, '\n') != NULL) {
+		fputs("Error: newlines in --runas credentials not supported\n", stderr);
+		exit(1);
+	}
+
 	options->credentials = samba_cmdline_get_creds();
 
 	options->hostname = talloc_strdup(mem_ctx, argv_new[0] + 2);
@@ -1491,7 +1496,7 @@ static struct tevent_req *winexe_ctrl_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct cli_state *cli,
-	const char *cmd)
+	const struct program_options *options)
 {
 	struct tevent_req *req, *subreq;
 	struct winexe_ctrl_state *state;
@@ -1503,8 +1508,12 @@ static struct tevent_req *winexe_ctrl_send(
 	}
 	state->ev = ev;
 	state->cli = cli;
-
-	state->cmd = talloc_asprintf(state, "run %s\n", cmd);
+	if (options->runas != NULL) {
+		state->cmd = talloc_asprintf(state, "set runas %s\nrun %s\n",
+			options->runas, options->cmd);
+	} else {
+		state->cmd = talloc_asprintf(state, "run %s\n", options->cmd);
+	}
 	if (tevent_req_nomem(state->cmd, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1784,7 +1793,7 @@ static NTSTATUS winexe_ctrl_recv(struct tevent_req *req,
 }
 
 static NTSTATUS winexe_ctrl(struct cli_state *cli,
-			    const char *cmd,
+			    const struct program_options *options,
 			    int *preturn_code)
 {
 	struct tevent_context *ev = NULL;
@@ -1796,7 +1805,7 @@ static NTSTATUS winexe_ctrl(struct cli_state *cli,
 	if (ev == NULL) {
 		goto done;
 	}
-	req = winexe_ctrl_send(ev, ev, cli, cmd);
+	req = winexe_ctrl_send(ev, ev, cli, options);
 	if (req == NULL) {
 		goto done;
 	}
@@ -1894,7 +1903,7 @@ int main(int argc, char *argv[])
 		goto done;
 	}
 
-	status = winexe_ctrl(cli, options.cmd, &return_code);
+	status = winexe_ctrl(cli, &options, &return_code);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PIPE_DISCONNECTED)) {
 		/* Normal finish */
 		status = NT_STATUS_OK;
