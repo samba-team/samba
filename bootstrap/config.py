@@ -556,9 +556,9 @@ RPM_DISTS = {
             'python3-varlink': '', # not available
         }
     },
-    'fedora43': {
-        'docker_image': 'quay.io/fedora/fedora-minimal:43',
-        'vagrant_box': 'fedora/43-cloud-base',
+    'fedora44': {
+        'docker_image': 'quay.io/fedora/fedora-minimal:44',
+        'vagrant_box': 'fedora/44-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
