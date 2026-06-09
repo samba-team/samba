@@ -970,7 +970,7 @@ void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t instan
 		DBG_DEBUG("Watcher %s:%"PRIu64" reverted from adding\n",
 			  server_id_str_buf(clear_watcher.pid, &buf),
 			  clear_watcher.instance);
-		ZERO_STRUCT(wrec->added);
+		wrec->added = (struct dbwrap_watcher) { 0 };
 	}
 
 	for (i=0; i < wrec->watchers.count; i++) {
