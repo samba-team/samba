@@ -838,6 +838,7 @@ int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			      size_t *npull)
 {
 	struct ctdb_statistics_list *val;
+	struct ctdb_statistics dummy = {};
 	size_t offset = 0, np;
 	int ret, i;
 
@@ -861,6 +862,11 @@ int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->stats = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_statistics_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->stats = talloc_array(val, struct ctdb_statistics, val->num);
@@ -1088,6 +1094,7 @@ int ctdb_dbid_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		       struct ctdb_dbid_map **out, size_t *npull)
 {
 	struct ctdb_dbid_map *val;
+	struct ctdb_dbid dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -1106,6 +1113,11 @@ int ctdb_dbid_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->dbs = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_dbid_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->dbs = talloc_array(val, struct ctdb_dbid, val->num);
@@ -3905,6 +3917,7 @@ int ctdb_node_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		       struct ctdb_node_map **out, size_t *npull)
 {
 	struct ctdb_node_map *val;
+	struct ctdb_node_and_flags dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -3923,6 +3936,12 @@ int ctdb_node_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->node = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_node_and_flags_len(&dummy) >
+	    buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->node = talloc_array(val, struct ctdb_node_and_flags, val->num);
