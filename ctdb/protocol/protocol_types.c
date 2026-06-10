@@ -2380,6 +2380,7 @@ int ctdb_connection_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			      struct ctdb_connection_list **out, size_t *npull)
 {
 	struct ctdb_connection_list *val;
+	struct ctdb_connection dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -2398,6 +2399,11 @@ int ctdb_connection_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->conn = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_connection_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->conn = talloc_array(val, struct ctdb_connection, val->num);
@@ -3417,6 +3423,7 @@ int ctdb_tickle_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			   struct ctdb_tickle_list **out, size_t *npull)
 {
 	struct ctdb_tickle_list *val;
+	struct ctdb_connection dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -3442,6 +3449,11 @@ int ctdb_tickle_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->conn = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_connection_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->conn = talloc_array(val, struct ctdb_connection, val->num);
@@ -3762,6 +3774,7 @@ int ctdb_public_ip_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			     struct ctdb_public_ip_list **out, size_t *npull)
 {
 	struct ctdb_public_ip_list *val;
+	struct ctdb_public_ip dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -3780,6 +3793,11 @@ int ctdb_public_ip_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->ip = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_public_ip_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->ip = talloc_array(val, struct ctdb_public_ip, val->num);
@@ -4124,6 +4142,7 @@ int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			  struct ctdb_script_list **out, size_t *npull)
 {
 	struct ctdb_script_list *val;
+	struct ctdb_script dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -4155,6 +4174,12 @@ int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num_scripts == 0) {
 		val->script = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num_scripts * ctdb_script_len(&dummy)
+	    > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->script = talloc_array(val, struct ctdb_script, val->num_scripts);
@@ -4400,6 +4425,7 @@ int ctdb_iface_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			 struct ctdb_iface_list **out, size_t *npull)
 {
 	struct ctdb_iface_list *val;
+	struct ctdb_iface dummy = {};
 	size_t offset = 0, np;
 	uint32_t i;
 	int ret;
@@ -4418,6 +4444,11 @@ int ctdb_iface_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	if (val->num == 0) {
 		val->iface = NULL;
 		goto done;
+	}
+
+	if ((uint64_t)val->num * ctdb_iface_len(&dummy) > buflen - offset) {
+		ret = EMSGSIZE;
+		goto fail;
 	}
 
 	val->iface = talloc_array(val, struct ctdb_iface, val->num);
@@ -5347,6 +5378,10 @@ int ctdb_g_lock_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 
 	val->num = buflen / ctdb_g_lock_len(&lock);
 
+	/*
+	 * No array count pre-check needed because val->num is
+	 * calculated from buflen
+	 */
 	val->lock = talloc_array(val, struct ctdb_g_lock, val->num);
 	if (val->lock == NULL) {
 		ret = ENOMEM;
