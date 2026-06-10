@@ -110,6 +110,7 @@ static void print_cache_entry(const char* keystr, DATA_BLOB value,
 	d_printf(_("Key: %s\t Timeout: %s\t Value: %s  %s\n"), keystr,
 	         timeout_str, datastr, timeout > now_t ? "": _("(expired)"));
 
+	TALLOC_FREE(datastr_free);
 	SAFE_FREE(alloc_str);
 }
 
