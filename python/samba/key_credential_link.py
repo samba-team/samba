@@ -30,6 +30,7 @@ from cryptography.hazmat.primitives.serialization import (
     PublicFormat,
     Encoding)
 
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
 from cryptography.x509 import (
@@ -230,7 +231,7 @@ def get_public_key(data:bytes, encoding:Optional[str] = None) -> RSAPublicKey:
         try:
             key = fn(data)
             break
-        except ValueError:
+        except (ValueError, UnsupportedAlgorithm):
             continue
 
     if key is None:
@@ -239,7 +240,7 @@ def get_public_key(data:bytes, encoding:Optional[str] = None) -> RSAPublicKey:
                 cert = fn(data)
                 key = cert.public_key()
                 break
-            except ValueError:
+            except (ValueError, UnsupportedAlgorithm):
                 continue
 
     if key is None:
