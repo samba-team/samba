@@ -171,6 +171,17 @@ bld.SAMBA3_SUBSYSTEM('WSP_GSS',
                     source='''wsp/wsp_gss.c''',
                     enabled=bld.env.with_wsp)
 
+bld.SAMBA3_BINARY('npsd_wsp_server',
+                  source='npsd_wsp_server.c',
+                  deps='''
+                  RPC_WORKER
+                  WSP_GSS
+                  WSP_UTIL
+                  WSP_BACKEND
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}',
+                  enabled=bld.env.with_wsp)
+
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
                     source='',
                     deps='''
