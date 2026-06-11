@@ -81,7 +81,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	NTSTATUS status;
 
 	/* the domain parameter could have an optional trailing "." */
-	if (domain && domain[strlen(domain)-1] == '.') {
+	if (domain && domain[0] != '\0' && domain[strlen(domain)-1] == '.') {
 		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
 		NT_STATUS_HAVE_NO_MEMORY(domain);
 	}
