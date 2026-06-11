@@ -3897,6 +3897,9 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	if (account == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	if (account[0] == '\0') {
+		return NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
 
 	nt_status = can_create(p->mem_ctx, account);
 	if (!NT_STATUS_IS_OK(nt_status)) {
