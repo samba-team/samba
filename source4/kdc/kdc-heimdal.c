@@ -334,7 +334,7 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	int ldb_ret;
 
 	if (task == NULL) {
-		task_server_terminate(task, "kdc: Null task", true);
+		DBG_ERR("kdc_post_fork: Null task\n");
 		return;
 	}
 	if (task->private_data == NULL) {
