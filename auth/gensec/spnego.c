@@ -428,8 +428,6 @@ static NTSTATUS gensec_spnego_create_negTokenInit_finish(
 	struct spnego_data spnego_out;
 	bool ok;
 
-	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-
 	n->mech_types = gensec_security_oids_from_ops_wrapped(n, cur_sec);
 	if (n->mech_types == NULL) {
 		DBG_WARNING("gensec_security_oids_from_ops_wrapped() failed\n");
@@ -445,18 +443,16 @@ static NTSTATUS gensec_spnego_create_negTokenInit_finish(
 	}
 
 	/* List the remaining mechs as options */
-	spnego_out.negTokenInit.mechTypes = n->mech_types;
-	spnego_out.negTokenInit.reqFlags = data_blob_null;
-	spnego_out.negTokenInit.reqFlagsPadding = 0;
+	spnego_out = (struct spnego_data) {
+		.type = SPNEGO_NEG_TOKEN_INIT,
+		.negTokenInit.mechTypes = n->mech_types,
+		.negTokenInit.mechToken = sub_out,
+	};
 
 	if (spnego_state->state_position == SPNEGO_SERVER_START) {
 		spnego_out.negTokenInit.mechListMIC
 			= data_blob_string_const(ADS_IGNORE_PRINCIPAL);
-	} else {
-		spnego_out.negTokenInit.mechListMIC = data_blob_null;
 	}
-
-	spnego_out.negTokenInit.mechToken = sub_out;
 
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 		DBG_ERR("Failed to write NEG_TOKEN_INIT\n");
@@ -676,12 +672,11 @@ static NTSTATUS gensec_spnego_client_negTokenInit_finish(
 	}
 
 	/* compose reply */
-	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego_out.negTokenInit.mechTypes = mech_types;
-	spnego_out.negTokenInit.reqFlags = data_blob_null;
-	spnego_out.negTokenInit.reqFlagsPadding = 0;
-	spnego_out.negTokenInit.mechListMIC = data_blob_null;
-	spnego_out.negTokenInit.mechToken = sub_out;
+	spnego_out = (struct spnego_data){
+		.type = SPNEGO_NEG_TOKEN_INIT,
+		.negTokenInit.mechTypes = mech_types,
+		.negTokenInit.mechToken = sub_out,
+	};
 
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 		DBG_ERR("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n");
@@ -1071,11 +1066,12 @@ static NTSTATUS gensec_spnego_client_negTokenTarg_finish(
 	}
 
 	/* compose reply */
-	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-	spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
-	spnego_out.negTokenTarg.supportedMech = NULL;
-	spnego_out.negTokenTarg.responseToken = sub_out;
-	spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
+	spnego_out = (struct spnego_data) {
+		.type = SPNEGO_NEG_TOKEN_TARG,
+		.negTokenTarg.negResult = SPNEGO_NONE_RESULT,
+		.negTokenTarg.responseToken = sub_out,
+		.negTokenTarg.mechListMIC = mech_list_mic,
+	};
 
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 		DBG_WARNING("Failed to write NEG_TOKEN_TARG\n");
