@@ -528,8 +528,7 @@ _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 static const char **gensec_security_oids_from_ops(
 	struct gensec_security *gensec_security,
 	TALLOC_CTX *mem_ctx,
-	const struct gensec_security_ops * const *ops,
-	const char *skip)
+	const struct gensec_security_ops *const *ops)
 {
 	int i;
 	int j = 0;
@@ -549,15 +548,15 @@ static const char **gensec_security_oids_from_ops(
 		}
 
 		for (k = 0; ops[i]->oid[k]; k++) {
-			if (skip && strcmp(skip, ops[i]->oid[k])==0) {
-			} else {
-				oid_list = talloc_realloc(mem_ctx, oid_list, const char *, j + 2);
-				if (!oid_list) {
-					return NULL;
-				}
-				oid_list[j] = ops[i]->oid[k];
-				j++;
+			oid_list = talloc_realloc(mem_ctx,
+						  oid_list,
+						  const char *,
+						  j + 2);
+			if (!oid_list) {
+				return NULL;
 			}
+			oid_list[j] = ops[i]->oid[k];
+			j++;
 		}
 	}
 	oid_list[j] = NULL;
@@ -611,15 +610,15 @@ _PUBLIC_ const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
  *
  */
 
-_PUBLIC_ const char **gensec_security_oids(struct gensec_security *gensec_security,
-					   TALLOC_CTX *mem_ctx,
-					   const char *skip)
+_PUBLIC_ const char **gensec_security_oids(
+	struct gensec_security *gensec_security,
+	TALLOC_CTX *mem_ctx)
 {
 	const struct gensec_security_ops **ops;
 
 	ops = gensec_security_mechs(gensec_security, mem_ctx);
 
-	return gensec_security_oids_from_ops(gensec_security, mem_ctx, ops, skip);
+	return gensec_security_oids_from_ops(gensec_security, mem_ctx, ops);
 }
 
 static int gensec_security_destructor(struct gensec_security *gctx)

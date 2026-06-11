@@ -248,8 +248,7 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 					const char * const *oid_strings,
 					const char *skip);
 const char **gensec_security_oids(struct gensec_security *gensec_security,
-				  TALLOC_CTX *mem_ctx,
-				  const char *skip);
+				  TALLOC_CTX *mem_ctx);
 const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
 				const struct gensec_security_ops_wrapper *wops);
 size_t gensec_max_input_size(struct gensec_security *gensec_security);

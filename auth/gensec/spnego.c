@@ -296,7 +296,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit_start(
 					DATA_BLOB *in_next)
 {
 	n->mech_idx = 0;
-	n->mech_types = gensec_security_oids(gensec_security, n, NULL);
+	n->mech_types = gensec_security_oids(gensec_security, n);
 	if (n->mech_types == NULL) {
 		DBG_WARNING("gensec_security_oids() failed\n");
 		return NT_STATUS_NO_MEMORY;
@@ -501,7 +501,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_start(
 
 	/* Do not use server mech list as it isn't protected. Instead, get all
 	 * supported mechs (excluding SPNEGO). */
-	n->mech_types = gensec_security_oids(gensec_security, n, NULL);
+	n->mech_types = gensec_security_oids(gensec_security, n);
 	if (n->mech_types == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
