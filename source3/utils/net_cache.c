@@ -147,6 +147,11 @@ static time_t parse_timeout(const char* timeout_str)
 	int len, number_begin, number_end;
 	time_t timeout;
 
+	len = strlen(timeout_str);
+	if (len == 0) {
+		return 0;
+	}
+
 	/* sign detection */
 	if (timeout_str[0] == '!' || timeout_str[0] == '+') {
 		sign = timeout_str[0];
@@ -156,7 +161,6 @@ static time_t parse_timeout(const char* timeout_str)
 	}
 
 	/* unit detection */
-	len = strlen(timeout_str);
 	switch (timeout_str[len - 1]) {
 	case 's':
 	case 'm':
