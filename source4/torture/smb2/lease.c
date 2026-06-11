@@ -4908,7 +4908,9 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	}
 
 	/* Set sharename back. */
-	lpcfg_set_cmdline(tctx->lp_ctx, "torture:share", orig_share);
+	if (orig_share != NULL) {
+		lpcfg_set_cmdline(tctx->lp_ctx, "torture:share", orig_share);
+	}
 
 	talloc_free(mem_ctx);
 
