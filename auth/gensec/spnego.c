@@ -58,7 +58,7 @@ struct spnego_neg_state {
 	const struct spnego_neg_ops *ops;
 	const struct gensec_security_ops_wrapper *all_sec;
 	size_t all_idx;
-	const char * const *mech_types;
+	const char **mech_types;
 	size_t mech_idx;
 };
 
@@ -650,7 +650,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_finish(
 					DATA_BLOB *out)
 {
 	struct spnego_data spnego_out;
-	const char * const *mech_types = NULL;
+	const char **mech_types = NULL;
 	bool ok;
 
 	if (n->mech_types == NULL) {

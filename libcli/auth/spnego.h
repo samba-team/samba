@@ -53,7 +53,7 @@ enum spnego_negResult {
 };
 
 struct spnego_negTokenInit {
-	const char * const *mechTypes;
+	const char **mechTypes;
 	DATA_BLOB reqFlags;
 	uint8_t reqFlagsPadding;
 	DATA_BLOB mechToken;
