@@ -204,6 +204,8 @@ static int sock_client_context_destructor(
 static int socket_setup(const char *sockpath, bool remove_before_use)
 {
 	struct sockaddr_un addr;
+	const char *t;
+	bool test_mode_enabled = false;
 	size_t len;
 	int ret, fd;
 
@@ -236,6 +238,30 @@ static int socket_setup(const char *sockpath, bool remove_before_use)
 	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret != 0) {
 		D_ERR("socket bind failed - %s\n", sockpath);
+		close(fd);
+		return -1;
+	}
+
+	t = getenv("CTDB_TEST_MODE");
+	if (t != NULL) {
+		test_mode_enabled = true;
+	}
+
+	if (!test_mode_enabled) {
+		/* Behaviour of fchown(2) is undefined on sockets */
+		ret = chown(sockpath, geteuid(), getegid());
+		if (ret != 0) {
+			D_ERR("Unable to secure (chown) socket '%s'\n",
+			      sockpath);
+			close(fd);
+			return -1;
+		}
+	}
+
+	/* Behaviour of fchmod(2) is undefined on sockets */
+	ret = chmod(sockpath, 0700);
+	if (ret != 0) {
+		D_ERR("Unable to secure (chmod) socket '%s'\n", sockpath);
 		close(fd);
 		return -1;
 	}
