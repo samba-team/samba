@@ -296,17 +296,19 @@ static NTSTATUS gensec_spnego_create_negTokenInit_start(
 					DATA_BLOB *in_next)
 {
 	n->mech_idx = 0;
-	n->mech_types = gensec_security_oids(gensec_security, n,
-					     GENSEC_OID_SPNEGO);
+	n->mech_types = gensec_security_oids(gensec_security, n, NULL);
 	if (n->mech_types == NULL) {
 		DBG_WARNING("gensec_security_oids() failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	str_list_remove(n->mech_types, GENSEC_OID_SPNEGO);
+
 	n->all_idx = 0;
 	n->all_sec = gensec_security_by_oid_list(gensec_security,
-						 n, n->mech_types,
-						 GENSEC_OID_SPNEGO);
+						 n,
+						 n->mech_types,
+						 NULL);
 	if (n->all_sec == NULL) {
 		DBG_WARNING("gensec_security_by_oid_list() failed\n");
 		return NT_STATUS_NO_MEMORY;
@@ -499,16 +501,18 @@ static NTSTATUS gensec_spnego_client_negTokenInit_start(
 
 	/* Do not use server mech list as it isn't protected. Instead, get all
 	 * supported mechs (excluding SPNEGO). */
-	n->mech_types = gensec_security_oids(gensec_security, n,
-					     GENSEC_OID_SPNEGO);
+	n->mech_types = gensec_security_oids(gensec_security, n, NULL);
 	if (n->mech_types == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	str_list_remove(n->mech_types, GENSEC_OID_SPNEGO);
+
 	n->all_idx = 0;
 	n->all_sec = gensec_security_by_oid_list(gensec_security,
-						 n, n->mech_types,
-						 GENSEC_OID_SPNEGO);
+						 n,
+						 n->mech_types,
+						 NULL);
 	if (n->all_sec == NULL) {
 		DBG_WARNING("gensec_security_by_oid_list() failed\n");
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1150,17 +1154,24 @@ static NTSTATUS gensec_spnego_server_negTokenInit_start(
 					DATA_BLOB *in_next)
 {
 	bool ok;
+	const char **mech_types = spnego_in->negTokenInit.mechTypes;
 
-	n->mech_idx = 0;
-	n->mech_types = spnego_in->negTokenInit.mechTypes;
-	if (n->mech_types == NULL) {
+	if (mech_types == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	n->mech_idx = 0;
+	n->mech_types = str_list_copy_const(n, mech_types);
+	if (n->mech_types == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	str_list_remove(n->mech_types, GENSEC_OID_SPNEGO);
+
 	n->all_idx = 0;
 	n->all_sec = gensec_security_by_oid_list(gensec_security,
-						 n, n->mech_types,
-						 GENSEC_OID_SPNEGO);
+						 n,
+						 n->mech_types,
+						 NULL);
 	if (n->all_sec == NULL) {
 		DBG_WARNING("gensec_security_by_oid_list() failed\n");
 		return NT_STATUS_INVALID_PARAMETER;
