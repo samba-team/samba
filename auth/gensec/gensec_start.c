@@ -535,7 +535,7 @@ static const char **gensec_security_oids_from_ops(
 		return NULL;
 	}
 
-	for (i=0; ops && ops[i]; i++) {
+	for (i=0; ops[i]; i++) {
 		if (!ops[i]->oid) {
 			continue;
 		}
