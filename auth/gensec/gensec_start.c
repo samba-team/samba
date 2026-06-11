@@ -479,7 +479,9 @@ _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 			continue;
 		}
 		for (oid_idx = 0; oid_strings[oid_idx]; oid_idx++) {
-			if (strcmp(oid_strings[oid_idx], skip) == 0) {
+			if ((skip != NULL) &&
+			    (strcmp(oid_strings[oid_idx], skip) == 0))
+			{
 				continue;
 			}
 
