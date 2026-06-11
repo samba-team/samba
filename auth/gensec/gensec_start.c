@@ -541,13 +541,15 @@ static const char **gensec_security_oids_from_ops(
 		}
 
 		for (k = 0; ops[i]->oid[k]; k++) {
-			oid_list = talloc_realloc(mem_ctx,
-						  oid_list,
-						  const char *,
-						  j + 2);
-			if (!oid_list) {
+			const char **tmp = talloc_realloc(mem_ctx,
+							  oid_list,
+							  const char *,
+							  j + 2);
+			if (tmp == NULL) {
+				TALLOC_FREE(oid_list);
 				return NULL;
 			}
+			oid_list = tmp;
 			oid_list[j] = ops[i]->oid[k];
 			j++;
 		}
