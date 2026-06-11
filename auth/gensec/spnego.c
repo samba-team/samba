@@ -307,8 +307,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit_start(
 	n->all_idx = 0;
 	n->all_sec = gensec_security_by_oid_list(gensec_security,
 						 n,
-						 n->mech_types,
-						 NULL);
+						 n->mech_types);
 	if (n->all_sec == NULL) {
 		DBG_WARNING("gensec_security_by_oid_list() failed\n");
 		return NT_STATUS_NO_MEMORY;
@@ -511,8 +510,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_start(
 	n->all_idx = 0;
 	n->all_sec = gensec_security_by_oid_list(gensec_security,
 						 n,
-						 n->mech_types,
-						 NULL);
+						 n->mech_types);
 	if (n->all_sec == NULL) {
 		DBG_WARNING("gensec_security_by_oid_list() failed\n");
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1170,8 +1168,7 @@ static NTSTATUS gensec_spnego_server_negTokenInit_start(
 	n->all_idx = 0;
 	n->all_sec = gensec_security_by_oid_list(gensec_security,
 						 n,
-						 n->mech_types,
-						 NULL);
+						 n->mech_types);
 	if (n->all_sec == NULL) {
 		DBG_WARNING("gensec_security_by_oid_list() failed\n");
 		return NT_STATUS_INVALID_PARAMETER;

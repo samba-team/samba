@@ -449,10 +449,9 @@ static const struct gensec_security_ops **gensec_security_by_sasl_list(
  */
 
 _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
-					struct gensec_security *gensec_security,
-					TALLOC_CTX *mem_ctx,
-					const char * const *oid_strings,
-					const char *skip)
+	struct gensec_security *gensec_security,
+	TALLOC_CTX *mem_ctx,
+	const char *const *oid_strings)
 {
 	struct gensec_security_ops_wrapper *backends_out;
 	const struct gensec_security_ops **backends;
@@ -479,12 +478,6 @@ _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 			continue;
 		}
 		for (oid_idx = 0; oid_strings[oid_idx]; oid_idx++) {
-			if ((skip != NULL) &&
-			    (strcmp(oid_strings[oid_idx], skip) == 0))
-			{
-				continue;
-			}
-
 			for (j=0; backends[i]->oid[j]; j++) {
 				if (!backends[i]->oid[j] ||
 				    !(strcmp(backends[i]->oid[j],
