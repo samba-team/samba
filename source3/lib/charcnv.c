@@ -21,6 +21,7 @@
 
 */
 #include "includes.h"
+#include "lib/util/string_wrappers.h"
 
 /**
  * Destroy global objects allocated by init_iconv()
@@ -514,7 +515,7 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
 
 size_t dos_PutUniCode(char *dst, const char *src, size_t len)
 {
-	return push_ucs2(NULL, dst, src, len, STR_UNICODE | STR_NOALIGN);
+	return push_string_check(dst, src, len, STR_UNICODE | STR_NOALIGN);
 }
 
 
