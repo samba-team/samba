@@ -1095,7 +1095,7 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 
 	if (fsp == NULL) {
 		status = synthetic_pathref(talloc_tos(),
-					handle->conn->cwd_fsp,
+					dirfsp,
 					smb_fname->base_name,
 					NULL,
 					NULL,
