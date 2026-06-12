@@ -142,13 +142,15 @@ static bool check_stream_list(struct smb2_tree *tree,
 
 	status = smb2_getinfo_file(tree, tctx, &finfo);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "(%s) smb_raw_pathinfo failed: %s\n",
+		torture_result(tctx, TORTURE_FAIL,
+		    "(%s) smb_raw_pathinfo failed: %s\n",
 		    __location__, nt_errstr(status));
 		goto fail;
 	}
 
 	if (finfo.stream_info.out.num_streams != num_exp) {
-		torture_comment(tctx, "(%s) expected %d streams, got %d\n",
+		torture_result(tctx, TORTURE_FAIL,
+		    "(%s) expected %d streams, got %d\n",
 		    __location__, num_exp, finfo.stream_info.out.num_streams);
 		goto fail;
 	}
@@ -178,7 +180,7 @@ static bool check_stream_list(struct smb2_tree *tree,
 
 	for (i=0; i<num_exp; i++) {
 		if (strcmp(exp_sort[i], stream_sort[i].stream_name.s) != 0) {
-			torture_comment(tctx,
+			torture_result(tctx, TORTURE_FAIL,
 			    "(%s) expected stream name %s, got %s\n",
 			    __location__, exp_sort[i],
 			    stream_sort[i].stream_name.s);
