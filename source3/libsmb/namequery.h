@@ -92,9 +92,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				size_t *ret_count,
 				const char **resolve_order);
 bool resolve_name(const char *name,
-		struct sockaddr_storage *return_ss,
-		int name_type,
-		bool prefer_ipv4);
+		  struct samba_sockaddr *return_ss,
+		  int name_type,
+		  bool prefer_ipv4);
 NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		const char *name,
 		int name_type,

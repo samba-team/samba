@@ -300,9 +300,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 				       struct tldap_context **pld)
 {
 	struct netr_DsRGetDCNameInfo *dcinfo;
-	struct sockaddr_storage dcaddr = {
-		.ss_family = AF_UNSPEC,
-	};
+	struct samba_sockaddr dcaddr = {};
 	struct sockaddr_storage *pdcaddr = NULL;
 	struct winbindd_domain *creds_domain = NULL;
 	struct cli_credentials *creds;
@@ -372,7 +370,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	 */
 	if (strequal(domname, lp_realm()) || strequal(domname, lp_workgroup()))
 	{
-		pdcaddr = &dcaddr;
+		pdcaddr = &dcaddr.u.ss;
 	}
 
 	ok = create_local_private_krb5_conf_for_domain(
@@ -384,7 +382,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	status = open_socket_out(&dcaddr, tcp_port, 10000, &fd);
+	status = open_socket_out(&dcaddr.u.ss, tcp_port, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("open_socket_out failed: %s\n", nt_errstr(status));
 		TALLOC_FREE(dcinfo);

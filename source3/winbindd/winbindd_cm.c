@@ -1443,13 +1443,15 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 				return false;
 			}
 		} else {
+			struct samba_sockaddr dcaddr;
 			ok = resolve_name(saf_servername,
-					  &domain->dcaddr,
+					  &dcaddr,
 					  0x20,
 					  true);
 			if (!ok) {
 				goto fail;
 			}
+			domain->dcaddr = dcaddr.u.ss;
 		}
 
 		TALLOC_FREE(domain->dcname);

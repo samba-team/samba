@@ -2976,9 +2976,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 *********************************************************/
 
 bool resolve_name(const char *name,
-		struct sockaddr_storage *return_ss,
-		int name_type,
-		bool prefer_ipv4)
+		  struct samba_sockaddr *return_ss,
+		  int name_type,
+		  bool prefer_ipv4)
 {
 	struct samba_sockaddr *sa_list = NULL;
 	char *sitename = NULL;
@@ -2987,7 +2987,13 @@ bool resolve_name(const char *name,
 	TALLOC_CTX *frame = NULL;
 
 	if (is_ipaddress(name)) {
-		return interpret_string_addr(return_ss, name, AI_NUMERICHOST);
+		struct sockaddr_storage ss;
+		bool ok = interpret_string_addr(&ss, name, AI_NUMERICHOST);
+		if (!ok) {
+			return false;
+		}
+		sockaddr_storage_to_samba_sockaddr(return_ss, &ss);
+		return true;
 	}
 
 	frame = talloc_stackframe();
@@ -3008,7 +3014,7 @@ bool resolve_name(const char *name,
 			for (i=0; i<count; i++) {
 				if (!is_broadcast_addr(&sa_list[i].u.sa) &&
 						(sa_list[i].u.ss.ss_family == AF_INET)) {
-					*return_ss = sa_list[i].u.ss;
+					*return_ss = sa_list[i];
 					TALLOC_FREE(sa_list);
 					TALLOC_FREE(frame);
 					return True;
@@ -3019,7 +3025,7 @@ bool resolve_name(const char *name,
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
 			if (!is_broadcast_addr(&sa_list[i].u.sa)) {
-				*return_ss = sa_list[i].u.ss;
+				*return_ss = sa_list[i];
 				TALLOC_FREE(sa_list);
 				TALLOC_FREE(frame);
 				return True;
@@ -3430,7 +3436,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 
 		/* explicit lookup; resolve_name() will
 		 * handle names & IP addresses */
-		if (resolve_name(name, &name_sa.u.ss, 0x20, true)) {
+		if (resolve_name(name, &name_sa, 0x20, true)) {
 			char addr[INET6_ADDRSTRLEN];
 			bool has_entry;
 			bool ok;

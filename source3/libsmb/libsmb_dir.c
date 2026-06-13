@@ -466,7 +466,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 	uint16_t port = 0;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
-	struct sockaddr_storage rem_ss;
+	struct samba_sockaddr rem_ss;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -759,10 +759,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				 * Get the backup list ...
 				 */
 				if (!name_status_find(wgroup, 0, 0,
-                                                      &rem_ss, buserver)) {
+                                                      &rem_ss.u.ss, buserver)) {
 					char addr[INET6_ADDRSTRLEN];
 
-					print_sockaddr(addr, sizeof(addr), &rem_ss);
+					print_sockaddr(addr,
+						       sizeof(addr),
+						       &rem_ss.u.ss);
                                         DEBUG(0,("Could not get name of "
                                                 "local/domain master browser "
                                                 "for workgroup %s from "

@@ -2461,7 +2461,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 				      struct sockaddr_storage *client_ss, const char *remote_machine)
 {
 	NTSTATUS ret;
-	struct sockaddr_storage rm_addr;
+	struct samba_sockaddr rm_addr;
 	char addr[INET6_ADDRSTRLEN];
 	struct cli_credentials *anon_creds = NULL;
 	struct smb_transports ts =
@@ -2475,10 +2475,10 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return false;
 		}
-		print_sockaddr(addr, sizeof(addr), &rm_addr);
+		print_sockaddr(addr, sizeof(addr), &rm_addr.u.ss);
 	} else {
-		rm_addr = *client_ss;
-		print_sockaddr(addr, sizeof(addr), &rm_addr);
+		sockaddr_storage_to_samba_sockaddr(&rm_addr, client_ss);
+		print_sockaddr(addr, sizeof(addr), &rm_addr.u.ss);
 		DEBUG(5,("spoolss_connect_to_client: Using address %s (no name resolution necessary)\n",
 			addr));
 	}
@@ -2500,7 +2500,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 					pp_cli,
 					lp_netbios_name(),
 					remote_machine,
-					&rm_addr,
+					&rm_addr.u.ss,
 					&ts,
 					"IPC$",
 					"IPC",

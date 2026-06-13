@@ -2251,7 +2251,7 @@ static int net_ads_printer_publish(struct net_context *c,
 	const char *printername = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct sockaddr_storage server_ss = { 0 };
+	struct samba_sockaddr server_ss = { 0 };
 	NTSTATUS nt_status;
 	ADS_MODLIST mods = NULL;
 	char *prt_dn = NULL;
@@ -2313,7 +2313,7 @@ static int net_ads_printer_publish(struct net_context *c,
 					      &cli,
 					      lp_netbios_name(),
 					      servername,
-					      &server_ss,
+					      &server_ss.u.ss,
 					      &ts,
 					      "IPC$",
 					      "IPC",

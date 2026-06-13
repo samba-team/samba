@@ -4008,7 +4008,7 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 		bool ok;
 
 		ok = resolve_name(remote_name,
-				  &saddr.u.ss,
+				  &saddr,
 				  NBT_NAME_SERVER,
 				  false);
 		if (!ok) {

@@ -911,7 +911,7 @@ static ADS_STATUS ads_connect_internal(ADS_STRUCT *ads,
 
 	if (ads->server.ldap_server) {
 		bool ok = false;
-		struct sockaddr_storage ss;
+		struct samba_sockaddr ss;
 
 		DBG_DEBUG("Resolving name of LDAP server '%s'.\n",
 			  ads->server.ldap_server);
@@ -923,12 +923,12 @@ static ADS_STATUS ads_connect_internal(ADS_STRUCT *ads,
 			goto out;
 		}
 
-		if (is_zero_addr(&ss)) {
+		if (is_zero_addr(&ss.u.ss)) {
 			status = ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
 			goto out;
 		}
 
-		ok = ads_try_connect(ads, ads->server.gc, &ss);
+		ok = ads_try_connect(ads, ads->server.gc, &ss.u.ss);
 		if (ok) {
 			goto got_connection;
 		}

@@ -276,7 +276,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 static void start_filter(char *desthost)
 {
 	int s, c;
-	struct sockaddr_storage dest_ss;
+	struct samba_sockaddr dest_ss;
 	struct sockaddr_storage my_ss;
 
 	CatchChild();
@@ -312,7 +312,7 @@ static void start_filter(char *desthost)
 				smb_set_close_on_exec(c);
 				if (fork() == 0) {
 					close(s);
-					filter_child(c, &dest_ss);
+					filter_child(c, &dest_ss.u.ss);
 					exit(0);
 				} else {
 					close(c);

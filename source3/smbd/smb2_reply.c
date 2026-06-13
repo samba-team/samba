@@ -621,7 +621,7 @@ static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 	char *p;
 	int retarget_type = 0x20;
 	int retarget_port = NBT_SMB_PORT;
-	struct sockaddr_storage retarget_addr;
+	struct samba_sockaddr retarget_addr;
 	struct sockaddr_in *in_addr;
 	bool ret = false;
 	uint8_t outbuf[10];
@@ -679,12 +679,12 @@ static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 		goto fail;
 	}
 
-	if (retarget_addr.ss_family != AF_INET) {
+	if (retarget_addr.u.ss.ss_family != AF_INET) {
 		DEBUG(10, ("Retarget target not an IPv4 addr\n"));
 		goto fail;
 	}
 
-	in_addr = (struct sockaddr_in *)(void *)&retarget_addr;
+	in_addr = &retarget_addr.u.in;
 
 	_smb_setlen(outbuf, 6);
 	SCVAL(outbuf, 0, 0x84);

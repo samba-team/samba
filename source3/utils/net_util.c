@@ -297,11 +297,13 @@ bool net_find_server(struct net_context *c,
 			*server_name = SMB_STRDUP(addr);
 		}
 	} else if (*server_name) {
+		struct samba_sockaddr ss;
 		/* resolve the IP address */
-		if (!resolve_name(*server_name, server_ss, 0x20, false))  {
+		if (!resolve_name(*server_name, &ss, 0x20, false))  {
 			DEBUG(1,("Unable to resolve server name\n"));
 			return false;
 		}
+		*server_ss = ss.u.ss;
 	} else if (flags & NET_FLAGS_PDC) {
 		fstring dc_name;
 		struct sockaddr_storage pdc_ss;
@@ -322,7 +324,7 @@ bool net_find_server(struct net_context *c,
 		*server_name = SMB_STRDUP(dc_name);
 		*server_ss = pdc_ss;
 	} else if (flags & NET_FLAGS_DMB) {
-		struct sockaddr_storage msbrow_ss;
+		struct samba_sockaddr msbrow_ss;
 		char addr[INET6_ADDRSTRLEN];
 
 		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1, false)) */
@@ -330,18 +332,18 @@ bool net_find_server(struct net_context *c,
 			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
 			return false;
 		}
-		*server_ss = msbrow_ss;
+		*server_ss = msbrow_ss.u.ss;
 		print_sockaddr(addr, sizeof(addr), server_ss);
 		*server_name = SMB_STRDUP(addr);
 	} else if (flags & NET_FLAGS_MASTER) {
-		struct sockaddr_storage brow_ss;
+		struct samba_sockaddr brow_ss;
 		char addr[INET6_ADDRSTRLEN];
 		if (!resolve_name(d, &brow_ss, 0x1D, false))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
 			return false;
 		}
-		*server_ss = brow_ss;
+		*server_ss = brow_ss.u.ss;
 		print_sockaddr(addr, sizeof(addr), server_ss);
 		*server_name = SMB_STRDUP(addr);
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {

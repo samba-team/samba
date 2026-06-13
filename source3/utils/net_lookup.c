@@ -46,7 +46,7 @@ int net_lookup_usage(struct net_context *c, int argc, const char **argv)
 /* lookup a hostname giving an IP */
 static int net_lookup_host(struct net_context *c, int argc, const char **argv)
 {
-	struct sockaddr_storage ss;
+	struct samba_sockaddr ss;
 	int name_type = 0x20;
 	char addr[INET6_ADDRSTRLEN];
 	const char *name = argv[0];
@@ -68,7 +68,7 @@ static int net_lookup_host(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	print_sockaddr(addr, sizeof(addr), &ss);
+	print_sockaddr(addr, sizeof(addr), &ss.u.ss);
 	d_printf("%s\n", addr);
 	return 0;
 }

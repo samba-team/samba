@@ -4151,7 +4151,7 @@ static bool run_negprot_nowait(int dummy)
 static bool run_bad_nbt_session(int dummy)
 {
 	struct nmb_name called, calling;
-	struct sockaddr_storage ss;
+	struct samba_sockaddr ss;
 	NTSTATUS status;
 	int fd;
 	bool ret;
@@ -4166,7 +4166,7 @@ static bool run_bad_nbt_session(int dummy)
 		return false;
 	}
 
-	status = open_socket_out(&ss, NBT_SMB_PORT, 10000, &fd);
+	status = open_socket_out(&ss.u.ss, NBT_SMB_PORT, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_socket_out failed: %s\n",
 			  nt_errstr(status));
@@ -12492,7 +12492,7 @@ static bool run_tldap(int dummy)
 	int fd;
 	TLDAPRC rc;
 	NTSTATUS status;
-	struct sockaddr_storage addr;
+	struct samba_sockaddr addr;
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	char *basedn;
@@ -12530,7 +12530,7 @@ static bool run_tldap(int dummy)
 		d_printf("could not find host %s\n", host);
 		return false;
 	}
-	status = open_socket_out(&addr, tcp_port, 9999, &fd);
+	status = open_socket_out(&addr.u.ss, tcp_port, 9999, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("open_socket_out failed: %s\n", nt_errstr(status));
 		return false;
@@ -15113,7 +15113,7 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 	};
 	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_conn *conn;
-	struct sockaddr_storage ss;
+	struct samba_sockaddr ss;
 	NTSTATUS status;
 	int fd;
 	bool ok;
@@ -15126,7 +15126,7 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 		return false;
 	}
 
-	status = open_socket_out(&ss, 445, 10000, &fd);
+	status = open_socket_out(&ss.u.ss, 445, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_socket_out failed: %s\n",
 			  nt_errstr(status));
@@ -15316,7 +15316,7 @@ static bool run_smb1_negotiate_exit(int dummy)
 	};
 	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_conn *conn;
-	struct sockaddr_storage ss;
+	struct samba_sockaddr ss;
 	NTSTATUS status;
 	int fd;
 	bool ok;
@@ -15329,7 +15329,7 @@ static bool run_smb1_negotiate_exit(int dummy)
 		return false;
 	}
 
-	status = open_socket_out(&ss, 445, 10000, &fd);
+	status = open_socket_out(&ss.u.ss, 445, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_socket_out failed: %s\n",
 			  nt_errstr(status));
@@ -15441,7 +15441,7 @@ static bool run_ign_bad_negprot(int dummy)
 	};
 	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_conn *conn;
-	struct sockaddr_storage ss;
+	struct samba_sockaddr ss;
 	NTSTATUS status;
 	int fd;
 	bool ok;
@@ -15454,7 +15454,7 @@ static bool run_ign_bad_negprot(int dummy)
 		return false;
 	}
 
-	status = open_socket_out(&ss, 445, 10000, &fd);
+	status = open_socket_out(&ss.u.ss, 445, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_socket_out failed: %s\n",
 			  nt_errstr(status));
