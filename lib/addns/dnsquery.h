@@ -42,15 +42,17 @@ NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 				size_t *numdcs);
 struct tevent_req *ads_dns_lookup_ns_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
-					  const char *name);
+					  const char *name,
+					  uint32_t timeout);
 NTSTATUS ads_dns_lookup_ns_recv(struct tevent_req *req,
 				TALLOC_CTX *mem_ctx,
 				struct dns_rr_ns **nss,
 				size_t *num_nss);
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
-				const char *dnsdomain,
-				struct dns_rr_ns **nslist,
-				size_t *numns);
+			   const char *dnsdomain,
+			   uint32_t timeout,
+			   struct dns_rr_ns **nslist,
+			   size_t *numns);
 
 struct tevent_req *ads_dns_lookup_in_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,

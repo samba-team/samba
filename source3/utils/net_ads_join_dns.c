@@ -81,6 +81,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 
 	status = ads_dns_lookup_ns(ctx,
 				   dnsdomain,
+				   lp_get_async_dns_timeout(),
 				   &nameservers,
 				   &ns_count);
 	if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {
@@ -125,6 +126,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 
 		status = ads_dns_lookup_ns(ctx,
 					   root_domain,
+					   lp_get_async_dns_timeout(),
 					   &nameservers,
 					   &ns_count);
 

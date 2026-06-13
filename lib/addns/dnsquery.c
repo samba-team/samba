@@ -266,6 +266,7 @@ static bool ads_dns_add_ns_ip(struct dns_rr_ns *nss,
 }
 
 struct ads_dns_lookup_ns_state {
+	uint32_t timeout;
 	struct dns_rr_ns *nss;
 	size_t num_nss;
 };
@@ -274,7 +275,8 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq);
 
 struct tevent_req *ads_dns_lookup_ns_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
-					  const char *name)
+					  const char *name,
+					  uint32_t timeout)
 {
 	struct tevent_req *req, *subreq;
 	struct ads_dns_lookup_ns_state *state;
@@ -284,6 +286,7 @@ struct tevent_req *ads_dns_lookup_ns_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->timeout = timeout;
 
 	subreq = dns_lookup_send(state, ev, NULL, name, DNS_QCLASS_IN,
 				 DNS_QTYPE_NS);
@@ -384,9 +387,10 @@ NTSTATUS ads_dns_lookup_ns_recv(struct tevent_req *req,
 *********************************************************************/
 
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
-				const char *dnsdomain,
-				struct dns_rr_ns **nslist,
-				size_t *numns)
+			   const char *dnsdomain,
+			   uint32_t timeout,
+			   struct dns_rr_ns **nslist,
+			   size_t *numns)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -397,7 +401,7 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = ads_dns_lookup_ns_send(ev, ev, dnsdomain);
+	req = ads_dns_lookup_ns_send(ev, ev, dnsdomain, timeout);
 	if (req == NULL) {
 		goto fail;
 	}
