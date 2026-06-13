@@ -143,12 +143,6 @@ struct dns_buffer {
 	DNS_ERROR error;
 };
 
-/* from dnsutils.c */
-
-DNS_ERROR dns_domain_name_from_string( TALLOC_CTX *mem_ctx,
-				       const char *pszDomainName,
-				       struct dns_domain_name **presult );
-
 /* from dnsrecord.c */
 
 DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,

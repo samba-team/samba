@@ -4,7 +4,6 @@ bld.SAMBA_LIBRARY('addns',
                    source='''
                        dnsquery.c
                        dnsrecord.c
-                       dnsutils.c
                        dnssock.c
                        dnsgss.c
                        dnsmarshall.c
