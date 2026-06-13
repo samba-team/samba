@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "../lib/addns/dns.h"
 #include "utils/net_dns.h"
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"

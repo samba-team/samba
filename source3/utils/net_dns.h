@@ -30,8 +30,6 @@
 
 #if defined(HAVE_KRB5)
 
-#include "../lib/addns/dns.h"
-
 struct cli_credentials;
 
 NTSTATUS DoDNSUpdate(const char *pszServerAddress,

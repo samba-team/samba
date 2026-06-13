@@ -35,7 +35,6 @@
 *******************************************************************/
 
 #if defined(HAVE_KRB5)
-#include "../lib/addns/dns.h"
 
 static NTSTATUS net_update_dns_internal(struct net_context *c,
 					TALLOC_CTX *ctx,

@@ -41,7 +41,7 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_net.h"
 #include "lib/addns/dnsquery.h"
-#include "lib/addns/dns.h"
+#include "lib/addns/dnserr.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/smb_strtox.h"
 #include <arpa/nameser.h>
