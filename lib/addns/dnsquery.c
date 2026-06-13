@@ -318,7 +318,7 @@ static void ads_dns_lookup_ns_done(struct tevent_req *subreq)
 		for (j=0; j<state->num_nss; j++) {
 			struct dns_rr_ns *ns = &state->nss[j];
 
-			if (strcmp(ns->hostname, ar->name) == 0) {
+			if (strequal(ns->hostname, ar->name)) {
 				ns->ss = addr.u.ss;
 			}
 		}
