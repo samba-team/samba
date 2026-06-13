@@ -108,7 +108,6 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 		      bool remove_host)
 {
 	DNS_ERROR err;
-	struct dns_connection *conn;
 	TALLOC_CTX *mem_ctx;
 	struct samba_sockaddr sslist[num_addrs];
 	size_t i;
@@ -131,11 +130,6 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 
 	for (i = 0; i < num_addrs; i++) {
 		sslist[i] = (struct samba_sockaddr){.u.ss = _sslist[i]};
-	}
-
-	err = dns_open_connection(pszServerAddress, DNS_TCP, mem_ctx, &conn);
-	if (!ERR_DNS_IS_OK(err)) {
-		goto error;
 	}
 
 	if (flags & DNS_UPDATE_PROBE) {
