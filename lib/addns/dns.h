@@ -185,13 +185,4 @@ struct dns_update_request *dns_request2update(struct dns_request *request);
 uint16_t dns_response_code(uint16_t flags);
 const char *dns_errstr(DNS_ERROR err);
 
-/* from dnsgss.c */
-
-struct gensec_security;
-
-DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
-				const char *keyname,
-				struct gensec_security *gensec,
-				enum dns_ServerType srv_type);
-
 #endif	/* _DNS_H */

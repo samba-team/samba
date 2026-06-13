@@ -5,7 +5,6 @@ bld.SAMBA_LIBRARY('addns',
                        dnsquery.c
                        dnsrecord.c
                        dnssock.c
-                       dnsgss.c
                        dnsmarshall.c
                        error.c
                        dnsquery_srv.c
