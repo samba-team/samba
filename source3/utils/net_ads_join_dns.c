@@ -26,6 +26,7 @@
 #include "passdb.h"
 #include "utils/net_dns.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/libsmb/namequery.h"
 
 #ifdef HAVE_ADS
 
@@ -67,13 +68,22 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 	dnsdomain++;
 
 	if (c->opt_host != NULL) {
-		/*
-		 * _nameserver.ss is not used
-		 * otherwise we would need
-		 * ads_dns_lookup_a and
-		 * ads_dns_lookup_aaaa here.
-		 */
+		bool ok;
+
 		_nameserver.hostname = c->opt_host;
+		_nameserver.ss_s = talloc(ctx, struct samba_sockaddr);
+		if (_nameserver.ss_s == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		ok = resolve_name(c->opt_host, _nameserver.ss_s, 0x20, false);
+		if (!ok) {
+			DBG_WARNING("Host %s not found\n", c->opt_host);
+			status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+			goto done;
+		}
+
 		nameservers = &_nameserver;
 		ns_count = 1;
 		goto do_update;
