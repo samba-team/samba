@@ -183,6 +183,5 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 struct dns_request *dns_update2request(struct dns_update_request *update);
 struct dns_update_request *dns_request2update(struct dns_request *request);
 uint16_t dns_response_code(uint16_t flags);
-const char *dns_errstr(DNS_ERROR err);
 
 #endif	/* _DNS_H */

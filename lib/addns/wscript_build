@@ -6,7 +6,6 @@ bld.SAMBA_LIBRARY('addns',
                        dnsrecord.c
                        dnssock.c
                        dnsmarshall.c
-                       error.c
                        dnsquery_srv.c
                    ''',
                    public_deps='samba-util gensec ndr resolv dns_lookup',
