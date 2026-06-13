@@ -202,7 +202,9 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 	 */
 	if (flags & DNS_UPDATE_SIGNED) {
 		struct gensec_security *gensec = NULL;
-		char *keyname = NULL;
+		struct GUID key_guid = GUID_random();
+		struct GUID_txt_buf guid_buf = {};
+		char *keyname = GUID_buf_string(&key_guid, &guid_buf);
 		struct dns_name_packet *update = NULL, *reply = NULL;
 		int ret;
 
@@ -215,11 +217,6 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 		if (update == NULL) {
 			TALLOC_FREE(mem_ctx);
 			return ERROR_DNS_NO_MEMORY;
-		}
-
-		if (!(keyname = dns_generate_keyname( mem_ctx ))) {
-			err = ERROR_DNS_NO_MEMORY;
-			goto error;
 		}
 
 		err = DoDNSUpdateNegotiateGensec(pszServerAddress,

@@ -129,21 +129,3 @@ DNS_ERROR dns_domain_name_from_string( TALLOC_CTX *mem_ctx,
 	*presult = result;
 	return ERROR_DNS_SUCCESS;
 }
-
-/*********************************************************************
-*********************************************************************/
-
-char *dns_generate_keyname( TALLOC_CTX *mem_ctx )
-{
-	char *result = NULL;
-#if defined(HAVE_KRB5)
-
-	struct GUID guid;
-
-	guid = GUID_random();
-	result = GUID_string(mem_ctx, &guid);
-
-#endif
-
-	return result;
-}

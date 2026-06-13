@@ -148,7 +148,6 @@ struct dns_buffer {
 DNS_ERROR dns_domain_name_from_string( TALLOC_CTX *mem_ctx,
 				       const char *pszDomainName,
 				       struct dns_domain_name **presult );
-char *dns_generate_keyname( TALLOC_CTX *mem_ctx );
 
 /* from dnsrecord.c */
 
