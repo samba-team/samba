@@ -59,8 +59,6 @@
 #define  DNS_NOT_IMPLEMENTED	4
 #define  DNS_REFUSED		5
 
-enum dns_ServerType { DNS_SRV_ANY, DNS_SRV_WIN2000, DNS_SRV_WIN2003 };
-
 struct dns_domain_label {
 	struct dns_domain_label *next;
 	char *label;

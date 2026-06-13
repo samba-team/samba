@@ -27,6 +27,8 @@
 #include "auth_generic.h"
 #include "libcli/dns/libdns.h"
 
+enum dns_ServerType { DNS_SRV_ANY, DNS_SRV_WIN2000, DNS_SRV_WIN2003 };
+
 #if defined(HAVE_KRB5)
 
 static NTSTATUS dns_negotiate_sec_ctx(const char *serveraddress,
