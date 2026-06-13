@@ -34,15 +34,15 @@
 
 struct cli_credentials;
 
-DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
-		      const char *pszServerName,
-		      const char *pszDomainName,
-		      const char *pszHostName,
-		      struct cli_credentials *creds,
-		      const struct sockaddr_storage *sslist,
-		      size_t num_addrs,
-		      uint32_t flags,
-		      uint32_t ttl,
-		      bool remove_host);
+NTSTATUS DoDNSUpdate(const char *pszServerAddress,
+		     const char *pszServerName,
+		     const char *pszDomainName,
+		     const char *pszHostName,
+		     struct cli_credentials *creds,
+		     const struct sockaddr_storage *sslist,
+		     size_t num_addrs,
+		     uint32_t flags,
+		     uint32_t ttl,
+		     bool remove_host);
 
 #endif /* defined(HAVE_KRB5) */

@@ -29,23 +29,21 @@
 
 #if defined(HAVE_KRB5)
 
-static DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
-				       const char *keyname,
-				       struct gensec_security *gensec,
-				       enum dns_ServerType srv_type)
+static NTSTATUS dns_negotiate_sec_ctx(const char *serveraddress,
+				      const char *keyname,
+				      struct gensec_security *gensec,
+				      enum dns_ServerType srv_type)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct dns_name_packet *reply = NULL;
 	DATA_BLOB in = { .length = 0, };
 	DATA_BLOB out = { .length = 0, };
 	NTSTATUS status;
-	DNS_ERROR err;
 
 	do {
 		status = gensec_update(gensec, frame, in, &out);
 		TALLOC_FREE(reply);
 		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			err = ERROR_DNS_GSS_ERROR;
 			goto error;
 		}
 
@@ -94,7 +92,7 @@ static DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 					      &rec,
 					      &reply);
 			if (ret != 0) {
-				err = ERROR_DNS_SOCKET_ERROR;
+				status = map_nt_error_from_unix(ret);
 				goto error;
 			}
 		}
@@ -118,7 +116,7 @@ static DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 			}
 
 			if (i == reply->ancount) {
-				err = ERROR_DNS_INVALID_MESSAGE;
+				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 				goto error;
 			}
 
@@ -131,55 +129,50 @@ static DNS_ERROR dns_negotiate_sec_ctx(const char *serveraddress,
 
 	/* If we arrive here, we have a valid security context */
 
-	err = ERROR_DNS_SUCCESS;
+	status = NT_STATUS_OK;
 
       error:
 
 	TALLOC_FREE(frame);
-	return err;
+	return status;
 }
 
 /*********************************************************************
 *********************************************************************/
 
-static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerAddress,
-					    const char *pszServerName,
-					    const char *pszDomainName,
-					    const char *keyname,
-					    enum dns_ServerType srv_type,
-					    struct cli_credentials *creds,
-					    TALLOC_CTX *mem_ctx,
-					    struct gensec_security **_gensec)
+static NTSTATUS DoDNSUpdateNegotiateGensec(const char *pszServerAddress,
+					   const char *pszServerName,
+					   const char *pszDomainName,
+					   const char *keyname,
+					   enum dns_ServerType srv_type,
+					   struct cli_credentials *creds,
+					   TALLOC_CTX *mem_ctx,
+					   struct gensec_security **_gensec)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_generic_state *ans = NULL;
 	NTSTATUS status;
-	DNS_ERROR err;
 
 	status = auth_generic_client_prepare(mem_ctx, &ans);
 	if (!NT_STATUS_IS_OK(status)) {
-		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 	talloc_steal(frame, ans);
 
 	status = auth_generic_set_creds(ans, creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 
 	status = gensec_set_target_service(ans->gensec_security,
 					   "dns");
 	if (!NT_STATUS_IS_OK(status)) {
-		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 
 	status = gensec_set_target_hostname(ans->gensec_security,
 					    pszServerName);
 	if (!NT_STATUS_IS_OK(status)) {
-		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 
@@ -187,15 +180,14 @@ static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerAddress,
 
 	status = auth_generic_client_start(ans, GENSEC_OID_KERBEROS5);
 	if (!NT_STATUS_IS_OK(status)) {
-		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 
-	err = dns_negotiate_sec_ctx(pszServerAddress,
-				    keyname,
-				    ans->gensec_security,
-				    srv_type);
-	if (!ERR_DNS_IS_OK(err)) {
+	status = dns_negotiate_sec_ctx(pszServerAddress,
+				       keyname,
+				       ans->gensec_security,
+				       srv_type);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
 	}
 
@@ -203,23 +195,23 @@ static DNS_ERROR DoDNSUpdateNegotiateGensec(const char *pszServerAddress,
  error:
 	TALLOC_FREE(frame);
 
-	return err;
+	return status;
 }
 
-DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
-		      const char *pszServerName,
-		      const char *pszDomainName,
-		      const char *pszHostName,
-		      struct cli_credentials *creds,
-		      const struct sockaddr_storage *_sslist,
-		      size_t num_addrs,
-		      uint32_t flags,
-		      uint32_t ttl,
-		      bool remove_host)
+NTSTATUS DoDNSUpdate(const char *pszServerAddress,
+		     const char *pszServerName,
+		     const char *pszDomainName,
+		     const char *pszHostName,
+		     struct cli_credentials *creds,
+		     const struct sockaddr_storage *_sslist,
+		     size_t num_addrs,
+		     uint32_t flags,
+		     uint32_t ttl,
+		     bool remove_host)
 {
-	DNS_ERROR err;
 	TALLOC_CTX *mem_ctx;
 	struct samba_sockaddr sslist[num_addrs];
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	size_t i;
 
 	DEBUG(10,("DoDNSUpdate called with flags: 0x%08x\n", flags));
@@ -227,15 +219,15 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 	if (!(flags & DNS_UPDATE_SIGNED) &&
 	    !(flags & DNS_UPDATE_UNSIGNED) &&
 	    !(flags & DNS_UPDATE_PROBE)) {
-		return ERROR_DNS_INVALID_PARAMETER;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!remove_host && ((num_addrs <= 0) || !_sslist)) {
-		return ERROR_DNS_INVALID_PARAMETER;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!(mem_ctx = talloc_init("DoDNSUpdate"))) {
-		return ERROR_DNS_NO_MEMORY;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i = 0; i < num_addrs; i++) {
@@ -254,7 +246,7 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 					     num_addrs);
 		if (probe == NULL) {
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_NO_MEMORY;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		ret = dns_cli_request(mem_ctx,
@@ -263,14 +255,14 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 				      &reply);
 		if (ret != 0) {
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_SOCKET_ERROR;
+			return map_nt_error_from_unix(ret);
 		}
 
 		if ((flags & DNS_UPDATE_PROBE_SUFFICIENT) &&
 		    ((reply->operation & DNS_RCODE) == DNS_RCODE_OK))
 		{
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_SUCCESS;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -287,7 +279,7 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 					       ttl);
 		if (update == NULL) {
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_NO_MEMORY;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		ret = dns_cli_request(mem_ctx,
@@ -296,14 +288,14 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 				      &reply);
 		if (ret != 0) {
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_SOCKET_ERROR;
+			return map_nt_error_from_unix(ret);
 		}
 
 		if ((flags & DNS_UPDATE_UNSIGNED_SUFFICIENT) &&
 		    ((reply->operation & DNS_RCODE) == DNS_RCODE_OK))
 		{
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_SUCCESS;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -326,32 +318,33 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 					       ttl);
 		if (update == NULL) {
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_NO_MEMORY;
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		err = DoDNSUpdateNegotiateGensec(pszServerAddress,
-						 pszServerName,
-						 pszDomainName,
-						 keyname,
-						 DNS_SRV_ANY,
-						 creds,
-						 mem_ctx,
-						 &gensec);
+		status = DoDNSUpdateNegotiateGensec(pszServerAddress,
+						    pszServerName,
+						    pszDomainName,
+						    keyname,
+						    DNS_SRV_ANY,
+						    creds,
+						    mem_ctx,
+						    &gensec);
 
 		/* retry using the Windows 2000 DNS hack */
-		if (!ERR_DNS_IS_OK(err)) {
-			err = DoDNSUpdateNegotiateGensec(pszServerAddress,
-							 pszServerName,
-							 pszDomainName,
-							 keyname,
-							 DNS_SRV_WIN2000,
-							 creds,
-							 mem_ctx,
-							 &gensec);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = DoDNSUpdateNegotiateGensec(pszServerAddress,
+							    pszServerName,
+							    pszDomainName,
+							    keyname,
+							    DNS_SRV_WIN2000,
+							    creds,
+							    mem_ctx,
+							    &gensec);
 		}
 
-		if (!ERR_DNS_IS_OK(err))
+		if (!NT_STATUS_IS_OK(status)) {
 			goto error;
+		}
 
 		ret = dns_cli_sign_packet(update,
 					  gensec,
@@ -359,7 +352,7 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 					  keyname,
 					  "gss.microsoft.com");
 		if (ret != 0) {
-			err = ERROR_DNS_GSS_ERROR;
+			status = map_nt_error_from_unix(ret);
 			goto error;
 		}
 
@@ -369,14 +362,14 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 				      &reply);
 		if (ret != 0) {
 			TALLOC_FREE(mem_ctx);
-			return ERROR_DNS_SOCKET_ERROR;
+			return map_nt_error_from_unix(ret);
 		}
 
-		err = ((reply->operation & DNS_RCODE) == DNS_RCODE_OK)
-			      ? ERROR_DNS_SUCCESS
-			      : ERROR_DNS_UPDATE_FAILED;
+		status = ((reply->operation & DNS_RCODE) == DNS_RCODE_OK)
+				 ? NT_STATUS_OK
+				 : NT_STATUS_UNSUCCESSFUL;
 
-		if (!ERR_DNS_IS_OK(err)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("DoDNSUpdate: signed update failed\n"));
 		}
 	}
@@ -384,7 +377,7 @@ DNS_ERROR DoDNSUpdate(const char *pszServerAddress,
 
 error:
 	TALLOC_FREE(mem_ctx);
-	return err;
+	return status;
 }
 
 /*********************************************************************

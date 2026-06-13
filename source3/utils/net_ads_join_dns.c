@@ -49,7 +49,6 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 	struct dns_rr_ns _nameserver = {};
 	size_t ns_count = 0, i;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	DNS_ERROR dns_err;
 	const char *dnsdomain = NULL;
 	char *root_domain = NULL;
 	uint32_t ttl = 3600;
@@ -190,33 +189,24 @@ do_update:
 		/* Now perform the dns update - we'll try non-secure and if we fail,
 		   we'll follow it up with a secure update */
 
-		dns_err = DoDNSUpdate(ssaddr_str_buf(&ns->ss_s[0], &addstrbuf),
-				      ns->hostname,
-				      dnsdomain,
-				      machine_name,
-				      creds,
-				      addrs,
-				      num_addrs,
-				      flags,
-				      ttl,
-				      remove_host);
-		if (ERR_DNS_IS_OK(dns_err)) {
+		status = DoDNSUpdate(ssaddr_str_buf(&ns->ss_s[0], &addstrbuf),
+				     ns->hostname,
+				     dnsdomain,
+				     machine_name,
+				     creds,
+				     addrs,
+				     num_addrs,
+				     flags,
+				     ttl,
+				     remove_host);
+		if (NT_STATUS_IS_OK(status)) {
 			status = NT_STATUS_OK;
 			goto done;
 		}
 
-		if (ERR_DNS_EQUAL(dns_err, ERROR_DNS_INVALID_NAME_SERVER) ||
-		    ERR_DNS_EQUAL(dns_err, ERROR_DNS_CONNECTION_FAILED) ||
-		    ERR_DNS_EQUAL(dns_err, ERROR_DNS_SOCKET_ERROR)) {
-			DEBUG(1,("retrying DNS update with next nameserver after receiving %s\n",
-				dns_errstr(dns_err)));
-			continue;
-		}
-
-		d_printf(_("DNS Update for %s failed: %s\n"),
-			machine_name, dns_errstr(dns_err));
-		status = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+		DBG_WARNING("retrying DNS update with next nameserver after "
+			    "receiving %s\n",
+			    nt_errstr(status));
 	}
 
 done:
