@@ -41,7 +41,6 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_net.h"
 #include "lib/addns/dnsquery.h"
-#include "lib/addns/dnserr.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/smb_strtox.h"
 #include <arpa/nameser.h>
@@ -153,10 +152,10 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx,
 	return total;
 }
 
-static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx,
-			    const char *name,
-			    uint16_t q_type,
-			    struct dns_name_packet **reply)
+static NTSTATUS dns_lookup(TALLOC_CTX *mem_ctx,
+			   const char *name,
+			   uint16_t q_type,
+			   struct dns_name_packet **reply)
 {
 	int len, rlen;
 	bool loop;
@@ -169,13 +168,13 @@ static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx,
 	do {
 		bool ok = data_blob_realloc(mem_ctx, &blob, len);
 		if (!ok) {
-			return ERROR_DNS_NO_MEMORY;
+			return NT_STATUS_NO_MEMORY;
 		}
 		rlen = res_search(name, DNS_QCLASS_IN, q_type, blob.data, len);
 		if (rlen == -1) {
 			if (len >= 65535) {
 				data_blob_free(&blob);
-				return ERROR_DNS_SOCKET_ERROR;
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
 			}
 			/* retry once with max packet size */
 			len = 65535;
@@ -191,7 +190,7 @@ static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx,
 	packet = talloc(mem_ctx, struct dns_name_packet);
 	if (!packet) {
 		data_blob_free(&blob);
-		return ERROR_DNS_NO_MEMORY;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ndr_err = ndr_pull_struct_blob(&blob,
@@ -201,13 +200,13 @@ static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx,
 					       ndr_pull_dns_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		data_blob_free(&blob);
-		return ERROR_DNS_INVALID_MESSAGE;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	*reply = packet;
 
 	data_blob_free(&blob);
-	return ERROR_DNS_SUCCESS;
+	return NT_STATUS_OK;
 }
 
 static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
@@ -220,7 +219,7 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 	uint32_t a_num, total;
 	uint16_t qtype;
 	TALLOC_CTX *tmp_ctx;
-	DNS_ERROR err;
+	NTSTATUS status;
 
 	memset(&ret, 0, sizeof(struct dns_records_container));
 
@@ -233,11 +232,11 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid them in the parent */
-	err = dns_lookup(tmp_ctx, name, qtype, &reply);
-	if (!ERR_DNS_IS_OK(err)) {
+	status = dns_lookup(tmp_ctx, name, qtype, &reply);
+	if (!NT_STATUS_IS_OK(status)) {
 		qtype = DNS_QTYPE_A;
-		err = dns_lookup(tmp_ctx, name, qtype, &reply);
-		if (!ERR_DNS_IS_OK(err)) {
+		status = dns_lookup(tmp_ctx, name, qtype, &reply);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}
@@ -250,8 +249,8 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 		* DNS server didn't returned A when asked for AAAA records.
 		* Most of the server do it, let's ask for A specifically.
 		*/
-		err = dns_lookup(tmp_ctx, name, DNS_QTYPE_A, &reply);
-		if (ERR_DNS_IS_OK(err)) {
+		status = dns_lookup(tmp_ctx, name, DNS_QTYPE_A, &reply);
+		if (NT_STATUS_IS_OK(status)) {
 			/*
 			 * Ignore an error here and just return any AAAA
 			 * records we already got. This may be an IPv6-only
