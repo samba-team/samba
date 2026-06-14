@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "torture/smbtorture.h"
 #include <talloc.h>
-#include "lib/addns/dns.h"
+#include "dns.h"
 
 static struct dns_connection *setup_connection(struct torture_context *tctx)
 {

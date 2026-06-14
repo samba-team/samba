@@ -3,11 +3,8 @@
 bld.SAMBA_LIBRARY('addns',
                    source='''
                        dnsquery.c
-                       dnsrecord.c
-                       dnssock.c
-                       dnsmarshall.c
                        dnsquery_srv.c
                    ''',
-                   public_deps='samba-util gensec ndr resolv dns_lookup',
+                   public_deps='dns_lookup',
                    private_library=True,
                    vars=locals())

@@ -11,7 +11,7 @@ if bld.AD_DC_BUILD_IS_ENABLED():
 		)
 
 	bld.SAMBA_MODULE('TORTURE_INTERNAL_DNS',
-		source='internal_dns.c',
+		source='internal_dns.c dnsmarshall.c dnsrecord.c dnssock.c',
 		subsystem='smbtorture',
 		init_function='torture_internal_dns_init',
 		deps='torture talloc torturemain',
