@@ -3566,7 +3566,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DBG_DEBUG("SMB_FILE_STREAM_INFORMATION\n");
 
 			if (is_ntfs_stream_smb_fname(smb_fname)) {
-				return NT_STATUS_INVALID_PARAMETER;
+				if (!fsp_is_alternate_stream(fsp)) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+				fsp = fsp->base_fsp;
 			}
 
 			status = vfs_fstreaminfo(fsp,
