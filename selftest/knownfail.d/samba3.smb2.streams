@@ -1,4 +1,1 @@
-^samba3.smb2.streams.io\(.*\)
-^samba3.smb2.streams.create-disposition\(.*\)
-^samba3.smb2.streams streams_xattr.io\(.*\)
 ^samba3.smb2.streams streams_xattr.create-disposition\(.*\)
