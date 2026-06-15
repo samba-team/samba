@@ -719,9 +719,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	}
 	DBG_DEBUG("Created SOCKET FD:%d for sending arp\n", s);
 
-	memcpy(&sall.sll_addr[0], (uint8_t *)hwaddr, ETH_ALEN);
-	dest_len = sall_len(&sall);
-	ret = bind(s, (struct sockaddr *)&sall, dest_len);
+	dest_len = sall_len(hardware_addr_ll);
+	ret = bind(s, (struct sockaddr *)hardware_addr_ll, dest_len);
 	if (ret == -1) {
 		ret = errno;
 		DBG_ERR("Failed bind (%d)\n", ret);
