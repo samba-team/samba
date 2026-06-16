@@ -1643,6 +1643,16 @@ out:
 	return lstatus_code(bytes_written);
 }
 
+static char *prepare_full_path(TALLOC_CTX *ctx,
+			       const char *dir_name,
+			       const char *base_name)
+{
+	if (*dir_name != '\0') {
+		return talloc_asprintf(ctx, "%s/%s", dir_name, base_name);
+	}
+	return talloc_strdup(ctx, base_name);
+}
+
 static int vfs_ceph_rgw_unlinkat(struct vfs_handle_struct *handle,
 				 struct files_struct *dirfsp,
 				 const struct smb_filename *smb_fname,
@@ -1949,6 +1959,46 @@ out:
 	return status_code(rc);
 }
 
+static int vfs_ceph_rgw_fstatat(struct vfs_handle_struct *handle,
+				const struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				SMB_STRUCT_STAT *sbuf,
+				int flags)
+{
+	int rc = -ENOMEM;
+	char *abs_path = NULL;
+	char *file_name = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	START_PROFILE_X(SNUM(handle->conn), syscall_fstatat);
+
+	abs_path = normalise_name(ctx, dirfsp->fsp_name->base_name);
+	if (abs_path == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory\n");
+		goto out;
+	}
+
+	file_name = prepare_full_path(ctx, abs_path, smb_fname->base_name);
+	if (file_name == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for filename\n");
+		goto out;
+	}
+
+	rc = vfs_ceph_rgw_stat_helper(handle,
+				      file_name,
+				      smb_fname->stream_name,
+				      sbuf);
+	if (rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to retrieve fstatat . rc = %d\n",
+			rc);
+		/* fall through */
+	}
+
+out:
+	TALLOC_FREE(ctx);
+	END_PROFILE_X(syscall_fstatat);
+	return status_code(rc);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -2203,7 +2253,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.stat_fn = vfs_ceph_rgw_stat,
 	.fstat_fn = vfs_ceph_rgw_fstat,
 	.lstat_fn = vfs_ceph_rgw_lstat,
-	.fstatat_fn = vfs_not_implemented_fstatat,
+	.fstatat_fn = vfs_ceph_rgw_fstatat,
 	.unlinkat_fn = vfs_ceph_rgw_unlinkat,
 	.fchmod_fn = vfs_ceph_rgw_fchmod,
 	.fchown_fn = vfs_ceph_rgw_fchown,
