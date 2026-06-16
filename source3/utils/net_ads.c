@@ -2064,14 +2064,13 @@ static int net_ads_dns_async(struct net_context *c, int argc, const char **argv)
 		 num_names,
 		 argv[0]);
 	for (i = 0; i < num_names; i++) {
-		const struct sockaddr_storage *ss = &addrs[i].u.ss;
-		char addr_buf[INET6_ADDRSTRLEN];
-		print_sockaddr(addr_buf, sizeof(addr_buf), ss);
+		const struct samba_sockaddr *ss = &addrs[i];
+		struct ssaddr_buf addr_buf;
 		d_printf("hostname[%zu] = %s, IPv%caddr = %s\n",
 			 i,
 			 hostnames[i],
-			 ss->ss_family == AF_INET6 ? '6' : '4',
-			 addr_buf);
+			 ss->u.ss.ss_family == AF_INET6 ? '6' : '4',
+			 ssaddr_str_buf(ss, &addr_buf));
 	}
 
 	return 0;
