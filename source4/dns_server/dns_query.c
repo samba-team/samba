@@ -661,7 +661,8 @@ static WERROR handle_authoritative_recv(struct tevent_req *req)
 	return WERR_OK;
 }
 
-static NTSTATUS create_tkey(struct dns_server *dns,
+static NTSTATUS create_tkey(TALLOC_CTX *mem_ctx,
+			    struct dns_server *dns,
 			    const char* name,
 			    const char* algorithm,
 			    const struct tsocket_address *remote_address,
@@ -669,7 +670,6 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 			    struct dns_server_tkey **tkey)
 {
 	NTSTATUS status;
-	struct dns_server_tkey_store *store = dns->tkeys;
 	struct dns_server_tkey *k = NULL;
 
 	if (strcmp(algorithm, "gss-tsig") == 0) {
@@ -680,7 +680,7 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	k = talloc_zero(store, struct dns_server_tkey);
+	k = talloc_zero(mem_ctx, struct dns_server_tkey);
 	if (k == NULL) {
 		goto nomem;
 	}
@@ -740,12 +740,6 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 		goto fail;
 	}
 
-	TALLOC_FREE(store->tkeys[store->next_idx]);
-
-	store->tkeys[store->next_idx] = k;
-	(store->next_idx)++;
-	store->next_idx %= store->size;
-
 	*tkey = k;
 	return NT_STATUS_OK;
 
@@ -755,6 +749,17 @@ fail:
 	TALLOC_FREE(k);
 	*tkey = NULL;
 	return status;
+}
+
+static void add_tkey(struct dns_server_tkey_store *store,
+		     struct dns_server_tkey **tkey)
+{
+	TALLOC_FREE(store->tkeys[store->next_idx]);
+
+	store->tkeys[store->next_idx] = talloc_move(store->tkeys, tkey);
+
+	(store->next_idx)++;
+	store->next_idx %= store->size;
 }
 
 static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
@@ -870,6 +875,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 		struct dns_server_tkey *tkey;
 		DATA_BLOB key;
 		DATA_BLOB reply;
+		bool created = false;
 
 		tkey = dns_find_tkey(dns->tkeys, in->questions[0].name);
 		if (tkey != NULL && tkey->complete) {
@@ -880,15 +886,19 @@ static WERROR handle_tkey(struct dns_server *dns,
 		}
 
 		if (tkey == NULL) {
-			status  = create_tkey(dns, in->questions[0].name,
-					      in_tkey->rdata.tkey_record.algorithm,
-					      state->remote_address,
-					      state->local_address,
-					      &tkey);
+			status = create_tkey(
+				mem_ctx,
+				dns,
+				in->questions[0].name,
+				in_tkey->rdata.tkey_record.algorithm,
+				state->remote_address,
+				state->local_address,
+				&tkey);
 			if (!NT_STATUS_IS_OK(status)) {
 				ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
 				return ntstatus_to_werror(status);
 			}
+			created = true;
 		}
 
 		key.data = in_tkey->rdata.tkey_record.key_data;
@@ -912,6 +922,9 @@ static WERROR handle_tkey(struct dns_server *dns,
 			state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
 			if (state->key_name == NULL) {
 				return WERR_NOT_ENOUGH_MEMORY;
+			}
+			if (created) {
+				add_tkey(dns->tkeys, &tkey);
 			}
 		} else {
 			DEBUG(1, ("GSS key negotiation returned %s\n", nt_errstr(status)));
