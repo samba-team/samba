@@ -675,18 +675,18 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 
 	k = talloc_zero(store, struct dns_server_tkey);
 	if (k == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	k->name = talloc_strdup(k, name);
 
 	if (k->name  == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	k->algorithm = talloc_strdup(k, algorithm);
 	if (k->algorithm == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	/*
@@ -704,8 +704,7 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 						&k->gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
-		*tkey = NULL;
-		return status;
+		goto fail;
 	}
 
 	gensec_want_feature(k->gensec, GENSEC_FEATURE_SIGN);
@@ -715,8 +714,7 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set remote address into GENSEC: %s\n",
 			  nt_errstr(status)));
-		*tkey = NULL;
-		return status;
+		goto fail;
 	}
 
 	status = gensec_set_local_address(k->gensec,
@@ -724,8 +722,7 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set local address into GENSEC: %s\n",
 			  nt_errstr(status)));
-		*tkey = NULL;
-		return status;
+		goto fail;
 	}
 
 	status = gensec_start_mech_by_oid(k->gensec, GENSEC_OID_SPNEGO);
@@ -733,8 +730,7 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC server code: %s\n",
 			  nt_errstr(status)));
-		*tkey = NULL;
-		return status;
+		goto fail;
 	}
 
 	TALLOC_FREE(store->tkeys[store->next_idx]);
@@ -745,6 +741,13 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 
 	*tkey = k;
 	return NT_STATUS_OK;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	TALLOC_FREE(k);
+	*tkey = NULL;
+	return status;
 }
 
 static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
