@@ -730,7 +730,12 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	switch (addr->ip.sin_family) {
 	case AF_INET:
 		/* Send gratuitous ARP */
-		sall.sll_protocol = htons(ETH_P_ARP);
+		broadcast_addr_ll->sll_protocol = htons(ETH_P_ARP);
+		/*
+		 * Unlikely to be different to previous dest_len
+		 * calculation, but...
+		 */
+		dest_len = sall_len(broadcast_addr_ll);
 
 		ret = arp_build(buffer,
 				sizeof(buffer),
@@ -743,14 +748,12 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			goto done;
 		}
 
-		memset(&sall.sll_addr[0], 0xff, ETH_ALEN);
-
 		ret = sendto(s,
 			     buffer,
 			     len,
 			     0,
-			     (struct sockaddr *)&sall,
-			     sizeof(sall));
+			     (struct sockaddr *)broadcast_addr_ll,
+			     dest_len);
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
@@ -769,14 +772,12 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			goto done;
 		}
 
-		memset(&sall.sll_addr[0], 0xff, ETH_ALEN);
-
 		ret = sendto(s,
 			     buffer,
 			     len,
 			     0,
-			     (struct sockaddr *)&sall,
-			     sizeof(sall));
+			     (struct sockaddr *)broadcast_addr_ll,
+			     dest_len);
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
