@@ -62,12 +62,10 @@ static WERROR add_response_rr(const char *name,
 	/*
 	 * "ans" is always non-NULL and thus its own talloc context
 	 */
-	ans = talloc_realloc(ans, ans, struct dns_res_rec, ai+1);
+	ans = talloc_realloc_zero(ans, ans, struct dns_res_rec, ai+1);
 	if (ans == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
-
-	ZERO_STRUCT(ans[ai]);
 
 	switch (rec->wType) {
 	case DNS_QTYPE_CNAME:
@@ -155,12 +153,10 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 		return WERR_BUFFER_OVERFLOW;
 	}
 
-	dst = talloc_realloc(dst, dst, struct dns_res_rec, di+1);
+	dst = talloc_realloc_zero(dst, dst, struct dns_res_rec, di+1);
 	if (dst == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
-
-	ZERO_STRUCT(dst[di]);
 
 	dst[di] = (struct dns_res_rec) {
 		.name = talloc_strdup(dst, src->name),
