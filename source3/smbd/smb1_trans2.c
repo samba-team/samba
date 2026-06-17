@@ -1981,7 +1981,6 @@ static void handle_trans2qfilepathinfo_result(
 	NTSTATUS status,
 	char *pdata,
 	int data_return_size,
-	size_t fixed_portion,
 	unsigned int max_data_bytes)
 {
 	char params[2] = { 0, 0, };
@@ -2017,11 +2016,6 @@ static void handle_trans2qfilepathinfo_result(
 			}
 		}
 		reply_nterror(req, status);
-		return;
-	}
-
-	if (fixed_portion > max_data_bytes) {
-		reply_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
 		return;
 	}
 
@@ -2135,6 +2129,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				       &fixed_portion,
 				       ppdata, &data_size);
 
+	if (fixed_portion > max_data_bytes) {
+		reply_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
+		return;
+	}
+
 	handle_trans2qfilepathinfo_result(
 		conn,
 		req,
@@ -2142,7 +2141,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		status,
 		*ppdata,
 		data_size,
-		fixed_portion,
 		max_data_bytes);
 }
 
@@ -2779,7 +2777,6 @@ static void call_trans2qpathinfo(
 			status,
 			*ppdata,
 			total_data,
-			total_data,
 			max_data_bytes);
 		return;
 	}
@@ -3024,7 +3021,6 @@ static void call_trans2qfileinfo(
 			info_level,
 			status,
 			*ppdata,
-			total_data,
 			total_data,
 			max_data_bytes);
 		return;
