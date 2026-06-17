@@ -255,7 +255,12 @@ static NTSTATUS create_conn_struct_as_root(
 
 	conn_setup_case_options(conn);
 
-	set_conn_connectpath(conn, connpath);
+	ok = set_conn_connectpath(conn, connpath);
+	if (!ok) {
+		DBG_ERR("Failed to set connectpath for service\n");
+		TALLOC_FREE(conn);
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
 
 	/*
 	 * New code to check if there's a share security descriptor
