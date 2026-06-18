@@ -290,16 +290,26 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
  * packets
  */
 
-#define ARP_STRUCT_SIZE \
-			sizeof(struct ether_arp)
-
 #define IP6_NA_STRUCT_SIZE \
 			   sizeof(struct ip6_hdr) + \
 			   sizeof(struct nd_neighbor_advert) + \
 			   sizeof(struct nd_opt_hdr) + \
 			   sizeof(struct ether_addr)
 
-#define ARP_BUFFER_SIZE MAX(ARP_STRUCT_SIZE, 64)
+/*
+ * Some link-level addresses are bigger than a sockaddr_ll.  However,
+ * they must fit into a sockaddr_storage, so determine the maximum
+ * possible size.
+ */
+#define SOCKADDR_LL_ADDR_LEN						\
+	sizeof(struct sockaddr_storage) - offsetof(struct sockaddr_ll, sll_addr)
+
+#define ARP_BUFFER_SIZE				  \
+	sizeof(struct arphdr) +			  \
+	SOCKADDR_LL_ADDR_LEN +			  \
+	sizeof(struct in_addr) +		  \
+	SOCKADDR_LL_ADDR_LEN +			  \
+	sizeof(struct in_addr)
 
 #define IP6_NA_BUFFER_SIZE MAX(IP6_NA_STRUCT_SIZE, 64)
 
@@ -310,8 +320,8 @@ static int arp_build(uint8_t *buffer,
 		     uint16_t arpop,
 		     size_t *len)
 {
-	size_t l = ARP_STRUCT_SIZE;
-	struct ether_arp *ea;
+	size_t l = 0;
+	uint8_t *p = NULL;
 	struct arphdr *ah;
 
 	if (addr->sin_family != AF_INET) {
@@ -327,28 +337,43 @@ static int arp_build(uint8_t *buffer,
 		return EINVAL;
 	};
 
+	/*
+	 * Could avoid this by checking for overflow after writing
+	 * each field, but this feels simpler... and it provides a
+	 * summary of the layout, which won't change because it is
+	 * standard.
+	 */
+	l = sizeof(struct arphdr) +
+		ETH_ALEN +
+		sizeof(addr->sin_addr) +
+		ETH_ALEN +
+		sizeof(addr->sin_addr);
 	if (buflen < l) {
 		return EMSGSIZE;
 	}
 
 	memset(buffer, 0 , l);
 
-	ea = (struct ether_arp *)buffer;
-	ah = &ea->ea_hdr;
+	p = buffer;
+	ah = (struct arphdr *)p;
 	ah->ar_hrd = htons(ARPHRD_ETHER);
 	ah->ar_pro = htons(ETH_P_IP);
 	ah->ar_hln = ETH_ALEN;
-	ah->ar_pln = sizeof(ea->arp_spa);
+	ah->ar_pln = sizeof(addr->sin_addr);
 	ah->ar_op = htons(arpop);
+	p += sizeof(struct arphdr);
 
-	memcpy(ea->arp_sha, hwaddr, ETH_ALEN);
-	memcpy(ea->arp_spa, &addr->sin_addr, sizeof(ea->arp_spa));
+	memcpy(p, hwaddr, ETH_ALEN);
+	p += ETH_ALEN;
+	memcpy(p, &addr->sin_addr, sizeof(addr->sin_addr));
+	p += sizeof(addr->sin_addr);
 	if (arpop == ARPOP_REQUEST) {
 		/* Field must be all 0s - already done by memset() above */
 	} else {
-		memcpy(ea->arp_tha, hwaddr, ETH_ALEN);
+		memcpy(p, hwaddr, ETH_ALEN);
 	}
-	memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
+	p += ETH_ALEN;
+	memcpy(p, &addr->sin_addr, sizeof(addr->sin_addr));
 
 	*len = l;
 	return 0;
