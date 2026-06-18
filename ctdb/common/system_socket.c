@@ -290,7 +290,7 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
  * packets
  */
 
-#define ARP_STRUCT_SIZE sizeof(struct ether_header) + \
+#define ARP_STRUCT_SIZE \
 			sizeof(struct ether_arp)
 
 #define IP6_NA_STRUCT_SIZE sizeof(struct ether_header) + \
@@ -308,11 +308,9 @@ static int arp_build(uint8_t *buffer,
 		     const struct sockaddr_in *addr,
 		     const struct ether_addr *hwaddr,
 		     uint16_t arpop,
-		     struct ether_addr **ether_dhost,
 		     size_t *len)
 {
-	size_t l = ARP_BUFFER_SIZE;
-	struct ether_header *eh;
+	size_t l = ARP_STRUCT_SIZE;
 	struct ether_arp *ea;
 	struct arphdr *ah;
 
@@ -335,12 +333,7 @@ static int arp_build(uint8_t *buffer,
 
 	memset(buffer, 0 , l);
 
-	eh = (struct ether_header *)buffer;
-	memset(eh->ether_dhost, 0xff, ETH_ALEN);
-	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
-	eh->ether_type = htons(ETHERTYPE_ARP);
-
-	ea = (struct ether_arp *)(buffer + sizeof(struct ether_header));
+	ea = (struct ether_arp *)buffer;
 	ah = &ea->ea_hdr;
 	ah->ar_hrd = htons(ARPHRD_ETHER);
 	ah->ar_pro = htons(ETH_P_IP);
@@ -357,7 +350,6 @@ static int arp_build(uint8_t *buffer,
 	}
 	memcpy(ea->arp_tpa, &addr->sin_addr, sizeof(ea->arp_tpa));
 
-	*ether_dhost = (struct ether_addr *)eh->ether_dhost;
 	*len = l;
 	return 0;
 }
@@ -550,18 +542,17 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				&addr->ip,
 				hwaddr,
 				ARPOP_REQUEST,
-				&ether_dhost,
 				&len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build ARP request\n");
 			goto done;
 		}
 
-		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
+		memset(&sall.sll_addr[0], 0xff, ETH_ALEN);
 
 		ret = sendto(s,
-			     buffer + sizeof(struct ether_header),
-			     len - sizeof(struct ether_header),
+			     buffer,
+			     len,
 			     0,
 			     (struct sockaddr *)&sall,
 			     sizeof(sall));
@@ -577,18 +568,17 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				&addr->ip,
 				hwaddr,
 				ARPOP_REPLY,
-				&ether_dhost,
 				&len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build ARP reply\n");
 			goto done;
 		}
 
-		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
+		memset(&sall.sll_addr[0], 0xff, ETH_ALEN);
 
 		ret = sendto(s,
-			     buffer + sizeof(struct ether_header),
-			     len - sizeof(struct ether_header),
+			     buffer,
+			     len,
 			     0,
 			     (struct sockaddr *)&sall,
 			     sizeof(sall));

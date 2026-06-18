@@ -90,7 +90,7 @@ static void test_arp(const char *addr_str,
 
 	switch (addr.ip.sin_family) {
 	case AF_INET:
-		ret = arp_build(buf, buflen, &addr.ip, hw, arpop, &dhw, &len);
+		ret = arp_build(buf, buflen, &addr.ip, hw, arpop, &len);
 		break;
 	case AF_INET6:
 		ret = ip6_na_build(buf, buflen, &addr.ip6, hw, &dhw, &len);
