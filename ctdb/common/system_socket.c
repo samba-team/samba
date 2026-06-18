@@ -290,12 +290,6 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
  * packets
  */
 
-#define IP6_NA_STRUCT_SIZE \
-			   sizeof(struct ip6_hdr) + \
-			   sizeof(struct nd_neighbor_advert) + \
-			   sizeof(struct nd_opt_hdr) + \
-			   sizeof(struct ether_addr)
-
 /*
  * Some link-level addresses are bigger than a sockaddr_ll.  However,
  * they must fit into a sockaddr_storage, so determine the maximum
@@ -311,7 +305,12 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
 	SOCKADDR_LL_ADDR_LEN +			  \
 	sizeof(struct in_addr)
 
-#define IP6_NA_BUFFER_SIZE MAX(IP6_NA_STRUCT_SIZE, 64)
+/* This will need to be enlarged if more options are added */
+#define IP6_NA_BUFFER_SIZE				       \
+	sizeof(struct ip6_hdr) +			       \
+	sizeof(struct nd_neighbor_advert) +		       \
+	sizeof(struct nd_opt_hdr) +			       \
+	SOCKADDR_LL_ADDR_LEN
 
 static int arp_build(uint8_t *buffer,
 		     size_t buflen,
@@ -404,7 +403,6 @@ static int ip6_na_build(uint8_t *buffer,
 			const struct ether_addr *hwaddr,
 			size_t *len)
 {
-	size_t l = IP6_NA_BUFFER_SIZE;
 	struct ip6_hdr *ip6;
 	/*
 	 * IPv6 all nodes link-level multicast address: (see RFC2373,
@@ -413,24 +411,24 @@ static int ip6_na_build(uint8_t *buffer,
 	const char *all_nodes_ll_multicast = "ff02::1";
 	struct nd_neighbor_advert *nd_na;
 	struct nd_opt_hdr *nd_oh;
-	struct ether_addr *ea;
+	uint8_t *p = NULL;
+	size_t leftover = 0;
+	size_t padding = 0;
 	int ret;
 
 	if (addr->sin6_family != AF_INET6) {
 		return EINVAL;
 	}
 
-	if (buflen < l) {
+	if (buflen < IP6_NA_BUFFER_SIZE) {
 		return EMSGSIZE;
 	}
 
-	memset(buffer, 0 , l);
+	memset(buffer, 0 , buflen);
 
 	ip6 = (struct ip6_hdr *)buffer;
 	ip6->ip6_vfc  = 6 << 4;
-	ip6->ip6_plen = htons(sizeof(struct nd_neighbor_advert) +
-			      sizeof(struct nd_opt_hdr) +
-			      ETH_ALEN);
+	/* ip6->ip6_plen set below, before checksum calculation */
 	ip6->ip6_nxt  = IPPROTO_ICMPV6;
 	ip6->ip6_hlim = 255;
 	ip6->ip6_src  = addr->sin6_addr;
@@ -453,19 +451,64 @@ static int ip6_na_build(uint8_t *buffer,
 				      sizeof(struct ip6_hdr) +
 				      sizeof(struct nd_neighbor_advert));
 	nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
-	nd_oh->nd_opt_len = 1;  /* multiple of 8 octets */
 
-	ea = (struct ether_addr *)(buffer +
-				   sizeof(struct ip6_hdr) +
-				   sizeof(struct nd_neighbor_advert) +
-				   sizeof(struct nd_opt_hdr));
-	memcpy(ea, hwaddr, ETH_ALEN);
+	/* Hardware address goes here */
+	p = buffer +
+		sizeof(struct ip6_hdr) +
+		sizeof(struct nd_neighbor_advert) +
+		sizeof(struct nd_opt_hdr);
+
+	/*
+	 * RFC 4861: The length of the option (including the type and
+	 * length fields) in units of 8 octets.  For example, the
+	 * length for IEEE 802 addresses is 1.
+	 *
+	 * That is, nd_opt_type and nd_opt_len are 1 octet each, and
+	 * an Ethernet address is 6 octets, for a total of 8 octets.
+	 * So, nd_opt_len is 1 for Ethernet.
+	 *
+	 * For IPoIB (according to RFC 4391) this should be 3 so it
+	 * can fit 20 octets of IPoIB hardware address (plus
+	 * nd_opt_type & nd_opt_len).  So, for IPoIB, 3 * 8 = 24
+	 * octets of space is allocated.  However, the IPoIB hardware
+	 * address + nd_opt_type + nd_opt_len only fills 22 octets.
+	 * So, RFC 4391 says to prepend 2 zeroes to the hardware
+	 * address.  Once again, generalise this so it works for at
+	 * least Ethernet and IPoIB.
+	 *
+	 * There is probably a cleverer way of writing the following,
+	 * but listen to Kernighan's Law and aim for clarity.
+	 */
+	nd_oh->nd_opt_len = (2 + ETH_ALEN) / 8;
+	leftover = (2 + ETH_ALEN) % 8;
+	padding = 0;
+	if (leftover != 0) {
+		nd_oh->nd_opt_len += 1;
+		padding = 8 - leftover;
+		memset(p, 0, padding);
+		p += padding;
+	}
+
+	memcpy(p, hwaddr, ETH_ALEN);
+	p += ETH_ALEN;
+
+	/*
+	 * This is either buried down here (with a helpful comment in
+	 * the correct place, above) or the whole nd_opt_len/padding
+	 * calculation is done out of order before the original
+	 * calculation of ip6->ip6_plen.  This seems to be the lesser
+	 * of two evils...
+	 */
+	ip6->ip6_plen = htons(sizeof(struct nd_neighbor_advert) +
+			      sizeof(struct nd_opt_hdr) +
+			      ETH_ALEN +
+			      padding);
 
 	nd_na->nd_na_cksum = ip6_checksum((uint8_t *)nd_na,
 					  ntohs(ip6->ip6_plen),
 					  ip6);
 
-	*len = l;
+	*len = p - buffer;
 	return 0;
 }
 
