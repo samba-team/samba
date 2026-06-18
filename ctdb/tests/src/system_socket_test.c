@@ -76,7 +76,7 @@ static void test_arp(const char *addr_str,
 		     uint16_t arpop)
 {
 	ctdb_sock_addr addr;
-	struct ether_addr *hw, *dhw;
+	struct ether_addr *hw = NULL;
 	uint8_t buf[512];
 	size_t buflen = sizeof(buf);
 	size_t len;
@@ -93,7 +93,7 @@ static void test_arp(const char *addr_str,
 		ret = arp_build(buf, buflen, &addr.ip, hw, arpop, &len);
 		break;
 	case AF_INET6:
-		ret = ip6_na_build(buf, buflen, &addr.ip6, hw, &dhw, &len);
+		ret = ip6_na_build(buf, buflen, &addr.ip6, hw, &len);
 		break;
 	default:
 		abort();

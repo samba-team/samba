@@ -293,7 +293,7 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
 #define ARP_STRUCT_SIZE \
 			sizeof(struct ether_arp)
 
-#define IP6_NA_STRUCT_SIZE sizeof(struct ether_header) + \
+#define IP6_NA_STRUCT_SIZE \
 			   sizeof(struct ip6_hdr) + \
 			   sizeof(struct nd_neighbor_advert) + \
 			   sizeof(struct nd_opt_hdr) + \
@@ -377,11 +377,9 @@ static int ip6_na_build(uint8_t *buffer,
 			size_t buflen,
 			const struct sockaddr_in6 *addr,
 			const struct ether_addr *hwaddr,
-			struct ether_addr **ether_dhost,
 			size_t *len)
 {
 	size_t l = IP6_NA_BUFFER_SIZE;
-	struct ether_header *eh;
 	struct ip6_hdr *ip6;
 	/*
 	 * IPv6 all nodes link-level multicast address: (see RFC2373,
@@ -403,15 +401,7 @@ static int ip6_na_build(uint8_t *buffer,
 
 	memset(buffer, 0 , l);
 
-	eh = (struct ether_header *)buffer;
-	ret = ip6_ll_multicast_build(eh->ether_dhost, ETH_ALEN);
-	if (ret != 0) {
-		return ret;
-	}
-	memcpy(eh->ether_shost, hwaddr, ETH_ALEN);
-	eh->ether_type = htons(ETHERTYPE_IP6);
-
-	ip6 = (struct ip6_hdr *)(buffer + sizeof(struct ether_header));
+	ip6 = (struct ip6_hdr *)buffer;
 	ip6->ip6_vfc  = 6 << 4;
 	ip6->ip6_plen = htons(sizeof(struct nd_neighbor_advert) +
 			      sizeof(struct nd_opt_hdr) +
@@ -427,7 +417,6 @@ static int ip6_na_build(uint8_t *buffer,
 	}
 
 	nd_na = (struct nd_neighbor_advert *)(buffer +
-					      sizeof(struct ether_header) +
 					      sizeof(struct ip6_hdr));
 	nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
 	nd_na->nd_na_code = 0;
@@ -436,14 +425,12 @@ static int ip6_na_build(uint8_t *buffer,
 
 	/* Option: Target link-layer address */
 	nd_oh = (struct nd_opt_hdr *)(buffer +
-				      sizeof(struct ether_header) +
 				      sizeof(struct ip6_hdr) +
 				      sizeof(struct nd_neighbor_advert));
 	nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
 	nd_oh->nd_opt_len = 1;  /* multiple of 8 octets */
 
 	ea = (struct ether_addr *)(buffer +
-				   sizeof(struct ether_header) +
 				   sizeof(struct ip6_hdr) +
 				   sizeof(struct nd_neighbor_advert) +
 				   sizeof(struct nd_opt_hdr));
@@ -453,7 +440,6 @@ static int ip6_na_build(uint8_t *buffer,
 					  ntohs(ip6->ip6_plen),
 					  ip6);
 
-	*ether_dhost = (struct ether_addr *)eh->ether_dhost;
 	*len = l;
 	return 0;
 }
@@ -475,7 +461,6 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		},
 	};
 	struct ether_addr *hwaddr = NULL;
-	struct ether_addr *ether_dhost = NULL;
 	size_t len = 0;
 	int ret = 0;
 
@@ -593,23 +578,26 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	case AF_INET6:
 		/* Send IPv6 NA */
 		sall.sll_protocol = htons(ETH_P_IPV6);
+		ret = ip6_ll_multicast_build(&sall.sll_addr[0], ETH_ALEN);
+		if (ret != 0) {
+			DBG_ERR("Failed to build IPv6 link-level destination\n");
+			goto done;
+		}
+
 
 		ret = ip6_na_build(buffer,
 				   sizeof(buffer),
 				   &addr->ip6,
 				   hwaddr,
-				   &ether_dhost,
 				   &len);
 		if (ret != 0) {
 			DBG_ERR("Failed to build IPv6 neighbor advertisement\n");
 			goto done;
 		}
 
-		memcpy(&sall.sll_addr[0], ether_dhost, sall.sll_halen);
-
 		ret = sendto(s,
-			     buffer + sizeof(struct ether_header),
-			     len - sizeof(struct ether_header),
+			     buffer,
+			     len,
 			     0,
 			     (struct sockaddr *)&sall,
 			     sizeof(sall));
