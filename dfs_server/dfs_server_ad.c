@@ -262,6 +262,8 @@ static NTSTATUS get_dcs_insite(TALLOC_CTX *ctx, struct ldb_context *ldb,
 			}
 		} else {
 			char *tmp;
+			size_t len;
+
 			const char *aname = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 			if (aname == NULL) {
 				DEBUG(2,(__location__ ": sAMAccountName missing on %s\n",
@@ -276,9 +278,18 @@ static NTSTATUS get_dcs_insite(TALLOC_CTX *ctx, struct ldb_context *ldb,
 				return NT_STATUS_NO_MEMORY;
 			}
 
+			len = strlen(tmp);
+			if (len == 0) {
+				DBG_NOTICE("sAMAccountName is empty on %s\n",
+					ldb_dn_get_linearized(dn));
+				TALLOC_FREE(r);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
 			/* Netbios name is also the sAMAccountName for
 			   computer but without the final $ */
-			tmp[strlen(tmp) - 1] = '\0';
+			tmp[len - 1] = '\0';
+
 			list->names[list->count] = tmp;
 		}
 		list->count++;
