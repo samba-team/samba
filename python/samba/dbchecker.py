@@ -64,6 +64,7 @@ class dbcheck(object):
                  yes=False, quiet=False, in_transaction=False,
                  quick_membership_checks=False,
                  reset_well_known_acls=False,
+                 reset_object_categories=False,
                  check_expired_tombstones=False,
                  colour=False,
                  check_gpo_links=False):
@@ -124,6 +125,7 @@ class dbcheck(object):
 
         self.quick_membership_checks = quick_membership_checks
         self.reset_well_known_acls = reset_well_known_acls
+        self.reset_object_categories = reset_object_categories
         self.check_expired_tombstones = check_expired_tombstones
         self.expired_tombstones = 0
         self.in_transaction = in_transaction
@@ -140,6 +142,7 @@ class dbcheck(object):
         self.fixable_wrong_hosts_in_gpo_file_path = {}
         self.fixable_wrong_directories_in_gpo_file_path = {}
         self.fixable_wrong_hosts_in_gpc_wql_filter = {}
+        self.fixable_wrong_schema_dn_in_object_categories = {}
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -2385,6 +2388,38 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return attrs, lc_attrs
 
+    def check_object_category(self, obj, attrname):
+        """Make sure that objectCategory or DefaultObjectCategory
+        point to our schema_dn.
+
+        We confirm for each wrong DN suffix."""
+        dn = ldb.Dn(self.samdb, str(obj[attrname]))
+        old_schema_dn = dn.parent()
+        if old_schema_dn == self.schema_dn:
+            # we are fine.
+            return 0
+        new_dn = dn.copy()
+        new_dn.remove_base_components(len(new_dn) - 1)
+        new_dn += self.schema_dn
+
+        replace = self.confirm_and_remember(
+            (f'replace {attrname} "{dn}" with "{new_dn}" '
+             f'("all" for all object categories ending in "{old_schema_dn}")'),
+            self.fixable_wrong_schema_dn_in_object_categories,
+            str(old_schema_dn).lower())
+
+        if replace:
+            obj[attrname] = str(new_dn)
+            msg = ldb.Message()
+            msg.dn = obj.dn
+            msg[attrname] = ldb.MessageElement(str(new_dn),
+                                               ldb.FLAG_MOD_REPLACE,
+                                               attrname)
+            self.do_modify(msg, [],
+                           f"resetting {attrname} {dn} to {new_dn}")
+
+        return 1
+
     def check_gplink(self, obj, attrname):
         """parse a gPLink into an array of dn and options"""
         val = str(obj[attrname]).strip()
@@ -2845,6 +2880,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                 % (attrname, obj.dn, obj[attrname][0]))
                 else:
                     self.attribute_or_class_ids.add(obj[attrname][0])
+
+            if self.reset_object_categories:
+                if attrname.lower() in ("objectcategory", "defaultobjectcategory"):
+                    self.check_object_category(obj, attrname)
 
             if self.check_gpo_links:
                 if attrname.lower() == 'gplink':

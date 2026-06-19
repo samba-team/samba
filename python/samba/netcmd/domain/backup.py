@@ -845,7 +845,8 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         samdb.transaction_start()
         # Just fix any mismatches in DN detected (leave any other errors)
         chk = dbcheck(samdb, quiet=True, fix=True, yes=False,
-                      in_transaction=True)
+                      in_transaction=True,
+                      reset_object_categories=True)
         # fix up incorrect objectCategory/etc attributes
         chk.confirmation_options['fix_all_old_dn_string_component_mismatch'] = 'ALL'
         cross_ncs_ctrl = 'search_options:1:2'
