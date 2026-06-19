@@ -763,14 +763,20 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 	struct cli_credentials *creds = NULL;
 	enum credentials_use_kerberos kerberos_state =
 		CRED_USE_KERBEROS_DISABLED;
+	enum credentials_obtained workgroup_obtained = CRED_UNINITIALISED;
 
 	if (! context) {
 
 		return;
 	}
 
-	if (! workgroup || ! *workgroup) {
+	if (workgroup != NULL && workgroup[0] != '\0') {
+		workgroup_obtained = CRED_SPECIFIED;
+	} else {
 		workgroup = smbc_getWorkgroup(context);
+		if (workgroup != NULL && workgroup[0] != '\0') {
+			workgroup_obtained = CRED_GUESS_ENV;
+		}
 	}
 
 	if (! user) {
@@ -797,9 +803,10 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		}
 	}
 
-	cli_credentials_set_username(creds, user, CRED_SPECIFIED);
+	/* Parse the username, it could be a UPN or DOMAIN\user name */
+	cli_credentials_parse_string(creds, user, CRED_SPECIFIED);
 	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
-	cli_credentials_set_domain(creds, workgroup, CRED_SPECIFIED);
+	cli_credentials_set_domain(creds, workgroup, workgroup_obtained);
 	cli_credentials_set_kerberos_state(creds,
 					   kerberos_state,
 					   CRED_SPECIFIED);
