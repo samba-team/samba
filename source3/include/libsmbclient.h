@@ -2950,9 +2950,11 @@ smbc_set_credentials(const char *workgroup,
  *
  * @param ctx            The smb context.
  *
- * @param workgroup      Workgroup of the user.
+ * @param workgroup      Workgroup of the user. Can be NULL to use the default
+ *                       from the smb.conf or obtain it parsing the username.
  *
- * @param user           Username of user.
+ * @param user           Username or UPN of the user. Also allows DOMAIN\user or
+ *                       user@REALM.
  *
  * @param password       Password of user.
  */
