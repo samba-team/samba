@@ -573,7 +573,7 @@ struct smb311_capabilities smb311_capabilities_parse(
 		size_t di;
 		bool ignore = false;
 
-		if (c.signing.num_algos >= SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS) {
+		if (c.signing.num_algos >= ARRAY_SIZE(c.signing.algos)) {
 			DBG_ERR("WARNING: Ignoring trailing value '%s' for parameter '%s'\n",
 				  algoname, sign_param);
 			continue;
@@ -612,7 +612,7 @@ struct smb311_capabilities smb311_capabilities_parse(
 		size_t di;
 		bool ignore = false;
 
-		if (c.encryption.num_algos >= SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS) {
+		if (c.encryption.num_algos >= ARRAY_SIZE(c.encryption.algos)) {
 			DBG_ERR("WARNING: Ignoring trailing value '%s' for parameter '%s'\n",
 				  algoname, enc_param);
 			continue;
