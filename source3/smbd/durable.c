@@ -691,6 +691,17 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 		goto fail;
 	}
 
+	if ((e.op_type == LEASE_OPLOCK) && (state->lease == NULL)) {
+		/*
+		 * The client didn't send a lease context when reconnecting,
+		 * although the handle did have a lease.
+		 */
+		DBG_WARNING("Trying to reconnect handle with lease without lease context on [%s]\n",
+			    fsp_str_dbg(fsp));
+		state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto fail;
+	}
+
 	fsp_apply_share_entry_flags(fsp, e.flags);
 	fsp->open_time = e.time;
 	fsp->access_mask = e.access_mask;
