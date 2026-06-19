@@ -45,6 +45,7 @@ static uint64_t rgw_fd_index = 0;
 struct vfs_ceph_rgw_config {
 
 	/* Module parameters */
+	const char *id;
 	const char *bkt_name;
 	const char *user_id;
 	const char *access_key;
@@ -2120,8 +2121,9 @@ static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 
 	librgw_params[1] = talloc_asprintf(
 		librgw_params,
-		" --name=client.admin --cluster=ceph"
-		" --conf=%s --keyring=%s",
+		"--id=%s --conf=%s "
+		"--keyring=%s",
+		config->id,
 		config->config_file,
 		config->keyring_file);
 	if (librgw_params[1] == NULL) {
@@ -2204,6 +2206,11 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
+	config_tmp->id = vfs_ceph_rgw_parm(handle, "id", NULL);
+	if (config_tmp->id == NULL) {
+		goto out;
+	}
+
 	config_tmp->config_file = vfs_ceph_rgw_parm(handle,
 						    "config_file",
 						    "/etc/ceph/ceph.conf");
@@ -2211,8 +2218,9 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	config_tmp->keyring_file = vfs_ceph_rgw_parm(
-		handle, "keyring_file", "/etc/ceph/ceph.client.admin.keyring");
+	config_tmp->keyring_file = vfs_ceph_rgw_parm(handle,
+						     "keyring_file",
+						     NULL);
 	if (config_tmp->keyring_file == NULL) {
 		goto out;
 	}

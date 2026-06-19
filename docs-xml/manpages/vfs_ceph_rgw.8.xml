@@ -115,8 +115,6 @@
 		<para>
 			Allows one to define a ceph keyring file to use.
 			(Required)
-			Default:
-			/etc/ceph/ceph.client.admin.keyring
 		</para>
 		<para>
 			Example: ceph_rgw:keyring_file =
@@ -191,6 +189,19 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>ceph_rgw:id = name</term>
+		<listitem>
+		<para>
+			Client id portion of the Ceph client name used by librgw
+			(Required)
+		</para>
+		<para>
+			Example: ceph_rgw:id = admin
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 
 </refsect1>
@@ -229,6 +240,7 @@
 			<smbconfoption name="inherit permissions">yes</smbconfoption>
 			<smbconfoption name="vfs objects">ceph_rgw</smbconfoption>
 			<smbconfoption name="ceph_rgw:bucket">my-bucket</smbconfoption>
+			<smbconfoption name="ceph_rgw:id">admin</smbconfoption>
 			<smbconfoption name="ceph_rgw:user_id">user1</smbconfoption>
 			<smbconfoption name="ceph_rgw:access_key">user1passwd</smbconfoption>
 			<smbconfoption name="ceph_rgw:secret_access_key">user1passwd</smbconfoption>
