@@ -345,6 +345,7 @@ void brl_init(bool read_only)
 {
 	int tdb_flags;
 	char *db_path;
+	uint64_t dbwrap_flags = DBWRAP_FLAG_NONE;
 
 	if (brlock_db) {
 		return;
@@ -358,10 +359,14 @@ void brl_init(bool read_only)
 		return;
 	}
 
+	if (lp_persistent_handles()) {
+		dbwrap_flags |= DBWRAP_FLAG_PER_REC_PERSISTENT;
+	}
+
 	brlock_db = db_open(NULL, db_path,
 			    SMBD_VOLATILE_TDB_HASH_SIZE, tdb_flags,
 			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0640,
-			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
+			    DBWRAP_LOCK_ORDER_2, dbwrap_flags);
 	if (!brlock_db) {
 		DEBUG(0,("Failed to open byte range locking database %s\n",
 			 db_path));
