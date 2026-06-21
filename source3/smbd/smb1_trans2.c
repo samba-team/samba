@@ -2035,16 +2035,19 @@ static void handle_trans2qfilepathinfo_result(
  file name or file id).
 ****************************************************************************/
 
-static void call_trans2qfilepathinfo(connection_struct *conn,
-				     struct smb_request *req,
-				     unsigned int tran_call,
-				     uint16_t info_level,
-				     struct smb_filename *smb_fname,
-				     struct files_struct *fsp,
-				     bool delete_pending,
-				     char **pparams, int total_params,
-				     char **ppdata, int total_data,
-				     unsigned int max_data_bytes)
+static NTSTATUS call_trans2qfilepathinfo(connection_struct *conn,
+					 struct smb_request *req,
+					 unsigned int tran_call,
+					 uint16_t info_level,
+					 struct smb_filename *smb_fname,
+					 struct files_struct *fsp,
+					 bool delete_pending,
+					 char **pparams,
+					 int total_params,
+					 char **ppdata,
+					 int total_data,
+					 unsigned int max_data_bytes,
+					 int *data_bytes_return)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -2068,9 +2071,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			uint32_t ea_size;
 
 			if (total_data < 4) {
-				reply_nterror(
-					req, NT_STATUS_INVALID_PARAMETER);
-				return;
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 			ea_size = IVAL(pdata,0);
 
@@ -2080,22 +2081,17 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					   "(should be %" PRIu32 ")\n",
 					   total_data,
 					   ea_size);
-				reply_nterror(
-					req, NT_STATUS_INVALID_PARAMETER);
-				return;
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 
 			if (!lp_ea_support(SNUM(conn))) {
-				reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
-				return;
+				return NT_STATUS_EAS_NOT_SUPPORTED;
 			}
 
 			/* Pull out the list of names. */
 			ea_list = read_ea_name_list(req, pdata + 4, ea_size - 4);
 			if (!ea_list) {
-				reply_nterror(
-					req, NT_STATUS_INVALID_PARAMETER);
-				return;
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 			break;
 		}
@@ -2106,8 +2102,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if (*pparams == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	params = *pparams;
 	SSVAL(params,0,0);
@@ -2117,8 +2112,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		 * We use levels that start with 0xFF00
 		 * internally to represent SMB2 specific levels
 		 */
-		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-		return;
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	status = smbd_do_qfilepathinfo(conn, req, req, info_level,
@@ -2130,18 +2124,13 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				       ppdata, &data_size);
 
 	if (fixed_portion > max_data_bytes) {
-		reply_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
-		return;
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	handle_trans2qfilepathinfo_result(
-		conn,
-		req,
-		info_level,
-		status,
-		*ppdata,
-		data_size,
-		max_data_bytes);
+	if (NT_STATUS_IS_OK(status)) {
+		*data_bytes_return = data_size;
+	}
+	return status;
 }
 
 static NTSTATUS smb_q_unix_basic(
@@ -2590,7 +2579,6 @@ static void call_trans2qpathinfo(
 	char *fname = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME twrp = 0;
-	bool info_level_handled;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (!params) {
@@ -2710,14 +2698,7 @@ static void call_trans2qpathinfo(
 		return;
 	}
 
-	info_level_handled = true; /* Untouched in switch cases below */
-
 	switch (info_level) {
-
-	default:
-		info_level_handled = false;
-		break;
-
 	case SMB_QUERY_FILE_UNIX_BASIC:
 		status = smb_q_unix_basic(
 			conn,
@@ -2767,33 +2748,30 @@ static void call_trans2qpathinfo(
 					     ppdata,
 					     &total_data);
 		break;
+	default:
+		status = call_trans2qfilepathinfo(conn,
+						  req,
+						  TRANSACT2_QPATHINFO,
+						  info_level,
+						  smb_fname,
+						  fsp,
+						  false,
+						  pparams,
+						  total_params,
+						  ppdata,
+						  total_data,
+						  max_data_bytes,
+						  &total_data);
+		break;
 	}
 
-	if (info_level_handled) {
-		handle_trans2qfilepathinfo_result(
-			conn,
-			req,
-			info_level,
-			status,
-			*ppdata,
-			total_data,
-			max_data_bytes);
-		return;
-	}
-
-	call_trans2qfilepathinfo(
-		conn,
-		req,
-		TRANSACT2_QPATHINFO,
-		info_level,
-		smb_fname,
-		fsp,
-		false,
-		pparams,
-		total_params,
-		ppdata,
-		total_data,
-		max_data_bytes);
+	handle_trans2qfilepathinfo_result(conn,
+					  req,
+					  info_level,
+					  status,
+					  *ppdata,
+					  total_data,
+					  max_data_bytes);
 }
 
 static NTSTATUS smb_q_posix_lock(
@@ -2886,7 +2864,6 @@ static void call_trans2qfileinfo(
 	bool delete_pending = False;
 	files_struct *fsp = NULL;
 	struct file_id fileid;
-	bool info_level_handled;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
@@ -2986,13 +2963,7 @@ static void call_trans2qfileinfo(
 		}
 	}
 
-	info_level_handled = true; /* Untouched in switch cases below */
-
 	switch (info_level) {
-
-	default:
-		info_level_handled = false;
-		break;
 
 	case SMB_QUERY_POSIX_LOCK:
 		status = smb_q_posix_lock(conn, req, fsp, ppdata, &total_data);
@@ -3012,33 +2983,31 @@ static void call_trans2qfileinfo(
 		status = smb_q_posix_acl(
 			conn, req, fsp->fsp_name, fsp, ppdata, &total_data);
 		break;
+
+	default:
+		status = call_trans2qfilepathinfo(conn,
+						  req,
+						  TRANSACT2_QFILEINFO,
+						  info_level,
+						  smb_fname,
+						  fsp,
+						  delete_pending,
+						  pparams,
+						  total_params,
+						  ppdata,
+						  total_data,
+						  max_data_bytes,
+						  &total_data);
+		break;
 	}
 
-	if (info_level_handled) {
-		handle_trans2qfilepathinfo_result(
-			conn,
-			req,
-			info_level,
-			status,
-			*ppdata,
-			total_data,
-			max_data_bytes);
-		return;
-	}
-
-	call_trans2qfilepathinfo(
-		conn,
-		req,
-		TRANSACT2_QFILEINFO,
-		info_level,
-		smb_fname,
-		fsp,
-		delete_pending,
-		pparams,
-		total_params,
-		ppdata,
-		total_data,
-		max_data_bytes);
+	handle_trans2qfilepathinfo_result(conn,
+					  req,
+					  info_level,
+					  status,
+					  *ppdata,
+					  total_data,
+					  max_data_bytes);
 }
 
 static void handle_trans2setfilepathinfo_result(
