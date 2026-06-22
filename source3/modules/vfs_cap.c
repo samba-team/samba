@@ -800,37 +800,49 @@ static struct smb_filename *cap_realpath(vfs_handle_struct *handle,
 	return return_fname;
 }
 
-static ssize_t cap_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path, void *value, size_t size)
+static ssize_t cap_fgetxattr(vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     const char *name,
+			     void *value,
+			     size_t size)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *capname = capencode(talloc_tos(), name);
 
-	if (!cappath) {
+	if (capname == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_FGETXATTR(handle, fsp, cappath, value, size);
+	return SMB_VFS_NEXT_FGETXATTR(handle, fsp, capname, value, size);
 }
 
-static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path)
+static int cap_fremovexattr(vfs_handle_struct *handle,
+			    struct files_struct *fsp,
+			    const char *name)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *capname = capencode(talloc_tos(), name);
 
-	if (!cappath) {
+	if (capname == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, cappath);
+	return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, capname);
 }
 
-static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path, const void *value, size_t size, int flags)
+static int cap_fsetxattr(vfs_handle_struct *handle,
+			 struct files_struct *fsp,
+			 const char *name,
+			 const void *value,
+			 size_t size,
+			 int flags)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *capname = capencode(talloc_tos(), name);
 
-	if (!cappath) {
+	if (capname == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_FSETXATTR(handle, fsp, cappath, value, size, flags);
+	return SMB_VFS_NEXT_FSETXATTR(
+		handle, fsp, capname, value, size, flags);
 }
 
 static NTSTATUS cap_create_dfs_pathat(vfs_handle_struct *handle,
