@@ -76,14 +76,18 @@ static SMB_ACL_T mode_to_smb_acl(mode_t mode, TALLOC_CTX *mem_ctx)
 
 	result->count = count;
 
-	result->acl[0].a_type = SMB_ACL_USER_OBJ;
-	result->acl[0].a_perm = (mode & S_IRWXU) >> 6;
-
-	result->acl[1].a_type = SMB_ACL_GROUP_OBJ;
-	result->acl[1].a_perm = (mode & S_IRWXG) >> 3;
-
-	result->acl[2].a_type = SMB_ACL_OTHER;
-	result->acl[2].a_perm = mode & S_IRWXO;
+	result->acl[0] = (struct smb_acl_entry){
+		.a_type = SMB_ACL_USER_OBJ,
+		.a_perm = (mode & S_IRWXU) >> 6,
+	};
+	result->acl[1] = (struct smb_acl_entry){
+		.a_type = SMB_ACL_GROUP_OBJ,
+		.a_perm = (mode & S_IRWXG) >> 3,
+	};
+	result->acl[2] = (struct smb_acl_entry){
+		.a_type = SMB_ACL_OTHER,
+		.a_perm = mode & S_IRWXO,
+	};
 
 	return result;
 }
