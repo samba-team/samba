@@ -5370,6 +5370,11 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	NTSTATUS ret;
 	int rc;
 
+	if (name[0] == '\0') {
+		DBG_ERR("Name can not be empty\n");
+		return NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
+
 	if (((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') ||
 	      acb_info & ACB_WSTRUST ||
 	      acb_info & ACB_SVRTRUST ||
