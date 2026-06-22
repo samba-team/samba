@@ -552,6 +552,58 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 		       ethernet_multicast,
 		       sizeof(ethernet_multicast));
 		break;
+	case ARPHRD_INFINIBAND:
+		/*
+		 * RFC4391 and RFC4392 both mention (in passing!) that
+		 * the IPoIB link-layer address is 20 octets, so
+		 * insist on that.
+		 */
+		if (in->sll_halen != 20) {
+			return EINVAL;
+		}
+
+		/*
+		 * IPoIB Multicast Mapping is specified in RFC4391,
+		 * section 4.
+		 *
+		 * Comparing examples in
+		 * /sys/kernel/debug/ipoib/ib0_mcg, which includes the
+		 * following GIDs:
+		 *
+		 * - ff12:401b:ffff:0:0:0:ffff:ffff
+		 * - ff12:601b:ffff:0:0:0:0:1
+		 *
+		 * with the broadcast address on interface ib0:
+		 *
+		 * 00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff
+		 *
+		 * The broadcast address is the IPv4 multicast group
+		 * GID (note IPoIB signature 0x401b for IPv4),
+		 * prefixed with 00:ff:ff:ff (no idea what the prefix
+		 * means).
+		 *
+		 * Given that RFC4391 says:
+		 *
+		 *   The same mapping function is used for both IPv4
+		 *   and IPv6 except for the IPoIB signature field.
+		 *
+		 * this should mean we should be able to convert the
+		 * IPv4 broadcast address to an IPv6 multicast address
+		 * by changing the IPoIB signature to 0x601b and the
+		 * last 4 octets to 00:00:00:01.  As in the equivalent
+		 * Ethernet multicast address, the last 4 octets
+		 * appear to be the last 4 octets of the IPv6
+		 * multicast address (see all_nodes_ll_multicast).
+		 */
+		memcpy(&out_sall->sll_addr[0],
+		       &in->sll_addr[0],
+		       in->sll_halen);
+		out_sall->sll_addr[6] = 0x60;
+		out_sall->sll_addr[16] = 0x00;
+		out_sall->sll_addr[17] = 0x00;
+		out_sall->sll_addr[18] = 0x00;
+		out_sall->sll_addr[19] = 0x01;
+		break;
 	default:
 		return EPROTONOSUPPORT;
 	}
