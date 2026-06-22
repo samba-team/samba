@@ -115,11 +115,11 @@ Notes:
  */
 
 void sys_utmp_claim(const char *username, const char *hostname,
-		    const char *id_str, int id_num)
+		    const char *id_str, uint32_t id_num)
 {}
 
 void sys_utmp_yield(const char *username, const char *hostname,
-		    const char *id_str, int id_num)
+		    const char *id_str, uint32_t id_num)
 {}
 
 #else /* WITH_UTMP */
@@ -467,9 +467,9 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, bool claim)
  Encode the unique connection number into "ut_id".
 ****************************************************************************/
 
-static int ut_id_encode(int i, char *fourbyte)
+static int ut_id_encode(uint32_t i, char *fourbyte)
 {
-	int nbase;
+	size_t nbase;
 	const char *ut_id_encstr = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
@@ -498,7 +498,7 @@ static int ut_id_encode(int i, char *fourbyte)
 */
 static bool sys_utmp_fill(struct utmp *u,
 			const char *username, const char *hostname,
-			const char *id_str, int id_num)
+			const char *id_str, uint32_t id_num)
 {
 	struct timeval timeval;
 
@@ -546,7 +546,7 @@ static bool sys_utmp_fill(struct utmp *u,
 
 #if defined(HAVE_UT_UT_ID)
 	if (ut_id_encode(id_num, u->ut_id) != 0) {
-		DEBUG(1,("utmp_fill: cannot encode id %d\n", id_num));
+		DEBUG(1,("utmp_fill: cannot encode id %"PRIu32"\n", id_num));
 		return False;
 	}
 #endif
@@ -559,7 +559,7 @@ static bool sys_utmp_fill(struct utmp *u,
 ****************************************************************************/
 
 void sys_utmp_yield(const char *username, const char *hostname,
-		    const char *id_str, int id_num)
+		    const char *id_str, uint32_t id_num)
 {
 	struct utmp u;
 
@@ -585,7 +585,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 ****************************************************************************/
 
 void sys_utmp_claim(const char *username, const char *hostname,
-		    const char *id_str, int id_num)
+		    const char *id_str, uint32_t id_num)
 {
 	struct utmp u;
 

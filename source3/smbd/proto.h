@@ -1138,9 +1138,9 @@ const struct security_token *get_current_nttok(connection_struct *conn);
 /* The following definitions come from smbd/utmp.c  */
 
 void sys_utmp_claim(const char *username, const char *hostname,
-		    const char *id_str, int id_num);
+		    const char *id_str, uint32_t id_num);
 void sys_utmp_yield(const char *username, const char *hostname,
-		    const char *id_str, int id_num);
+		    const char *id_str, uint32_t id_num);
 
 /* The following definitions come from smbd/vfs.c  */
 

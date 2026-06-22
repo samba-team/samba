@@ -46,7 +46,7 @@ bool session_claim(struct smbXsrv_session *session)
 		session->global->auth_session_info;
 	const char *username;
 	const char *hostname;
-	unsigned int id_num;
+	uint32_t id_num;
 	fstring id_str;
 
 	/* don't register sessions for the guest user - its just too
@@ -57,7 +57,7 @@ bool session_claim(struct smbXsrv_session *session)
 
 	id_num = session->global->session_global_id;
 
-	snprintf(id_str, sizeof(id_str), "smb/%u", id_num);
+	snprintf(id_str, sizeof(id_str), "smb/%"PRIu32, id_num);
 
 	/* Make clear that we require the optional unix_token in the source3 code */
 	SMB_ASSERT(session_info->unix_token);
@@ -88,12 +88,12 @@ void session_yield(struct smbXsrv_session *session)
 		session->global->auth_session_info;
 	const char *username;
 	const char *hostname;
-	unsigned int id_num;
+	uint32_t id_num;
 	fstring id_str = "";
 
 	id_num = session->global->session_global_id;
 
-	snprintf(id_str, sizeof(id_str), "smb/%u", id_num);
+	snprintf(id_str, sizeof(id_str), "smb/%"PRIu32, id_num);
 
 	/* Make clear that we require the optional unix_token in the source3 code */
 	SMB_ASSERT(session_info->unix_token);
