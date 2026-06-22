@@ -4563,7 +4563,6 @@ static void call_trans2setfileinfo(
 	struct files_struct *fsp = NULL;
 	char *params = *pparams;
 	int data_return_size = 0;
-	bool info_level_handled;
 	NTSTATUS status;
 	int ret;
 
@@ -4656,13 +4655,7 @@ static void call_trans2setfileinfo(
 		}
 	}
 
-	info_level_handled = true; /* Untouched in switch cases below */
-
 	switch (info_level) {
-
-	default:
-		info_level_handled = false;
-		break;
 
 	case SMB_SET_FILE_UNIX_BASIC:
 		status = smb_set_file_unix_basic(conn,
@@ -4688,31 +4681,20 @@ static void call_trans2setfileinfo(
 		status = smb_set_posix_lock(
 			conn, req, *ppdata, total_data, fsp);
 		break;
-	}
 
-	if (info_level_handled) {
-		handle_trans2setfilepathinfo_result(
-			conn,
-			req,
-			info_level,
-			status,
-			*ppdata,
-			data_return_size,
-			max_data_bytes);
-		return;
+	default:
+		status = smbd_do_setfilepathinfo(conn,
+						 req,
+						 req,
+						 info_level,
+						 fsp,
+						 NULL,
+						 smb_fname,
+						 *ppdata,
+						 total_data,
+						 &data_return_size);
+		break;
 	}
-
-	status = smbd_do_setfilepathinfo(
-		conn,
-		req,
-		req,
-		info_level,
-		fsp,
-		NULL,
-		smb_fname,
-		*ppdata,
-		total_data,
-		&data_return_size);
 
 	handle_trans2setfilepathinfo_result(
 		conn,
