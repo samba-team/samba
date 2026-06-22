@@ -763,6 +763,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 	switch (hardware_addr_ll->sll_hatype) {
 	case ARPHRD_ETHER:
+	case ARPHRD_INFINIBAND:
 		break;
 	default:
 		DBG_ERR("Not a supported address family (0x%x)\n",
