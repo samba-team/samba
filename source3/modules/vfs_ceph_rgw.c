@@ -42,20 +42,22 @@
 
 static uint64_t rgw_fd_index = 0;
 
+struct vfs_ceph_rgw_lib {
+	librgw_t handle;
+	unsigned int refcount;
+};
+
+static struct vfs_ceph_rgw_lib *g_rgw_lib;
+
 struct vfs_ceph_rgw_config {
 
 	/* Module parameters */
-	const char *id;
 	const char *bkt_name;
 	const char *user_id;
 	const char *access_key;
 	const char *secret_access_key;
-	const char *config_file;
-	const char *keyring_file;
-	bool debug;
 
 	/* rgw objects */
-	librgw_t rgw_lib_handle;
 	struct rgw_fs *rgw_root_fs;
 	struct rgw_file_handle *rgw_root_fh;
 };
@@ -2103,47 +2105,8 @@ static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
 	bool ret = false;
-	char **librgw_params = talloc_zero_array(talloc_tos(), char *, 2);
 
-	if (librgw_params == NULL) {
-		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
-		errno = ENOMEM;
-		goto out;
-	}
-
-	/* Prepare parameters */
-	librgw_params[0] = talloc_strdup(librgw_params, "vfs_ceph_rgw");
-	if (librgw_params[0] == NULL) {
-		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
-		errno = ENOMEM;
-		goto out;
-	}
-
-	librgw_params[1] = talloc_asprintf(
-		librgw_params,
-		"--id=%s --conf=%s "
-		"--keyring=%s",
-		config->id,
-		config->config_file,
-		config->keyring_file);
-	if (librgw_params[1] == NULL) {
-		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
-		errno = ENOMEM;
-		goto out;
-	}
-
-	if (config->debug) {
-		talloc_asprintf_addbuf(librgw_params + 1,
-				       " -d --debug-rgw=20");
-	}
-
-	rc = librgw_create(&config->rgw_lib_handle, 2, librgw_params);
-	if (rc != 0) {
-		DBG_ERR("[CEPH_RGW] Failed to init librgw. rc=%d\n", rc);
-		goto out;
-	}
-
-	rc = rgw_mount2(config->rgw_lib_handle,
+	rc = rgw_mount2(g_rgw_lib->handle,
 			config->user_id,
 			config->access_key,
 			config->secret_access_key,
@@ -2157,7 +2120,6 @@ static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 			((rc == -EINVAL) ? "Un-authorised user"
 					 : "unknown error"),
 			rc);
-		librgw_shutdown(config->rgw_lib_handle);
 		goto out;
 	}
 
@@ -2165,7 +2127,6 @@ static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 	ret = true;
 
 out:
-	TALLOC_FREE(librgw_params);
 	return ret;
 }
 
@@ -2205,25 +2166,6 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	config_tmp->id = vfs_ceph_rgw_parm(-1, "id", NULL);
-	if (config_tmp->id == NULL) {
-		goto out;
-	}
-
-	config_tmp->config_file = vfs_ceph_rgw_parm(-1,
-						    "config_file",
-						    "/etc/ceph/ceph.conf");
-	if (config_tmp->config_file == NULL) {
-		goto out;
-	}
-
-	config_tmp->keyring_file = vfs_ceph_rgw_parm(-1,
-						     "keyring_file",
-						     NULL);
-	if (config_tmp->keyring_file == NULL) {
-		goto out;
-	}
-
 	config_tmp->user_id = vfs_ceph_rgw_parm(SNUM(handle->conn),
 						"user_id",
 						NULL);
@@ -2252,8 +2194,6 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	config_tmp->debug = lp_parm_bool(-1, "ceph_rgw", "debug", false);
-
 	SMB_VFS_HANDLE_SET_DATA(handle,
 				config_tmp,
 				NULL,
@@ -2267,6 +2207,77 @@ out:
 		TALLOC_FREE(config_tmp);
 	}
 	return ret;
+}
+
+static bool vfs_ceph_rgw_lib_init(void)
+{
+	int rc = 0;
+	bool ok = false;
+	const char *id = NULL;
+	const char *config_file = NULL;
+	const char *keyring_file = NULL;
+	bool debug;
+	char **librgw_params = talloc_zero_array(talloc_tos(), char *, 2);
+
+	if (librgw_params == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
+		errno = ENOMEM;
+		goto out;
+	}
+
+	id = vfs_ceph_rgw_parm(-1, "id", NULL);
+	if (id == NULL) {
+		goto out;
+	}
+
+	config_file = vfs_ceph_rgw_parm(-1,
+					"config_file",
+					"/etc/ceph/ceph.conf");
+	if (config_file == NULL) {
+		goto out;
+	}
+
+	keyring_file = vfs_ceph_rgw_parm(-1, "keyring_file", NULL);
+	if (keyring_file == NULL) {
+		goto out;
+	}
+
+	debug = lp_parm_bool(-1, "ceph_rgw", "debug", false);
+
+	/* Prepare parameters */
+	librgw_params[0] = talloc_strdup(librgw_params, "vfs_ceph_rgw");
+	if (librgw_params[0] == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
+		errno = ENOMEM;
+		goto out;
+	}
+
+	librgw_params[1] = talloc_asprintf(librgw_params,
+					   "--id=%s --conf=%s --keyring=%s",
+					   id,
+					   config_file,
+					   keyring_file);
+	if (librgw_params[1] == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
+		errno = ENOMEM;
+		goto out;
+	}
+
+	if (debug) {
+		talloc_asprintf_addbuf(librgw_params + 1,
+				       " -d --debug-rgw=20");
+	}
+
+	rc = librgw_create(&g_rgw_lib->handle, 2, librgw_params);
+	if (rc != 0) {
+		DBG_ERR("[CEPH_RGW] Failed to init librgw. rc=%d\n", rc);
+		goto out;
+	}
+
+	ok = true;
+out:
+	TALLOC_FREE(librgw_params);
+	return ok;
 }
 
 static int vfs_ceph_rgw_connect(struct vfs_handle_struct *handle,
@@ -2296,10 +2307,23 @@ static int vfs_ceph_rgw_connect(struct vfs_handle_struct *handle,
 	 */
 	lp_do_parameter(SNUM(handle->conn), "aio write size", "0");
 
+	if (g_rgw_lib->handle == NULL) {
+		ok = vfs_ceph_rgw_lib_init();
+		if (!ok) {
+			return -1;
+		}
+	}
+
 	ok = vfs_ceph_rgw_mount_bucket(config);
 	if (!ok) {
+		if (g_rgw_lib->refcount == 0) {
+			librgw_shutdown(g_rgw_lib->handle);
+			g_rgw_lib->handle = NULL;
+		}
 		return -1;
 	}
+
+	g_rgw_lib->refcount++;
 
 	return 0;
 }
@@ -2321,7 +2345,11 @@ static void vfs_ceph_rgw_disconnect(struct vfs_handle_struct *handle)
 			ret);
 	}
 
-	librgw_shutdown(config->rgw_lib_handle);
+	g_rgw_lib->refcount--;
+	if (g_rgw_lib->refcount == 0) {
+		librgw_shutdown(g_rgw_lib->handle);
+		g_rgw_lib->handle = NULL;
+	}
 
 	TALLOC_FREE(config);
 }
@@ -2410,6 +2438,12 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 
 NTSTATUS vfs_ceph_rgw_init(TALLOC_CTX *ctx)
 {
+	g_rgw_lib = talloc_zero(ctx, struct vfs_ceph_rgw_lib);
+	if (g_rgw_lib == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"ceph_rgw",
 				&ceph_rgw_fns);
