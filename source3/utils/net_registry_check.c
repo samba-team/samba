@@ -1263,8 +1263,8 @@ int net_registry_check_db(const char *name, const struct check_options *opt)
 	NTSTATUS status;
 	int ret = -1;
 	struct check_ctx *ctx = check_ctx_create(talloc_tos(), name, opt);
-	if (ctx==NULL) {
-		goto done;
+	if (ctx == NULL) {
+		return ret;
 	}
 
 	d_printf("Check database: %s\n", name);
