@@ -144,7 +144,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 
 #ifdef	HAVE_UTMPX_H
 
-static const char * const ux_pathname =
+static const char ux_pathname[] =
 # if defined (UTMPX_FILE)
 	UTMPX_FILE ;
 # elif defined (_UTMPX_FILE)
@@ -155,7 +155,7 @@ static const char * const ux_pathname =
 	"" ;
 # endif
 
-static const char * const wx_pathname =
+static const char wx_pathname[] =
 # if defined (WTMPX_FILE)
 	WTMPX_FILE ;
 # elif defined (_WTMPX_FILE)
@@ -168,7 +168,7 @@ static const char * const wx_pathname =
 
 #endif	/* HAVE_UTMPX_H */
 
-static const char * const ut_pathname =
+static const char ut_pathname[] =
 # if defined (UTMP_FILE)
 	UTMP_FILE ;
 # elif defined (_UTMP_FILE)
@@ -179,7 +179,7 @@ static const char * const ut_pathname =
 	"" ;
 # endif
 
-static const char * const wt_pathname =
+static const char wt_pathname[] =
 # if defined (WTMP_FILE)
 	WTMP_FILE ;
 # elif defined (_WTMP_FILE)
@@ -193,7 +193,7 @@ static const char * const wt_pathname =
 /* BSD-like systems might want "lastlog" support. */
 #if 0 /* *** Not yet implemented */
 #ifndef HAVE_PUTUTLINE		/* see "pututline_my()" */
-static const char *ll_pathname =
+static const char ll_pathname[] =
 # if defined (_PATH_LASTLOG)	/* what other names (if any?) */
 	_PATH_LASTLOG ;
 # else
@@ -470,7 +470,9 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, bool claim)
 static int ut_id_encode(uint32_t i, char *fourbyte)
 {
 	size_t nbase;
-	const char *ut_id_encstr = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	static const char ut_id_encstr[] = "0123456789"
+					   "abcdefghijklmnopqrstuvwxyz"
+					   "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
  * 'ut_id_encstr' is the character set on which modulo arithmetic is done.
