@@ -17,11 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "source3/include/includes.h"
 #include "system/dir.h"
 #include "torture/smbtorture.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/cmdline.h"
+#include "source3/include/libsmb_internal.h"
 #include <libsmbclient.h>
 #include "torture/libsmbclient/proto.h"
 #include "lib/param/loadparm.h"
@@ -1152,6 +1153,94 @@ done:
 	return ok;
 }
 
+static bool torture_libsmbclient_set_credentials(struct torture_context *tctx)
+{
+	SMBCCTX *ctx = NULL;
+	struct cli_credentials *creds = NULL;
+	const char *realm = NULL;
+	char *principal = NULL;
+	const char *domain = NULL;
+	const char *username = NULL;
+	bool ok = true;
+
+	ctx = smbc_new_context();
+	torture_assert_not_null_goto(tctx,
+				     ctx,
+				     ok,
+				     out,
+				     "Failed to create new context");
+	torture_assert_not_null_goto(tctx,
+				     smbc_init_context(ctx),
+				     ok,
+				     out,
+				     "Failed to initialize context");
+
+	/* Test UPN format: user@REALM */
+	smbc_set_credentials_with_fallback(ctx,
+					   NULL,
+					   "user@REALM.EXAMPLE.COM",
+					   "pass");
+
+	creds = ctx->internal->creds;
+	torture_assert_not_null_goto(tctx,
+				     creds,
+				     ok,
+				     out,
+				     "Expected creds to be set");
+
+	realm = cli_credentials_get_realm(creds);
+	torture_assert_str_equal_goto(tctx,
+				      realm,
+				      "REALM.EXAMPLE.COM",
+				      ok,
+				      out,
+				      "UPN realm not parsed correctly");
+
+	principal = cli_credentials_get_principal(creds, tctx);
+	torture_assert_str_equal_goto(tctx,
+				      principal,
+				      "user@REALM.EXAMPLE.COM",
+				      ok,
+				      out,
+				      "UPN principal not parsed correctly");
+
+	/* Test DOMAIN\user format */
+	smbc_set_credentials_with_fallback(ctx,
+					   NULL,
+					   "TESTDOMAIN\\testuser",
+					   "pass");
+
+	creds = ctx->internal->creds;
+	torture_assert_not_null_goto(tctx,
+				     creds,
+				     ok,
+				     out,
+				     "Expected creds to be set");
+
+	domain = cli_credentials_get_domain(creds);
+	torture_assert_str_equal_goto(tctx,
+				      domain,
+				      "TESTDOMAIN",
+				      ok,
+				      out,
+				      "domain not parsed correctly");
+
+	username = cli_credentials_get_username(creds);
+	torture_assert_str_equal_goto(tctx,
+				      username,
+				      "testuser",
+				      ok,
+				      out,
+				      "DOMAIN\\user not parsed correctly");
+
+out:
+	if (ctx != NULL) {
+		smbc_free_context(ctx, 1);
+	}
+
+	return ok;
+}
+
 static bool torture_libsmbclient_list_shares(struct torture_context *tctx)
 {
 	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
@@ -1791,6 +1880,9 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "configuration", torture_libsmbclient_configuration);
 	torture_suite_add_simple_test(suite, "setConfiguration", torture_libsmbclient_setConfiguration);
 	torture_suite_add_simple_test(suite, "options", torture_libsmbclient_options);
+	torture_suite_add_simple_test(suite,
+		"set_credentials",
+		torture_libsmbclient_set_credentials);
 	torture_suite_add_simple_test(suite, "opendir", torture_libsmbclient_opendir);
 	torture_suite_add_simple_test(suite, "list_shares", torture_libsmbclient_list_shares);
 	torture_suite_add_simple_test(suite, "readdirplus",
