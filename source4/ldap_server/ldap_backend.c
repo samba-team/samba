@@ -29,6 +29,7 @@
 #include "samba/service_stream.h"
 #include "dsdb/gmsa/util.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include <ldb_errors.h>
 #include <ldb_module.h>
 #include "ldb_wrap.h"
@@ -1449,6 +1450,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	struct ldb_dn *dn;
 	const char *attrs[1];
 	const char *errstr = NULL;
+	const char *value = NULL;
 	const char *filter = NULL;
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
@@ -1461,21 +1463,31 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
 	NT_STATUS_HAVE_NO_MEMORY(dn);
 
+	compare_r = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
+	NT_STATUS_HAVE_NO_MEMORY(compare_r);
+
 	DBG_DEBUG("dn: [%s]\n", req->dn);
-	filter = talloc_asprintf(local_ctx, "(%s=%*s)", req->attribute,
-				 (int)req->value.length, req->value.data);
+
+	if (!ldb_valid_attr_name(req->attribute)) {
+		result = LDAP_INVALID_ATTRIBUTE_SYNTAX;
+		errstr = "Invalid Compare attribute name";
+		goto reply;
+	}
+	value = ldb_binary_encode(local_ctx, req->value);
+	NT_STATUS_HAVE_NO_MEMORY(value);
+
+	filter = talloc_asprintf(local_ctx, "%s=%s", req->attribute, value);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 
 	DBG_DEBUG("attribute: [%s]\n", filter);
 
 	attrs[0] = NULL;
 
-	compare_r = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
-	NT_STATUS_HAVE_NO_MEMORY(compare_r);
-
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_search(samdb, local_ctx, &res,
-				     dn, LDB_SCOPE_BASE, attrs, "%s", filter);
+		ldb_ret = dsdb_search(samdb, local_ctx, &res,
+				      dn, LDB_SCOPE_BASE, attrs,
+				      DSDB_MARK_REQ_UNTRUSTED,
+				      "%s", filter);
 		if (ldb_ret != LDB_SUCCESS) {
 			result = map_ldb_error(local_ctx, ldb_ret,
 					       ldb_errstring(samdb), &errstr);
@@ -1497,6 +1509,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 		}
 	}
 
+reply:
 	compare = &compare_r->msg->r.CompareResponse;
 	compare->dn = NULL;
 	compare->resultcode = result;
