@@ -6253,7 +6253,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	files_struct *fsp = NULL;
 	bool free_fsp_on_error = false;
 	NTSTATUS status;
-	int ret;
 	struct smb_filename *parent_dir_fname = NULL;
 	struct smb_filename *smb_fname_atname = NULL;
 
@@ -6437,23 +6436,19 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * if the basefile exists we want a handle so we can fstat() it.
 		 */
 
-		ret = vfs_stat(conn, smb_fname_base);
-		if (ret == -1 && errno != ENOENT) {
-			status = map_nt_error_from_unix(errno);
+		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_base);
+
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
+		{
+			DBG_ERR("openat_pathref_fsp [%s] failed: %s\n",
+				smb_fname_str_dbg(smb_fname_base),
+				nt_errstr(status));
 			TALLOC_FREE(smb_fname_base);
 			goto fail;
 		}
-		if (ret == 0) {
-			status = openat_pathref_fsp(conn->cwd_fsp,
-						    smb_fname_base);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_ERR("open_smb_fname_fsp [%s] failed: %s\n",
-					smb_fname_str_dbg(smb_fname_base),
-					nt_errstr(status));
-				TALLOC_FREE(smb_fname_base);
-				goto fail;
-			}
 
+		if (NT_STATUS_IS_OK(status)) {
 			/*
 			 * https://bugzilla.samba.org/show_bug.cgi?id=10229
 			 * We need to check if the requested access mask
