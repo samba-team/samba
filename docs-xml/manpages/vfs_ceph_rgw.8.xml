@@ -89,16 +89,33 @@
 </refsect1>
 
 <refsect1>
-	<title>OPTIONS</title>
+	<title>GLOBAL OPTIONS</title>
+
+	<para>The following options must be set in the global smb.conf section
+	and won't take effect when set per share. librgw can only be
+	initialised once per process, so these parameters are shared across
+	all shares.</para>
 
 	<variablelist>
+
+		<varlistentry>
+		<term>ceph_rgw:id = name</term>
+		<listitem>
+		<para>
+			Client id portion of the Ceph client name used by librgw.
+			(Required)
+		</para>
+		<para>
+			Example: ceph_rgw:id = admin
+		</para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>ceph_rgw:config_file = path</term>
 		<listitem>
 		<para>
 			Allows one to define a ceph configuration to use.
-			(Required)
 			Default:
 			/etc/ceph/ceph.conf
 		</para>
@@ -124,10 +141,34 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>ceph_rgw:debug = boolean</term>
+		<listitem>
+		<para>
+			Control debug logs for librgw.
+			Default: off
+		</para>
+		<para>
+			Example: ceph_rgw:debug = on
+		</para>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<para>The following options can be set per share.</para>
+
+	<variablelist>
+
+		<varlistentry>
 		<term>ceph_rgw:user_id = name</term>
 		<listitem>
 		<para>
-			User id of bucket owner
+			User id of bucket owner.
 			(Required)
 		</para>
 		<para>
@@ -175,33 +216,6 @@
 		</listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>ceph_rgw:debug = boolean</term>
-		<listitem>
-		<para>
-			Control debug logs for librgw
-			(Optional)
-			Default: off
-		</para>
-		<para>
-			Example: ceph_rgw:debug = on
-		</para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>ceph_rgw:id = name</term>
-		<listitem>
-		<para>
-			Client id portion of the Ceph client name used by librgw
-			(Required)
-		</para>
-		<para>
-			Example: ceph_rgw:id = admin
-		</para>
-		</listitem>
-		</varlistentry>
-
 	</variablelist>
 
 </refsect1>
@@ -233,6 +247,11 @@
 		</para>
 		<para>
 			<programlisting>
+			<smbconfsection name="[global]"/>
+			<smbconfoption name="ceph_rgw:id">admin</smbconfoption>
+			<smbconfoption name="ceph_rgw:config_file">/etc/ceph/ceph.conf</smbconfoption>
+			<smbconfoption name="ceph_rgw:keyring_file">/etc/ceph/ceph.client.admin.keyring</smbconfoption>
+
 			<smbconfsection name="[share]"/>
 			<smbconfoption name="comment">rgw bucket</smbconfoption>
 			<smbconfoption name="path">/</smbconfoption>
@@ -240,13 +259,9 @@
 			<smbconfoption name="inherit permissions">yes</smbconfoption>
 			<smbconfoption name="vfs objects">ceph_rgw</smbconfoption>
 			<smbconfoption name="ceph_rgw:bucket">my-bucket</smbconfoption>
-			<smbconfoption name="ceph_rgw:id">admin</smbconfoption>
 			<smbconfoption name="ceph_rgw:user_id">user1</smbconfoption>
 			<smbconfoption name="ceph_rgw:access_key">user1passwd</smbconfoption>
 			<smbconfoption name="ceph_rgw:secret_access_key">user1passwd</smbconfoption>
-			<smbconfoption name="ceph_rgw:config_file">/etc/ceph/ceph.conf</smbconfoption>
-			<smbconfoption name="ceph_rgw:keyring_file">/etc/ceph/ceph.client.admin.keyring</smbconfoption>
-			<smbconfoption name="ceph_rgw:debug">off</smbconfoption>
 			</programlisting>
 		</para>
 		</listitem>

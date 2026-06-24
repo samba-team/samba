@@ -2169,11 +2169,10 @@ out:
 	return ret;
 }
 
-static const char *vfs_ceph_rgw_parm(const struct vfs_handle_struct *handle,
+static const char *vfs_ceph_rgw_parm(int snum,
 				     const char *opt,
 				     const char *def)
 {
-	const int snum = SNUM(handle->conn);
 	const char *parm = NULL;
 
 	parm = lp_parm_const_string(snum, "ceph_rgw", opt, def);
@@ -2206,51 +2205,55 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	config_tmp->id = vfs_ceph_rgw_parm(handle, "id", NULL);
+	config_tmp->id = vfs_ceph_rgw_parm(-1, "id", NULL);
 	if (config_tmp->id == NULL) {
 		goto out;
 	}
 
-	config_tmp->config_file = vfs_ceph_rgw_parm(handle,
+	config_tmp->config_file = vfs_ceph_rgw_parm(-1,
 						    "config_file",
 						    "/etc/ceph/ceph.conf");
 	if (config_tmp->config_file == NULL) {
 		goto out;
 	}
 
-	config_tmp->keyring_file = vfs_ceph_rgw_parm(handle,
+	config_tmp->keyring_file = vfs_ceph_rgw_parm(-1,
 						     "keyring_file",
 						     NULL);
 	if (config_tmp->keyring_file == NULL) {
 		goto out;
 	}
 
-	config_tmp->user_id = vfs_ceph_rgw_parm(handle, "user_id", NULL);
+	config_tmp->user_id = vfs_ceph_rgw_parm(SNUM(handle->conn),
+						"user_id",
+						NULL);
 	if (config_tmp->user_id == NULL) {
 		goto out;
 	}
 
-	config_tmp->access_key = vfs_ceph_rgw_parm(handle, "access_key", NULL);
+	config_tmp->access_key = vfs_ceph_rgw_parm(SNUM(handle->conn),
+						   "access_key",
+						   NULL);
 	if (config_tmp->access_key == NULL) {
 		goto out;
 	}
 
-	config_tmp->secret_access_key = vfs_ceph_rgw_parm(handle,
+	config_tmp->secret_access_key = vfs_ceph_rgw_parm(SNUM(handle->conn),
 							  "secret_access_key",
 							  NULL);
 	if (config_tmp->secret_access_key == NULL) {
 		goto out;
 	}
 
-	config_tmp->bkt_name = vfs_ceph_rgw_parm(handle, "bucket", NULL);
+	config_tmp->bkt_name = vfs_ceph_rgw_parm(SNUM(handle->conn),
+						 "bucket",
+						 NULL);
 	if (config_tmp->bkt_name == NULL) {
 		goto out;
 	}
 
-	config_tmp->debug = lp_parm_bool(SNUM(handle->conn),
-					 "ceph_rgw",
-					 "debug",
-					 false);
+	config_tmp->debug = lp_parm_bool(-1, "ceph_rgw", "debug", false);
+
 	SMB_VFS_HANDLE_SET_DATA(handle,
 				config_tmp,
 				NULL,
