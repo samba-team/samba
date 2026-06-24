@@ -873,7 +873,6 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	files_struct *fsp;
 	uint32_t dirtype_orig = dirtype;
 	NTSTATUS status;
-	int ret;
 	struct smb2_create_blobs *posx = NULL;
 
 	if (dirtype == 0) {
@@ -888,9 +887,8 @@ NTSTATUS unlink_internals(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	ret = vfs_stat(conn, smb_fname);
-	if (ret != 0) {
-		return map_nt_error_from_unix(errno);
+	if (!VALID_STAT(smb_fname->st)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	fattr = fdos_mode(smb_fname->fsp);
