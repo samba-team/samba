@@ -28,6 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "version.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/samdb/ldb_modules/audit_util_proto.h"
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
 #include "auth/auth.h"
@@ -746,16 +747,66 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 	return LDB_SUCCESS;
 }
 
-/* Ensure that anonymous users are not allowed to make anything other than rootDSE search operations */
-
+/*
+ * Ensure that anonymous users are not allowed to make anything other than
+ * rootDSE search operations and special dns like @MODULES are not allowed
+ * over an untrusted connection.
+ */
 static int rootdse_filter_operations(struct ldb_module *module, struct ldb_request *req)
 {
 	struct auth_session_info *session_info;
 	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(module), struct rootdse_private_data);
 	bool is_untrusted = ldb_req_is_untrusted(req);
 	bool is_anonymous = true;
+	struct ldb_dn *dn = NULL;
+	struct ldb_dn *dn2 = NULL;
+
 	if (is_untrusted == false) {
 		return LDB_SUCCESS;
+	}
+
+	switch (req->operation) {
+	case LDB_SEARCH:
+		dn = req->op.search.base;
+		break;
+	case LDB_ADD:
+		dn = req->op.add.message->dn;
+		break;
+	case LDB_MODIFY:
+		dn = req->op.mod.message->dn;
+		break;
+	case LDB_DELETE:
+		dn = req->op.del.dn;
+		break;
+	case LDB_RENAME:
+		dn = req->op.rename.olddn;
+		dn2 = req->op.rename.newdn;
+		break;
+	case LDB_EXTENDED:
+		break;
+	case LDB_REQ_REGISTER_CONTROL:
+	case LDB_REQ_REGISTER_PARTITION:
+		ldb_set_errstring(ldb_module_get_ctx(module), "Invalid OP");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (ldb_dn_is_special(dn)) {
+		struct ldb_reply reply = { .error = LDB_ERR_OPERATIONS_ERROR, };
+
+		D_ERR("CVE-2026-58221-ATTACK: %s\n",
+			dsdb_audit_operation_human_readable(req, module, req, &reply));
+
+		ldb_set_errstring(ldb_module_get_ctx(module), "Invalid DN");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (ldb_dn_is_special(dn2)) {
+		struct ldb_reply reply = { .error = LDB_ERR_OPERATIONS_ERROR, };
+
+		D_ERR("CVE-2026-58221-ATTACK: %s\n",
+			dsdb_audit_operation_human_readable(req, module, req, &reply));
+
+		ldb_set_errstring(ldb_module_get_ctx(module), "Invalid DN");
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	session_info = (struct auth_session_info *)ldb_get_opaque(
