@@ -293,6 +293,9 @@ static struct check_ctx* check_ctx_create(TALLOC_CTX *mem_ctx, const char *db,
 					  const struct check_options *opt)
 {
 	struct check_ctx *ctx = talloc_zero(mem_ctx, struct check_ctx);
+	if (ctx == NULL) {
+		return NULL;
+	}
 
 	ctx->opt = *opt;
 	ctx->reg = db_open_rbt(ctx);
