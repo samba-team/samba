@@ -546,7 +546,11 @@ static bool is_hidden_share(int snum)
 		loadparm_s3_global_substitution();
 	const char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 
-	return (net_name[strlen(net_name) - 1] == '$') ? True : False;
+	if (net_name == NULL || net_name[0] == '\0') {
+		return false;
+	}
+
+	return net_name[strlen(net_name) - 1] == '$';
 }
 
 /*******************************************************************
