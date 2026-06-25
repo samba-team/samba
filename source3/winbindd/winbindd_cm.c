@@ -3045,7 +3045,7 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
 
-	status = init_dc_connection_rpc(domain, false);
+	status = init_dc_connection(domain, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3445,9 +3445,16 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		}
 	}
 
-	result = init_dc_connection_rpc(domain, domain->rodc);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+	if (transport == NCACN_NP) {
+		result = init_dc_connection_rpc(domain, domain->rodc);
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
+	} else {
+		result = init_dc_connection(domain, domain->rodc);
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
 	}
 
 	conn = &domain->conn;
@@ -3549,8 +3556,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     struct rpc_pipe_client **cli)
 {
 	NTSTATUS status;
-
-	status = init_dc_connection_rpc(domain, domain->rodc);
+	status = init_dc_connection(domain, domain->rodc);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
