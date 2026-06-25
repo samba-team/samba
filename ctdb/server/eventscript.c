@@ -834,7 +834,6 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_event call,
 
 int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_event call)
 {
-	/* GCC complains about empty format string, so use %s and "". */
 	return ctdb_event_script_args(ctdb, call, NULL);
 }
 
