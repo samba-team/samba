@@ -2260,6 +2260,9 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 	*config = config_tmp;
 	ret = true;
 out:
+	if (!ret) {
+		TALLOC_FREE(config_tmp);
+	}
 	return ret;
 }
 
