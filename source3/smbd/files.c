@@ -936,7 +936,7 @@ static bool full_path_extend(char **dir, const char *atname)
  * the stat cache for the last component to be looked up. Cache
  * contents is the correctly capitalized translation of the parameter
  * "name" as it exists on disk. This is indexed by inode of the dirfsp
- * and name, and contrary to stat_cahce_lookup() it does not
+ * and name, and contrary to stat_cache_lookup() it does not
  * vfs_stat() the last component. This will be taken care of by an
  * attempt to do a openat_pathref_fsp().
  */
