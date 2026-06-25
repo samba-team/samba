@@ -92,6 +92,12 @@ struct vfs_ceph_rgw_getxattr_arg {
 	size_t size;
 };
 
+struct vfs_ceph_rgw_lsxattr_arg {
+	int rc;
+	char *list;
+	size_t rem_size;
+};
+
 /*
  * Note, librgw's return code model is to return -errno. Thus we have to
  * convert to what Samba expects: set errno to non-negative value and return
@@ -2098,6 +2104,116 @@ out:
 	return status_code(rc);
 }
 
+/*
+ * Callback for rgw_lsxattrs() to build list of attribute names.
+ *
+ * @param attrs: List of attributes from RGW
+ * @param arg: Pointer to vfs_ceph_rgw_lsxattr_arg structure
+ * @param flags: Callback flags (unused)
+ * @return: 0 to continue iteration, RGW_LSXATTR_FLAG_STOP to stop
+ *
+ * Output format: null-separated attribute names (e.g., "user.foo\0user.bar\0")
+ *
+ */
+static int ceph_rgw_lsxattr_cb(rgw_xattrlist *attrs, void *arg, uint32_t flags)
+{
+	uint32_t i;
+	struct vfs_ceph_rgw_lsxattr_arg *cb_arg = arg;
+
+	for (i = 0; i < attrs->xattr_cnt; i++) {
+		const rgw_xattr *attr = &attrs->xattrs[i];
+		uint32_t len = attr->key.len + 1;
+
+		if (len > cb_arg->rem_size) {
+			DBG_DEBUG("[CEPH_RGW] Not enough space for more "
+				  "names\n");
+			cb_arg->rc = -ERANGE;
+			return RGW_LSXATTR_FLAG_STOP;
+		}
+
+		memcpy(cb_arg->list, attr->key.val, attr->key.len);
+		cb_arg->list[attr->key.len] = '\0';
+		DBG_DEBUG("[CEPH_RGW] xattr-name:%s\n", cb_arg->list);
+
+		cb_arg->list += len;
+		cb_arg->rem_size -= len;
+	}
+	return 0;
+}
+
+static ssize_t vfs_ceph_rgw_flistxattr(vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       char *list,
+				       size_t size)
+{
+	ssize_t ret = -ENOMEM;
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct vfs_ceph_rgw_fh *fh = NULL;
+	struct vfs_ceph_rgw_lsxattr_arg cb_arg = {};
+
+	START_PROFILE_X(SNUM(handle->conn), syscall_flistxattr);
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				goto out);
+
+	DBG_DEBUG("[CEPH_RGW] flistxattr: fsp_name=%s list=%p size=%zu\n",
+		  fsp_str_dbg(fsp),
+		  list,
+		  size);
+
+	/*
+	 * We do not support posix like handling to get buffer size
+	 * from backend in case of size is mentioned as 0.
+	 */
+	if (size == 0) {
+		DBG_DEBUG("[CEPH_RGW] No support to get size of the list of "
+			  "xattrs\n");
+		ret = -ENOTSUP;
+		goto out;
+	}
+
+	if (is_special_name(fsp->fsp_name->base_name)) {
+		DBG_DEBUG(
+			"[CEPH_RGW] Cannot perform op on special name [%s]\n",
+			fsp_str_dbg(fsp));
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
+	if (ret != 0) {
+		DBG_ERR("[CEPH_RGW] Unable to fetch handle\n");
+		goto out;
+	}
+
+	/* prepare argument for callback */
+	cb_arg.list = list;
+	cb_arg.rem_size = size;
+
+	ret = rgw_lsxattrs(config->rgw_root_fs,
+			   fh->rgw_fh,
+			   NULL, /* filter_prefix unimplemented, pass NULL */
+			   ceph_rgw_lsxattr_cb,
+			   &cb_arg,
+			   RGW_LSXATTR_FLAG_NONE);
+	if (ret < 0 || cb_arg.rc < 0) {
+		DBG_ERR("[CEPH_RGW] Unable to list xattrs. rc=%zd cb_rc=%d\n",
+			ret,
+			cb_arg.rc);
+		if (cb_arg.rc < 0) {
+			ret = cb_arg.rc;
+		}
+		goto out;
+	}
+	ret = size - cb_arg.rem_size;
+out:
+	DBG_DEBUG("[CEPH_RGW] flistxattr done: ret=%zd\n", ret);
+	END_PROFILE_X(syscall_flistxattr);
+	return lstatus_code(ret);
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -2451,7 +2567,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vfs_ceph_rgw_fgetxattr,
-	.flistxattr_fn = vfs_not_implemented_flistxattr,
+	.flistxattr_fn = vfs_ceph_rgw_flistxattr,
 	.fremovexattr_fn = vfs_ceph_rgw_fremovexattr,
 	.fsetxattr_fn = vfs_ceph_rgw_fsetxattr,
 
