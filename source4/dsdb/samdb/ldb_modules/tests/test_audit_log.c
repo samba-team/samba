@@ -1615,7 +1615,7 @@ static void test_replicated_update_json(void **state)
 }
 
 /*
- * minimal unit test of operation_human_readable, that ensures that all the
+ * minimal unit test of dsdb_audit_operation_human_readable, that ensures that all the
  * expected attributes and objects are in the json object.
  */
 static void test_operation_hr_empty(void **state)
@@ -1645,7 +1645,7 @@ static void test_operation_hr_empty(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	line = operation_human_readable(ctx, module, req, reply);
+	line = dsdb_audit_operation_human_readable(ctx, module, req, reply);
 	assert_non_null(line);
 
 	/*
@@ -1740,7 +1740,7 @@ static void test_operation_hr(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	line = operation_human_readable(ctx, module, req, reply);
+	line = dsdb_audit_operation_human_readable(ctx, module, req, reply);
 	assert_non_null(line);
 
 	/*
@@ -1851,7 +1851,7 @@ static void test_as_system_operation_hr(void **state)
 	reply = talloc_zero(ctx, struct ldb_reply);
 	reply->error = LDB_SUCCESS;
 
-	line = operation_human_readable(ctx, module, req, reply);
+	line = dsdb_audit_operation_human_readable(ctx, module, req, reply);
 	assert_non_null(line);
 
 	/*
@@ -2162,7 +2162,7 @@ static void test_log_attributes(void **state)
 	buf = talloc_zero(ctx, char);
 	msg = talloc_zero(ctx, struct ldb_message);
 
-	str = log_attributes(ctx, buf, LDB_ADD, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_ADD, msg);
 	assert_string_equal("", str);
 
 	TALLOC_FREE(str);
@@ -2175,7 +2175,7 @@ static void test_log_attributes(void **state)
 	msg = talloc_zero(ctx, struct ldb_message);
 	ldb_msg_add_string(msg, "clearTextPassword", "secret");
 
-	str = log_attributes(ctx, buf, LDB_ADD, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_ADD, msg);
 	assert_string_equal(
 		"clearTextPassword [REDACTED SECRET ATTRIBUTE]",
 		str);
@@ -2185,7 +2185,7 @@ static void test_log_attributes(void **state)
 	 * action will be unknown as there are no ACL's set
 	 */
 	buf = talloc_zero(ctx, char);
-	str = log_attributes(ctx, buf, LDB_MODIFY, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_MODIFY, msg);
 	assert_string_equal(
 		"unknown: clearTextPassword [REDACTED SECRET ATTRIBUTE]",
 		str);
@@ -2200,7 +2200,7 @@ static void test_log_attributes(void **state)
 	msg = talloc_zero(ctx, struct ldb_message);
 	ldb_msg_add_string(msg, "attribute", "value");
 
-	str = log_attributes(ctx, buf, LDB_ADD, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_ADD, msg);
 	assert_string_equal(
 		"attribute [value]",
 		str);
@@ -2216,7 +2216,7 @@ static void test_log_attributes(void **state)
 	msg = talloc_zero(ctx, struct ldb_message);
 	ldb_msg_add_string(msg, "attribute", "value");
 
-	str = log_attributes(ctx, buf, LDB_MODIFY, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_MODIFY, msg);
 	assert_string_equal(
 		"unknown: attribute [value]",
 		str);
@@ -2234,7 +2234,7 @@ static void test_log_attributes(void **state)
 	ldb_msg_add_string(msg, "attribute02", "value02");
 	ldb_msg_add_string(msg, "attribute02", "value03");
 
-	str = log_attributes(ctx, buf, LDB_MODIFY, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_MODIFY, msg);
 	assert_string_equal(
 		"unknown: attribute01 [value01] "
 		"unknown: attribute02 [value02] [value03]",
@@ -2251,7 +2251,7 @@ static void test_log_attributes(void **state)
 	msg = talloc_zero(ctx, struct ldb_message);
 	ldb_msg_add_string(msg, "attribute", "value\n");
 
-	str = log_attributes(ctx, buf, LDB_ADD, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_ADD, msg);
 	assert_string_equal("attribute {dmFsdWUK}", str);
 
 	TALLOC_FREE(str);
@@ -2268,7 +2268,7 @@ static void test_log_attributes(void **state)
 	memset(lv, 'x', MAX_LENGTH+1);
 	ldb_msg_add_string(msg, "attribute", lv);
 
-	str = log_attributes(ctx, buf, LDB_ADD, msg);
+	str = dsdb_audit_log_attributes(ctx, buf, LDB_ADD, msg);
 	snprintf(ex, sizeof(ex), "attribute [%.*s...]", MAX_LENGTH, lv);
 	assert_string_equal(ex, str);
 
