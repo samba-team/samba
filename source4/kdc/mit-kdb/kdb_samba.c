@@ -70,7 +70,7 @@ static krb5_error_code kdb_samba_fini_module(krb5_context context)
 		return 0;
 	}
 
-	mit_samba_context_free(mit_ctx);
+	TALLOC_FREE(mit_ctx);
 
 	return 0;
 }

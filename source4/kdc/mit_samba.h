@@ -30,8 +30,6 @@ struct mit_samba_context {
 
 int mit_samba_context_init(struct mit_samba_context **_ctx);
 
-void mit_samba_context_free(struct mit_samba_context *ctx);
-
 int mit_samba_generate_salt(krb5_data *salt);
 
 int mit_samba_generate_random_password(krb5_data *pwd);

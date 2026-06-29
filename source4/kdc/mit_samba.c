@@ -45,15 +45,15 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
 
-void mit_samba_context_free(struct mit_samba_context *ctx)
+static int mit_samba_context_destructor(struct mit_samba_context *ctx)
 {
 	/* free MIT's krb5_context */
-	if (ctx->context) {
+	if (ctx->context != NULL) {
 		krb5_free_context(ctx->context);
+		ctx->context = NULL;
 	}
 
-	/* then free everything else */
-	talloc_free(ctx);
+	return 0;
 }
 
 /*
@@ -85,6 +85,7 @@ krb5_error_code mit_samba_context_init(struct mit_samba_context **_ctx)
 		ret = ENOMEM;
 		goto done;
 	}
+	talloc_set_destructor(ctx, mit_samba_context_destructor);
 
 	base_ctx.ev_ctx = tevent_context_init(ctx);
 	if (!base_ctx.ev_ctx) {
@@ -138,7 +139,7 @@ krb5_error_code mit_samba_context_init(struct mit_samba_context **_ctx)
 
 done:
 	if (ret) {
-		mit_samba_context_free(ctx);
+		TALLOC_FREE(ctx);
 	} else {
 		*_ctx = ctx;
 	}
