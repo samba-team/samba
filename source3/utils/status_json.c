@@ -1358,13 +1358,17 @@ int print_brl_json(struct traverse_state *state,
 	};
 	int result = 0;
 	char *key;
+	size_t sharepath_len = strlen(sharepath);
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return -1;
 	}
 
-	if (sharepath[strlen(sharepath)-1] == '/') {
+	if (sharepath_len == 0) {
+		goto failure;
+	}
+	if (sharepath[sharepath_len - 1] == '/') {
 		key = talloc_asprintf(tmp_ctx, "%s%s", sharepath, filename);
 	} else {
 		key = talloc_asprintf(tmp_ctx, "%s/%s", sharepath, filename);
