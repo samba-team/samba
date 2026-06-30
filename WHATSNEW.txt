@@ -1,4 +1,64 @@
                    ==============================
+                   Release Notes for Samba 4.24.4
+                           June 30, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.24 release series.
+
+
+Changes since 4.24.3
+--------------------
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16095: Use-after-free in handling acls with claims and conditions
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 16092: Compilers may ignore overflow checks - Fix tautological-compare
+     warnings
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14638: restrict anonymous = 2 breaks RODC functionality
+   * BUG 16006: warning: assignment discards 'const' qualifier from pointer
+     target type [-Wdiscarded-qualifiers]
+   * BUG 16067: Require NTLMv2 session security on Windows makes trusts to Samba
+     unusable
+   * BUG 16092: Compilers may ignore overflow checks - Fix tautological-compare
+     warnings
+   * BUG 16151: winbindd stuck in init_dc_connection_rpc() returning
+     NT_STATUS_TRUSTED_DOMAIN_FAILURE
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 16006: warning: assignment discards 'const' qualifier from pointer
+     target type [-Wdiscarded-qualifiers]
+   * BUG 16149: domain\user not split when provided as username in
+     smbc_set_credentials_with_fallback()
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.24.3
                             May 26, 2026
                    ==============================
@@ -115,8 +175,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.24.2
                             May 12, 2026
