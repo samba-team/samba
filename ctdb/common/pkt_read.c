@@ -146,6 +146,25 @@ void pkt_read_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		return;
 	}
 
+	/*
+	 * Allocate buffer for entire packet
+	 *
+	 * Yes, this allows an out-of-memory denial of service (DoS)
+	 * attack if a number of packets are received with
+	 * unreasonable packet sizes, noting that the maximum packet
+	 * size is ~4GB.  The CTDB protocol was not designed with a
+	 * maximum packet size in mind, so CTDB may send very large
+	 * valid packets.  This means that imposing an arbitrary limit
+	 * on incoming packets is not reasonable.  Arguments that
+	 * header fields, such as magic and/or version, should be
+	 * validated before allocating a packet buffer are spurious
+	 * from a security perspective because an attacker attempting
+	 * DoS can send packets with valid headers.  The private
+	 * network and ctdbd socket should be secured against
+	 * untrusted access, so reports that this possible DoS vector
+	 * represents a security issue will be ignored.  See the
+	 * "Private addresses" section in ctdb(7) for more details.
+	 */
 	if (state->use_fixed) {
 		/* switch to dynamic buffer */
 		tmp = talloc_array(state, uint8_t, state->total + more);
