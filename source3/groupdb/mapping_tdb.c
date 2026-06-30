@@ -780,24 +780,17 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	}
 
 	member_string = talloc_strdup(sids, "");
+
+	for (i=0; i<num; i++) {
+		talloc_asprintf_addbuf(&member_string,
+				       " %s",
+				       dom_sid_str_buf(&sids[i], &sid_string));
+	}
+
 	if (member_string == NULL) {
 		TALLOC_FREE(sids);
 		status = NT_STATUS_NO_MEMORY;
 		goto cancel;
-	}
-
-	for (i=0; i<num; i++) {
-
-		member_string = talloc_asprintf_append_buffer(
-			member_string,
-			" %s",
-			dom_sid_str_buf(&sids[i], &sid_string));
-
-		if (member_string == NULL) {
-			TALLOC_FREE(sids);
-			status = NT_STATUS_NO_MEMORY;
-			goto cancel;
-		}
 	}
 
 	status = dbwrap_store_bystring(
