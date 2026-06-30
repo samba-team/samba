@@ -119,7 +119,7 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 		talloc_free(call);
 		goto done;
 	}
-	call->sock = sock;
+	*call = (struct kdc_udp_call){.sock = sock};
 
 	len = tdgram_recvfrom_recv(subreq, &sys_errno,
 				   call, &buf, &call->src);
@@ -261,7 +261,7 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 				"no memory for kdc_tcp_call");
 		return;
 	}
-	call->kdc_conn = kdc_conn;
+	*call = (struct kdc_tcp_call){.kdc_conn = kdc_conn};
 
 	status = tstream_read_pdu_blob_recv(subreq,
 					    call,
@@ -564,8 +564,10 @@ NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 	kdc_socket = talloc(kdc, struct kdc_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_socket);
 
-	kdc_socket->kdc = kdc;
-	kdc_socket->process = process;
+	*kdc_socket = (struct kdc_socket){
+		.kdc = kdc,
+		.process = process,
+	};
 
 	ret = tsocket_address_inet_from_strings(kdc_socket, "ip",
 						address, port,
@@ -596,7 +598,7 @@ NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 	kdc_udp_socket = talloc(kdc_socket, struct kdc_udp_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_udp_socket);
 
-	kdc_udp_socket->kdc_socket = kdc_socket;
+	*kdc_udp_socket = (struct kdc_udp_socket){.kdc_socket = kdc_socket};
 
 	ret = tdgram_inet_udp_socket(kdc_socket->local_address,
 				     NULL,
