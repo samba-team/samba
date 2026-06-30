@@ -1107,9 +1107,6 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 		ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST,
 		ATYPE_INTERDOMAIN_TRUST, ATYPE_SECURITY_GLOBAL_GROUP,
 		ATYPE_SECURITY_LOCAL_GROUP);
-	if (filter == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	for (i=0; ids[i]; i++) {
 		char *sidstr;
@@ -1121,15 +1118,11 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		filter = talloc_asprintf_append_buffer(
-			filter, "(objectSid=%s)", sidstr);
+		talloc_asprintf_addbuf(&filter, "(objectSid=%s)", sidstr);
 		TALLOC_FREE(sidstr);
-		if (filter == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
-	filter = talloc_asprintf_append_buffer(filter, "))");
+	talloc_asprintf_addbuf(&filter, "))");
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

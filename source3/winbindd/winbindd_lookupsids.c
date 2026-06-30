@@ -101,41 +101,34 @@ NTSTATUS winbindd_lookupsids_recv(struct tevent_req *req,
 	}
 
 	result = talloc_asprintf(response, "%d\n", (int)state->domains->count);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	for (i=0; i<state->domains->count; i++) {
 		struct dom_sid_buf sid_str;
 
-		result = talloc_asprintf_append_buffer(
-			result, "%s %s\n",
+		talloc_asprintf_addbuf(
+			&result,
+			"%s %s\n",
 			dom_sid_str_buf(state->domains->domains[i].sid,
 					&sid_str),
 			state->domains->domains[i].name.string);
-		if (result == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
-	result = talloc_asprintf_append_buffer(
-		result, "%d\n", (int)state->names->count);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	talloc_asprintf_addbuf(&result, "%d\n", (int)state->names->count);
 
 	for (i=0; i<state->names->count; i++) {
 		struct lsa_TranslatedName *name;
 
 		name = &state->names->names[i];
 
-		result = talloc_asprintf_append_buffer(
-			result, "%d %d %s\n",
-			(int)name->sid_index, (int)name->sid_type,
-			name->name.string);
-		if (result == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		talloc_asprintf_addbuf(&result,
+				       "%" PRIu32 " %d %s\n",
+				       name->sid_index,
+				       (int)name->sid_type,
+				       name->name.string);
+	}
+
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	response->extra_data.data = result;
