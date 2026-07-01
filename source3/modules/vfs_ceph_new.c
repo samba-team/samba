@@ -2314,6 +2314,38 @@ static void vfs_ceph_iput(const struct vfs_handle_struct *handle,
 	}
 }
 
+static int vfs_ceph_open_share_root(struct vfs_handle_struct *handle,
+				    struct files_struct *root_fsp,
+				    const char *connectpath)
+{
+	SMB_STRUCT_STAT st = {};
+	struct vfs_ceph_iref iref = {};
+	int result = -1;
+
+	DBG_DEBUG("[CEPH] open_share_root: %s\n", connectpath);
+
+	result = vfs_ceph_iget(handle, connectpath, 0, &iref);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_ll_getattr(handle, &iref, &st);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_set_share_root(root_fsp, connectpath, &st);
+	if (result != 0) {
+		result = -errno;
+		goto out;
+	}
+out:
+	DBG_DEBUG("[CEPH] open_share_root: %s result=%d\n",
+		  connectpath, result);
+	vfs_ceph_iput(handle, &iref);
+	return status_code(result);
+}
+
 #ifdef HAVE_CEPH_FSCRYPT
 /* Fscrypt */
 /*
@@ -4609,6 +4641,7 @@ static struct vfs_fn_pointers ceph_new_fns = {
 
 	.connect_fn = vfs_ceph_connect,
 	.disconnect_fn = vfs_ceph_disconnect,
+	.open_share_root_fn = vfs_ceph_open_share_root,
 	.disk_free_fn = vfs_ceph_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
