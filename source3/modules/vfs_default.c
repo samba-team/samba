@@ -100,28 +100,19 @@ static int vfswrap_open_share_root(struct vfs_handle_struct *handle,
 				   struct files_struct *root_fsp,
 				   const char *connectpath)
 {
-	struct smb_filename fname = {
-		.base_name = discard_const_p(char, connectpath),
-	};
+	SMB_STRUCT_STAT st = {};
 	int ret;
-	bool ok;
 
 	ret = sys_stat(connectpath,
-		       &fname.st,
+		       &st,
 		       lp_fake_directory_create_times(SNUM(handle->conn)));
 	if (ret == -1) {
 		return ret;
 	}
 
-	ok = fsp_set_smb_fname(root_fsp, &fname);
-	if (!ok) {
-		errno = ENOMEM;
-		return -1;
-	}
+	ret = vfs_set_share_root(root_fsp, connectpath, &st);
 
-	fsp_set_fd(root_fsp, AT_FDCWD);
-
-	return 0;
+	return ret;
 }
 
 /* Disk operations */
