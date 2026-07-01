@@ -454,17 +454,17 @@ static bool load_auth_module(
 		}
 	}
 
-	if (entry != NULL) {
-		if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
-			DBG_ERR("auth method %s did not correctly init\n",
-				module_name);
-		} else {
-			DBG_INFO("auth method %s has a valid init\n",
-				 module_name);
-			good = True;
-		}
-	} else {
+	if (entry == NULL) {
 		DBG_ERR("can't find auth method %s!\n", module_name);
+		return false;
+	}
+
+	if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
+		DBG_ERR("auth method %s did not correctly init\n",
+			module_name);
+	} else {
+		DBG_INFO("auth method %s has a valid init\n", module_name);
+		good = True;
 	}
 
 	return good;
