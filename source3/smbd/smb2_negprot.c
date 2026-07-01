@@ -1002,9 +1002,6 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 	nstring dos_name;
 	fstring unix_name;
 	NTSTATUS status;
-#ifdef DEVELOPER
-	size_t slen;
-#endif
 	struct gensec_security *gensec_security;
 
 	/* See if we can get an SPNEGO blob */
@@ -1064,14 +1061,6 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 	(void)strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
 	strlcpy((char *)blob_out.data, dos_name, 17);
-
-#ifdef DEVELOPER
-	/* Fix valgrind 'uninitialized bytes' issue. */
-	slen = strlen(dos_name);
-	if (slen < 16) {
-		memset(blob_out.data+slen, '\0', 16 - slen);
-	}
-#endif
 
 	memcpy(&blob_out.data[16], blob.data, blob.length);
 
