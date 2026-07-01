@@ -140,9 +140,8 @@ NTSTATUS gensec_magic_check_krb5_oid(struct gensec_security *unused,
 {
 	if (gensec_gssapi_check_oid(blob, GENSEC_OID_KERBEROS5)) {
 		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
 	}
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 void gensec_child_want_feature(struct gensec_security *gensec_security,
