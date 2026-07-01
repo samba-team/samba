@@ -742,14 +742,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	security_offset = SMB2_HDR_BODY + 0x40;
 
-#if 1
-	/* Try SPNEGO auth... */
 	security_buffer = data_blob_const(negprot_spnego_blob.data + 16,
 					  negprot_spnego_blob.length - 16);
-#else
-	/* for now we want raw NTLMSSP */
-	security_buffer = data_blob_const(NULL, 0);
-#endif
 
 	if (posix) {
 		/* Client correctly negotiated SMB2 unix extensions. */
