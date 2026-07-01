@@ -43,5 +43,7 @@ NTSTATUS filename_convert_smb1_search_path(TALLOC_CTX *ctx,
 					   struct smb_filename **_smb_fname_out,
 					   char **_mask_out);
 struct files_struct *file_fsp(struct smb_request *req, uint16_t fid);
+int set_message_bcc(char *buf, int num_bytes);
+ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob);
 
 #endif
