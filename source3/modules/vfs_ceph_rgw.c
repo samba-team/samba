@@ -2280,6 +2280,37 @@ out:
 	return ok;
 }
 
+static int vfs_ceph_rgw_open_share_root(struct vfs_handle_struct *handle,
+					struct files_struct *root_fsp,
+					const char *connectpath)
+{
+	SMB_STRUCT_STAT st = {};
+	struct vfs_ceph_rgw_config *config = NULL;
+	struct stat buf = {};
+	int result;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct vfs_ceph_rgw_config,
+				return -1);
+
+	DBG_DEBUG("[CEPH_RGW] open_share_root(%p, %s)\n", handle, connectpath);
+
+	result = rgw_getattr(config->rgw_root_fs,
+			     config->rgw_root_fh,
+			     &buf,
+			     RGW_GETATTR_FLAG_NONE);
+	if (result < 0) {
+		return status_code(result);
+	}
+
+	init_stat_ex_from_stat(&st, &buf, false);
+
+	result = vfs_set_share_root(root_fsp, connectpath, &st);
+
+	return result;
+}
+
 static int vfs_ceph_rgw_connect(struct vfs_handle_struct *handle,
 				const char *service,
 				const char *user)
@@ -2359,6 +2390,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 
 	.connect_fn = vfs_ceph_rgw_connect,
 	.disconnect_fn = vfs_ceph_rgw_disconnect,
+	.open_share_root_fn = vfs_ceph_rgw_open_share_root,
 	.disk_free_fn = vfs_ceph_rgw_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
