@@ -422,7 +422,7 @@ static bool load_auth_module(
 	static bool initialised_static_modules = False;
 
 	struct auth_init_function_entry *entry;
-	char *module_name = smb_xstrdup(module);
+	char module_name[strlen(module) + 1];
 	char *module_params = NULL;
 	char *p;
 	bool good = False;
@@ -435,6 +435,8 @@ static bool load_auth_module(
 
 	DEBUG(5,("load_auth_module: Attempting to find an auth method to match %s\n",
 		 module));
+
+	memcpy(module_name, module, sizeof(module_name));
 
 	p = strchr(module_name, ':');
 	if (p) {
@@ -466,7 +468,6 @@ static bool load_auth_module(
 		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
 	}
 
-	SAFE_FREE(module_name);
 	return good;
 }
 
