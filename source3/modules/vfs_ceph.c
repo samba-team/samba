@@ -861,6 +861,29 @@ static void init_stat_ex_from_ceph_statx(struct stat_ex *dst,
 	dst->st_ex_blocks = stx->stx_blocks;
 }
 
+static int cephwrap_open_share_root(struct vfs_handle_struct *handle,
+				    struct files_struct *root_fsp,
+				    const char *connectpath)
+{
+	SMB_STRUCT_STAT st = {};
+	int result = -1;
+	struct ceph_statx stx = {};
+
+	DBG_DEBUG("[CEPH] open_share_root(%p, %s)\n", handle, connectpath);
+
+	result = ceph_statx(handle->data, connectpath, &stx,
+			    SAMBA_STATX_ATTR_MASK, 0);
+	if (result < 0) {
+		return status_code(result);
+	}
+
+	init_stat_ex_from_ceph_statx(&st, &stx);
+
+	result = vfs_set_share_root(root_fsp, connectpath, &st);
+
+	return result;
+}
+
 static int cephwrap_stat(struct vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
@@ -1777,6 +1800,7 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	.connect_fn = cephwrap_connect,
 	.disconnect_fn = cephwrap_disconnect,
+	.open_share_root_fn = cephwrap_open_share_root,
 	.disk_free_fn = cephwrap_disk_free,
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
