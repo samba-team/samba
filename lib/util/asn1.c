@@ -1154,13 +1154,11 @@ void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
 
 int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 {
-	struct asn1_data asn1;
+	struct asn1_data asn1 = {};
 	size_t size;
 	bool ok;
 
-	ZERO_STRUCT(asn1);
-	asn1.data = blob.data;
-	asn1.length = blob.length;
+	asn1_load_nocopy(&asn1, blob.data, blob.length);
 
 	ok = asn1_peek_tag_needed_size(&asn1, tag, &size);
 	if (!ok) {
