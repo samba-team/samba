@@ -517,6 +517,26 @@ static void vfs_gluster_disconnect(struct vfs_handle_struct *handle)
 	glfs_clear_preopened(fs);
 }
 
+static int vfs_gluster_open_share_root(struct vfs_handle_struct *handle,
+				       struct files_struct *root_fsp,
+				       const char *connectpath)
+{
+	SMB_STRUCT_STAT st = {};
+	struct stat buf;
+	int ret;
+
+	ret = glfs_stat(handle->data, connectpath, &buf);
+	if (ret != 0) {
+		return ret;
+	}
+
+	smb_stat_ex_from_stat(&st, &buf);
+
+	ret = vfs_set_share_root(root_fsp, connectpath, &st);
+
+	return ret;
+}
+
 static uint64_t vfs_gluster_disk_free(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      uint64_t *bsize_p,
@@ -2571,6 +2591,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	.connect_fn = vfs_gluster_connect,
 	.disconnect_fn = vfs_gluster_disconnect,
+	.open_share_root_fn = vfs_gluster_open_share_root,
 	.disk_free_fn = vfs_gluster_disk_free,
 	.get_quota_fn = vfs_gluster_get_quota,
 	.set_quota_fn = vfs_gluster_set_quota,
