@@ -433,8 +433,7 @@ static bool load_auth_module(
 		initialised_static_modules = True;
 	}
 
-	DEBUG(5,("load_auth_module: Attempting to find an auth method to match %s\n",
-		 module));
+	DBG_INFO("Attempting to find an auth method to match %s\n", module);
 
 	memcpy(module_name, module, sizeof(module_name));
 
@@ -457,15 +456,15 @@ static bool load_auth_module(
 
 	if (entry != NULL) {
 		if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
-			DEBUG(0,("load_auth_module: auth method %s did not correctly init\n",
-				 module_name));
+			DBG_ERR("auth method %s did not correctly init\n",
+				module_name);
 		} else {
-			DEBUG(5,("load_auth_module: auth method %s has a valid init\n",
-				 module_name));
+			DBG_INFO("auth method %s has a valid init\n",
+				 module_name);
 			good = True;
 		}
 	} else {
-		DEBUG(0,("load_auth_module: can't find auth method %s!\n", module_name));
+		DBG_ERR("can't find auth method %s!\n", module_name);
 	}
 
 	return good;
