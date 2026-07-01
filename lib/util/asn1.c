@@ -493,14 +493,17 @@ bool asn1_load(struct asn1_data *data, DATA_BLOB blob)
 	 */
 	unsigned max_depth = data->max_depth;
 
-	ZERO_STRUCTP(data);
-	data->data = (uint8_t *)talloc_memdup(data, blob.data, blob.length);
-	if (!data->data) {
+	*data = (struct asn1_data){
+		.data = talloc_memdup(data, blob.data, blob.length),
+		.length = blob.length,
+		.max_depth = max_depth,
+	};
+
+	if (data->data == NULL) {
 		data->has_error = true;
 		return false;
 	}
-	data->length = blob.length;
-	data->max_depth = max_depth;
+
 	return true;
 }
 
@@ -1141,10 +1144,12 @@ void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
 	 * Save max_depth
 	 */
 	unsigned max_depth = data->max_depth;
-	ZERO_STRUCTP(data);
-	data->data = buf;
-	data->length = len;
-	data->max_depth = max_depth;
+
+	*data = (struct asn1_data) {
+		.data = buf,
+		.length = len,
+		.max_depth = max_depth,
+	};
 }
 
 int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
