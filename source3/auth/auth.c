@@ -421,11 +421,11 @@ static bool load_auth_module(
 {
 	static bool initialised_static_modules = False;
 
-	struct auth_init_function_entry *entry;
+	struct auth_init_function_entry *entry = NULL;
 	char module_name[strlen(module) + 1];
 	char *module_params = NULL;
-	char *p;
-	bool good = False;
+	char *p = NULL;
+	NTSTATUS status;
 
 	/* Initialise static modules if not done so yet */
 	if(!initialised_static_modules) {
@@ -459,15 +459,16 @@ static bool load_auth_module(
 		return false;
 	}
 
-	if (!NT_STATUS_IS_OK(entry->init(auth_context, module_params, ret))) {
-		DBG_ERR("auth method %s did not correctly init\n",
-			module_name);
-	} else {
-		DBG_INFO("auth method %s has a valid init\n", module_name);
-		good = True;
+	status = entry->init(auth_context, module_params, ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("auth method %s did not correctly init %s\n",
+			module_name,
+			nt_errstr(status));
+		return false;
 	}
 
-	return good;
+	DBG_INFO("auth method %s has a valid init\n", module_name);
+	return true;
 }
 
 /***************************************************************************
