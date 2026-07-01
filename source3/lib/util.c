@@ -210,8 +210,18 @@ int set_message_bcc(char *buf,int num_bytes)
 
 ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob)
 {
-	size_t newlen = smb_len(*outbuf) + 4 + blob.length;
+	size_t newlen;
 	uint8_t *tmp;
+
+	newlen = smb_len(*outbuf) + 4;
+	if (newlen < 4) {
+		return -1;
+	}
+
+	newlen += blob.length;
+	if (newlen < blob.length) {
+		return -1;
+	}
 
 	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8_t, newlen))) {
 		DEBUG(0, ("talloc failed\n"));
