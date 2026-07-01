@@ -334,6 +334,8 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 
 		SCVAL(req->outbuf,smb_vwv16+1, 0);
 		DEBUG(3,("using SPNEGO\n"));
+
+		xconn->smb1.negprot.spnego = true;
 	}
 
 	return NT_STATUS_OK;
