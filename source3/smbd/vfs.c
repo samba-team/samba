@@ -1241,6 +1241,27 @@ int smb_vfs_call_open_share_root(struct vfs_handle_struct *handle,
 	return handle->fns->open_share_root_fn(handle, root_fsp, connectpath);
 }
 
+int vfs_set_share_root(struct files_struct *root_fsp,
+		       const char *connectpath,
+		       const SMB_STRUCT_STAT *pst)
+{
+	struct smb_filename fname = {
+		.base_name = discard_const_p(char, connectpath),
+		.st = *pst,
+	};
+	bool ok;
+
+	ok = fsp_set_smb_fname(root_fsp, &fname);
+	if (!ok) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	fsp_set_fd(root_fsp, AT_FDCWD);
+
+	return 0;
+}
+
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				uint64_t *bsize,
