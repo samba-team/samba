@@ -89,9 +89,11 @@ static struct tevent_req *dns_udp_request_send(
 	if (tevent_req_nomem(udp_q->additional, req)) {
 		return tevent_req_post(req, ev);
 	}
-	memcpy(udp_q->additional,
-	       _q->additional,
-	       sizeof(struct dns_res_rec) * _q->arcount);
+	if (_q->additional != NULL) {
+		memcpy(udp_q->additional,
+		       _q->additional,
+		       sizeof(struct dns_res_rec) * _q->arcount);
+	}
 
 	udp_q->additional[_q->arcount] = (struct dns_res_rec){
 		.name = "",
