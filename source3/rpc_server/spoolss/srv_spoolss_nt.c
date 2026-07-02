@@ -567,20 +567,24 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 			aprinter++;
 		}
 		if (!is_myname_or_ipaddr(servername)) {
-			return WERR_INVALID_PRINTER_NAME;
+			result = WERR_INVALID_PRINTER_NAME;
+			goto out;
 		}
 		Printer->servername = talloc_asprintf(Printer, "\\\\%s", servername);
 		if (Printer->servername == NULL) {
-			return WERR_NOT_ENOUGH_MEMORY;
+			result = WERR_NOT_ENOUGH_MEMORY;
+			goto out;
 		}
 	}
 
 	if (Printer->printer_type == SPLHND_SERVER) {
-		return WERR_OK;
+		result = WERR_OK;
+		goto out;
 	}
 
 	if (Printer->printer_type != SPLHND_PRINTER) {
-		return WERR_INVALID_HANDLE;
+		result = WERR_INVALID_HANDLE;
+		goto out;
 	}
 
 	DEBUGADD(5, ("searching for [%s]\n", aprinter));
@@ -617,7 +621,8 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s", aprinter);
 	if (cache_key == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto out;
 	}
 
 	/*
@@ -631,7 +636,8 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		if (!found) {
 			DEBUG(4, ("Printer %s not found\n", aprinter));
 			TALLOC_FREE(tmp);
-			return WERR_INVALID_PRINTER_NAME;
+			result = WERR_INVALID_PRINTER_NAME;
+			goto out;
 		}
 		fstrcpy(sname, tmp);
 		TALLOC_FREE(tmp);
@@ -700,7 +706,8 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 			     time(NULL) + 300);
 		TALLOC_FREE(cache_key);
 		DEBUGADD(4,("Printer not found\n"));
-		return WERR_INVALID_PRINTER_NAME;
+		result = WERR_INVALID_PRINTER_NAME;
+		goto out;
 	}
 
 	gencache_set(cache_key, sname, time(NULL) + 300);
@@ -710,7 +717,9 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	strlcpy(Printer->sharename, sname, sizeof(Printer->sharename));
 
-	return WERR_OK;
+	result = WERR_OK;
+out:
+	return result;
 }
 
 /****************************************************************************
