@@ -1167,8 +1167,10 @@ bool asn1_extract_blob(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	*pblob = (DATA_BLOB) { .length = blob.length };
-	pblob->data = talloc_move(mem_ctx, &blob.data);
+	*pblob = (DATA_BLOB){
+		.length = blob.length,
+		.data = talloc_move(mem_ctx, &blob.data),
+	};
 
 	/*
 	 * Stop access from here on
