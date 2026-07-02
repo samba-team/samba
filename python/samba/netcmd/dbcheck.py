@@ -152,8 +152,8 @@ class cmd_dbcheck(Command):
                           check_gpo_links=check_gpo_links)
 
             for option in yes_rules:
-                if hasattr(chk, option):
-                    setattr(chk, option, 'ALL')
+                if option in chk.confirmation_options:
+                    chk.confirmation_options[option] = 'ALL'
                 else:
                     raise CommandError("Invalid fix rule %s" % option)
 

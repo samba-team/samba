@@ -396,11 +396,11 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                       in_transaction=True)
 
         # fix up stale references to the old DC
-        setattr(chk, 'fix_all_old_dn_string_component_mismatch', 'ALL')
+        chk.confirmation_options['fix_all_old_dn_string_component_mismatch'] = 'ALL'
         attrs = ['lastKnownParent', 'interSiteTopologyGenerator']
 
         # fix-up stale one-way links that point to the old DC
-        setattr(chk, 'remove_plausible_deleted_DN_links', 'ALL')
+        chk.confirmation_options['remove_plausible_deleted_DN_links'] = 'ALL'
         attrs += ['msDS-NC-Replica-Locations']
 
         cross_ncs_ctrl = 'search_options:1:2'
@@ -847,7 +847,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         chk = dbcheck(samdb, quiet=True, fix=True, yes=False,
                       in_transaction=True)
         # fix up incorrect objectCategory/etc attributes
-        setattr(chk, 'fix_all_old_dn_string_component_mismatch', 'ALL')
+        chk.confirmation_options['fix_all_old_dn_string_component_mismatch'] = 'ALL'
         cross_ncs_ctrl = 'search_options:1:2'
         controls = ['show_deleted:1', cross_ncs_ctrl]
         chk.check_database(controls=controls)
