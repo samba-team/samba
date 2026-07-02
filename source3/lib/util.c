@@ -223,8 +223,9 @@ ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob)
 		return -1;
 	}
 
-	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8_t, newlen))) {
-		DEBUG(0, ("talloc failed\n"));
+	tmp = talloc_realloc(NULL, *outbuf, uint8_t, newlen);
+	if (tmp == NULL) {
+		DBG_ERR("talloc failed\n");
 		return -1;
 	}
 	*outbuf = tmp;
