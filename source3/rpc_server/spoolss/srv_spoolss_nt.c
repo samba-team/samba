@@ -538,9 +538,9 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 {
 	int snum;
 	int n_services=lp_numservices();
-	char *aprinter;
+	char *aprinter = NULL;
 	const char *printername;
-	const char *servername = NULL;
+	char *servername = NULL;
 	fstring sname;
 	bool found = false;
 	struct spoolss_PrinterInfo2 *info2 = NULL;
@@ -558,13 +558,31 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename,
 		(unsigned long)strlen(handlename)));
 
-	aprinter = discard_const_p(char, handlename);
+	aprinter = talloc_strdup(mem_ctx, handlename);
+	if (aprinter == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto out;
+	}
+
 	if ( *handlename == '\\' ) {
-		servername = canon_servername(handlename);
-		aprinter = discard_const_p(char, strchr_m(servername, '\\'));
-		if (aprinter != NULL) {
-			*aprinter = '\0';
-			aprinter++;
+		servername = talloc_strdup(mem_ctx,
+					   canon_servername(handlename));
+		if (servername == NULL) {
+			result = WERR_NOT_ENOUGH_MEMORY;
+			goto out;
+		}
+
+		p = strchr_m(servername, '\\');
+
+		if (p != NULL) {
+			TALLOC_FREE(aprinter);
+			*p = '\0';
+			p++;
+			aprinter = talloc_strdup(mem_ctx, p);
+			if (aprinter == NULL) {
+				result = WERR_NOT_ENOUGH_MEMORY;
+				goto out;
+			}
 		}
 		if (!is_myname_or_ipaddr(servername)) {
 			result = WERR_INVALID_PRINTER_NAME;
@@ -719,6 +737,8 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 out:
+	TALLOC_FREE(aprinter);
+	TALLOC_FREE(servername);
 	return result;
 }
 
