@@ -153,11 +153,11 @@ static struct spnego_neg_state *gensec_spnego_neg_state(TALLOC_CTX *mem_ctx,
 {
 	struct spnego_neg_state *n = NULL;
 
-	n = talloc_zero(mem_ctx, struct spnego_neg_state);
+	n = talloc(mem_ctx, struct spnego_neg_state);
 	if (n == NULL) {
 		return NULL;
 	}
-	n->ops = ops;
+	*n = (struct spnego_neg_state){.ops = ops};
 
 	return n;
 }
@@ -172,25 +172,26 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc_zero(gensec_security, struct spnego_state);
+	spnego_state = talloc(gensec_security, struct spnego_state);
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
-	spnego_state->state_position = SPNEGO_CLIENT_START;
-	spnego_state->sub_sec_security = NULL;
-	spnego_state->sub_sec_ready = false;
-	spnego_state->mech_types = data_blob_null;
-	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
-	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	*spnego_state = (struct spnego_state){
+		.expected_packet = SPNEGO_NEG_TOKEN_INIT,
+		.state_position = SPNEGO_CLIENT_START,
+		.out_max_length = gensec_max_update_size(gensec_security),
+		.out_status = NT_STATUS_MORE_PROCESSING_REQUIRED,
 
-	spnego_state->simulate_w2k = gensec_setting_bool(gensec_security->settings,
-						"spnego", "simulate_w2k", false);
-	spnego_state->no_optimistic = gensec_setting_bool(gensec_security->settings,
-							  "spnego",
-							  "client_no_optimistic",
-							  false);
+		.simulate_w2k = gensec_setting_bool(gensec_security->settings,
+						    "spnego",
+						    "simulate_w2k",
+						    false),
+		.no_optimistic = gensec_setting_bool(gensec_security->settings,
+						     "spnego",
+						     "client_no_optimistic",
+						     false),
+	};
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -200,21 +201,22 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc_zero(gensec_security, struct spnego_state);
+	spnego_state = talloc(gensec_security, struct spnego_state);
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
-	spnego_state->state_position = SPNEGO_SERVER_START;
-	spnego_state->sub_sec_security = NULL;
-	spnego_state->sub_sec_ready = false;
-	spnego_state->mech_types = data_blob_null;
-	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
-	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	*spnego_state = (struct spnego_state){
+		.expected_packet = SPNEGO_NEG_TOKEN_INIT,
+		.state_position = SPNEGO_SERVER_START,
+		.out_max_length = gensec_max_update_size(gensec_security),
+		.out_status = NT_STATUS_MORE_PROCESSING_REQUIRED,
 
-	spnego_state->simulate_w2k = gensec_setting_bool(gensec_security->settings,
-						"spnego", "simulate_w2k", false);
+		.simulate_w2k = gensec_setting_bool(gensec_security->settings,
+						    "spnego",
+						    "simulate_w2k",
+						    false),
+	};
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
