@@ -2110,7 +2110,6 @@ respond:
 
 	state->status = status;
 	tevent_req_done(req);
-	return;
 }
 
 static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
