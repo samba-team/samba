@@ -30,9 +30,8 @@ NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
 {
 	if (ntlmssp_blob_matches_magic(first_packet)) {
 		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
 	}
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /**
