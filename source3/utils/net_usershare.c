@@ -421,9 +421,6 @@ static int info_fn(struct file_list *fl, void *priv)
 	}
 
 	acl_str = talloc_strdup(ctx, "usershare_acl=");
-	if (!acl_str) {
-		return -1;
-	}
 
 	for (num_aces = 0; num_aces < psd->dacl->num_aces; num_aces++) {
 		const char *domain;
@@ -436,58 +433,40 @@ static int info_fn(struct file_list *fl, void *priv)
 
 		if (NT_STATUS_IS_OK(ntstatus)) {
 			if (domain && *domain) {
-				acl_str = talloc_asprintf_append(acl_str,
-						"%s%s",
-						domain,
-						sep_str);
-				if (!acl_str) {
-					return -1;
-				}
+				talloc_asprintf_addbuf(&acl_str,
+						       "%s%s",
+						       domain,
+						       sep_str);
 			}
-			acl_str = talloc_asprintf_append(acl_str,
-						"%s",
-						name);
-			if (!acl_str) {
-				return -1;
-			}
-
+			talloc_asprintf_addbuf(&acl_str, "%s", name);
 		} else {
 			struct dom_sid_buf sidstr;
 
-			acl_str = talloc_asprintf_append(
-				acl_str,
+			talloc_asprintf_addbuf(
+				&acl_str,
 				"%s",
 				dom_sid_str_buf(
 					&psd->dacl->aces[num_aces].trustee,
 					&sidstr));
-			if (!acl_str) {
-				return -1;
-			}
 		}
-		acl_str = talloc_asprintf_append(acl_str, ":");
-		if (!acl_str) {
-			return -1;
-		}
+		talloc_asprintf_addbuf(&acl_str, ":");
 
 		if (psd->dacl->aces[num_aces].type == SEC_ACE_TYPE_ACCESS_DENIED) {
-			acl_str = talloc_asprintf_append(acl_str, "D,");
-			if (!acl_str) {
-				return -1;
-			}
+			talloc_asprintf_addbuf(&acl_str, "D,");
 		} else {
 			if (psd->dacl->aces[num_aces].access_mask & GENERIC_ALL_ACCESS) {
-				acl_str = talloc_asprintf_append(acl_str, "F,");
+				talloc_asprintf_addbuf(&acl_str, "F,");
 			} else {
-				acl_str = talloc_asprintf_append(acl_str, "R,");
-			}
-			if (!acl_str) {
-				return -1;
+				talloc_asprintf_addbuf(&acl_str, "R,");
 			}
 		}
 	}
 
 	/* NOTE: This is smb.conf-like output. Do not translate. */
 	if (pi->op == US_INFO_OP) {
+		if (acl_str == NULL) {
+			return -1;
+		}
 		d_printf("[%s]\n", cp_sharename );
 		d_printf("path=%s\n", sharepath );
 		d_printf("comment=%s\n", comment);
