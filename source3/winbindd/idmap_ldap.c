@@ -704,16 +704,18 @@ again:
 		filter = talloc_asprintf(memctx,
 					 "(&(objectClass=%s)(|",
 					 LDAP_OBJ_IDMAP_ENTRY);
-		CHECK_ALLOC_DONE(filter);
 
 		bidx = idx;
 		for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
-			filter = talloc_asprintf_append_buffer(filter, "(%s=%lu)",
-					(ids[idx]->xid.type==ID_TYPE_UID)?uidNumber:gidNumber,
-					(unsigned long)ids[idx]->xid.id);
-			CHECK_ALLOC_DONE(filter);
+			talloc_asprintf_addbuf(
+				&filter,
+				"(%s=%lu)",
+				(ids[idx]->xid.type == ID_TYPE_UID)
+					? uidNumber
+					: gidNumber,
+				(unsigned long)ids[idx]->xid.id);
 		}
-		filter = talloc_asprintf_append_buffer(filter, "))");
+		talloc_asprintf_addbuf(&filter, "))");
 		CHECK_ALLOC_DONE(filter);
 		DEBUG(10, ("Filter: [%s]\n", filter));
 	} else {
@@ -931,16 +933,16 @@ again:
 		filter = talloc_asprintf(memctx,
 					 "(&(objectClass=%s)(|",
 					 LDAP_OBJ_IDMAP_ENTRY);
-		CHECK_ALLOC_DONE(filter);
 
 		bidx = idx;
 		for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
 			struct dom_sid_buf buf;
-			filter = talloc_asprintf_append_buffer(filter, "("LDAP_ATTRIBUTE_SID"=%s)",
-					dom_sid_str_buf(ids[idx]->sid, &buf));
-			CHECK_ALLOC_DONE(filter);
+			talloc_asprintf_addbuf(&filter,
+					       "(" LDAP_ATTRIBUTE_SID "=%s)",
+					       dom_sid_str_buf(ids[idx]->sid,
+							       &buf));
 		}
-		filter = talloc_asprintf_append_buffer(filter, "))");
+		talloc_asprintf_addbuf(&filter, "))");
 		CHECK_ALLOC_DONE(filter);
 		DEBUG(10, ("Filter: [%s]\n", filter));
 	} else {
