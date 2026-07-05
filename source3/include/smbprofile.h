@@ -375,7 +375,7 @@ struct profile_stats {
 #define SMBPROFILE_TIME_ASYNC_END(_async) do { \
 	if ((_async).start != 0) { \
 		(_async).stats->time += profile_timestamp() - (_async).start; \
-		(_async) = (struct smbprofile_stats_basic_async) {}; \
+		(_async) = (struct smbprofile_stats_time_async) {}; \
 		smbprofile_dump_schedule(); \
 	} \
 } while(0)
