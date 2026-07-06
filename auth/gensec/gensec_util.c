@@ -352,7 +352,7 @@ char *gensec_get_unparsed_target_principal(struct gensec_security *gensec_securi
 	} else if (service != NULL && hostname != NULL) {
 		return talloc_asprintf(mem_ctx, "%s/%s", service, hostname);
 	} else if (hostname != NULL) {
-		return talloc_strdup(mem_ctx, target_principal);
+		return talloc_strdup(mem_ctx, hostname);
 	}
 
 	return NULL;
