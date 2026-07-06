@@ -486,10 +486,6 @@ struct profile_stats *smbprofile_persvc_get(int snum)
 {
 	struct profile_stats_persvc *persvc = NULL;
 
-	if (!smbprofile_active() || (snum < 0)) {
-		return NULL;
-	}
-
 	persvc = smbprofile_persvc_lookup(snum);
 	if (persvc == NULL) {
 		return NULL;
