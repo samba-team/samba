@@ -289,11 +289,20 @@ def configure(conf):
             Logs.error("Missing librados for Ceph recovery lock support")
             sys.exit(1)
 
+    if conf.env.standalone_ctdb:
+        t = os.path.join(conf.env.LOCALSTATEDIR, 'run')
+        conf.env.LOCKDIR = t
+        conf.env.PIDDIR = t
+        conf.env.SOCKET_DIR = t
+
     conf.env.CTDB_BINDIR = os.path.join(conf.env.EXEC_PREFIX, 'bin')
     conf.env.CTDB_DATADIR = os.path.join(conf.env.EXEC_PREFIX, 'share/ctdb')
     conf.env.CTDB_ETCDIR = os.path.join(conf.env.SYSCONFDIR, 'ctdb')
     conf.env.CTDB_HELPER_BINDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb')
+    conf.env.CTDB_LOCKDIR = os.path.join(conf.env.LOCKDIR, 'ctdb')
+    conf.env.CTDB_PIDDIR = os.path.join(conf.env.PIDDIR, 'ctdb')
     conf.env.CTDB_RUNDIR = os.path.join(conf.env.LOCALSTATEDIR, 'run/ctdb')
+    conf.env.CTDB_SOCKETDIR = os.path.join(conf.env.SOCKET_DIR, 'ctdb')
     conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
 
     if Options.options.ctdb_logdir:
@@ -313,7 +322,10 @@ def configure(conf):
         "CTDB_DATADIR":       conf.env.CTDB_DATADIR,
         "CTDB_ETCDIR":        conf.env.CTDB_ETCDIR,
         "CTDB_HELPER_BINDIR": conf.env.CTDB_HELPER_BINDIR,
+        "CTDB_LOCKDIR":       conf.env.CTDB_LOCKDIR,
+        "CTDB_PIDDIR":        conf.env.CTDB_PIDDIR,
         "CTDB_RUNDIR":        conf.env.CTDB_RUNDIR,
+        "CTDB_SOCKETDIR":     conf.env.CTDB_SOCKETDIR,
         "CTDB_VARDIR":        conf.env.CTDB_VARDIR,
         "LOGDIR":             conf.env.CTDB_LOGDIR,
     }
@@ -925,8 +937,11 @@ def build(bld):
                       'config/notification.README',
                       destname='README')
 
+    bld.INSTALL_DIR(bld.env.CTDB_LOCKDIR)
     bld.INSTALL_DIR(bld.env.CTDB_LOGDIR)
+    bld.INSTALL_DIR(bld.env.CTDB_PIDDIR)
     bld.INSTALL_DIR(bld.env.CTDB_RUNDIR)
+    bld.INSTALL_DIR(bld.env.CTDB_SOCKETDIR)
     bld.INSTALL_DIR(bld.env.CTDB_VARDIR)
 
     for d in ['volatile', 'persistent', 'state']:
