@@ -182,6 +182,62 @@ static int path_tool_etcdir_append(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static int path_tool_lockdir(TALLOC_CTX *mem_ctx,
+			     int argc,
+			     const char **argv,
+			     void *private_data)
+{
+	int ret = path_tool_generic(mem_ctx,
+				    argc,
+				    argv,
+				    private_data,
+				    "lockdir",
+				    path_lockdir);
+	return ret;
+}
+
+static int path_tool_lockdir_append(TALLOC_CTX *mem_ctx,
+				    int argc,
+				    const char **argv,
+				    void *private_data)
+{
+	int ret = path_tool_append_generic(mem_ctx,
+					   argc,
+					   argv,
+					   private_data,
+					   "lockdir append",
+					   path_lockdir_append);
+	return ret;
+}
+
+static int path_tool_piddir(TALLOC_CTX *mem_ctx,
+			    int argc,
+			    const char **argv,
+			    void *private_data)
+{
+	int ret = path_tool_generic(mem_ctx,
+				    argc,
+				    argv,
+				    private_data,
+				    "piddir",
+				    path_piddir);
+	return ret;
+}
+
+static int path_tool_piddir_append(TALLOC_CTX *mem_ctx,
+				   int argc,
+				   const char **argv,
+				   void *private_data)
+{
+	int ret = path_tool_append_generic(mem_ctx,
+					   argc,
+					   argv,
+					   private_data,
+					   "piddir append",
+					   path_piddir_append);
+	return ret;
+}
+
 static int path_tool_rundir(TALLOC_CTX *mem_ctx,
 			    int argc,
 			    const char **argv,
@@ -207,6 +263,34 @@ static int path_tool_rundir_append(TALLOC_CTX *mem_ctx,
 					   private_data,
 					   "rundir append",
 					   path_rundir_append);
+	return ret;
+}
+
+static int path_tool_socketdir(TALLOC_CTX *mem_ctx,
+			       int argc,
+			       const char **argv,
+			       void *private_data)
+{
+	int ret = path_tool_generic(mem_ctx,
+				    argc,
+				    argv,
+				    private_data,
+				    "socketdir",
+				    path_socketdir);
+	return ret;
+}
+
+static int path_tool_socketdir_append(TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv,
+				      void *private_data)
+{
+	int ret = path_tool_append_generic(mem_ctx,
+					   argc,
+					   argv,
+					   private_data,
+					   "socketdir append",
+					   path_socketdir_append);
 	return ret;
 }
 
@@ -282,6 +366,30 @@ struct cmdline_command path_commands[] = {
 		.msg_args = NULL,
 	},
 	{
+		.name = "lockdir append",
+		.fn = path_tool_lockdir_append,
+		.msg_help = "Get path relative to CTDB LOCKDIR",
+		.msg_args = "<path>",
+	},
+	{
+		.name = "lockdir",
+		.fn = path_tool_lockdir,
+		.msg_help = "Get path of CTDB LOCKDIR",
+		.msg_args = NULL,
+	},
+	{
+		.name = "piddir append",
+		.fn = path_tool_piddir_append,
+		.msg_help = "Get path relative to CTDB PIDDIR",
+		.msg_args = "<path>",
+	},
+	{
+		.name = "piddir",
+		.fn = path_tool_piddir,
+		.msg_help = "Get path of CTDB PIDDIR",
+		.msg_args = NULL,
+	},
+	{
 		.name = "rundir append",
 		.fn = path_tool_rundir_append,
 		.msg_help = "Get path relative to CTDB RUNDIR",
@@ -291,6 +399,18 @@ struct cmdline_command path_commands[] = {
 		.name = "rundir",
 		.fn = path_tool_rundir,
 		.msg_help = "Get path of CTDB RUNDIR",
+		.msg_args = NULL,
+	},
+	{
+		.name = "socketdir append",
+		.fn = path_tool_socketdir_append,
+		.msg_help = "Get path relative to CTDB SOCKETDIR",
+		.msg_args = "<path>",
+	},
+	{
+		.name = "socketdir",
+		.fn = path_tool_socketdir,
+		.msg_help = "Get path of CTDB SOCKETDIR",
 		.msg_args = NULL,
 	},
 	{
