@@ -511,7 +511,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	 * atomic. The SO_REUSEADDR setsockopt only prevents double
 	 * binds if the first socket is in LISTEN state.
 	 */
-	lock_path = path_rundir_append(ctdb, ".socket_lock");
+	lock_path = path_lockdir_append(ctdb, "tcp_listen_automatic.lock");
 	if (lock_path == NULL) {
 		DBG_ERR("Memory allocation error\n");
 		return -1;
