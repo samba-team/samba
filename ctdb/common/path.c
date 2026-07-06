@@ -314,6 +314,8 @@ char *path_socket(TALLOC_CTX *mem_ctx, const char *daemon)
 			if (t != NULL) {
 				return talloc_strdup(mem_ctx, t);
 			}
+		} else {
+			return talloc_strdup(mem_ctx, CTDB_SOCKET);
 		}
 	}
 
