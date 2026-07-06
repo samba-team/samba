@@ -306,8 +306,9 @@ char *path_config(TALLOC_CTX *mem_ctx)
 char *path_socket(TALLOC_CTX *mem_ctx, const char *daemon)
 {
 	path_set_test_mode();
-	if (ctdb_paths.test_mode) {
-		if (strcmp(daemon, "ctdbd") == 0) {
+
+	if (strcmp(daemon, "ctdbd") == 0) {
+		if (ctdb_paths.test_mode) {
 			const char *t = getenv("CTDB_SOCKET");
 
 			if (t != NULL) {
