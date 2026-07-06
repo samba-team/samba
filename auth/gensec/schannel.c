@@ -899,6 +899,7 @@ static NTSTATUS schannel_update_internal(struct gensec_security *gensec_security
 		struct NL_AUTH_MESSAGE bind_schannel_ack = {};
 		const char *workstation = NULL;
 		const char *domain = NULL;
+		const char *our_domain = NULL;
 
 		if (state != NULL) {
 			/* no third leg on this protocol */
@@ -917,20 +918,22 @@ static NTSTATUS schannel_update_internal(struct gensec_security *gensec_security
 
 		if (bind_schannel.Flags & NL_FLAG_OEM_NETBIOS_DOMAIN_NAME) {
 			domain = bind_schannel.oem_netbios_domain.a;
-			if (strcasecmp_m(domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)) != 0) {
-				DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
-					  domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)));
-				return NT_STATUS_LOGON_FAILURE;
-			}
+			our_domain = lpcfg_workgroup(
+				gensec_security->settings->lp_ctx);
 		} else if (bind_schannel.Flags & NL_FLAG_UTF8_DNS_DOMAIN_NAME) {
 			domain = bind_schannel.utf8_dns_domain.u;
-			if (strcasecmp_m(domain, lpcfg_dnsdomain(gensec_security->settings->lp_ctx)) != 0) {
-				DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
-					  domain, lpcfg_dnsdomain(gensec_security->settings->lp_ctx)));
-				return NT_STATUS_LOGON_FAILURE;
-			}
+			our_domain = lpcfg_dnsdomain(
+				gensec_security->settings->lp_ctx);
 		} else {
 			DEBUG(3, ("Request for schannel to without domain\n"));
+			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		if (!strequal(domain, our_domain)) {
+			DBG_NOTICE("Request for schannel to incorrect domain: "
+				   "%s != our domain %s\n",
+				   domain,
+				   our_domain);
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
