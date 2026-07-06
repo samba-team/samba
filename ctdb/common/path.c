@@ -321,7 +321,7 @@ char *path_socket(TALLOC_CTX *mem_ctx, const char *daemon)
 
 	return talloc_asprintf(mem_ctx,
 			       "%s/%s.socket",
-			       path_rundir(),
+			       path_socketdir(),
 			       daemon);
 }
 
@@ -329,6 +329,6 @@ char *path_pidfile(TALLOC_CTX *mem_ctx, const char *daemon)
 {
 	return talloc_asprintf(mem_ctx,
 			       "%s/%s.pid",
-			       path_rundir(),
+			       path_piddir(),
 			       daemon);
 }

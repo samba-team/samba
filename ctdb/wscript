@@ -313,7 +313,7 @@ def configure(conf):
     if Options.options.ctdb_sockpath:
         conf.env.CTDB_SOCKPATH = Options.options.ctdb_sockpath
     else:
-        conf.env.CTDB_SOCKPATH = os.path.join(conf.env.CTDB_RUNDIR,
+        conf.env.CTDB_SOCKPATH = os.path.join(conf.env.CTDB_SOCKETDIR,
                                               'ctdbd.socket')
     conf.define('CTDB_SOCKET', conf.env.CTDB_SOCKPATH)
 
