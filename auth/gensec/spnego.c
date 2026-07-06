@@ -330,7 +330,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit_step(
 			&n->all_sec[n->all_idx];
 		const struct gensec_security_ops_wrapper *next_sec = NULL;
 		const char *next = NULL;
-		const char *principal = NULL;
+		char *principal = NULL;
 		int dbg_level = DBGLVL_WARNING;
 		NTSTATUS status = last_status;
 
@@ -343,23 +343,18 @@ static NTSTATUS gensec_spnego_create_negTokenInit_step(
 			dbg_level = DBGLVL_NOTICE;
 		}
 
-		if (gensec_security->target.principal != NULL) {
-			principal = gensec_security->target.principal;
-		} else if (gensec_security->target.service != NULL &&
-			   gensec_security->target.hostname != NULL)
-		{
-			principal = talloc_asprintf(spnego_state->sub_sec_security,
-						    "%s/%s",
-						    gensec_security->target.service,
-						    gensec_security->target.hostname);
-		} else {
-			principal = gensec_security->target.hostname;
-		}
+		principal = gensec_get_unparsed_target_principal(
+			gensec_security, in_mem_ctx);
 
-		DBG_PREFIX(dbg_level, (
-			   "%s: creating NEG_TOKEN_INIT for %s failed "
-			   "(next[%s]): %s\n", cur_sec->op->name,
-			   principal, next, nt_errstr(status)));
+		DBG_PREFIX(dbg_level,
+			   ("%s: creating NEG_TOKEN_INIT for %s failed "
+			    "(next[%s]): %s\n",
+			    cur_sec->op->name,
+			    principal != NULL ? principal : "UNKNOWN",
+			    next,
+			    nt_errstr(status)));
+
+		TALLOC_FREE(principal);
 
 		if (next == NULL) {
 			/*
@@ -533,7 +528,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_step(
 			&n->all_sec[n->all_idx];
 		const struct gensec_security_ops_wrapper *next_sec = NULL;
 		const char *next = NULL;
-		const char *principal = NULL;
+		char *principal = NULL;
 		int dbg_level = DBGLVL_WARNING;
 		bool allow_fallback = false;
 		NTSTATUS status = last_status;
@@ -565,23 +560,18 @@ static NTSTATUS gensec_spnego_client_negTokenInit_step(
 			dbg_level = DBGLVL_NOTICE;
 		}
 
-		if (gensec_security->target.principal != NULL) {
-			principal = gensec_security->target.principal;
-		} else if (gensec_security->target.service != NULL &&
-			   gensec_security->target.hostname != NULL)
-		{
-			principal = talloc_asprintf(spnego_state->sub_sec_security,
-						    "%s/%s",
-						    gensec_security->target.service,
-						    gensec_security->target.hostname);
-		} else {
-			principal = gensec_security->target.hostname;
-		}
+		principal = gensec_get_unparsed_target_principal(
+			gensec_security, in_mem_ctx);
 
-		DBG_PREFIX(dbg_level, (
-			   "%s: creating NEG_TOKEN_INIT for %s failed "
-			   "(next[%s]): %s\n", cur_sec->op->name,
-			   principal, next, nt_errstr(status)));
+		DBG_PREFIX(dbg_level,
+			   ("%s: creating NEG_TOKEN_INIT for %s failed "
+			    "(next[%s]): %s\n",
+			    cur_sec->op->name,
+			    principal != NULL ? principal : "UNKNOWN",
+			    next,
+			    nt_errstr(status)));
+
+		TALLOC_FREE(principal);
 
 		if (next == NULL) {
 			/*
