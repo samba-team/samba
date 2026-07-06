@@ -90,7 +90,11 @@ static NTSTATUS gensec_external_update_recv(struct tevent_req *req,
 		return status;
 	}
 
-	*out = state->out;
+	*out = (DATA_BLOB){
+		.data = talloc_move(out_mem_ctx, &state->out.data),
+		.length = state->out.length,
+	};
+
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
