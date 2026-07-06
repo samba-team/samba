@@ -155,17 +155,17 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 		return status;
 	}
 
-	/* Ask our caller what challenge they would like in the packet */
-	if (auth_context->get_ntlm_challenge) {
-		status = auth_context->get_ntlm_challenge(auth_context, cryptkey);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("gensec_ntlmssp_server_negotiate: failed to get challenge: %s\n",
-				  nt_errstr(status)));
-			return status;
-		}
-	} else {
-		DEBUG(1, ("gensec_ntlmssp_server_negotiate: backend doesn't give a challenge\n"));
+	if (auth_context->get_ntlm_challenge == NULL) {
+		DBG_WARNING("backend doesn't give a challenge\n");
 		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/* Ask our caller what challenge they would like in the packet */
+	status = auth_context->get_ntlm_challenge(auth_context, cryptkey);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("failed to get challenge: %s\n",
+			    nt_errstr(status));
+		return status;
 	}
 
 	/* The flags we send back are not just the negotiated flags,
