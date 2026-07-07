@@ -301,7 +301,6 @@ def configure(conf):
     conf.env.CTDB_HELPER_BINDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb')
     conf.env.CTDB_LOCKDIR = os.path.join(conf.env.LOCKDIR, 'ctdb')
     conf.env.CTDB_PIDDIR = os.path.join(conf.env.PIDDIR, 'ctdb')
-    conf.env.CTDB_RUNDIR = os.path.join(conf.env.LOCALSTATEDIR, 'run/ctdb')
     conf.env.CTDB_SOCKETDIR = os.path.join(conf.env.SOCKET_DIR, 'ctdb')
     conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
 
@@ -324,7 +323,6 @@ def configure(conf):
         "CTDB_HELPER_BINDIR": conf.env.CTDB_HELPER_BINDIR,
         "CTDB_LOCKDIR":       conf.env.CTDB_LOCKDIR,
         "CTDB_PIDDIR":        conf.env.CTDB_PIDDIR,
-        "CTDB_RUNDIR":        conf.env.CTDB_RUNDIR,
         "CTDB_SOCKETDIR":     conf.env.CTDB_SOCKETDIR,
         "CTDB_VARDIR":        conf.env.CTDB_VARDIR,
         "LOGDIR":             conf.env.CTDB_LOGDIR,
@@ -765,7 +763,6 @@ def build(bld):
         "/usr/local/share/ctdb":   bld.env.CTDB_DATADIR,
         "/usr/local/var/lib/ctdb": bld.env.CTDB_VARDIR,
         "/usr/local/var/log":      bld.env.CTDB_LOGDIR,
-        "/usr/local/var/run/ctdb": bld.env.CTDB_RUNDIR,
     }
     sed_cmdline = " ".join(
         [f"-e 's|{a}|{b}|g'" for a, b in sed_exprs_map.items()]
@@ -940,7 +937,6 @@ def build(bld):
     bld.INSTALL_DIR(bld.env.CTDB_LOCKDIR)
     bld.INSTALL_DIR(bld.env.CTDB_LOGDIR)
     bld.INSTALL_DIR(bld.env.CTDB_PIDDIR)
-    bld.INSTALL_DIR(bld.env.CTDB_RUNDIR)
     bld.INSTALL_DIR(bld.env.CTDB_SOCKETDIR)
     bld.INSTALL_DIR(bld.env.CTDB_VARDIR)
 
