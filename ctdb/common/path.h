@@ -27,7 +27,6 @@ const char *path_etcdir(void);
 const char *path_helperdir(void);
 const char *path_lockdir(void);
 const char *path_piddir(void);
-const char *path_rundir(void);
 const char *path_socketdir(void);
 const char *path_vardir(void);
 
@@ -36,7 +35,6 @@ char *path_etcdir_append(TALLOC_CTX *mem_ctx, const char *path);
 char *path_helperdir_append(TALLOC_CTX *mem_ctx, const char *path);
 char *path_lockdir_append(TALLOC_CTX *mem_ctx, const char *path);
 char *path_piddir_append(TALLOC_CTX *mem_ctx, const char *path);
-char *path_rundir_append(TALLOC_CTX *mem_ctx, const char *path);
 char *path_socketdir_append(TALLOC_CTX *mem_ctx, const char *path);
 char *path_vardir_append(TALLOC_CTX *mem_ctx, const char *path);
 

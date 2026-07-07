@@ -33,7 +33,6 @@ struct {
 	const char* helperdir;
 	char lockdir[PATH_MAX];
 	char piddir[PATH_MAX];
-	char rundir[PATH_MAX];
 	char socketdir[PATH_MAX];
 	char vardir[PATH_MAX];
 	bool test_mode;
@@ -43,7 +42,6 @@ struct {
 	bool helperdir_set;
 	bool lockdir_set;
 	bool piddir_set;
-	bool rundir_set;
 	bool socketdir_set;
 	bool vardir_set;
 } ctdb_paths = {
@@ -52,7 +50,6 @@ struct {
 	.helperdir = CTDB_HELPER_BINDIR,
 	.lockdir = CTDB_LOCKDIR,
 	.piddir = CTDB_PIDDIR,
-	.rundir = CTDB_RUNDIR,
 	.socketdir = CTDB_SOCKETDIR,
 	.vardir = CTDB_VARDIR,
 };
@@ -210,22 +207,6 @@ const char *path_piddir(void)
 	return ctdb_paths.piddir;
 }
 
-const char *path_rundir(void)
-{
-	bool ok;
-
-	if (! ctdb_paths.rundir_set) {
-		ok = path_construct(ctdb_paths.rundir, "run");
-		if (!ok) {
-			D_ERR("Failed to construct RUNDIR\n");
-		} else {
-			ctdb_paths.rundir_set = true;
-		}
-	}
-
-	return ctdb_paths.rundir;
-}
-
 const char *path_socketdir(void)
 {
 	bool ok;
@@ -281,11 +262,6 @@ char *path_lockdir_append(TALLOC_CTX *mem_ctx, const char *path)
 char *path_piddir_append(TALLOC_CTX *mem_ctx, const char *path)
 {
 	return talloc_asprintf(mem_ctx, "%s/%s", path_piddir(), path);
-}
-
-char *path_rundir_append(TALLOC_CTX *mem_ctx, const char *path)
-{
-	return talloc_asprintf(mem_ctx, "%s/%s", path_rundir(), path);
 }
 
 char *path_socketdir_append(TALLOC_CTX *mem_ctx, const char *path)

@@ -238,34 +238,6 @@ static int path_tool_piddir_append(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static int path_tool_rundir(TALLOC_CTX *mem_ctx,
-			    int argc,
-			    const char **argv,
-			    void *private_data)
-{
-	int ret = path_tool_generic(mem_ctx,
-				    argc,
-				    argv,
-				    private_data,
-				    "rundir",
-				    path_rundir);
-	return ret;
-}
-
-static int path_tool_rundir_append(TALLOC_CTX *mem_ctx,
-				   int argc,
-				   const char **argv,
-				   void *private_data)
-{
-	int ret = path_tool_append_generic(mem_ctx,
-					   argc,
-					   argv,
-					   private_data,
-					   "rundir append",
-					   path_rundir_append);
-	return ret;
-}
-
 static int path_tool_socketdir(TALLOC_CTX *mem_ctx,
 			       int argc,
 			       const char **argv,
@@ -387,18 +359,6 @@ struct cmdline_command path_commands[] = {
 		.name = "piddir",
 		.fn = path_tool_piddir,
 		.msg_help = "Get path of CTDB PIDDIR",
-		.msg_args = NULL,
-	},
-	{
-		.name = "rundir append",
-		.fn = path_tool_rundir_append,
-		.msg_help = "Get path relative to CTDB RUNDIR",
-		.msg_args = "<path>",
-	},
-	{
-		.name = "rundir",
-		.fn = path_tool_rundir,
-		.msg_help = "Get path of CTDB RUNDIR",
 		.msg_args = NULL,
 	},
 	{
