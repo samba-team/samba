@@ -292,9 +292,9 @@ def configure(conf):
     conf.env.CTDB_BINDIR = os.path.join(conf.env.EXEC_PREFIX, 'bin')
     conf.env.CTDB_DATADIR = os.path.join(conf.env.EXEC_PREFIX, 'share/ctdb')
     conf.env.CTDB_ETCDIR = os.path.join(conf.env.SYSCONFDIR, 'ctdb')
-    conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
-    conf.env.CTDB_RUNDIR = os.path.join(conf.env.LOCALSTATEDIR, 'run/ctdb')
     conf.env.CTDB_HELPER_BINDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb')
+    conf.env.CTDB_RUNDIR = os.path.join(conf.env.LOCALSTATEDIR, 'run/ctdb')
+    conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
 
     if Options.options.ctdb_logdir:
         conf.env.CTDB_LOGDIR = Options.options.ctdb_logdir
@@ -308,18 +308,16 @@ def configure(conf):
                                               'ctdbd.socket')
     conf.define('CTDB_SOCKET', conf.env.CTDB_SOCKPATH)
 
-    conf.ADD_CFLAGS('''-DCTDB_HELPER_BINDIR=\"%s\"
-                       -DLOGDIR=\"%s\"
-                       -DCTDB_DATADIR=\"%s\"
-                       -DCTDB_ETCDIR=\"%s\"
-                       -DCTDB_VARDIR=\"%s\"
-                       -DCTDB_RUNDIR=\"%s\"''' % (
-                    conf.env.CTDB_HELPER_BINDIR,
-                    conf.env.CTDB_LOGDIR,
-                    conf.env.CTDB_DATADIR,
-                    conf.env.CTDB_ETCDIR,
-                    conf.env.CTDB_VARDIR,
-                    conf.env.CTDB_RUNDIR))
+    # Want -DFOO="{conf.env.BAR}" - yes, LOGDIR is different LHS vs RHS
+    defines_map = {
+        "CTDB_DATADIR":       conf.env.CTDB_DATADIR,
+        "CTDB_ETCDIR":        conf.env.CTDB_ETCDIR,
+        "CTDB_HELPER_BINDIR": conf.env.CTDB_HELPER_BINDIR,
+        "CTDB_RUNDIR":        conf.env.CTDB_RUNDIR,
+        "CTDB_VARDIR":        conf.env.CTDB_VARDIR,
+        "LOGDIR":             conf.env.CTDB_LOGDIR,
+    }
+    conf.ADD_CFLAGS(" ".join([f'-D{a}="{b}"' for a, b in defines_map.items()]))
 
     conf.env.CTDB_TEST_DATADIR = os.path.join(conf.env.CTDB_DATADIR, 'tests')
     conf.env.CTDB_TEST_LIBEXECDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb/tests')
@@ -746,17 +744,20 @@ def build(bld):
 			 includes='include',
 			 install_path='${CTDB_HELPER_BINDIR}')
 
-    sed_expr1 = 's|/usr/local/var/lib/ctdb|%s|g'  % (bld.env.CTDB_VARDIR)
-    sed_expr2 = 's|/usr/local/etc/ctdb|%s|g'      % (bld.env.CTDB_ETCDIR)
-    sed_expr3 = 's|/usr/local/var/log|%s|g'       % (bld.env.CTDB_LOGDIR)
-    sed_expr4 = 's|/usr/local/var/run/ctdb|%s|g'  % (bld.env.CTDB_RUNDIR)
-    sed_expr5 = 's|/usr/local/sbin|%s|g'          % (bld.env.SBINDIR)
-    sed_expr6 = 's|/usr/local/libexec/ctdb|%s|g'  % (bld.env.CTDB_HELPER_BINDIR)
-    sed_expr7 = 's|/usr/local/bin|%s|g'           % (bld.env.BINDIR)
-    sed_expr8 = 's|/usr/local/share/ctdb|%s|g'    % (bld.env.CTDB_DATADIR)
-    sed_cmdline = '-e "%s" ' * 8 % \
-                       (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5,
-                        sed_expr6, sed_expr7, sed_expr8)
+    # Want: -e 's|/foo/path|{bld.env.FOO}|g'
+    sed_exprs_map = {
+        "/usr/local/bin":          bld.env.BINDIR,
+        "/usr/local/etc/ctdb":     bld.env.CTDB_ETCDIR,
+        "/usr/local/libexec/ctdb": bld.env.CTDB_HELPER_BINDIR,
+        "/usr/local/sbin":         bld.env.SBINDIR,
+        "/usr/local/share/ctdb":   bld.env.CTDB_DATADIR,
+        "/usr/local/var/lib/ctdb": bld.env.CTDB_VARDIR,
+        "/usr/local/var/log":      bld.env.CTDB_LOGDIR,
+        "/usr/local/var/run/ctdb": bld.env.CTDB_RUNDIR,
+    }
+    sed_cmdline = " ".join(
+        [f"-e 's|{a}|{b}|g'" for a, b in sed_exprs_map.items()]
+    )
     subst_ctdb_generated = f"sed {sed_cmdline} ${{SRC}} > ${{TGT}}"
 
     manpages_extra = list(manpages_misc)
