@@ -69,7 +69,12 @@ if [[ "$TMUX" ]]; then
 		TMUX_CMD=tmate
 	fi
 
-	$TMUX_CMD new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
+	# tmux forbids . and : in window names
+	WINDOWNAME=test:"$SERVERNAME"
+	WINDOWNAME=${WINDOWNAME//\./#}
+	WINDOWNAME=${WINDOWNAME//\:/#}
+
+	$TMUX_CMD new-window -n "$WINDOWNAME" "bash $basedir/$SERVERNAME.launch"
 
 	# tmux seems to lag a bit for new sessions. Don't create them too
 	# quickly one after another
