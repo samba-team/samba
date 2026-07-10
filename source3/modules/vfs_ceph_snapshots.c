@@ -29,6 +29,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/smb_strtox.h"
 #include "source3/smbd/dir.h"
+#include "lib/util_path.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -505,6 +506,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 				     size_t buflen)
 {
 	int ret;
+	char *canon = NULL;
 	NTSTATUS status;
 	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
@@ -536,6 +538,19 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 		ret = -EINVAL;
 		goto err_out;
 	}
+
+	/*
+	 * Canonicalize to collapse any "//" run when connectpath
+	 * is a bare "/", which would trip the SMB_ASSERT in
+	 * openat_pathref_fsp_nosymlink().
+	 */
+	canon = canonicalize_absolute_path(tmp_ctx, _converted_buf);
+	if (canon == NULL) {
+		ret = -ENOMEM;
+		goto err_out;
+	}
+	strlcpy(_converted_buf, canon, buflen);
+	TALLOC_FREE(canon);
 
 	snaps_dname = synthetic_smb_fname(tmp_ctx,
 				_converted_buf,
