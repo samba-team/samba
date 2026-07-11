@@ -1606,7 +1606,7 @@ static NTSTATUS cmd_lsa_set_trustdominfo(struct rpc_pipe_client *cli,
 	info_class = atoi(argv[2]);
 
 	switch (info_class) {
-	case 13: /* LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES */
+	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 		info.enc_types.enc_types = atoi(argv[3]);
 		break;
 	default:
