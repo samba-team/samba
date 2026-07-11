@@ -78,7 +78,7 @@ static void display_query_info_1(struct lsa_AuditLogInfo *r)
 
 static void display_query_info_2(struct lsa_AuditEventsInfo *r)
 {
-	int i;
+	uint32_t i;
 	d_printf("Auditing enabled:\t%d\n", r->auditing_mode);
 	d_printf("Auditing categories:\t%d\n", r->count);
 	d_printf("Auditsettings:\n");
@@ -354,7 +354,7 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransSidArray3 sids;
 	uint32_t count = 0;
-	int i;
+	uint32_t i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc == 1) {
@@ -580,7 +580,7 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 				     int argc, const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL, result;
-	int i;
+	uint32_t i;
 	struct lsa_SidArray sids;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransNameArray2 names;
@@ -669,7 +669,6 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 	/* defaults, but may be changed using params */
 	uint32_t enum_ctx = 0;
-	int i;
 	uint32_t max_size = (uint32_t)-1;
 
 	if (argc > 2) {
@@ -691,6 +690,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	status = STATUS_MORE_ENTRIES;
 
 	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		uint32_t i;
 
 		/* Lookup list of trusted domains */
 
@@ -742,7 +742,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 
 	uint32_t enum_context=0;
 	uint32_t pref_max_length=0x1000;
-	int i;
+	uint32_t i;
 
 	if (argc > 3) {
 		printf("Usage: %s [enum context] [max length]\n", argv[0]);
@@ -860,7 +860,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 	uint32_t enum_context=0;
 	uint32_t pref_max_length=0x1000;
 	struct lsa_SidArray sid_array;
-	int i;
+	uint32_t i;
 
 	if (argc > 3) {
 		printf("Usage: %s [enum context] [max length]\n", argv[0]);
@@ -986,7 +986,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	uint32_t access_desired = 0x000f000f;
 	struct dom_sid sid;
 	struct lsa_PrivilegeSet *privs = NULL;
-	int i;
+	uint32_t i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	union lsa_revision_info out_revision_info = {
 		.info1 = {
@@ -1077,8 +1077,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 		},
 	};
 	uint32_t out_version = 0;
-
-	int i;
+	uint32_t i;
 
 	if (argc != 2 ) {
 		printf("Usage: %s SID\n", argv[0]);
@@ -2826,7 +2825,7 @@ static NTSTATUS cmd_lsa_delete_trusted_domain(struct rpc_pipe_client *cli,
 	{
 		uint32_t resume_handle = 0;
 		struct lsa_DomainList domains;
-		int i;
+		uint32_t i;
 
 		status = dcerpc_lsa_EnumTrustDom(b, mem_ctx,
 						 &handle,
