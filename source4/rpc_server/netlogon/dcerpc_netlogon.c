@@ -3082,7 +3082,7 @@ static NTSTATUS fill_trust_one_domain_info(TALLOC_CTX *mem_ctx,
   netr_LogonGetDomainInfo
   this is called as part of the ADS domain logon procedure.
 
-  It has an important role in convaying details about the client, such
+  It has an important role in conveying details about the client, such
   as Operating System, Version, Service Pack etc.
 */
 static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call,
