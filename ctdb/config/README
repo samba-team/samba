@@ -2,10 +2,6 @@ This directory contains run-time support scripts for CTDB.
 
 Selected highlights:
 
-  ctdb.init
-
-    An initscript for starting ctdbd at boot time.
-
   events/
 
     Eventscripts.  See events/README for more details.

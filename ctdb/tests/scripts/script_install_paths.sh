@@ -37,7 +37,7 @@ if ! $CTDB_TESTS_ARE_INSTALLED; then
 	CTDB_SCRIPTS_TESTS_LIBEXEC_DIR="$bin_dir"
 
 	# Only for shellcheck unit tests
-	CTDB_SCRIPTS_INIT_SCRIPT="${ctdb_dir}/config/ctdb.init"
+	CTDB_SCRIPTS_INIT_SCRIPT="${ctdb_dir}/doc/examples/ctdb.init"
 	CTDB_SCRIPTS_TESTS_BIN_DIR="$CTDB_TEST_DIR"
 	CTDB_SCRIPTS_TOOLS_BIN_DIR="${ctdb_dir}/tools"
 	CTDB_SCRIPTS_TOOLS_HELPER_DIR="${ctdb_dir}/tools"

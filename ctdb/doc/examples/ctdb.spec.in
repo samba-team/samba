@@ -123,7 +123,7 @@ mkdir -p $RPM_BUILD_ROOT%{_unitdir}
 install -m 755 config/ctdb.service $RPM_BUILD_ROOT%{_unitdir}
 %else
 mkdir -p $RPM_BUILD_ROOT%{initdir}
-install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
+install -m755 doc/examples/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 %endif
 
 # This is a hack. All documents should be installed in /usr/share/doc.

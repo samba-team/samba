@@ -1,5 +1,7 @@
 This directory includes...
 
+A sample CTDB initscript (ctdb.init).
+
 Sample CTDB configuration files:
 
   o ctdb.conf        - Main configuration file
