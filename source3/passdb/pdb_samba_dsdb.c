@@ -1928,27 +1928,26 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 	va_list ap;
 	char *expression = NULL;
 
+	bool ret = false;
+
 	va_start(ap, exp_fmt);
 	expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
 	va_end(ap);
 
 	if (!expression) {
-		talloc_free(tmp_ctx);
-		return false;
+		goto fail;
 	}
 
 	sstate = talloc_zero(tmp_ctx, struct pdb_samba_dsdb_search_state);
 	if (sstate == NULL) {
-		talloc_free(tmp_ctx);
-		return false;
+		goto fail;
 	}
 
 	rc = dsdb_search(state->ldb, tmp_ctx, &res, ldb_get_default_basedn(state->ldb), LDB_SCOPE_SUBTREE, attrs, 0, "%s", expression);
 	if (rc != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		DEBUG(10, ("dsdb_search failed: %s\n",
 			   ldb_errstring(state->ldb)));
-		return false;
+		goto fail;
 	}
 
 	num_users = res->count;
@@ -1956,9 +1955,8 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 	sstate->entries = talloc_array(sstate, struct samr_displayentry,
 				       num_users);
 	if (sstate->entries == NULL) {
-		talloc_free(tmp_ctx);
 		DEBUG(10, ("talloc failed\n"));
-		return false;
+		goto fail;
 	}
 
 	sstate->num_entries = 0;
@@ -1972,9 +1970,8 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 		e->idx = sstate->num_entries;
 		sid = samdb_result_dom_sid(tmp_ctx, res->msgs[i], "objectSid");
 		if (!sid) {
-			talloc_free(tmp_ctx);
 			DEBUG(10, ("Could not pull SID\n"));
-			return false;
+			goto fail;
 		}
 		sid_peek_rid(sid, &e->rid);
 
@@ -1982,8 +1979,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 		e->account_name = ldb_msg_find_attr_as_string(
 			res->msgs[i], "sAMAccountName", NULL);
 		if (e->account_name == NULL) {
-			talloc_free(tmp_ctx);
-			return false;
+			goto fail;
 		}
 		e->fullname = ldb_msg_find_attr_as_string(
                         res->msgs[i], "displayName", "");
@@ -2000,8 +1996,10 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 	search->next_entry = pdb_samba_dsdb_next_entry;
 	search->search_end = pdb_samba_dsdb_search_end;
 	*pstate = sstate;
+	ret = true;
+fail:
 	talloc_free(tmp_ctx);
-	return true;
+	return ret;
 }
 
 static bool pdb_samba_dsdb_search_users(struct pdb_methods *m,
