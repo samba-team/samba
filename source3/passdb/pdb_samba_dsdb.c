@@ -1934,7 +1934,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 
 	if (!expression) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return false;
 	}
 
 	sstate = talloc_zero(tmp_ctx, struct pdb_samba_dsdb_search_state);
