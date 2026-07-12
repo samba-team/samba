@@ -151,7 +151,6 @@ static struct pdb_domain_info *pdb_samba_dsdb_get_domain_info(
 	return info;
 
 fail:
-	TALLOC_FREE(dom_res);
 	TALLOC_FREE(info);
 	return NULL;
 }
