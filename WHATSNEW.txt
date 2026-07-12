@@ -33,6 +33,19 @@ addresses CVE-2026-20833.
 CTDB changes
 ------------
 
+* CTDB's locations for locks, PID files and sockets now use ctdb/
+  subdirectories of the Samba locations configured at build time.
+  This means that the relevant top-level Samba configure options
+  (--with-lockdir, --with-piddir, --with-sockets-dir) are now also
+  used by CTDB.
+
+  The standalone CTDB build does not support these options.  However,
+  it is generally only used for developer/standalone testing.
+
+* The CTDB initscript (ctdb.init) has been moved to ctdb/doc/examples.
+  This recognises that it isn't installed by default so it is
+  basically unmaintained and untested.
+
 * Monitoring of (infrastructure) hosts is now supported.  A good use
   of this is to monitor DNS servers.  See the NETWORK MONITORING
   section in ctdb-script.options(5) for more details.
