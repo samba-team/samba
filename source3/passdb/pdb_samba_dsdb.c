@@ -107,6 +107,9 @@ static struct pdb_domain_info *pdb_samba_dsdb_get_domain_info(
 	}
 
 	info->guid = samdb_result_guid(dom_res->msgs[0], "objectGUID");
+	if (GUID_all_zero(&info->guid)) {
+		goto fail;
+	}
 
 	domain_sid = samdb_result_dom_sid(state, dom_res->msgs[0], "objectSid");
 	if (!domain_sid) {
