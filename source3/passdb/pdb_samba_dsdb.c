@@ -120,6 +120,10 @@ static struct pdb_domain_info *pdb_samba_dsdb_get_domain_info(
 	TALLOC_FREE(dom_res);
 
 	info->name = talloc_strdup(info, lpcfg_sam_name(state->lp_ctx));
+	if (info->name == NULL) {
+		goto fail;
+	}
+
 	info->dns_domain = ldb_dn_canonical_string(info, domain_dn);
 
 	if (!info->dns_domain) {
