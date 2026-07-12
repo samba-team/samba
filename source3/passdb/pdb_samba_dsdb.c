@@ -1916,6 +1916,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 				     struct pdb_samba_dsdb_search_state **pstate,
 				     const char *exp_fmt, ...)
 {
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
 	struct pdb_samba_dsdb_search_state *sstate;
@@ -1926,11 +1927,6 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 
 	va_list ap;
 	char *expression = NULL;
-
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	if (!tmp_ctx) {
-		return false;
-	}
 
 	va_start(ap, exp_fmt);
 	expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
