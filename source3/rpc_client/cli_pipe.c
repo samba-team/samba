@@ -3628,14 +3628,14 @@ NTSTATUS rpc_pipe_open_local_np(
 	}
 
 	if (local_server_addr != NULL) {
-		saddr.sa_socklen = tsocket_address_bsd_sockaddr(local_server_addr,
-								&saddr.u.sa,
-								sizeof(saddr.u.ss));
-		if (saddr.sa_socklen == -1) {
+		ssize_t socklen = tsocket_address_bsd_sockaddr(
+			local_server_addr, &saddr.u.sa, sizeof(saddr.u.ss));
+		if (socklen == -1) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(frame);
 			return status;
 		}
+		saddr.sa_socklen = socklen;
 	}
 
 	status = rpc_client_association_create(mem_ctx,
