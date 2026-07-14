@@ -90,6 +90,7 @@ struct vfs_ceph_rgw_getxattr_arg {
 	int rc;
 	char *val;
 	size_t size;
+	bool cb_called;
 };
 
 struct vfs_ceph_rgw_lsxattr_arg {
@@ -902,6 +903,17 @@ static void prepare_xattr_list(rgw_xattrlist *attr_list,
 	}
 }
 
+/*
+ * Callback for rgw_getxattrs() to get value for given attribute names.
+ *
+ * @param attrs: List of attributes received from RGW
+ * @param arg: Pointer to vfs_ceph_rgw_getxattr_arg structure
+ * @param flags: Callback flags (unused)
+ * @return: 0 to mark completion for callback.
+ *
+ * Output: value for attribute and size in bytes via callback argument.
+ *
+ */
 static int ceph_rgw_getxattr_cb(rgw_xattrlist *attr_list,
 				void *arg,
 				uint32_t flags)
@@ -910,7 +922,8 @@ static int ceph_rgw_getxattr_cb(rgw_xattrlist *attr_list,
 		*cb_arg = (struct vfs_ceph_rgw_getxattr_arg *)arg;
 	rgw_xattr *xattr = attr_list->xattrs;
 
-	if ((cb_arg->size != 0) && (cb_arg->size < xattr->val.len)) {
+	cb_arg->cb_called = true;
+	if (cb_arg->size < xattr->val.len) {
 		cb_arg->rc = -ERANGE;
 		return 0;
 	}
@@ -943,6 +956,24 @@ static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[CEPH_RGW] fgetxattr: [%s] %s\n", fsp_str_dbg(fsp), name);
 
+	/*
+	 * We do not support posix like handling to get current size of
+	 * extended attribute from backend in case of size is mentioned as 0.
+	 */
+	if (size == 0) {
+		DBG_DEBUG("[CEPH_RGW] No support to get size xattr\n");
+		rc = -ENOTSUP;
+		goto out;
+	}
+
+	if (is_special_name(fsp->fsp_name->base_name)) {
+		DBG_DEBUG(
+			"[CEPH_RGW] Cannot perform op on special name [%s]\n",
+			fsp_str_dbg(fsp));
+		rc = -EINVAL;
+		goto out;
+	}
+
 	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
 	if (rc != 0) {
 		DBG_ERR("[CEPH_RGW] Unable to fetch handle\n");
@@ -951,7 +982,6 @@ static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
 
 	prepare_xattr_list(&attr_list, discard_const(name), NULL, 0);
 
-	cb_arg.rc = 0;
 	cb_arg.val = value;
 	cb_arg.size = size;
 
@@ -962,23 +992,30 @@ static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
 			   &cb_arg,
 			   RGW_GETXATTR_FLAG_NONE);
 
-	if (rc < 0) {
-		int err = errno;
-		if (err == 0) {
-			rc = -ENODATA;
-		} else {
-			DBG_ERR("[CEPH_RGW] Error getting xattr. "
-				"rc = %d errno = %d cbErr = %d\n",
-				rc,
-				err,
-				cb_arg.rc);
-			rc = -err;
-		}
+	if (rc < 0 || cb_arg.rc < 0) {
+		DBG_ERR("[CEPH_RGW] Error getting xattr. "
+			"rc = %d cbErr = %d\n",
+			rc,
+			cb_arg.rc);
+		rc = (rc < 0) ? rc : cb_arg.rc;
 		goto out;
 	}
+
+	/*
+	 * API returns 0 on success and callback serves to indicate
+	 * number of bytes to return.
+	 */
 	rc = cb_arg.rc;
-	if (rc < 0) {
-		DBG_ERR("[CEPH_RGW] Error getting xattr. Err=%d\n", cb_arg.rc);
+
+	/*
+	 * In case of requested xattr is not found,
+	 * API returns 0, and callback is not called.
+	 * Therefore we treat this case as  -ENOATTR.
+	 */
+	if (rc == 0 && !cb_arg.cb_called) {
+		DBG_DEBUG("[CEPH_RGW] xattr %s not found.\n", name);
+		rc = -ENOATTR;
+		/* fall through */
 	}
 out:
 	DBG_DEBUG("[CEPH_RGW] fgetxattr(...) = %d\n", rc);
@@ -1007,6 +1044,14 @@ static int vfs_ceph_rgw_fsetxattr(struct vfs_handle_struct *handle,
 				goto out);
 
 	DBG_DEBUG("[CEPH_RGW] fsetxattr [%s] %s\n", fsp_str_dbg(fsp), name);
+
+	if (is_special_name(fsp->fsp_name->base_name)) {
+		DBG_DEBUG(
+			"[CEPH_RGW] Cannot perform op on special name [%s]\n",
+			fsp_str_dbg(fsp));
+		rc = -EINVAL;
+		goto out;
+	}
 
 	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
 	if (rc != 0) {
@@ -2039,6 +2084,14 @@ static int vfs_ceph_rgw_fremovexattr(struct vfs_handle_struct *handle,
 				config,
 				struct vfs_ceph_rgw_config,
 				goto out);
+
+	if (is_special_name(fsp->fsp_name->base_name)) {
+		DBG_DEBUG(
+			"[CEPH_RGW] Cannot perform op on special name [%s]\n",
+			fsp_str_dbg(fsp));
+		rc = -EINVAL;
+		goto out;
+	}
 
 	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &fh);
 	if (rc != 0) {
