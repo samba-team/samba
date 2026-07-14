@@ -1893,8 +1893,7 @@ static int vfs_ceph_rgw_fstatvfs(struct vfs_handle_struct *handle,
 	 */
 	statbuf->FsIdentifier = (unsigned long int)-1;
 
-	/* We do not have any capabilities defined, returning 0 */
-	statbuf->FsCapabilities = 0;
+	statbuf->FsCapabilities = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 
 	DBG_DEBUG("[CEPH_RGW] fstatvfs: name=%s f_bsize=%" PRIu64
 		  " f_blocks=%" PRIu64 " f_bfree=%" PRIu64 " f_bavail=%" PRIu64
@@ -2214,6 +2213,15 @@ out:
 	return lstatus_code(ret);
 }
 
+static uint32_t vfs_ceph_rgw_fs_capabilities(
+	struct vfs_handle_struct *handle,
+	enum timestamp_set_resolution *p_ts_res)
+{
+	uint32_t caps = vfs_get_fs_capabilities(handle->conn, p_ts_res);
+
+	return caps;
+}
+
 static bool vfs_ceph_rgw_mount_bucket(struct vfs_ceph_rgw_config *config)
 {
 	int rc = 0;
@@ -2508,7 +2516,7 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.get_quota_fn = vfs_not_implemented_get_quota,
 	.set_quota_fn = vfs_not_implemented_set_quota,
 	.fstatvfs_fn = vfs_ceph_rgw_fstatvfs,
-	.fs_capabilities_fn = vfs_not_implemented_fs_capabilities,
+	.fs_capabilities_fn = vfs_ceph_rgw_fs_capabilities,
 
 	/* Directory operations */
 
