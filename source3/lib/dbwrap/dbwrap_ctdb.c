@@ -58,6 +58,8 @@ struct db_ctdb_ctx {
 	struct db_context *db;
 	struct tdb_wrap *wtdb;
 	uint32_t db_id;
+	struct server_id msg_server_id;
+	bool allow_transactions;
 	struct db_ctdb_transaction_handle *transaction;
 	struct g_lock_ctx *lock_ctx;
 
@@ -425,6 +427,12 @@ static int db_ctdb_transaction_start(struct db_context *db)
 	if (!db->persistent) {
 		DEBUG(0,("transactions not supported on non-persistent database 0x%08x\n", 
 			 ctx->db_id));
+		return -1;
+	}
+
+	if (!ctx->allow_transactions) {
+		DEBUG(0,("transactions not allowed on persistent database 0x%08x %s\n",
+			 ctx->db_id, db->name));
 		return -1;
 	}
 
@@ -1153,7 +1161,6 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 {
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_rec);
-	struct server_id id = messaging_server_id(global_messaging_context());
 	int num_dbufs = orig_num_dbufs;
 	TDB_DATA data;
 	TDB_DATA _dbufs[num_dbufs + 1];
@@ -1175,6 +1182,26 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 	}
 
 	if (do_persistent_store || do_persistent_delete) {
+		struct server_id id;
+
+		/*
+		 * We may forked and crec->ctdb_ctx->msg_server_id
+		 * might be out of date.
+		 */
+		if (crec->ctdb_ctx->msg_server_id.pid != tevent_cached_getpid()) {
+			struct messaging_context *msg_ctx =
+				global_messaging_context_raw();
+
+			if (msg_ctx == NULL) {
+				DBG_ERR("global_messaging_context_raw() failed\n");
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
+			crec->ctdb_ctx->msg_server_id =
+				messaging_server_id(msg_ctx);
+		}
+		id = crec->ctdb_ctx->msg_server_id;
+
 		/*
 		 * As we drop the chainlock at some point below and reacquire it
 		 * at the end (see below for the reasons for that), we have to
@@ -2761,13 +2788,19 @@ static NTSTATUS db_ctdb_open_per_rec_persistent_db(
 	return NT_STATUS_OK;
 }
 
-struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
-				struct messaging_context *msg_ctx,
-				const char *name,
-				int hash_size, int tdb_flags,
-				int open_flags, mode_t mode,
-				enum dbwrap_lock_order lock_order,
-				uint64_t dbwrap_flags)
+struct db_context *db_open_ctdb_ex(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev_ctx,
+				   struct messaging_context *msg_ctx,
+				   struct ctdbd_connection *ctdb_conn,
+				   bool persistent,
+				   bool allow_transactions,
+				   const char *name,
+				   int hash_size,
+				   int tdb_flags,
+				   int open_flags,
+				   mode_t mode,
+				   enum dbwrap_lock_order lock_order,
+				   uint64_t dbwrap_flags)
 {
 	struct db_context *result;
 	struct db_ctdb_ctx *db_ctdb;
@@ -2775,14 +2808,21 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct loadparm_context *lp_ctx;
 	TDB_DATA data;
 	TDB_DATA outdata = {0};
-	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 	int32_t cstatus;
 	NTSTATUS status;
 	int ret;
 
-	if (!lp_clustering()) {
-		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
-		return NULL;
+	SMB_ASSERT(lp_clustering());
+	SMB_ASSERT(ctdb_conn != NULL);
+	if (allow_transactions) {
+		SMB_ASSERT(persistent);
+		SMB_ASSERT(msg_ctx != NULL);
+	}
+	if (!persistent) {
+		SMB_ASSERT(ev_ctx != NULL);
+	}
+	if (dbwrap_flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
+		SMB_ASSERT(msg_ctx != NULL);
 	}
 
 	if (!(result = talloc_zero(mem_ctx, struct db_context))) {
@@ -2804,10 +2844,16 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (msg_ctx != NULL) {
+		db_ctdb->msg_server_id = messaging_server_id(msg_ctx);
+	} else {
+		server_id_set_disconnected(&db_ctdb->msg_server_id);
+	}
+	db_ctdb->allow_transactions = allow_transactions;
 	db_ctdb->transaction = NULL;
 	db_ctdb->db = result;
 
-	ret = ctdbd_db_attach(messaging_ctdb_connection(), name,
+	ret = ctdbd_db_attach(ctdb_conn, name,
 			      &db_ctdb->db_id, persistent);
 	if (ret != 0) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
@@ -2820,7 +2866,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		data.dptr = (uint8_t *)&db_ctdb->db_id;
 		data.dsize = sizeof(db_ctdb->db_id);
 
-		ret = ctdbd_control_local(messaging_ctdb_connection(),
+		ret = ctdbd_control_local(ctdb_conn,
 					  CTDB_CONTROL_ENABLE_SEQNUM,
 					  0, 0, data,
 					  NULL, NULL, &cstatus);
@@ -2832,7 +2878,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	db_path = ctdbd_dbpath(messaging_ctdb_connection(), db_ctdb,
+	db_path = ctdbd_dbpath(ctdb_conn, db_ctdb,
 			       db_ctdb->db_id);
 	if (db_path == NULL) {
 		DBG_ERR("ctdbd_dbpath failed\n");
@@ -2846,7 +2892,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	data.dptr = (uint8_t *)&db_ctdb->db_id;
 	data.dsize = sizeof(db_ctdb->db_id);
 
-	ret = ctdbd_control_local(messaging_ctdb_connection(),
+	ret = ctdbd_control_local(ctdb_conn,
 				  CTDB_CONTROL_DB_OPEN_FLAGS,
 				  0, 0, data, NULL, &outdata, &cstatus);
 	if (ret != 0) {
@@ -2867,7 +2913,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(outdata.dptr);
 
 	if (!result->persistent) {
-		ret = ctdb_async_ctx_init(NULL, messaging_tevent_context(msg_ctx));
+		ret = ctdb_async_ctx_init(NULL, ev_ctx);
 		if (ret != 0) {
 			DBG_ERR("ctdb_async_ctx_init failed: %s\n", strerror(ret));
 			TALLOC_FREE(result);
@@ -2892,7 +2938,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				       sizeof(db_ctdb->db_id));
 
 		ret = ctdbd_control_local(
-			messaging_ctdb_connection(),
+			ctdb_conn,
 			CTDB_CONTROL_SET_DB_READONLY, 0, 0,
 			indata, NULL, NULL, &cstatus);
 		if ((ret != 0) || (cstatus != 0)) {
@@ -2933,7 +2979,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (result->persistent) {
+	if (db_ctdb->allow_transactions) {
 		db_ctdb->lock_ctx = g_lock_ctx_init(db_ctdb, msg_ctx);
 		if (db_ctdb->lock_ctx == NULL) {
 			DEBUG(0, ("g_lock_ctx_init failed\n"));
@@ -2965,8 +3011,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->id = db_ctdb_id;
 	result->flags = dbwrap_flags;
 
-	DEBUG(3,("db_open_ctdb: opened database '%s' with dbid 0x%x\n",
-		 name, db_ctdb->db_id));
+	DBG_NOTICE("opened database '%s' with dbid 0x%x\n",
+		   name, db_ctdb->db_id);
 
 	status = db_ctdb_open_per_rec_persistent_db(result,
 						    msg_ctx,
@@ -2985,4 +3031,37 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 fail:
 	TALLOC_FREE(result);
 	return NULL;
+}
+
+struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
+				struct messaging_context *msg_ctx,
+				const char *name,
+				int hash_size,
+				int tdb_flags,
+				int open_flags,
+				mode_t mode,
+				enum dbwrap_lock_order lock_order,
+				uint64_t dbwrap_flags)
+{
+	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
+	bool allow_transactions = persistent;
+
+	if (!lp_clustering()) {
+		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
+		return NULL;
+	}
+
+	return db_open_ctdb_ex(mem_ctx,
+			       messaging_tevent_context(msg_ctx),
+			       msg_ctx,
+			       messaging_ctdb_connection(),
+			       persistent,
+			       allow_transactions,
+			       name,
+			       hash_size,
+			       tdb_flags,
+			       open_flags,
+			       mode,
+			       lock_order,
+			       dbwrap_flags);
 }
