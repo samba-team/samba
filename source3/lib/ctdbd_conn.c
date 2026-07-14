@@ -54,6 +54,10 @@ struct ctdbd_srvid_cb {
 };
 
 struct ctdbd_connection {
+	struct {
+		pid_t pid;
+		struct timeval start_time;
+	} local_ctdbd;
 	uint32_t reqid;
 	uint32_t our_vnn;
 	uint64_t rand_srvid;
@@ -282,6 +286,56 @@ static int ctdbd_msg_call_back(struct tevent_context *ev,
 }
 
 /*
+ * get the pid of the ctdbd process
+ */
+static int get_ctdbd_pid(struct ctdbd_connection *conn, pid_t *pid)
+{
+	int32_t cstatus=-1;
+	int ret;
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_GET_PID, 0, 0,
+				  tdb_null, NULL, NULL, &cstatus);
+	if (ret != 0) {
+		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
+		return ret;
+	}
+	*pid = (pid_t)cstatus;
+	return ret;
+}
+
+/*
+ * get the start time of the ctdbd process
+ */
+static int get_ctdbd_start_time(struct ctdbd_connection *conn,
+				struct timeval *st)
+{
+	const struct ctdb_uptime *uptime = NULL;
+	int32_t cstatus=-1;
+	TDB_DATA outdata = {0};
+	int ret;
+
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_UPTIME, 0, 0,
+				  tdb_null, conn, &outdata, &cstatus);
+	if (ret != 0) {
+		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
+		return ret;
+	}
+	if ((cstatus != 0) || (outdata.dptr == NULL)) {
+		DEBUG(2, ("Received invalid ctdb data\n"));
+		return EINVAL;
+	}
+	if (outdata.dsize != sizeof(*uptime)) {
+		talloc_free(outdata.dptr);
+		DEBUG(2, ("Received invalid ctdb data\n"));
+		return EINVAL;
+	}
+
+	uptime = (const struct ctdb_uptime *)outdata.dptr;
+	*st = uptime->ctdbd_start_time;
+	talloc_free(outdata.dptr);
+	return 0;
+}
+
+/*
  * get our vnn from the cluster
  */
 static int get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
@@ -391,6 +445,16 @@ fail:
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn)
 {
 	return conn->our_vnn;
+}
+
+pid_t ctdbd_pid(const struct ctdbd_connection *conn)
+{
+	return conn->local_ctdbd.pid;
+}
+
+struct timeval ctdbd_start_time(const struct ctdbd_connection *conn)
+{
+	return conn->local_ctdbd.start_time;
 }
 
 /*
@@ -576,6 +640,18 @@ static int ctdbd_init_connection_internal(TALLOC_CTX *mem_ctx,
 	ret = get_cluster_vnn(conn, &conn->our_vnn);
 	if (ret != 0) {
 		DEBUG(10, ("get_cluster_vnn failed: %s\n", strerror(ret)));
+		return ret;
+	}
+
+	ret = get_ctdbd_pid(conn, &conn->local_ctdbd.pid);
+	if (ret != 0) {
+		DEBUG(10, ("get_ctdbd_pid failed: %s\n", strerror(ret)));
+		return ret;
+	}
+
+	ret = get_ctdbd_start_time(conn, &conn->local_ctdbd.start_time);
+	if (ret != 0) {
+		DEBUG(10, ("get_ctdbd_start_time failed: %s\n", strerror(ret)));
 		return ret;
 	}
 

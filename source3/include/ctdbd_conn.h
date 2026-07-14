@@ -40,8 +40,10 @@ int ctdbd_init_async_connection(
 	int timeout,
 	struct ctdbd_connection **pconn);
 
-uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation);
+uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
+pid_t ctdbd_pid(const struct ctdbd_connection *conn);
+struct timeval ctdbd_start_time(const struct ctdbd_connection *conn);
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 void ctdbd_socket_readable(struct tevent_context *ev,
