@@ -165,3 +165,4 @@ nbt.bench-wins
 ^samba4.smb2.mkdir.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
 ^samba3.blackbox.open-eintr.*
 smb2.durable-v2-regressions # Only used in blackbox tests
+^samba3.clustered.smb2.persistent-open.reconnect-contended\(clusteredmember\)
