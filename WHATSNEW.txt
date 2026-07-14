@@ -56,6 +56,20 @@ for general-purpose file servers.
 
 This feature is currently considered experimental.
 
+Cluster-wide rate limiting in vfs_aio_ratelimit
+------------------------------------------------
+
+The vfs_aio_ratelimit VFS module has been extended with cluster-wide
+coordination. When Samba clustering is enabled, the configured per-share rate
+limits are now enforced as a global ceiling across the entire cluster rather than
+per-node. Each share's limits are tracked and enforced independently.
+
+Coordination is handled by a new per-node daemon, ratelimitd, which aggregates
+activity from all smbd processes on the node and broadcasts node-level summaries
+to the rest of the cluster via Samba's messaging layer.
+
+To enable this feature, Samba must be built with --with-ratelimitd.
+
 JSON Audit logging
 ------------------
 
