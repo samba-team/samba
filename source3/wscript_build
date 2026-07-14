@@ -330,6 +330,7 @@ bld.SAMBA3_SUBSYSTEM('samba3-namearray',
 if bld.env.with_ctdb:
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
                      lib/cluster_support.c
+                     lib/cluster_level_db.c
                      lib/dbwrap/dbwrap_ctdb.c
                      lib/messages_ctdb.c
                      lib/messages_ctdb_ref.c

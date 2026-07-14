@@ -42,6 +42,7 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "librpc/gen_ndr/ndr_cluster_level.h"
 #include "cluster_support.h"
+#include "cluster_level_db.h"
 
 /* paths to these include files come from --with-ctdb= in configure */
 
@@ -446,6 +447,25 @@ fail:
 }
 
 /*
+ * Is the cluster running in a cluster functional level we support.
+ */
+static bool ctdbd_supported_cluster_level(struct ctdbd_connection *conn)
+{
+	NTSTATUS status;
+
+	status = cluster_level_db_check(conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("cluster_level_db_check() %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	DBG_DEBUG("cluster_level_db_check() %s\n",
+		  nt_errstr(status));
+	return true;
+}
+
+/*
  * Get the cluster-wide active functional level.
  */
 const struct cluster_level_active *ctdbd_conn_get_cluster_level(
@@ -648,7 +668,9 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c);
  */
 
 static int ctdbd_init_connection_internal(TALLOC_CTX *mem_ctx,
-					  const char *sockname, int timeout,
+					  const char *sockname,
+					  int timeout,
+					  bool check_cluster_level,
 					  struct ctdbd_connection *conn)
 {
 	int ret;
@@ -688,6 +710,13 @@ static int ctdbd_init_connection_internal(TALLOC_CTX *mem_ctx,
 		return EIO;
 	}
 
+	if (check_cluster_level &&
+	    !ctdbd_supported_cluster_level(conn))
+	{
+		DBG_ERR("Cluster functional level not support, can not connect\n");
+		return EIO;
+	}
+
 	generate_random_buffer((unsigned char *)&conn->rand_srvid,
 			       sizeof(conn->rand_srvid));
 
@@ -716,6 +745,7 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	ret = ctdbd_init_connection_internal(mem_ctx,
 					     sockname,
 					     timeout,
+					     true, /* check_cluster_level */
 					     conn);
 	if (ret != 0) {
 		DBG_ERR("ctdbd_init_connection_internal failed (%s)\n",
@@ -742,8 +772,25 @@ int ctdbd_init_async_connection(
 
 	*pconn = NULL;
 
-	ret = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
+	conn = talloc_zero(mem_ctx, struct ctdbd_connection);
+	if (conn == NULL) {
+		return ENOMEM;
+	}
+
+	/*
+	 * This is called from within db_open_ctdb_ex()
+	 * so we can't check the cluster level here
+	 * without getting into recursion problems.
+	 */
+	ret = ctdbd_init_connection_internal(mem_ctx,
+					     sockname,
+					     timeout,
+					     false, /* check_cluster_level */
+					     conn);
 	if (ret != 0) {
+		DBG_ERR("ctdbd_init_connection_internal failed (%s)\n",
+			strerror(ret));
+		TALLOC_FREE(conn);
 		return ret;
 	}
 
