@@ -1,0 +1,296 @@
+#include "idl_types.h"
+
+import "misc.idl";
+
+[
+	uuid("a84e4f68-7f89-11f1-969e-3fec00e1ddde"),
+	version(0.0),
+	pointer_default(unique),
+	helpstring("cluster functional level structures")
+]
+interface cluster_level
+{
+	/*
+	 * The basic design of the cluster functional
+	 * level is the following:
+	 *
+	 * 1. The global active functional level
+	 *
+	 *    There is one globally active level, which
+	 *    consists of a major and a minor version
+	 *    (e.g. 1.0). As it is a single global value,
+	 *    the split into major and minor does not
+	 *    matter here, it only becomes relevant for
+	 *    the other aspects described below.
+	 *
+	 *    Every new Samba release (before rc1) bumps
+	 *    the major version and resets the minor
+	 *    version to 0, following the same logic we
+	 *    use for SMB_VFS_INTERFACE_VERSION.
+	 *
+	 *    Backports to stable branches should be
+	 *    avoided, but may be needed for critical bug
+	 *    fixes or security fixes. A backport bumps
+	 *    the minor version, and the checks that gate
+	 *    features on specific levels need to be
+	 *    adjusted accordingly.
+	 *
+	 * 2. The supported functional level ranges per node
+	 *
+	 *    Each node has an array of supported level
+	 *    ranges, hardcoded in the source code.
+	 *
+	 *    Each range specifies a major version
+	 *    together with the lowest and the highest
+	 *    supported minor version; every minor
+	 *    version in between is supported as well.
+	 *
+	 *    We start with a single range, 1.0 -> 1.0,
+	 *    which means only the initial level is
+	 *    supported.
+	 *
+	 *    As new features are added, more ranges
+	 *    appear, e.g. 3.0 -> 3.0; 2.0 -> 2.5;
+	 *    1.3 -> 1.9. Such a node can participate in
+	 *    a cluster whose active level falls into any
+	 *    of these ranges.
+	 *
+	 *    A backportable patchset also requires the
+	 *    corresponding minor bump in master, and it has
+	 *    to be applied to all older major levels there,
+	 *    so that further backports remain possible.
+	 *
+	 *    master changes from
+	 *      3.0 -> 3.0; 2.0 -> 2.5; 1.3 -> 1.9
+	 *    to
+	 *      3.0 -> 3.0; 2.0 -> 2.6; 1.3 -> 1.10
+	 *
+	 *    the latest stable branch changes from
+	 *      2.0 -> 2.5; 1.0 -> 1.9
+	 *    to
+	 *      2.0 -> 2.6; 1.0 -> 1.10
+	 *
+	 *    and an older stable branch changes from
+	 *      1.0 -> 1.9
+	 *    to
+	 *      1.0 -> 1.10
+	 *
+	 *    Removing old features should be avoided,
+	 *    but it can happen, either by dropping the
+	 *    oldest major levels or by raising the
+	 *    lowest supported minor version. In the
+	 *    example above, support for 1.0 -> 1.2 had
+	 *    already been dropped in master some time
+	 *    before.
+	 *
+	 * 3. Server startup (non-clustered or cluster node)
+	 *
+	 *    In the non-clustered case the global active
+	 *    level is initialized with the highest
+	 *    supported major.minor_max level, so the
+	 *    latest features are always used.
+	 *
+	 *    In a cluster the global active level is
+	 *    stored in the persistent database
+	 *    "cluster_level.tdb" under the key
+	 *    "CLUSTER_LEVEL_GLOBAL" as
+	 *    struct cluster_level_globalB.
+	 *
+	 *    On a fresh installation the first process
+	 *    initializes that record with its highest
+	 *    supported major.minor_max level.
+	 *
+	 *    The node then checks whether the global
+	 *    active level is compatible with its own
+	 *    supported level ranges. If it is not, the
+	 *    node exits instead of trying to participate
+	 *    in the cluster.
+	 *
+	 *    The first process started on a node updates
+	 *    the per node record under the key
+	 *    "CLUSTER_LEVEL_NODE/0x00000000", where
+	 *    0x00000000 is the vnn of the node in hex,
+	 *    storing struct cluster_level_nodeB. The pid
+	 *    and the start time of ctdbd are stored in
+	 *    that record as well, so that a cached
+	 *    record can be recognized as still valid by
+	 *    comparing these values.
+	 *
+	 *    Once a struct messaging_context has been
+	 *    created successfully, the active level is
+	 *    known and can be acted upon. In most cases
+	 *    this is the context returned by
+	 *    global_messaging_context().
+	 *
+	 * 4. Gating features on the active functional level
+	 *
+	 *    The general design is that code is always
+	 *    written such that it can read database
+	 *    records and handle messages of all
+	 *    supported levels.
+	 *
+	 *    New features are only gated at write/send
+	 *    time.
+	 *
+	 *    That allows code like this:
+	 *
+	 *      if (CLUSTER_LEVEL_ACTIVATED(5, 2)) {
+	 *         // handle 5.2, e.g. format_version = 3
+	 *      } else if (CLUSTER_LEVEL_ACTIVATED(3, 0)) {
+	 *         // handle 3.0, e.g. format_version = 2
+	 *      } else if (CLUSTER_LEVEL_ACTIVATED(1, 0)) {
+	 *         // handle 1.0, e.g. format_version = 1
+	 *      } else if (CLUSTER_LEVEL_ACTIVATED(0, 1)) {
+	 *         // handle 0.1, e.g. format_version = 0 or autodetect
+	 *      } else {
+	 *         // error!!! 0.0 should never be active
+	 *      }
+	 *
+	 *    Note that the versioning of an individual
+	 *    database or message remains independent of
+	 *    the cluster functional level. Code like the
+	 *    above only maps the global level onto the
+	 *    record or message version used for a given
+	 *    feature.
+	 *
+	 *    The basic rule for persistent databases is
+	 *    that the first writer converts the whole
+	 *    database in a single transaction.
+	 *
+	 *    For databases with a large number of
+	 *    records (mostly volatile ones, but also the
+	 *    persistent idmap databases) we will use
+	 *    different strategies, e.g. converting each
+	 *    record as it is modified, or converting the
+	 *    database asynchronously in the background.
+	 *
+	 * 5. Raising the global active functional level
+	 *
+	 *    The active level may only be raised if all
+	 *    nodes support the same highest
+	 *    major.minor_max combination, and it can
+	 *    only be raised to exactly that level.
+	 *
+	 *    By design there is no way to raise the
+	 *    level to an intermediate level that is
+	 *    supported but not the latest one, we always
+	 *    raise to the latest.
+	 *
+	 *    In order to avoid problems, at least the
+	 *    first iteration of the code additionally
+	 *    verifies that all nodes have registered the
+	 *    exact same set of ranges, which in practice
+	 *    means that all nodes most likely run the
+	 *    same software version.
+	 *
+	 *    The upgrade happens in a transaction,
+	 *    followed by a message to all processes
+	 *    connected to ctdbd on all nodes, sent via
+	 *    messaging_send_all().
+	 *
+	 *    So for some time code may still have the
+	 *    old level cached in memory and write or
+	 *    send old records or messages. That is not a
+	 *    real problem, because old records and
+	 *    messages are handled transparently on read.
+	 *
+	 * 6. Additional notes for the future
+	 *
+	 *    As a first step the database is managed by
+	 *    code outside of ctdb.
+	 *
+	 *    In the future (at the latest once there are
+	 *    incompatible changes to the ctdb protocol
+	 *    or behavior) we may let ctdbd manage the
+	 *    database and expose the currently active
+	 *    level via a local CTDB_CONTROL_. That
+	 *    control could return the vnn as well, so
+	 *    that the Samba side only needs a single
+	 *    CTDB_CONTROL_ after connecting.
+	 */
+
+
+	/*
+	 * The following defines levels and structures
+	 * for the main logic in the code.
+	 */
+
+	const int CLUSTER_LEVEL_MAJOR_1			= 0x00000001;
+	const int CLUSTER_LEVEL_MAJOR_1_MINOR_0		= 0x00000000;
+	const int CLUSTER_LEVEL_MAJOR_1_MINOR_MIN	=
+		CLUSTER_LEVEL_MAJOR_1_MINOR_0;
+	const int CLUSTER_LEVEL_MAJOR_1_MINOR_MAX	=
+		CLUSTER_LEVEL_MAJOR_1_MINOR_0;
+
+	const int CLUSTER_LEVEL_MAJOR_LATEST		=
+		CLUSTER_LEVEL_MAJOR_1;
+	const int CLUSTER_LEVEL_MAJOR_LATEST_MINOR_MAX	=
+		CLUSTER_LEVEL_MAJOR_1_MINOR_MAX;
+
+	typedef struct {
+		uint32 major;
+		uint32 minor;
+	} cluster_level_active;
+
+	typedef struct {
+		uint32 major;
+		uint32 minor_min;
+		uint32 minor_max;
+	} cluster_level_range;
+
+	typedef struct {
+		[range(1, 256)] uint32	num_ranges;
+		cluster_level_range	ranges[num_ranges];
+	} cluster_level_ranges;
+
+
+	/*
+	 * The following is just for internals
+	 * of the cluster_level.tdb.
+	 */
+
+	const string CLUSTER_LEVEL_TDB_NAME = "cluster_level.tdb";
+
+	/*
+	 * This is just versioning for the
+	 * cluster_level.tdb itself, it's not a global value.
+	 */
+	typedef [v1_enum] enum {
+		CLUSTER_LEVEL_DB_VERSION_1 = 0x00000001
+	} cluster_level_db_version;
+
+	typedef struct {
+		timeval			update_time;
+		cluster_level_active	active_level;
+	} cluster_level_global1;
+
+	typedef union {
+		[case(CLUSTER_LEVEL_DB_VERSION_1)] cluster_level_global1 info1;
+		[default] ;
+	} cluster_level_globalU;
+
+	typedef [public] struct {
+		cluster_level_db_version			version;
+		[switch_is(version)] cluster_level_globalU	info;
+	} cluster_level_globalB;
+	const string CLUSTER_LEVEL_GLOBAL_KEY = "CLUSTER_LEVEL_GLOBAL";
+
+	typedef struct {
+		timeval			update_time;
+		timeval			ctdbd_start_time;
+		uint32			ctdbd_pid;
+		cluster_level_ranges	supported_ranges;
+	} cluster_level_node1;
+
+	typedef union {
+		[case(CLUSTER_LEVEL_DB_VERSION_1)] cluster_level_node1 info1;
+		[default] ;
+	} cluster_level_nodeU;
+
+	typedef [public] struct {
+		cluster_level_db_version			version;
+		[switch_is(version)] cluster_level_nodeU	info;
+	} cluster_level_nodeB;
+	const string CLUSTER_LEVEL_NODE_KEY_PREFIX = "CLUSTER_LEVEL_NODE/";
+	const string CLUSTER_LEVEL_NODE_KEY_FMT = "CLUSTER_LEVEL_NODE/0x%08X";
+}
