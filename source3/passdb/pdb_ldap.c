@@ -4358,29 +4358,6 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	return result;
 }
 
-static char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
-{
-	char *filter = NULL;
-	char *escaped = NULL;
-	char *result = NULL;
-
-	if (asprintf(&filter, "(&%s(objectclass=%s))",
-			  "(uid=%u)", LDAP_OBJ_SAMBASAMACCOUNT) < 0) {
-		goto done;
-	}
-
-	escaped = escape_ldap_string(talloc_tos(), username);
-	if (escaped == NULL) goto done;
-
-	result = talloc_string_sub(mem_ctx, filter, "%u", username);
-
- done:
-	SAFE_FREE(filter);
-	TALLOC_FREE(escaped);
-
-	return result;
-}
-
 static const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 {
 	int i, num = 0;
@@ -4713,7 +4690,9 @@ static bool ldapsam_search_users(struct pdb_methods *methods,
 	state->acct_flags = acct_flags;
 	state->base = talloc_strdup(search, state->base);
 	state->scope = LDAP_SCOPE_SUBTREE;
-	state->filter = get_ldap_filter(search, "*");
+	state->filter = talloc_asprintf(search,
+					"(&(uid=*)(objectclass=%s))",
+					LDAP_OBJ_SAMBASAMACCOUNT);
 	state->attrs = talloc_attrs(search, "uid", "sambaSid",
 				    "displayName", "description",
 				    "sambaAcctFlags", NULL);
