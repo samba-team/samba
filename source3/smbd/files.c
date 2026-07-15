@@ -926,10 +926,7 @@ fail:
 
 static bool full_path_extend(char **dir, const char *atname)
 {
-	talloc_asprintf_addbuf(dir,
-			       "%s%s",
-			       (*dir)[0] == '\0' ? "" : "/",
-			       atname);
+	talloc_asprintf_addsep(dir, "/", "%s", atname);
 	return (*dir) != NULL;
 }
 
