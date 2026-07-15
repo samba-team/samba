@@ -60,6 +60,7 @@
 #include "lib/messages_ctdb_ref.h"
 #include "lib/messages_util.h"
 #include "cluster_support.h"
+#include "cluster_level_db.h"
 #include "ctdbd_conn.h"
 #include "ctdb_srvids.h"
 #include "source3/lib/tallocmsg.h"
@@ -561,6 +562,11 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
+		struct ctdbd_connection *ctdbd_conn = NULL;
+		const struct cluster_level_active *cl = NULL;
+		bool cl_valid = false;
+		bool gl_valid = false;
+
 		ref = messaging_ctdb_ref(
 			ctx->per_process_talloc_ctx,
 			ctx->event_ctx,
@@ -576,13 +582,70 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 			status = map_nt_error_from_unix(ret);
 			goto done;
 		}
-	}
+
+		ctdbd_conn = messaging_ctdb_connection();
+		if (ctdbd_conn == NULL) {
+			DBG_ERR("messaging_ctdb_connection() failed!\n");
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+
+		ctx->id.vnn = get_my_vnn();
+
+		/*
+		 * This gets the current active level from
+		 * the ctdb connection, which was fetched
+		 * in readonly fashion.
+		 */
+		cl = ctdbd_conn_get_cluster_level(ctdbd_conn);
+		if (cl == NULL) {
+			DBG_ERR("ctdbd_conn_get_cluster_level() failed!\n");
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+
+		cl_valid = cluster_level_is_valid(cl);
+		gl_valid = cluster_level_global_is_valid();
+		if (!cl_valid || !gl_valid) {
+			/*
+			 * If the value on the ctdb connection
+			 * is not valid, this is the first process
+			 * (that has support for cluster functional level)
+			 * ever started in the current cluster.
+			 * It means we need to initialize the global
+			 * stored active level.
+			 *
+			 *
+			 * If in memory cached level is not valid yet,
+			 * we need to check if we're the first process
+			 * that is started for the currently running
+			 * ctdbd.
+			 *
+			 * Both cases are evaluated again within a
+			 * transaction in cluster_level_db_check_or_update().
+			 */
+			status = cluster_level_db_check_or_update(ctdbd_conn,
+								  ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("cluster_level_db_check_or_update() "
+					"- %s\n", nt_errstr(status));
+				goto done;
+			}
+
+			cl = ctdbd_conn_get_cluster_level(ctdbd_conn);
+		}
+
+		SMB_ASSERT(cl != NULL);
+		SMB_ASSERT(cluster_level_is_valid(cl));
+		cluster_level_activate(cl);
+	} else
 #endif
+	{
+		ctx->id.vnn = get_my_vnn();
 
-	ctx->id.vnn = get_my_vnn();
-
-	if (!cluster_level_global_is_valid()) {
-		cluster_level_activate_latest();
+		if (!cluster_level_global_is_valid()) {
+			cluster_level_activate_latest();
+		}
 	}
 
 	ctx->names_db = server_id_db_init(ctx,
