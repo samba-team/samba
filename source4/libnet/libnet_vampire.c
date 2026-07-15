@@ -310,10 +310,9 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
-	if (tmp_dns_name == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
-	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	talloc_asprintf_addbuf(&tmp_dns_name,
+			       "._msdcs.%s",
+			       c->forest->dns_name);
 	if (tmp_dns_name == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
