@@ -1069,15 +1069,11 @@ char *msdfs_link_string(TALLOC_CTX *ctx,
 			size_t referral_count)
 {
 	char *refpath = NULL;
-	bool insert_comma = false;
 	char *msdfs_link = NULL;
+	char *referrals = NULL;
 	size_t i;
 
-	/* Form the msdfs_link contents */
-	msdfs_link = talloc_strdup(ctx, "msdfs:");
-	if (msdfs_link == NULL) {
-		goto err;
-	}
+	referrals = talloc_strdup(ctx, "");
 
 	for( i= 0; i < referral_count; i++) {
 		refpath = talloc_strdup(ctx, reflist[i].alternate_path);
@@ -1089,30 +1085,19 @@ char *msdfs_link_string(TALLOC_CTX *ctx,
 		/* Alternate paths always use Windows separators. */
 		trim_char(refpath, '\\', '\\');
 		if (*refpath == '\0') {
-			if (i == 0) {
-				insert_comma = false;
-			}
 			continue;
 		}
-		if (i > 0 && insert_comma) {
-			msdfs_link = talloc_asprintf_append_buffer(msdfs_link,
-					",%s",
-					refpath);
-		} else {
-			msdfs_link = talloc_asprintf_append_buffer(msdfs_link,
-					"%s",
-					refpath);
-		}
-
-		if (msdfs_link == NULL) {
-			goto err;
-		}
-
-		insert_comma = true;
+		talloc_asprintf_addsep(&referrals, ",", "%s", refpath);
 
 		TALLOC_FREE(refpath);
 	}
 
+	if (referrals == NULL) {
+		goto err;
+	}
+
+	msdfs_link = talloc_asprintf(ctx, "msdfs:%s", referrals);
+	TALLOC_FREE(referrals);
 	return msdfs_link;
 
   err:
