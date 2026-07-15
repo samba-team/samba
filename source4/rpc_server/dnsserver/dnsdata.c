@@ -269,14 +269,12 @@ char *dns_split_node_name(TALLOC_CTX *tmp_ctx, const char *node_name, const char
 			if (match == ncount) {
 				prefix = talloc_strdup(tmp_ctx, zone_name);
 			} else {
-				prefix = talloc_strdup(tmp_ctx, nlist[0]);
-				if (prefix != NULL) {
-					for (i=1; i<ncount-match; i++) {
-						prefix = talloc_asprintf_append(prefix, ".%s", nlist[i]);
-						if (prefix == NULL) {
-							break;
-						}
-					}
+				prefix = talloc_strdup(tmp_ctx, "");
+				for (i = 0; i < ncount - match; i++) {
+					talloc_asprintf_addsep(&prefix,
+							       ".",
+							       "%s",
+							       nlist[i]);
 				}
 			}
 		}
