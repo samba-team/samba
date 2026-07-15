@@ -715,9 +715,6 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		goto failed;
 	}
 	string = talloc_strdup(mem_ctx, "");
-	if (string == NULL) {
-		goto failed;
-	}
 
 	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
 		DATA_BLOB oid_blob;
@@ -738,6 +735,10 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				       blob->ctr.dsdb.mappings[i].id_prefix,
 				       partial_oid);
 		talloc_free(discard_const(partial_oid));
+	}
+
+	if (string == NULL) {
+		goto failed;
 	}
 
 	talloc_free(blob);
