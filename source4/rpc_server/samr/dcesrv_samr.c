@@ -2060,21 +2060,16 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 				 "(objectclass=group)(|",
 				 GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
 				 GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
-	if (filter == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	for (i=0; i<r->in.sids->num_sids; i++) {
 		struct dom_sid_buf buf;
 
-		filter = talloc_asprintf_append(
-			filter,
+		talloc_asprintf_addbuf(
+			&filter,
 			"(member=<SID=%s>)",
 			dom_sid_str_buf(r->in.sids->sids[i].sid, &buf));
-
-		if (filter == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	}
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Find out if we had at least one valid member SID passed - otherwise
