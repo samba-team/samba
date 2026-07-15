@@ -5576,15 +5576,23 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 	int num_result;
 	const char *dn;
 	char *filter;
+	char *escape_username = NULL;
 	int rc;
 
 	DEBUG(0,("ldapsam_delete_user: Attempt to delete user [%s]\n", pdb_get_username(sam_acct)));
+
+	escape_username = escape_ldap_string(tmp_ctx,
+					     pdb_get_username(sam_acct));
+	if (escape_username == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(uid=%s)"
 				 "(objectClass="LDAP_OBJ_POSIXACCOUNT")"
 				 "(objectClass="LDAP_OBJ_SAMBASAMACCOUNT"))",
-				 pdb_get_username(sam_acct));
+				 escape_username);
+	TALLOC_FREE(escape_username);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
