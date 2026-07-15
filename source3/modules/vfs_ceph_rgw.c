@@ -155,10 +155,7 @@ static char *normalise_name(TALLOC_CTX *ctx, const char *pathname_in)
 		if (strcmp(token, ".") == 0 || strcmp(token, "..") == 0) {
 			continue;
 		}
-		talloc_asprintf_addbuf(&result,
-				       "%s%s",
-				       *result ? "/" : "",
-				       token);
+		talloc_asprintf_addsep(&result, "/", "%s", token);
 	}
 
 	TALLOC_FREE(copy);
