@@ -56,18 +56,14 @@ static int compact_args(TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	arg_str = talloc_strdup(mem_ctx, argv[from]);
+	arg_str = talloc_strdup(mem_ctx, "");
+	for (i = from; i < argc; i++) {
+		talloc_asprintf_addsep(&arg_str, " ", "%s", argv[i]);
+	}
+
 	if (arg_str == NULL) {
 		return ENOMEM;
 	}
-
-	for (i = from+1; i < argc; i++) {
-		arg_str = talloc_asprintf_append(arg_str, " %s", argv[i]);
-		if (arg_str == NULL) {
-			return ENOMEM;
-		}
-	}
-
 	*result = arg_str;
 	return 0;
 }
