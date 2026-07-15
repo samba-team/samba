@@ -56,7 +56,7 @@ extern "C" {
  */
 
 #define TALLOC_VERSION_MAJOR 2
-#define TALLOC_VERSION_MINOR 4
+#define TALLOC_VERSION_MINOR 5
 
 _PUBLIC_ int talloc_version_major(void);
 _PUBLIC_ int talloc_version_minor(void);
@@ -1624,6 +1624,26 @@ _PUBLIC_ char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list 
  */
 _PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...) \
 	PRINTF_ATTRIBUTE(2,3);
+
+/**
+ * @brief Build up a string buffer of multiple elements with a separator
+ *
+ * @param[in] ps Pointer to the talloc'ed string to be extended
+ * @param[in] fmt The format string
+ * @param[in] ... The parameters used to fill fmt.
+ *
+ * If you want to build up "a,b,c" from "a", "b" and "c" you have to
+ * take care of the "," with custom code. This function assumes that
+ * "*ps" is prepared with talloc_strdup(.., "") and adds "sep" before
+ * the asprintf if "*ps" is not an empty string.
+ *
+ * It inherits memory allocation behaviour from
+ * talloc_asprintf_addbuf().
+ */
+_PUBLIC_ void talloc_asprintf_addsep(char **ps,
+				     const char *sep,
+				     const char *fmt,
+				     ...) PRINTF_ATTRIBUTE(3, 4);
 
 /**
  * @brief Format a string.

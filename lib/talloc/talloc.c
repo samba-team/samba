@@ -2750,13 +2750,8 @@ _PUBLIC_ char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...)
 	return s;
 }
 
-/*
- * Function to make string-building simple by handling intermediate
- * realloc failures. See for example commit a37ea9d750e1.
- */
-_PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
+static void talloc_vasprintf_addbuf(char **ps, const char *fmt, va_list ap)
 {
-	va_list ap;
 	char *s = *ps;
 	char *t = NULL;
 
@@ -2764,9 +2759,7 @@ _PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
 		return;
 	}
 
-	va_start(ap, fmt);
 	t = talloc_vasprintf_append_buffer(s, fmt, ap);
-	va_end(ap);
 
 	if (t == NULL) {
 		/* signal failure to the next caller */
@@ -2775,6 +2768,35 @@ _PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
 	} else {
 		*ps = t;
 	}
+}
+
+/*
+ * Function to make string-building simple by handling intermediate
+ * realloc failures. See for example commit a37ea9d750e1.
+ */
+_PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	talloc_vasprintf_addbuf(ps, fmt, ap);
+	va_end(ap);
+}
+
+_PUBLIC_ void talloc_asprintf_addsep(char **ps,
+				     const char *sep,
+				     const char *fmt,
+				     ...)
+{
+	va_list ap;
+	char *s = *ps;
+
+	if ((s != NULL) && (s[0] != '\0')) {
+		talloc_asprintf_addbuf(ps, "%s", sep);
+	}
+
+	va_start(ap, fmt);
+	talloc_vasprintf_addbuf(ps, fmt, ap);
+	va_end(ap);
 }
 
 /*
