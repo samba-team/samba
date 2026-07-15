@@ -40,6 +40,8 @@
 #include "lib/async_req/async_sock.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_rbt.h"
+#include "librpc/gen_ndr/ndr_cluster_level.h"
+#include "cluster_support.h"
 
 /* paths to these include files come from --with-ctdb= in configure */
 
@@ -58,6 +60,7 @@ struct ctdbd_connection {
 		pid_t pid;
 		struct timeval start_time;
 	} local_ctdbd;
+	struct cluster_level_active active_level;
 	uint32_t reqid;
 	uint32_t our_vnn;
 	uint64_t rand_srvid;
@@ -440,6 +443,31 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 fail:
 	TALLOC_FREE(m);
 	return ok;
+}
+
+/*
+ * Get the cluster-wide active functional level.
+ */
+const struct cluster_level_active *ctdbd_conn_get_cluster_level(
+					struct ctdbd_connection *conn)
+{
+	return &conn->active_level;
+}
+
+/*
+ * Set the cluster-wide active functional level
+ * on the ctdbd_connection, for the cases of the
+ * initial creation of the global version.
+ */
+void ctdbd_conn_set_cluster_level(struct ctdbd_connection *conn,
+				  const struct cluster_level_active *level)
+{
+	/*
+	 * only upgrades are possible
+	 */
+	SMB_ASSERT(cluster_level_is_valid(level));
+	SMB_ASSERT(cluster_level_is_valid_update(&conn->active_level, level));
+	conn->active_level = *level;
 }
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn)

@@ -30,6 +30,7 @@
 struct ctdbd_connection;
 struct messaging_context;
 struct messaging_rec;
+struct cluster_level_active;
 
 int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 			  const char *sockname, int timeout,
@@ -41,6 +42,10 @@ int ctdbd_init_async_connection(
 	struct ctdbd_connection **pconn);
 
 int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation);
+const struct cluster_level_active *ctdbd_conn_get_cluster_level(
+					struct ctdbd_connection *conn);
+void ctdbd_conn_set_cluster_level(struct ctdbd_connection *conn,
+				  const struct cluster_level_active *level);
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 pid_t ctdbd_pid(const struct ctdbd_connection *conn);
 struct timeval ctdbd_start_time(const struct ctdbd_connection *conn);
