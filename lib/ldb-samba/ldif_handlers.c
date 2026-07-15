@@ -720,10 +720,6 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		DATA_BLOB oid_blob;
 		char *partial_oid = NULL;
 
-		if (i > 0) {
-			talloc_asprintf_addbuf(&string, ";");
-		}
-
 		oid_blob = data_blob_const(blob->ctr.dsdb.mappings[i].oid.binary_oid,
 					   blob->ctr.dsdb.mappings[i].oid.length);
 		if (!ber_read_partial_OID_String(blob, oid_blob, &partial_oid)) {
@@ -731,7 +727,9 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				  blob->ctr.dsdb.mappings[i].id_prefix));
 			goto failed;
 		}
-		talloc_asprintf_addbuf(&string, "%u:%s",
+		talloc_asprintf_addsep(&string,
+				       ";",
+				       "%u:%s",
 				       blob->ctr.dsdb.mappings[i].id_prefix,
 				       partial_oid);
 		talloc_free(discard_const(partial_oid));
