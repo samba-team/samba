@@ -21,7 +21,11 @@
 #define CLUSTER_LEVEL_DB_H
 
 struct ctdbd_connection;
+struct messaging_context;
 
 NTSTATUS cluster_level_db_check(struct ctdbd_connection *ctdb_conn);
+
+NTSTATUS cluster_level_db_check_or_update(struct ctdbd_connection *ctdb_conn,
+					  struct messaging_context *msg_ctx);
 
 #endif /* CLUSTER_LEVEL_DB_H */
