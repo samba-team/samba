@@ -56,16 +56,22 @@ bool db_is_local(const char *name)
 /**
  * open a database
  */
-struct db_context *db_open(TALLOC_CTX *mem_ctx,
-			   const char *name,
-			   int hash_size, int tdb_flags,
-			   int open_flags, mode_t mode,
-			   enum dbwrap_lock_order lock_order,
-			   uint64_t dbwrap_flags)
+struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev_ctx_ex,
+			      struct messaging_context *msg_ctx_ex,
+			      struct ctdbd_connection *ctdb_conn_ex,
+			      const char *name,
+			      int hash_size,
+			      int tdb_flags,
+			      int open_flags,
+			      mode_t mode,
+			      enum dbwrap_lock_order lock_order,
+			      uint64_t dbwrap_flags)
 {
 	struct db_context *result = NULL;
 	const char *base;
 	struct loadparm_context *lp_ctx = NULL;
+	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 
 	if ((lock_order != DBWRAP_LOCK_ORDER_NONE) &&
 	    !DBWRAP_LOCK_ORDER_VALID(lock_order)) {
@@ -150,31 +156,60 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 
 		/* allow ctdb for individual databases to be disabled */
 		if (lp_parm_bool(-1, "ctdb", base, true)) {
-			struct messaging_context *msg_ctx;
-			struct ctdbd_connection *conn;
+			struct messaging_context *msg_ctx = NULL;
+			struct ctdbd_connection *conn = NULL;
+			struct tevent_context *ev_ctx = NULL;
+			bool allow_transactions = persistent;
 
-			/*
-			 * Initialize messaging before getting the ctdb
-			 * connection, as the ctdb connection requires messaging
-			 * to be initialized.
-			 */
-			msg_ctx = global_messaging_context();
-			if (msg_ctx == NULL) {
-				DBG_ERR("Failed to initialize messaging\n");
-				return NULL;
+			if (ev_ctx_ex != NULL) {
+				ev_ctx = ev_ctx_ex;
+			} else {
+				ev_ctx = global_event_context();
+				if (ev_ctx == NULL) {
+					DBG_ERR("global_event_context() failed\n");
+					return NULL;
+				}
 			}
 
-			conn = messaging_ctdb_connection();
-			if (conn == NULL) {
-				DBG_WARNING("No ctdb connection\n");
-				errno = EIO;
-				return NULL;
+			if (msg_ctx_ex != NULL) {
+				msg_ctx = msg_ctx_ex;
+			} else {
+				/*
+				 * Initialize messaging before getting the ctdb
+				 * connection, as the ctdb connection requires messaging
+				 * to be initialized.
+				 */
+				msg_ctx = global_messaging_context();
+				if (msg_ctx == NULL) {
+					DBG_ERR("Failed to initialize messaging\n");
+					return NULL;
+				}
 			}
 
-			result = db_open_ctdb(mem_ctx, msg_ctx, base,
-					      hash_size,
-					      tdb_flags, open_flags, mode,
-					      lock_order, dbwrap_flags);
+			if (ctdb_conn_ex != NULL) {
+				conn = ctdb_conn_ex;
+			} else {
+				conn = messaging_ctdb_connection();
+				if (conn == NULL) {
+					DBG_WARNING("No ctdb connection\n");
+					errno = EIO;
+					return NULL;
+				}
+			}
+
+			result = db_open_ctdb_ex(mem_ctx,
+						 ev_ctx,
+						 msg_ctx,
+						 conn,
+						 persistent,
+						 allow_transactions,
+						 base,
+						 hash_size,
+						 tdb_flags,
+						 open_flags,
+						 mode,
+						 lock_order,
+						 dbwrap_flags);
 			if (result == NULL) {
 				DBG_ERR("failed to attach to ctdb %s\n", base);
 				if (errno == 0) {
@@ -204,4 +239,30 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 				   dbwrap_flags);
 	talloc_unlink(mem_ctx, lp_ctx);
 	return result;
+}
+
+struct db_context *db_open(TALLOC_CTX *mem_ctx,
+			   const char *name,
+			   int hash_size,
+			   int tdb_flags,
+			   int open_flags,
+			   mode_t mode,
+			   enum dbwrap_lock_order lock_order,
+			   uint64_t dbwrap_flags)
+{
+	struct db_context *db = NULL;
+
+	db = db_open_ex(mem_ctx,
+			NULL, /* ev_ctx_ex */
+			NULL, /* msg_ctx_ex */
+			NULL, /* ctdb_conn_ex */
+			name,
+			hash_size,
+			tdb_flags,
+			open_flags,
+			mode,
+			lock_order,
+			dbwrap_flags);
+
+	return db;
 }

@@ -22,6 +22,9 @@
 #define __DBWRAP_OPEN_H__
 
 struct db_context;
+struct tevent_context;
+struct messaging_context;
+struct ctdbd_connection;
 
 /**
  * Convenience function to check whether a tdb database
@@ -35,10 +38,23 @@ bool db_is_local(const char *name);
  * backend, based on lp_clustering() and a db-specific
  * settings.
  */
+struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev_ctx_ex,
+			      struct messaging_context *msg_ctx_ex,
+			      struct ctdbd_connection *ctdb_conn_ex,
+			      const char *name,
+			      int hash_size,
+			      int tdb_flags,
+			      int open_flags,
+			      mode_t mode,
+			      enum dbwrap_lock_order lock_order,
+			      uint64_t dbwrap_flags);
 struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
-			   int hash_size, int tdb_flags,
-			   int open_flags, mode_t mode,
+			   int hash_size,
+			   int tdb_flags,
+			   int open_flags,
+			   mode_t mode,
 			   enum dbwrap_lock_order lock_order,
 			   uint64_t dbwrap_flags);
 
