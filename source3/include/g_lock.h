@@ -27,6 +27,8 @@
 struct g_lock_ctx;
 struct g_lock_lock_cb_state;
 struct messaging_context;
+struct tevent_context;
+struct ctdbd_connection;
 
 enum g_lock_type {
 	G_LOCK_READ,
@@ -41,6 +43,10 @@ struct g_lock_ctx *g_lock_ctx_init_backend(
 	struct db_context **backend);
 void g_lock_set_lock_order(struct g_lock_ctx *ctx,
 			   enum dbwrap_lock_order lock_order);
+struct g_lock_ctx *g_lock_ctx_init_ex(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg,
+				      struct tevent_context *ev_ctx_ex,
+				      struct ctdbd_connection *ctdb_conn_ex);
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg);
 

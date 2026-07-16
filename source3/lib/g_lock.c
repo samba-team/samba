@@ -224,20 +224,27 @@ void g_lock_set_lock_order(struct g_lock_ctx *ctx,
 	ctx->lock_order = lock_order;
 }
 
-struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
-				   struct messaging_context *msg)
+struct g_lock_ctx *g_lock_ctx_init_ex(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg,
+				      struct tevent_context *ev_ctx_ex,
+				      struct ctdbd_connection *ctdb_conn_ex)
 {
 	char *db_path = NULL;
 	struct db_context *backend = NULL;
 	struct g_lock_ctx *ctx = NULL;
+
+	SMB_ASSERT(msg != NULL);
 
 	db_path = lock_path(mem_ctx, "g_lock.tdb");
 	if (db_path == NULL) {
 		return NULL;
 	}
 
-	backend = db_open(
+	backend = db_open_ex(
 		mem_ctx,
+		ev_ctx_ex,
+		msg,
+		ctdb_conn_ex,
 		db_path,
 		0,
 		TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH|TDB_VOLATILE,
@@ -252,6 +259,24 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 	}
 
 	ctx = g_lock_ctx_init_backend(mem_ctx, msg, &backend);
+	return ctx;
+}
+
+struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
+				   struct messaging_context *msg)
+{
+	struct g_lock_ctx *ctx = NULL;
+	static bool busy;
+
+	SMB_ASSERT(!busy);
+
+	busy = true;
+	ctx = g_lock_ctx_init_ex(mem_ctx,
+				 msg,
+				 NULL,  /* ev_ctx_ex */
+				 NULL); /* ctdb_conn_ex */
+	busy = false;
+
 	return ctx;
 }
 
