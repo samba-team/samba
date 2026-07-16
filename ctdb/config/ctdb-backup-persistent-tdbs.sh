@@ -39,14 +39,15 @@ die()
 
 usage()
 {
-	die "usage: $0 [-l | -L <rc> ] <dir>"
+	die "usage: $0 [-l | -L <rc> ] [-m <mode>] <dir>"
 }
 
 leader_only=false
 leader_only_rc=0
 dir=""
+mode="0700"
 
-while getopts "L:lh?" opt; do
+while getopts "L:lm:h?" opt; do
 	case "$opt" in
 	L)
 		leader_only=true
@@ -54,6 +55,9 @@ while getopts "L:lh?" opt; do
 		;;
 	l)
 		leader_only=true
+		;;
+	m)
+		mode="$OPTARG"
 		;;
 	\? | h)
 		usage
@@ -111,6 +115,9 @@ done
 #
 
 cd "$dir" || die "Failed to change directory to ${dir}"
+
+# Tighten permissions on backup directory
+chmod "$mode" "$dir"
 
 tarball="${prefix}.tgz"
 

@@ -56,6 +56,18 @@ if [ -n "$format" ]; then
 			;;
 		esac
 		;;
+	"%a" | "%Lp")
+		# File permissions in octal
+		. /etc/os-release
+		case "$ID" in
+		freebsd)
+			exec /usr/bin/stat -f '%Lp' "$@"
+			;;
+		*)
+			exec /usr/bin/stat -c "%a" "$@"
+			;;
+		esac
+		;;
 	esac
 
 	rc=0

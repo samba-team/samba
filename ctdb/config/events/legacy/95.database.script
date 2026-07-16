@@ -121,9 +121,11 @@ maybe_backup_persistent_tdbs()
 		return 0
 	fi
 
+	# Permissions on $_dir are enforced by ctdb-backup-persistent-tdbs.sh.
 	# Script will ignore if this isn't leader node, so don't
 	# double-check that here...
-	"${CTDB_BASE}/ctdb-backup-persistent-tdbs.sh" -l "$_dir"
+	_mode="${CTDB_PERSISTENT_DB_BACKUP_MODE:-0700}"
+	"${CTDB_BASE}/ctdb-backup-persistent-tdbs.sh" -l -m "$_mode" "$_dir"
 
 	# Remove backups beyond the limit (default 14)
 	_limit="${CTDB_PERSISTENT_DB_BACKUP_LIMIT:-14}"
