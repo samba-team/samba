@@ -2980,9 +2980,12 @@ struct db_context *db_open_ctdb_ex(TALLOC_CTX *mem_ctx,
 	}
 
 	if (db_ctdb->allow_transactions) {
-		db_ctdb->lock_ctx = g_lock_ctx_init(db_ctdb, msg_ctx);
+		db_ctdb->lock_ctx = g_lock_ctx_init_ex(db_ctdb,
+						       msg_ctx,
+						       ev_ctx,
+						       ctdb_conn);
 		if (db_ctdb->lock_ctx == NULL) {
-			DEBUG(0, ("g_lock_ctx_init failed\n"));
+			DEBUG(0, ("g_lock_ctx_init_ex failed\n"));
 			TALLOC_FREE(result);
 			return NULL;
 		}
