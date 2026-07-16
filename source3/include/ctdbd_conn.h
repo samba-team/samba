@@ -39,9 +39,6 @@ int ctdbd_init_async_connection(
 	const char *sockname,
 	int timeout,
 	struct ctdbd_connection **pconn);
-int ctdbd_reinit_connection(TALLOC_CTX *mem_ctx,
-			    const char *sockname, int timeout,
-			    struct ctdbd_connection *conn);
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation);
