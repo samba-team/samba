@@ -16,6 +16,46 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+SMB3 Persistent Handles (Experimental)
+--------------------------------------
+
+Samba now includes experimental support for SMB3 Persistent Handles,
+a fundamental building block for Transparent Failover.
+
+Persistent Handles allow SMB clients to reconnect after a server
+restart or outage while retaining valid file handles. Samba persists
+all necessary handle state to durable on-disk storage so that open
+files can be reconstructed when clients reconnect. This enables
+applications that depend on uninterrupted file access, such as virtual
+machine storage and clustered database workloads, to tolerate
+temporary server failures without having to reopen files.
+
+Persistent Handles are advertised through the SMB3 protocol capability
+SMB2_CAP_PERSISTENT_HANDLES. To make use of them on a share, both the
+global "smb3 persistent handles" option and the per-share
+"continuous availability" option must be enabled.
+
+Because Persistent Handles require Samba to maintain SMB state, they
+are only available on shares configured for SMB-exclusive
+access. Specifically, they require:
+
+kernel oplocks = no
+kernel share modes = no
+posix locking = no
+
+These settings disable interoperability with local POSIX file access
+and NFS clients on the affected share.
+
+Administrators should be aware that Persistent Handles incur a
+significant performance cost. File handle metadata is synchronously
+persisted to durable storage for every open, update, lease, and close
+operation, increasing latency compared to traditional SMB file
+serving. For this reason, the feature is intended only for workloads
+that require Continuous Availability semantics and is not recommended
+for general-purpose file servers.
+
+This feature is currently considered experimental.
+
 JSON Audit logging
 ------------------
 
