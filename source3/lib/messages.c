@@ -581,6 +581,10 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 
 	ctx->id.vnn = get_my_vnn();
 
+	if (!cluster_level_global_is_valid()) {
+		cluster_level_activate_latest();
+	}
+
 	ctx->names_db = server_id_db_init(ctx,
 					  ctx->id,
 					  lp_lock_directory(),
