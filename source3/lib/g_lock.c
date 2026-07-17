@@ -727,6 +727,8 @@ static NTSTATUS g_lock_trylock(
 		if (!self_exclusive) {
 			bool exists = serverid_exists(&lck.exclusive);
 			if (!exists) {
+				DBG_INFO("Exclusive locker %s died -- removing\n",
+					 server_id_str_buf(lck.exclusive, &tmp));
 				lck.exclusive = (struct server_id) { .pid=0 };
 				goto noexclusive;
 			}
