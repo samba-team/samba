@@ -251,7 +251,11 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   uint64_t dbwrap_flags)
 {
 	struct db_context *db = NULL;
+	static bool busy;
 
+	SMB_ASSERT(!busy);
+
+	busy = true;
 	db = db_open_ex(mem_ctx,
 			NULL, /* ev_ctx_ex */
 			NULL, /* msg_ctx_ex */
@@ -263,6 +267,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			mode,
 			lock_order,
 			dbwrap_flags);
+	busy = false;
 
 	return db;
 }
