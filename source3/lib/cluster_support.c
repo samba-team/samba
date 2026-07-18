@@ -348,6 +348,8 @@ void cluster_level_activate(const struct cluster_level_active *level)
  */
 void cluster_level_activate_latest(void)
 {
+	SMB_ASSERT(!lp_clustering());
+
 	global_level_activated = (struct cluster_level_active) {
 		.major = supported_ranges[0].major,
 		.minor = supported_ranges[0].minor_max,
