@@ -25,6 +25,7 @@ struct tevent_context *global_event_context(void);
 void global_event_context_free(void);
 
 struct messaging_context;
+struct messaging_context *global_messaging_context_raw(void);
 struct messaging_context *global_messaging_context(void);
 void global_messaging_context_free(void);
 

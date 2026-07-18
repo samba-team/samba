@@ -51,6 +51,11 @@ void global_event_context_free(void)
 
 static struct messaging_context *global_msg_ctx = NULL;
 
+struct messaging_context *global_messaging_context_raw(void)
+{
+	return global_msg_ctx;
+}
+
 struct messaging_context *global_messaging_context(void)
 {
 	if (global_msg_ctx == NULL) {
