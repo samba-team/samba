@@ -43,7 +43,6 @@
 #include "lib/addns/dnsquery.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/smb_strtox.h"
-#include <arpa/nameser.h>
 #include <resolv.h>
 
 struct dns_ex_state {
