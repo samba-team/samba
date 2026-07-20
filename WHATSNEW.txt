@@ -1,4 +1,112 @@
                    ===============================
+                   Release Notes for Samba 4.22.11
+                           July 28, 2026
+                   ===============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2026-6949:   TSIG packet with name compression can crash DNS
+
+                   Incorrect size calculations when a TSIG record contains
+                   compressed names can lead to a large out-of-bounds write
+                   causing the server to crash.
+
+                   https://www.samba.org/samba/security/CVE-2026-6949.html
+
+
+o CVE-2026-58216:  An authenticated user could possibly crash a KDC process
+
+                   A kpasswd packet that contains malformed ASN.1 might cause
+                   the server to access 6 bytes of unallocated memory. This
+                   memory is not exposed to the user, but in some
+                   circumstances the server could crash.
+
+                   https://www.samba.org/samba/security/CVE-2026-58216.html
+
+
+o CVE-2026-58218:  DNS signing DoS via TKEY name cache exhaustion
+
+                   An unauthenticated user can repeatedly register names TKEY
+                   names, which floods a cache causing legitimate TKEYs to be
+                   expunged. This can practically block the use DNS TSIG
+                   signing.
+
+                   https://www.samba.org/samba/security/CVE-2026-58218.html
+
+
+o CVE-2026-58221:  Samba AD authenticated LDAP access domain takeover
+
+                   Samba AD low-privilege authenticated LDAP access allows
+                   modifications to internal LDB special DNs, which permits a
+                   domain takeover.
+
+                   https://www.samba.org/samba/security/CVE-2026-58221.html
+
+
+o CVE-2026-58222:  Samba AD LDAP Compare filter injection and trusted-request
+                   confusion disclose protected attributes
+
+                   An ordinary authenticated domain user can bypass access
+                   checks and query confidential Active Directory attributes
+                   (such as KDS root keys) via LDAP Compare requests. Due to a
+                   filter injection flaw and trusted execution context, the
+                   LDAP Compare operation can be turned into a
+                   protected-attribute disclosure oracle.
+
+                   https://www.samba.org/samba/security/CVE-2026-58222.html
+
+
+o CVE-2026-58224   The CTDB protocol has bounds checking issues
+
+                   CTDB fails to do integrity checking of received packets.
+                   This includes failure to check field lengths against packet
+                   lengths when unmarshalling packets.
+
+                   https://www.samba.org/samba/security/CVE-2026-58224.html
+
+
+Changes since 4.22.10
+---------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 16087: CVE-2026-58216
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16115: CVE-2026-58218
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 16083: CVE-2026-6949
+   * BUG 16147: CVE-2026-58221
+   * BUG 16148: CVE-2026-58222
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 16085: CVE-2026-58224
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.22.10
                             May 26, 2026
                    ===============================
@@ -120,8 +228,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.22.9
                            April 09, 2026
