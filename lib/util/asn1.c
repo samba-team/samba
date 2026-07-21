@@ -524,13 +524,27 @@ bool asn1_load(struct asn1_data *data, DATA_BLOB blob)
 /* Peek into an ASN1 buffer, not advancing the pointer */
 bool asn1_peek(struct asn1_data *data, void *p, int len)
 {
+	size_t ofs, end;
+
 	if (data->has_error)
 		return false;
 
-	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
+	if (len < 0) {
 		return false;
+	}
 
-	if (data->ofs + len > data->length) {
+	if (data->ofs < 0) {
+		data->has_error = true;
+		return false;
+	}
+	ofs = data->ofs;
+
+	end = ofs + len;
+	if (end < ofs) {
+		return false;
+	}
+
+	if (end > data->length) {
 		/* we need to mark the buffer as consumed, so the caller knows
 		   this was an out of data error, and not a decode error */
 		data->ofs = data->length;
