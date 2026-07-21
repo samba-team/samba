@@ -80,22 +80,35 @@ off_t asn1_current_ofs(const struct asn1_data *data)
 }
 
 /* write to the ASN1 buffer, advancing the buffer pointer */
-bool asn1_write(struct asn1_data *data, const void *p, int len)
+bool asn1_write(struct asn1_data *data, const void *p, int _len)
 {
+	size_t len, ofs, newlen;
+
 	if (data->has_error) return false;
 
-	if ((len < 0) || (data->ofs + (size_t)len < data->ofs)) {
+	if (_len < 0) {
+		goto error;
+	}
+	len = _len;
+
+	if (data->ofs < 0) {
+		goto error;
+	}
+	ofs = data->ofs;
+
+	newlen = ofs + len;
+	if (newlen < ofs) {
 		goto error;
 	}
 
-	if (data->length < data->ofs+len) {
+	if (data->length < newlen) {
 		uint8_t *newp;
-		newp = talloc_realloc(data, data->data, uint8_t, data->ofs+len);
+		newp = talloc_realloc(data, data->data, uint8_t, newlen);
 		if (!newp) {
 			goto error;
 		}
 		data->data = newp;
-		data->length = data->ofs+len;
+		data->length = newlen;
 	}
 	if (len > 0) {
 		memcpy(data->data + data->ofs, p, len);
