@@ -664,7 +664,7 @@ sub setup_clusteredmember
 	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= "$net ads join $ret->{CONFIGURATION} $dcvars->{DOMAIN}";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
 
 	if (system($cmd) != 0) {
