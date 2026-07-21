@@ -751,19 +751,19 @@ int asn1_tag_remaining(struct asn1_data *data)
 	}
 
 	if (!data->nesting) {
-		data->has_error = true;
-		return -1;
+		goto error;
 	}
 	remaining = data->nesting->taglen - (data->ofs - data->nesting->start);
 	if (remaining > (data->length - data->ofs)) {
-		data->has_error = true;
-		return -1;
+		goto error;
 	}
 	if (remaining < 0) {
-		data->has_error = true;
-		return -1;
+		goto error;
 	}
 	return remaining;
+error:
+	data->has_error = true;
+	return -1;
 }
 
 /**
