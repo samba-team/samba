@@ -760,11 +760,12 @@ int asn1_tag_remaining(struct asn1_data *data)
 	}
 	consumed = data->ofs - data->nesting->start;
 
-	remaining = data->nesting->taglen - consumed;
-	if (remaining > (data->length - data->ofs)) {
+	if (data->nesting->taglen < consumed) {
 		goto error;
 	}
-	if (remaining < 0) {
+	remaining = data->nesting->taglen - consumed;
+
+	if (remaining > (data->length - data->ofs)) {
 		goto error;
 	}
 	return remaining;
