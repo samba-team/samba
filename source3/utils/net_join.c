@@ -28,6 +28,7 @@ int net_join_usage(struct net_context *c, int argc, const char **argv)
 	d_printf(_("Valid methods: (auto-detected if not specified)\n"));
 	d_printf(_("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n"));
 	d_printf(_("\trpc\t\t\t\tDCE-RPC\n"));
+	d_printf(_("Misc. options are only allowed if method was explicit!\n\n"));
 	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
@@ -37,6 +38,19 @@ int net_join(struct net_context *c, int argc, const char **argv)
 	if ((argc > 0) && (strcasecmp_m(argv[0], "HELP") == 0)) {
 		net_join_usage(c, argc, argv);
 		return 0;
+	}
+
+	/*
+	 * We can't handle misc options sanely here,
+	 * as net_ads_join() handles them differently
+	 * than net_rpc_join().
+	 *
+	 * net_ads_join() tries to take a domain name.
+	 * net_rpc_join() tries to take a join type.
+	 */
+	if (argc > 0) {
+		net_join_usage(c, argc, argv);
+		return -1;
 	}
 
 	net_warn_member_options();
