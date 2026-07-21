@@ -742,6 +742,8 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 			return ldapsrv_BindSimple(call);
 		case LDAP_AUTH_MECH_SASL:
 			return ldapsrv_BindSASL(call);
+		default:
+			break;
 	}
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
