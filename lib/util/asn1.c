@@ -745,6 +745,7 @@ bool asn1_end_tag(struct asn1_data *data)
 /* work out how many bytes are left in this nested tag */
 int asn1_tag_remaining(struct asn1_data *data)
 {
+	size_t consumed;
 	int remaining;
 	if (data->has_error) {
 		return -1;
@@ -753,7 +754,13 @@ int asn1_tag_remaining(struct asn1_data *data)
 	if (!data->nesting) {
 		goto error;
 	}
-	remaining = data->nesting->taglen - (data->ofs - data->nesting->start);
+
+	if (data->ofs < data->nesting->start) {
+		goto error;
+	}
+	consumed = data->ofs - data->nesting->start;
+
+	remaining = data->nesting->taglen - consumed;
 	if (remaining > (data->length - data->ofs)) {
 		goto error;
 	}
