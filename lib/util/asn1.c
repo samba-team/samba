@@ -85,16 +85,14 @@ bool asn1_write(struct asn1_data *data, const void *p, int len)
 	if (data->has_error) return false;
 
 	if ((len < 0) || (data->ofs + (size_t)len < data->ofs)) {
-		data->has_error = true;
-		return false;
+		goto error;
 	}
 
 	if (data->length < data->ofs+len) {
 		uint8_t *newp;
 		newp = talloc_realloc(data, data->data, uint8_t, data->ofs+len);
 		if (!newp) {
-			data->has_error = true;
-			return false;
+			goto error;
 		}
 		data->data = newp;
 		data->length = data->ofs+len;
@@ -104,6 +102,9 @@ bool asn1_write(struct asn1_data *data, const void *p, int len)
 		data->ofs += len;
 	}
 	return true;
+error:
+	data->has_error = true;
+	return false;
 }
 
 /* useful fn for writing a uint8_t */
