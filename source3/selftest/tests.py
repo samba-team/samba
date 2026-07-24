@@ -2031,8 +2031,10 @@ if have_cluster_support:
     for test in CLUSTERED_TESTS:
         planclusteredmembertestsuite(test, "$PREFIX")
 
-    planclusteredmembertestsuite('smb2.persistent-open-failover', '$PREFIX', 'ca_so')
-    planclusteredmembertestsuite('smb2.persistent-open', '$PREFIX', 'ca_so')
+    CLUSTERED_PERSISTENT_TESTS = smbtorture4_testsuites("smb2.persistent")
+
+    for test in CLUSTERED_PERSISTENT_TESTS:
+        planclusteredmembertestsuite(test, '$PREFIX', 'ca_so')
 
     CLUSTERED_LOCAL_TESTS = [
         "ctdbd-conn1",
