@@ -260,10 +260,11 @@ static bool cephmount_cache_remove(struct cephmount_cached *entry)
 static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx,
 				  struct vfs_ceph_config *config)
 {
-	return talloc_asprintf(mem_ctx, "(%s/%s/%s)",
+	return talloc_asprintf(mem_ctx, "(%s/%s/%s/%d)",
 			       config->conf_file,
 			       config->user_id,
-			       config->fsname);
+			       config->fsname,
+			       (int)config->proxy);
 }
 
 static int cephmount_update_conf(struct vfs_ceph_config *config,
