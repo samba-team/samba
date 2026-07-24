@@ -487,4 +487,6 @@ int net_vfs(struct net_context *c, int argc, const char **argv);
 
 int net_witness(struct net_context *c, int argc, const char **argv);
 
+int net_cluster_level(struct net_context *c, int argc, const char **argv);
+
 #endif /*  _NET_PROTO_H_  */

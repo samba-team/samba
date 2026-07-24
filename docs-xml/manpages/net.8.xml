@@ -3929,6 +3929,93 @@ net witness force-response   Force an AsyncNotify response based on json input (
 </refsect2>
 
 <refsect2>
+<title>CLUSTERLEVEL</title>
+
+<para>Starting with version 4.25 Samba has support for cluster functional levels.
+</para>
+
+<para>The following CLUSTERLEVEL commands are implemented:
+<simplelist>
+<member>
+net clusterlevel features  List the supported features.
+</member>
+<member>
+net clusterlevel show      Show the currently active cluster functional level.
+</member>
+<member>
+net clusterlevel showall   Show details about the whole cluster.
+</member>
+<member>
+net clusterlevel upgrade   Upgrade the cluster functional level to the highest supported level.
+</member>
+
+</simplelist>
+</para>
+
+<refsect3>
+<title>clusterlevel features</title>
+<para>
+    List the compile time supported cluster features.
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>clusterlevel show</title>
+<para>
+    Show the currently active cluster functional level.
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>clusterlevel showall</title>
+<para>
+    Show details about the whole cluster. It shows the supported
+    cluster functional level ranges for each node.
+    Together with the currently active cluster functional level
+    and highest supported level.
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>clusterlevel upgrade [--test] [--apply]</title>
+<para>
+    Upgrade the cluster functional level to the highest supported level
+    all nodes agree. Currently the code is very strict and allows
+    an upgrade only if all nodes provide the exact same supported
+    level ranges.
+</para>
+<para>Options for upgrade:</para>
+<para>        --test</para>
+<para>            Only check if the upgrade would be possible.</para>
+<para>        --apply</para>
+<para>            Do a real upgrade that's persistent without a way back.</para>
+<para>
+    Note: --test is the default if no argument is given.
+</para>
+<para>
+    Note: only one of --test or --apply is allowed.
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+
+</refsect3>
+
+</refsect2>
+
+<refsect2>
   <title>serverid</title>
   <para>Check existence of a serverid and clean stale entries from fileserver
   state databases.</para>
