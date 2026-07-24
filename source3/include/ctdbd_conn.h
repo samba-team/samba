@@ -28,6 +28,7 @@
 #include <tevent.h>
 
 struct ctdbd_connection;
+struct ctdb_node_and_flags;
 struct messaging_context;
 struct messaging_rec;
 struct cluster_level_active;
@@ -40,6 +41,12 @@ int ctdbd_init_async_connection(
 	const char *sockname,
 	int timeout,
 	struct ctdbd_connection **pconn);
+
+int ctdbd_nodes_foreach(struct ctdbd_connection *conn,
+			int (*cb)(uint32_t total_nodes_count,
+				  const struct ctdb_node_and_flags *nf,
+				  void *private_data),
+			void *private_data);
 
 int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation);
 const struct cluster_level_active *ctdbd_conn_get_cluster_level(

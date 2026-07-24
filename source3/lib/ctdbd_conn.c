@@ -379,6 +379,60 @@ static int ctdbd_control_get_nodemap(struct ctdbd_connection *conn,
 	return 0;
 }
 
+/*
+ * This includes all nodes without NODE_FLAGS_DELETED
+ * of the whole cluster.
+ */
+int ctdbd_nodes_foreach(struct ctdbd_connection *conn,
+			int (*cb)(uint32_t total_nodes_count,
+				  const struct ctdb_node_and_flags *nf,
+				  void *private_data),
+			void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ctdb_node_map_old *nodemap = NULL;
+	int ret = ENOMEM;
+	uint32_t total_nodes_count = 0;
+	uint32_t i;
+
+	ret = ctdbd_control_get_nodemap(conn, frame, &nodemap);
+	if (ret != 0) {
+		DBG_WARNING("ctdbd_control_get_nodemap() failed: %s\n",
+			    strerror(ret));
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	for (i = 0; i < nodemap->num; i++) {
+		const struct ctdb_node_and_flags *nf = &nodemap->nodes[i];
+
+		if (nf->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
+		total_nodes_count += 1;
+	}
+
+	for (i = 0; i < nodemap->num; i++) {
+		const struct ctdb_node_and_flags *nf = &nodemap->nodes[i];
+
+		if (nf->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
+		ret = cb(total_nodes_count,
+			 nf,
+			 private_data);
+		if (ret != 0) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return 0;
+}
+
 int ctdbd_generation(struct ctdbd_connection *conn, uint32_t *generation)
 {
 	struct ctdb_vnn_map *vnnmap = NULL;
