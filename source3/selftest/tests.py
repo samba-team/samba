@@ -1246,7 +1246,7 @@ for t in tests:
         creds = " --option=torture:user2name=user1 --option=torture:user2password=$PASSWORD"
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD' + creds)
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
-    elif t == "smb2.persistent-open":
+    elif t.startswith("smb2.persistent"):
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/ca_fo_max_rwh -U$USERNAME%$PASSWORD')
     elif t == "base.rw1":
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
