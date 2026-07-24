@@ -9467,11 +9467,6 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "leaselevels_fo", test_persistent_leaselevels_fo);
 	torture_suite_add_1smb2_test(suite, "leaselevels_fo_max_rwh", test_persistent_leaselevels_fo_max_rwh);
 	torture_suite_add_1smb2_test(suite, "leaselevels_so", test_persistent_leaselevels_so);
-	torture_suite_add_1smb2_test(suite, "reconnect-contended", test_persistent_reconnect_contended);
-	torture_suite_add_1smb2_test(suite, "reconnect-contended-win-broken", test_persistent_reconnect_contended_win_broken);
-	torture_suite_add_1smb2_test(suite, "reconnect-contended-two", test_persistent_reconnect_contended_two);
-	torture_suite_add_1smb2_test(suite, "reconnect-contended-oplock", test_persistent_reconnect_contended_oplock);
-	torture_suite_add_1smb2_test(suite, "reconnect-contended-replay", test_persistent_reconnect_contended_replay);
 	torture_suite_add_1smb2_test(suite, "timeout_5", test_persistent_timeout_5);
 	torture_suite_add_1smb2_test(suite, "rename-dir-open-files", test_persistent_rename_dir_open_files);
 	torture_suite_add_1smb2_test(suite, "replay-reconnect", test_persistent_replay_reconnect);
@@ -9677,6 +9672,22 @@ struct torture_suite *torture_smb2_persistent_open_failover_init(TALLOC_CTX *ctx
 	suite->description = talloc_strdup(suite, "SMB3-Persistent-Open Failover Tests");
 
 	torture_suite_add_1smb2_test(suite, "failover-reconnect", test_persistent_failover_reconnect);
+
+	return suite;
+}
+
+struct torture_suite *torture_smb2_persistent_reconnect_contended_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(ctx, "persistent-open-reconnect-contended");
+
+	suite->description = talloc_strdup(suite, "SMB2-PERSISTENT-OPEN-RECONNECT-CONTENDED tests");
+
+	torture_suite_add_1smb2_test(suite, "reconnect-contended", test_persistent_reconnect_contended);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-win-broken", test_persistent_reconnect_contended_win_broken);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-two", test_persistent_reconnect_contended_two);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-oplock", test_persistent_reconnect_contended_oplock);
+	torture_suite_add_1smb2_test(suite, "reconnect-contended-replay", test_persistent_reconnect_contended_replay);
 	torture_suite_add_1smb2_test(suite, "reconnect-contended-failover", test_persistent_reconnect_contended_failover);
 
 	return suite;
