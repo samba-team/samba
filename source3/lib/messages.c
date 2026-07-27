@@ -59,6 +59,7 @@
 #include "lib/messages_ctdb.h"
 #include "lib/messages_ctdb_ref.h"
 #include "lib/messages_util.h"
+#include "librpc/gen_ndr/ndr_cluster_level.h"
 #include "cluster_support.h"
 #include "cluster_level_db.h"
 #include "ctdbd_conn.h"
@@ -468,6 +469,76 @@ static const char *private_path(const char *name)
 	return talloc_asprintf(talloc_tos(), "%s/%s", lp_private_dir(), name);
 }
 
+#ifdef CLUSTER_SUPPORT
+static void messaging_cluster_level_upgraded(struct messaging_context *msg_ctx,
+					     void *private_data,
+					     uint32_t msg_type,
+					     struct server_id src,
+					     DATA_BLOB *data)
+{
+	struct ctdbd_connection *ctdbd_conn = NULL;
+	struct cluster_level_active ol = { .major = 0, };
+	const struct cluster_level_active *cl = NULL;
+	struct server_id_buf idbuf;
+	NTSTATUS status;
+
+	if (data != NULL && data->length) {
+		DBG_ERR("ERROR: Received MSG_CLUSTER_LEVEL_UPGRADED message "
+			"from PID %s with payload\n",
+			server_id_str_buf(src, &idbuf));
+		dump_data(0, data->data, data->length);
+		return;
+	}
+
+	DBG_DEBUG("Received MSG_CLUSTER_LEVEL_UPGRADED message "
+		  "from PID %s\n",
+		  server_id_str_buf(src, &idbuf));
+
+	ctdbd_conn = messaging_ctdb_connection();
+	if (ctdbd_conn == NULL) {
+		DBG_ERR("messaging_ctdb_connection() failed!\n");
+		return;
+	}
+
+	cl = ctdbd_conn_get_cluster_level(ctdbd_conn);
+	SMB_ASSERT(cl != NULL);
+	SMB_ASSERT(cluster_level_is_valid(cl));
+	ol = *cl;
+
+	status = cluster_level_db_check(ctdbd_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("cluster_level_db_check() - %s\n",
+			nt_errstr(status));
+		return;
+	}
+
+	cl = ctdbd_conn_get_cluster_level(ctdbd_conn);
+	SMB_ASSERT(cl != NULL);
+	SMB_ASSERT(cluster_level_is_valid(cl));
+	cluster_level_activate(cl);
+
+	if (ol.major == cl->major && ol.minor == cl->minor) {
+		DBG_DEBUG("active_level: %"PRIu32".%"PRIu32"\n",
+			  cl->major, cl->minor);
+		return;
+	}
+
+	DBG_NOTICE("active_level: %"PRIu32".%"PRIu32"\n",
+		   cl->major, cl->minor);
+
+	/*
+	 * Typically upgrades of the global
+	 * cluster functional level should only
+	 * make a difference on write or send
+	 * operations.
+	 *
+	 * In rare cases we may need to callout
+	 * to upgrade code here, but only if really
+	 * needed.
+	 */
+}
+#endif
+
 static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct messaging_context **pmsg_ctx)
@@ -666,6 +737,15 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	register_msg_pool_usage(ctx->per_process_talloc_ctx, ctx);
 	register_dmalloc_msgs(ctx);
 	debug_register_msgs(ctx);
+
+#ifdef CLUSTER_SUPPORT
+	if (lp_clustering()) {
+		messaging_register(ctx,
+				   NULL,
+				   MSG_CLUSTER_LEVEL_UPGRADED,
+				   messaging_cluster_level_upgraded);
+	}
+#endif
 
 	{
 		struct server_id_buf tmp;
