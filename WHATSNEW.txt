@@ -110,6 +110,74 @@ CTDB changes
   variable instead.  This may affect site-local CTDB (event) scripts.
   See ctdb.sysconfig(5) for more details.
 
+Cluster functional level
+------------------------
+
+Samba now maintains a cluster functional level, a cluster wide value
+that is kept as persistent global state and shared by all nodes. It
+is similar in spirit to the domain and forest functional levels known
+from Active Directory.
+
+The purpose of the functional level is to allow controlled upgrades
+of a cluster. New database formats, new internal messages and other
+changes that affect the communication between nodes are gated behind
+an explicit raise of the cluster functional level. As long as the
+level has not been raised, all nodes keep writing and sending the old
+formats, so that nodes running different Samba versions can
+interoperate during a rolling upgrade.
+
+A level consists of a major and a minor number, e.g. "1.0". Samba
+4.25 implements the initial level 1.0, which is currently also the
+only defined level.
+
+On a non-clustered server the highest supported level is always
+activated automatically, there is nothing to configure or maintain.
+
+On a cluster the currently active level is stored persistently in
+cluster_level.tdb. On a fresh cluster it is initialized with the
+highest level supported by the first node that starts up. From then
+on the level never changes on its own, it is only raised when an
+administrator explicitly asks for it. A node that does not support
+the currently active level refuses to start, which keeps a node
+running an incompatible Samba version from joining the cluster.
+
+Once all nodes of a cluster have been upgraded to a new Samba
+version, the administrator can raise the cluster functional level.
+The new 'net clusterlevel' subcommands are available for this:
+
+  net clusterlevel features
+        List the cluster functional levels supported by the
+        installed binaries.
+
+  net clusterlevel show
+        Show the currently active cluster functional level.
+
+  net clusterlevel showall
+        Show the levels supported by each node of the cluster,
+        together with the currently active level and the highest
+        level that could be activated.
+
+  net clusterlevel upgrade [--test] [--apply]
+        Raise the active cluster functional level to the highest
+        level supported by all nodes. With --test (the default) only
+        checks and reports whether the upgrade would be possible,
+        --apply performs the actual upgrade.
+
+Note that raising the cluster functional level is a one way
+operation, there is no way to lower it again. It should only be done
+once all nodes have been upgraded and the new version has proven to
+work.
+
+The current implementation is deliberately strict: an upgrade is only
+possible if all nodes announce the exact same set of supported
+levels, which in practice means that all nodes run the same Samba
+version.
+
+Also note that this change only prepares for the future. It
+is not designed help with upgrades from older versions before
+4.25 to 4.25 as a target. However vendors are free to use their
+own backports and use custom levels >= 0.1 and < 1.0.
+
 REMOVED FEATURES
 ================
 
