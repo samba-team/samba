@@ -51,6 +51,9 @@ interface messaging
 
 		MSG_DAEMON_READY_FD             = 0x0035,
 
+		/* This sends an empty message */
+		MSG_CLUSTER_LEVEL_UPGRADED	= 0x0040,
+
 		/* nmbd messages */
 		MSG_FORCE_ELECTION		= 0x0101,
 		MSG_WINS_NEW_ENTRY		= 0x0102,
