@@ -591,8 +591,10 @@ static void *pthreadpool_server(void *arg)
 
 		while ((pool->num_jobs == 0) && !pool->stopped) {
 
+			int wait_res;
+
 			pool->num_idle += 1;
-			res = pthread_cond_timedwait(
+			wait_res = pthread_cond_timedwait(
 				&pool->condvar, &pool->mutex, &ts);
 			pool->num_idle -= 1;
 
@@ -626,7 +628,7 @@ static void *pthreadpool_server(void *arg)
 				assert(res == 0);
 			}
 
-			if (res == ETIMEDOUT) {
+			if (wait_res == ETIMEDOUT) {
 
 				if (pool->num_jobs == 0) {
 					/*
@@ -639,7 +641,7 @@ static void *pthreadpool_server(void *arg)
 
 				break;
 			}
-			assert(res == 0);
+			assert(wait_res == 0);
 		}
 
 		if (pthreadpool_get_job(pool, &job)) {
