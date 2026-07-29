@@ -3947,6 +3947,8 @@ net witness force-response   Force an AsyncNotify response based on json input (
   <para>            Only check for stale entries and log them</para>
   <para>        --verbose</para>
   <para>            Produce verbose logging</para>
+  <para>        --persistent</para>
+  <para>            Wipe persistent backup databases</para>
 </refsect3>
 
 
