@@ -1,25 +1,25 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   
+
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Simo Sorce 2004
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -519,13 +519,13 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 				if (!asn1_write_OctetString(data,
 						       attrib->values[j].data,
 						       attrib->values[j].length)) goto err;
-	
+
 			}
 			if (!asn1_pop_tag(data)) goto err;
 			if (!asn1_pop_tag(data)) goto err;
 			if (!asn1_pop_tag(data)) goto err;
 		}
-		
+
 		if (!asn1_pop_tag(data)) goto err;
 		if (!asn1_pop_tag(data)) goto err;
 		break;
@@ -678,7 +678,7 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 
 	if (msg->controls != NULL) {
 		if (!asn1_push_tag(data, ASN1_CONTEXT(0))) goto err;
-		
+
 		for (i = 0; msg->controls[i] != NULL; i++) {
 			if (!ldap_encode_control(mem_ctx, data,
 						 control_handlers,
@@ -777,7 +777,7 @@ static struct ldb_val **ldap_decode_substring(TALLOC_CTX *mem_ctx, struct ldb_va
 /*
   parse the ASN.1 formatted search string into a ldb_parse_tree
 */
-static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx, 
+static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 						      struct asn1_data *data)
 {
 	uint8_t filter_tag;
@@ -810,9 +810,9 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 			if (subtree == NULL) {
 				goto failed;
 			}
-			ret->u.list.elements = 
-				talloc_realloc(ret, ret->u.list.elements, 
-					       struct ldb_parse_tree *, 
+			ret->u.list.elements =
+				talloc_realloc(ret, ret->u.list.elements,
+					       struct ldb_parse_tree *,
 					       ret->u.list.num_elements+1);
 			if (ret->u.list.elements == NULL) {
 				goto failed;
@@ -1046,7 +1046,7 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		}
 
 		/* FIXME: read carefully rfc2251.txt there are a number of 'MUST's
-		   we need to check we properly implement --SSS */ 
+		   we need to check we properly implement --SSS */
 		/* either oid or type must be defined */
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(1))) { /* optional */
 			if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(1))) goto failed;
@@ -1112,12 +1112,12 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 	default:
 		goto failed;
 	}
-	
+
 	return ret;
 
 failed:
 	talloc_free(ret);
-	return NULL;	
+	return NULL;
 }
 
 /* Decode a single LDAP attribute, possibly containing multiple values */
