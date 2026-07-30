@@ -1184,11 +1184,18 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		if (!asn1_start_tag(data, tag)) goto prot_err;
 		if (!asn1_read_Integer(data, &r->version)) goto prot_err;
 		if (!asn1_read_OctetString_talloc(msg, data, &r->dn)) goto prot_err;
-		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(0))) {
+		if (asn1_peek_tag(data,
+				  ASN1_CONTEXT_SIMPLE(LDAP_AUTH_MECH_SIMPLE)))
+		{
 			int pwlen;
 			r->creds.password = "";
 			r->mechanism = LDAP_AUTH_MECH_SIMPLE;
-			if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0))) goto prot_err;
+			if (!asn1_start_tag(data,
+					    ASN1_CONTEXT_SIMPLE(
+						    LDAP_AUTH_MECH_SIMPLE)))
+			{
+				goto prot_err;
+			}
 			pwlen = asn1_tag_remaining(data);
 			if (pwlen == -1) {
 				goto prot_err;
@@ -1203,8 +1210,14 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 				r->creds.password = pw;
 			}
 			if (!asn1_end_tag(data)) goto prot_err;
-		} else if (asn1_peek_tag(data, ASN1_CONTEXT(3))){
-			if (!asn1_start_tag(data, ASN1_CONTEXT(3))) goto prot_err;
+		} else if (asn1_peek_tag(data,
+					 ASN1_CONTEXT(LDAP_AUTH_MECH_SASL)))
+		{
+			if (!asn1_start_tag(data,
+					    ASN1_CONTEXT(LDAP_AUTH_MECH_SASL)))
+			{
+				goto prot_err;
+			}
 			r->mechanism = LDAP_AUTH_MECH_SASL;
 			if (!asn1_read_OctetString_talloc(msg, data, &r->creds.SASL.mechanism)) goto prot_err;
 			if (asn1_peek_tag(data, ASN1_OCTET_STRING)) { /* optional */
