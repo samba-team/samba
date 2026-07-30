@@ -517,7 +517,7 @@ static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
 			(unsigned long long)iomax, options.max_xmit));
 
-	if (!(ifile = open_file(lpcfg_resolve_context(lp_ctx), ev, "if",
+	if (!(ifile = open_file(lpcfg_resolve_context(lp_ctx, lp_ctx), ev, "if",
 				&options,
 				lpcfg_socket_options(lp_ctx),
 				&session_options, 
@@ -526,7 +526,7 @@ static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx
 		return(FILESYS_EXIT_CODE);
 	}
 
-	if (!(ofile = open_file(lpcfg_resolve_context(lp_ctx), ev, "of",
+	if (!(ofile = open_file(lpcfg_resolve_context(lp_ctx, lp_ctx), ev, "of",
 				&options,
 				lpcfg_socket_options(lp_ctx),
 				&session_options,

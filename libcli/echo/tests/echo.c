@@ -64,7 +64,7 @@ static bool torture_echo_udp(struct torture_context *tctx)
 
 	make_nbt_name_server(&name,
 			     torture_setting_string(tctx, "host", NULL));
-	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 				 0, 0,
 				 &name, tctx,
 				 &address, tctx->ev);

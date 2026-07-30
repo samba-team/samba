@@ -57,7 +57,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 	ok = smbcli_socket_connect(cli, host,
 				   tctx->ev,
 				   tctx->lp_ctx,
-				   lpcfg_resolve_context(tctx->lp_ctx),
+				   lpcfg_resolve_context(tctx->lp_ctx, cli),
 				   &options,
 				   lpcfg_socket_options(tctx->lp_ctx),
 				   &calling, &called);

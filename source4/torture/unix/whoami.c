@@ -88,7 +88,7 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx,
 					share, NULL, lpcfg_socket_options(tctx->lp_ctx),
 					creds,
 					tctx->lp_ctx,
-					lpcfg_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx, tctx),
 					tctx->ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 

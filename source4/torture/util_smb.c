@@ -461,7 +461,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),
 					tctx->lp_ctx,
-					lpcfg_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx, tctx),
 					ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {

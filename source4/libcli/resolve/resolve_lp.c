@@ -21,11 +21,12 @@
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 
-struct resolve_context *lpcfg_resolve_context(struct loadparm_context *lp_ctx)
+struct resolve_context *lpcfg_resolve_context(struct loadparm_context *lp_ctx,
+					      TALLOC_CTX *mem_ctx)
 {
 	const char **methods = lpcfg_name_resolve_order(lp_ctx);
 	int i;
-	struct resolve_context *ret = resolve_context_init(lp_ctx);
+	struct resolve_context *ret = resolve_context_init(mem_ctx);
 
 	if (ret == NULL)
 		return NULL;
