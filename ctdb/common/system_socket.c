@@ -335,7 +335,11 @@ static bool check_hwaddr(struct sockaddr *sa, unsigned int index)
 
 	sall = (struct sockaddr_ll *)sa;
 
-	if (index != sall->sll_ifindex) {
+	/*
+	 * if_nametoindex(3) returns unsigned int but sll_ifindex is
+	 * int!
+	 */
+	if ((int)index != sall->sll_ifindex) {
 		return false;
 	}
 
