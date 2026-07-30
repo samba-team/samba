@@ -73,3 +73,41 @@ EOF
 arp_test \
 	"fe80::6af7:28ff:fefa:d136" \
 	"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:12:34:56:78:9a:bc"
+
+ip6_sll_multicast_test()
+{
+	unit_test system_socket_test ip6_sll_multicast "$@"
+}
+
+test_case "IPv6 link-level multicast Ethernet"
+#
+# sll_family:   1100     (AF_PACKET)
+# sll_protocol: 86dd     (htons(ETH_P_IPV6))
+# sll_index:    02000000 (hardcoded to 2 hwaddr_to_sockaddr_ll())
+# sll_hatype:   0000     (packet(7) says should be 0 when sending)
+# sll_pkttype:  00       (packet(7) says should be 0 when sending)
+#
+ok <<EOF
+000000 11 00 86 dd 02 00 00 00 00 00 00 06 33 33 00 00
+000010 00 01
+000012
+EOF
+ip6_sll_multicast_test "ff:ff:ff:ff:ff:ff"
+
+test_case "IPv6 link-level multicast IPoIB"
+#
+# sll_family:   1100     (AF_PACKET)
+# sll_protocol: 86dd     (htons(ETH_P_IPV6))
+# sll_index:    02000000 (hardcoded to 2 hwaddr_to_sockaddr_ll())
+# sll_hatype:   0000     (packet(7) says should be 0 when sending)
+# sll_pkttype:  00       (packet(7) says should be 0 when sending)
+#
+# Output has IPoIB signature field changed to 60 and 00:00:00:01 at end
+#
+ok <<EOF
+000000 11 00 86 dd 02 00 00 00 00 00 00 14 00 ff ff ff
+000010 ff 12 60 1b ff ff 00 00 00 00 00 00 00 00 00 01
+000020
+EOF
+ip6_sll_multicast_test \
+	"00:ff:ff:ff:ff:12:40:1b:ff:ff:00:00:00:00:00:00:ff:ff:ff:ff"

@@ -152,9 +152,31 @@ static void test_arp(const char *addr_str,
 	hexdump(buf, len);
 }
 
+static void test_ip6_ll_multicast_build(const char *hwaddr_str)
+{
+	struct sockaddr_storage hardware_addr = {};
+	struct sockaddr_ll *sall = (struct sockaddr_ll *)&hardware_addr;
+	struct sockaddr_storage hardware_addr_out = {};
+	struct sockaddr_ll *sall_out = (struct sockaddr_ll *)&hardware_addr_out;
+	int ret;
+
+	hwaddr_to_sockaddr_ll(hwaddr_str, sall);
+
+	ret = ip6_ll_multicast_build(sall, &hardware_addr_out);
+	assert(ret == 0);
+
+	hexdump((uint8_t*)sall_out,
+		offsetof(struct sockaddr_ll, sll_addr) + sall_out->sll_halen);
+}
+
 #else /* CTDB_CAN_SEND_ARPS  */
 
 static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
+{
+	fprintf(stderr, "Sending ARPs not supported\n");
+}
+
+static void test_ip6_ll_multicast_build(const char *hwaddr_str)
 {
 	fprintf(stderr, "Sending ARPs not supported\n");
 }
@@ -295,6 +317,7 @@ static void usage(const char *prog)
 	fprintf(stderr, "  commands:\n");
 	fprintf(stderr, "    types\n");
 	fprintf(stderr, "    arp <ipaddr> <hwaddr> [reply]\n");
+	fprintf(stderr, "    ip6_sll_multicast <hwaddr>\n");
 	fprintf(stderr, "    haveip <ipaddr>\n");
 	fprintf(stderr, "    sendarp <ipaddr> <iface>\n");
 	fprintf(stderr, "    tcp <src> <dst> <seq> <ack> <rst>\n");
@@ -324,6 +347,11 @@ int main(int argc, char **argv)
 		test_arp(argv[2],
 			 argv[3],
 			 argc == 5 ? ARPOP_REPLY : ARPOP_REQUEST);
+	} else if (strcmp(argv[1], "ip6_sll_multicast") == 0) {
+		if (argc != 3) {
+			usage(argv[0]);
+		}
+		test_ip6_ll_multicast_build(argv[2]);
 	} else if (strcmp(argv[1], "tcp") == 0) {
 		if (argc != 7) {
 			usage(argv[0]);
