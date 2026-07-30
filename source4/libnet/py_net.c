@@ -761,7 +761,7 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kw
 		self->libnet_ctx->lp_ctx);
 
 	status = finddcs_cldap(io, io,
-			       lpcfg_resolve_context(self->libnet_ctx->lp_ctx), self->ev);
+			       self->libnet_ctx->resolve_ctx, self->ev);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);
