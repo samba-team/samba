@@ -164,7 +164,7 @@ static void kdc_udp_next_proxy(struct tevent_req *req)
 
 	make_nbt_name(&state->proxy.name, proxy_dnsname, 0);
 
-	csubreq = resolve_name_ex_send(lpcfg_resolve_context(state->kdc->task->lp_ctx),
+	csubreq = resolve_name_ex_send(lpcfg_resolve_context(state->kdc->task->lp_ctx, state),
 				       state,
 				       RESOLVE_NAME_FLAG_FORCE_DNS,
 				       0,
@@ -426,7 +426,7 @@ static void kdc_tcp_next_proxy(struct tevent_req *req)
 
 	make_nbt_name(&state->proxy.name, proxy_dnsname, 0);
 
-	csubreq = resolve_name_ex_send(lpcfg_resolve_context(state->kdc->task->lp_ctx),
+	csubreq = resolve_name_ex_send(lpcfg_resolve_context(state->kdc->task->lp_ctx, state),
 				       state,
 				       RESOLVE_NAME_FLAG_FORCE_DNS,
 				       0,

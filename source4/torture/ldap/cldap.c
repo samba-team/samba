@@ -94,7 +94,7 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 
 	make_nbt_name_server(&nbt_name, dest);
 
-	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 				 0, 0, &nbt_name, tctx, &ip, tctx->ev);
 	torture_assert_ntstatus_ok(tctx, status,
 			talloc_asprintf(tctx,"Failed to resolve %s: %s",

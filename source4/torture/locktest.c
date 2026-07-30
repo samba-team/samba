@@ -166,7 +166,7 @@ static struct smbcli_state *connect_one(struct tevent_context *ev,
 						lpcfg_socket_options(lp_ctx),
 						servers[snum],
 						lp_ctx,
-						lpcfg_resolve_context(lp_ctx),
+						lpcfg_resolve_context(lp_ctx, mem_ctx),
 						ev, &options, &session_options,
 						lpcfg_gensec_settings(mem_ctx, lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) {

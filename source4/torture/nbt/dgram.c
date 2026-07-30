@@ -88,7 +88,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 						   0, 0,
 						   &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
@@ -184,7 +184,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 						   0, 0,
 						   &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
@@ -477,7 +477,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 						   0, 0, &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 

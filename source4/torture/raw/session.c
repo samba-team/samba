@@ -271,7 +271,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),
 					tctx->lp_ctx,
-					lpcfg_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx, tctx),
 					tctx->ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,

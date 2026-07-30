@@ -117,7 +117,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	make_nbt_name_server(&name, host);
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 				 0, 0, &name, tctx,
 				 &ctx->dest_address, tctx->ev);
 	if (!NT_STATUS_IS_OK(status)) {

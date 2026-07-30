@@ -150,7 +150,7 @@ static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te
 
 	ctx = smb_composite_connect_send(io, state->mem_ctx,
 					 state->tctx->lp_ctx,
-					 lpcfg_resolve_context(state->tctx->lp_ctx),
+					 lpcfg_resolve_context(state->tctx->lp_ctx, state),
 					 state->ev);
 	if (ctx == NULL) {
 		DEBUG(0,("Failed to setup async reconnect\n"));

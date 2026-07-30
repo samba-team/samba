@@ -163,7 +163,7 @@ static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cl
 	io2.in.filename = fname;
 	lpcfg_smbcli_options(tctx->lp_ctx, &io2.in.options);
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &io2.in.session_options);
-	io2.in.resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx);
+	io2.in.resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx, tctx);
 	io2.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
 	torture_comment(tctx, "Testing parallel fetchfile with %d ops\n", torture_numops);
@@ -359,7 +359,7 @@ static bool test_fsinfo(struct torture_context *tctx, struct smbcli_state *cli)
 
 	for (i=0; i<torture_numops; i++) {
 		c[i] = smb_composite_fsinfo_send(cli->tree, &io1, tctx->lp_ctx,
-				lpcfg_resolve_context(tctx->lp_ctx), event_ctx);
+				lpcfg_resolve_context(tctx->lp_ctx, c), event_ctx);
 		torture_assert(tctx, c[i], "smb_composite_fsinfo_send failed!");
 		c[i]->async.fn = loadfile_complete;
 		c[i]->async.private_data = count;

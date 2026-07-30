@@ -39,7 +39,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					machine_account,
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -67,7 +67,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					machine_account,
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {

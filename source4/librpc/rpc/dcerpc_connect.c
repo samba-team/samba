@@ -825,7 +825,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.binding      = s->binding;
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
-	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx);
+	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx, s);
 
 	transport = dcerpc_binding_get_transport(s->binding);
 
