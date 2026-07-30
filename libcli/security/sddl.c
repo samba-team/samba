@@ -1051,10 +1051,13 @@ static char *sddl_flags_to_string(TALLOC_CTX *mem_ctx, const struct flag_map *ma
 	/* now by bits */
 	for (i=0;map[i].name;i++) {
 		if ((flags & map[i].flag) != 0) {
-			s = talloc_asprintf_append_buffer(s, "%s", map[i].name);
-			if (s == NULL) goto failed;
+			talloc_asprintf_addbuf(&s, "%s", map[i].name);
 			flags &= ~map[i].flag;
 		}
+	}
+
+	if (s == NULL) {
+		goto failed;
 	}
 
 	if (check_all && flags != 0) {
