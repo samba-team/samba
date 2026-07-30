@@ -188,7 +188,7 @@ static bool open_connection_no_level2_oplocks(struct torture_context *tctx,
 					NULL, lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),
 					tctx->lp_ctx,
-					lpcfg_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx, tctx),
 					tctx->ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {

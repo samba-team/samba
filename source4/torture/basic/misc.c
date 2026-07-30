@@ -882,7 +882,7 @@ static struct composite_context *torture_connect_async(
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &smb->in.session_options);
 	
 	return smb_composite_connect_send(smb,mem_ctx, tctx->lp_ctx,
-					  lpcfg_resolve_context(tctx->lp_ctx),ev);
+					  lpcfg_resolve_context(tctx->lp_ctx, mem_ctx),ev);
 }
 
 bool run_benchrw(struct torture_context *tctx)

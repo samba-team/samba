@@ -545,7 +545,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		}
 
 		ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
-						lpcfg_resolve_context(conn->lp_ctx),
+						lpcfg_resolve_context(conn->lp_ctx, state),
 						result->event_ctx);
 		if (composite_nomem(ctx, result)) {
 			return result;

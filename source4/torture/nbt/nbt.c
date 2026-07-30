@@ -39,7 +39,7 @@ bool torture_nbt_get_name(struct torture_context *tctx,
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				   resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx, tctx),
 						   0, 0,
 						   name, tctx, address, tctx->ev),
 				   talloc_asprintf(tctx, 

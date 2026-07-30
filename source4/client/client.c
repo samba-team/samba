@@ -3530,14 +3530,14 @@ int main(int argc, char *argv[])
 				   dest_ip,
 				   name_type, ev_ctx,
 				   lp_ctx,
-				   lpcfg_resolve_context(lp_ctx),
+				   lpcfg_resolve_context(lp_ctx, ctx),
 				   &smb_options,
                    lpcfg_socket_options(lp_ctx));
 		goto done;
 	}
 
 	if (!do_connect(ctx, ev_ctx, lp_ctx,
-			lpcfg_resolve_context(lp_ctx),
+			lpcfg_resolve_context(lp_ctx, ctx),
 			desthost, service,
 			lpcfg_socket_options(lp_ctx),
 			creds,

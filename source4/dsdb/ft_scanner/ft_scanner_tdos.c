@@ -115,7 +115,10 @@ static struct tevent_req *ft_scanner_scann_forest_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	state->resolve_ctx = lpcfg_resolve_context(lp_ctx);
+	state->resolve_ctx = lpcfg_resolve_context(lp_ctx, state);
+	if (tevent_req_nomem(state->resolve_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	state->finddcs_io.in.domain_name = tdo->domain_name.string;
 	state->finddcs_io.in.minimum_dc_flags = NBT_SERVER_LDAP |

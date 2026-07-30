@@ -165,7 +165,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 
 	host = dcerpc_binding_get_string_option(libnet_r->out.samr_binding, "host");
 	make_nbt_name_client(&name, host);
-	status = resolve_name_ex(lpcfg_resolve_context(ctx->lp_ctx),
+	status = resolve_name_ex(lpcfg_resolve_context(ctx->lp_ctx, tmp_ctx),
 				 0, 0,
 				 &name, r, &dest_addr, ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {

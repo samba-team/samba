@@ -221,7 +221,7 @@ static struct smb2_tree *test_multichannel_create_channel(
 			host,
 			share,
 			tctx->lp_ctx,
-			lpcfg_resolve_context(tctx->lp_ctx),
+			lpcfg_resolve_context(tctx->lp_ctx, tctx),
 			credentials,
 			&tree,
 			tctx->ev,
@@ -2020,7 +2020,7 @@ static bool test_multichannel_num_channels(struct torture_context *tctx,
 				host,
 				share,
 				tctx->lp_ctx,
-				lpcfg_resolve_context(tctx->lp_ctx),
+				lpcfg_resolve_context(tctx->lp_ctx, tctx),
 				credentials,
 				&tree2[i],
 				tctx->ev,
@@ -2494,7 +2494,7 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct resolve_context *resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx);
+	struct resolve_context *resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx, tctx);
 	const char *socket_options = lpcfg_socket_options(tctx->lp_ctx);
 	struct gensec_settings *gsettings = NULL;
 	bool ret = true;

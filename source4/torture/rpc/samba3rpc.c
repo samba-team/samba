@@ -197,7 +197,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					samba_cmdline_get_creds(),
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -432,7 +432,7 @@ static bool torture_bind_samba3(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					samba_cmdline_get_creds(),
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1407,7 +1407,7 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					samba_cmdline_get_creds(),
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	torture_assert_ntstatus_ok(torture, status, "smbcli_full_connection failed\n");
@@ -1486,7 +1486,7 @@ static bool test_join3(struct torture_context *tctx,
 					"IPC$", NULL, lpcfg_socket_options(tctx->lp_ctx),
 					smb_creds,
 					tctx->lp_ctx,
-					lpcfg_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx, tctx),
 					tctx->ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status,
@@ -1812,7 +1812,7 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		"IPC$", NULL,
 		lpcfg_socket_options(torture->lp_ctx), anon_creds,
 		torture->lp_ctx,
-		lpcfg_resolve_context(torture->lp_ctx),
+		lpcfg_resolve_context(torture->lp_ctx, torture),
 		torture->ev, &options, &session_options,
 		lpcfg_gensec_settings(torture, torture->lp_ctx));
 	torture_assert_ntstatus_ok(torture, status, "anon smbcli_full_connection failed\n");
@@ -1831,7 +1831,7 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		"IPC$", NULL, lpcfg_socket_options(torture->lp_ctx),
 		samba_cmdline_get_creds(),
 		torture->lp_ctx,
-		lpcfg_resolve_context(torture->lp_ctx), torture->ev, &options,
+		lpcfg_resolve_context(torture->lp_ctx, torture), torture->ev, &options,
 		&session_options, lpcfg_gensec_settings(torture, torture->lp_ctx));
 	torture_assert_ntstatus_ok(torture, status, "smbcli_full_connection failed\n");
 
@@ -2472,7 +2472,7 @@ static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					test_credentials,
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev,
 					&options,
 					&session_options,
@@ -3436,7 +3436,7 @@ static bool torture_rpc_smb_reauth1(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					samba_cmdline_get_creds(),
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
@@ -3595,7 +3595,7 @@ static bool torture_rpc_smb_reauth2(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					samba_cmdline_get_creds(),
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
@@ -3726,7 +3726,7 @@ static bool torture_rpc_smb2_reauth1(struct torture_context *torture)
 			      host,
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -3876,7 +3876,7 @@ static bool torture_rpc_smb2_reauth2(struct torture_context *torture)
 			      host,
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -3996,7 +3996,7 @@ static bool torture_rpc_smb1_pipe_name(struct torture_context *torture)
 					lpcfg_socket_options(torture->lp_ctx),
 					samba_cmdline_get_creds(),
 					torture->lp_ctx,
-					lpcfg_resolve_context(torture->lp_ctx),
+					lpcfg_resolve_context(torture->lp_ctx, torture),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
 	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
@@ -4243,7 +4243,7 @@ static bool torture_rpc_smb2_pipe_name(struct torture_context *torture)
 			      host,
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -4337,7 +4337,7 @@ static bool torture_rpc_smb2_pipe_read_close(struct torture_context *torture)
 			      host,
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -4421,7 +4421,7 @@ static bool torture_rpc_smb2_pipe_read_tdis(struct torture_context *torture)
 			      host,
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -4505,7 +4505,7 @@ static bool torture_rpc_smb2_pipe_read_logoff(struct torture_context *torture)
 			      host,
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -4584,7 +4584,7 @@ static bool torture_rpc_lsa_over_netlogon(struct torture_context *torture)
 			      torture_setting_string(torture, "host", NULL),
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,
@@ -4655,7 +4655,7 @@ static bool torture_rpc_pipes_supported_interfaces(
 			      torture_setting_string(torture, "host", NULL),
 			      "IPC$",
 			      torture->lp_ctx,
-			      lpcfg_resolve_context(torture->lp_ctx),
+			      lpcfg_resolve_context(torture->lp_ctx, torture),
 			      samba_cmdline_get_creds(),
 			      &tree,
 			      torture->ev,

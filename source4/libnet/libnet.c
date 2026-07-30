@@ -47,7 +47,7 @@ struct libnet_context *libnet_context_init(TALLOC_CTX *mem_ctx,
 	dcerpc_init();
 
 	/* name resolution methods */
-	ctx->resolve_ctx = lpcfg_resolve_context(lp_ctx);
+	ctx->resolve_ctx = lpcfg_resolve_context(lp_ctx, ctx);
 
 	/* default buffer size for various operations requiring specifying a buffer */
 	ctx->samr.buf_size = 128;
