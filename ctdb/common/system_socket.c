@@ -534,9 +534,12 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 	const uint8_t ethernet_multicast[ETH_ALEN] = {
 		0x33, 0x33, 0x00, 0x00, 0x00, 0x01
 	};
-	struct sockaddr_ll *out_sall = (struct sockaddr_ll *)out;
+	uint8_t *in_sll_addr = (uint8_t *)in + offsetof(struct sockaddr_ll,
+							sll_addr);
+	uint8_t *out_sll_addr = (uint8_t *)out + offsetof(struct sockaddr_ll,
+							  sll_addr);
 
-	*out_sall = (struct sockaddr_ll) {
+	*(struct sockaddr_ll *)out = (struct sockaddr_ll) {
 		.sll_family = AF_PACKET,
 		.sll_halen = in->sll_halen,
 		.sll_protocol = htons(ETH_P_IPV6),
@@ -548,7 +551,7 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 		if (SOCKADDR_LL_ADDR_LEN < sizeof(ethernet_multicast)) {
 			return EMSGSIZE;
 		}
-		memcpy(&out_sall->sll_addr[0],
+		memcpy(&out_sll_addr[0],
 		       ethernet_multicast,
 		       sizeof(ethernet_multicast));
 		break;
@@ -595,14 +598,12 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 		 * appear to be the last 4 octets of the IPv6
 		 * multicast address (see all_nodes_ll_multicast).
 		 */
-		memcpy(&out_sall->sll_addr[0],
-		       &in->sll_addr[0],
-		       in->sll_halen);
-		out_sall->sll_addr[6] = 0x60;
-		out_sall->sll_addr[16] = 0x00;
-		out_sall->sll_addr[17] = 0x00;
-		out_sall->sll_addr[18] = 0x00;
-		out_sall->sll_addr[19] = 0x01;
+		memcpy(&out_sll_addr[0], &in_sll_addr[0], in->sll_halen);
+		out_sll_addr[6] = 0x60;
+		out_sll_addr[16] = 0x00;
+		out_sll_addr[17] = 0x00;
+		out_sll_addr[18] = 0x00;
+		out_sll_addr[19] = 0x01;
 		break;
 	default:
 		return EPROTONOSUPPORT;

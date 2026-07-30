@@ -82,6 +82,8 @@ static void hwaddr_to_sockaddr_ll(const char *asc, struct sockaddr_ll *sall)
 	char in[strlen(asc) + 1];
 	char *t = NULL;
 	char *tok = NULL;
+	uint8_t *sll_addr = (uint8_t *)sall + offsetof(struct sockaddr_ll,
+						       sll_addr);
 
 	*sall = (struct sockaddr_ll) {
 		.sll_family = AF_PACKET,
@@ -96,9 +98,10 @@ static void hwaddr_to_sockaddr_ll(const char *asc, struct sockaddr_ll *sall)
 		char *end = NULL;
 		unsigned long octet = strtoul(tok, &end, 16);
 
+		assert(sall->sll_halen < SOCKADDR_LL_ADDR_LEN);
 		assert(end != NULL && *end == '\0');
 		assert(octet <= 0xff);
-		sall->sll_addr[sall->sll_halen] = (uint8_t)octet;
+		sll_addr[sall->sll_halen] = (uint8_t)octet;
 		sall->sll_halen++;
 
 		t = NULL;
