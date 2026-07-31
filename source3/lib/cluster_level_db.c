@@ -25,6 +25,7 @@
 #include "ctdbd_conn.h"
 #include "cluster_support.h"
 #include "cluster_level_db.h"
+#include "ctdb/protocol/protocol.h"
 
 /*
  * Note msg_ctx is optional, passing NULL means
@@ -755,6 +756,97 @@ NTSTATUS cluster_level_db_check_or_update(struct ctdbd_connection *ctdb_conn,
 	DBG_DEBUG("supported ranges: store %s\n", nt_errstr(status));
 
 	ctdbd_conn_set_cluster_level(ctdb_conn, &active_level);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+struct cluster_level_db_nodes_foreach_state {
+	struct db_context *db;
+	cluster_level_db_nodes_foreach_cb_t cb;
+	void *cb_private;
+	NTSTATUS error;
+};
+
+static int cluster_level_db_nodes_foreach_ctdbd_cb(
+				uint32_t total_nodes_count,
+				const struct ctdb_node_and_flags *nf,
+				void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cluster_level_db_nodes_foreach_state *state =
+		(struct cluster_level_db_nodes_foreach_state *)private_data;
+	struct cluster_level_ranges *n_ranges = NULL;
+	struct cluster_level_ranges zero_ranges = { .num_ranges = 0, };
+	struct cluster_level_db_nodes_foreach_node node = {
+		.nf = nf,
+	};
+	NTSTATUS status;
+
+	status = cluster_level_db_fetch_ranges(state->db,
+					       nf->pnn,
+					       frame,
+					       &node.update_time,
+					       &node.update_ctdbd.start_time,
+					       &node.update_ctdbd.pid,
+					       &n_ranges);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		/* no ranges stored yet */
+		n_ranges = &zero_ranges;
+		node.update_ctdbd.pid = -1;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		state->error = status;
+		return -1;
+	}
+
+	node.supported_ranges = n_ranges;
+	status = state->cb(total_nodes_count,
+			   &node,
+			   state->cb_private);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		state->error = status;
+		return -1;
+	}
+	TALLOC_FREE(frame);
+	return 0;
+}
+
+NTSTATUS cluster_level_db_nodes_foreach(struct ctdbd_connection *ctdb_conn,
+					cluster_level_db_nodes_foreach_cb_t cb,
+					void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cluster_level_db_nodes_foreach_state state = {
+		.cb = cb,
+		.cb_private = private_data,
+	};
+	int ret;
+
+	/*
+	 * We only need temporary read only access,
+	 * so we pass msg_ctx=NULL ...
+	 */
+	state.db = cluster_level_db_open(frame,
+					 ctdb_conn,
+					 NULL);  /* msg_ctx */
+	if (state.db == NULL) {
+		DBG_ERR("cluster_level_db_open() failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	ret = ctdbd_nodes_foreach(ctdb_conn,
+				  cluster_level_db_nodes_foreach_ctdbd_cb,
+				  &state);
+	if (ret != 0) {
+		if (NT_STATUS_IS_OK(state.error)) {
+			state.error = NT_STATUS_INTERNAL_ERROR;
+		}
+		TALLOC_FREE(frame);
+		return state.error;
+	}
+
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
