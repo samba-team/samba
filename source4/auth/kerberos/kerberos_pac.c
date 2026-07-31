@@ -65,7 +65,6 @@
 		if (ret) {
 			DEBUG(2, ("making krbtgt PAC checksum failed: %s\n",
 				  smb_get_krb5_error_message(context, ret, mem_ctx)));
-			talloc_free(pac_data);
 			return ret;
 		}
 	}
@@ -84,7 +83,6 @@
 		if (ret) {
 			DEBUG(2, ("making service PAC checksum failed: %s\n",
 				  smb_get_krb5_error_message(context, ret, mem_ctx)));
-			talloc_free(pac_data);
 			return ret;
 		}
 	}
@@ -108,7 +106,6 @@
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
-		talloc_free(pac_data);
 		return EINVAL;
 	}
 
@@ -123,7 +120,6 @@
 	if (ret) {
 		DBG_WARNING("making krbtgt PAC srv_checksum failed: %s\n",
 			    smb_get_krb5_error_message(context, ret, mem_ctx));
-		talloc_free(pac_data);
 		return ret;
 	}
 
@@ -137,7 +133,6 @@
 	if (ret) {
 		DBG_WARNING("making krbtgt PAC kdc_checksum failed: %s\n",
 			    smb_get_krb5_error_message(context, ret, mem_ctx));
-		talloc_free(pac_data);
 		return ret;
 	}
 
@@ -148,7 +143,6 @@
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1, ("PAC (final) push failed: %s\n", nt_errstr(nt_status)));
-		talloc_free(pac_data);
 		return EINVAL;
 	}
 
