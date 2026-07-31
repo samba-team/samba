@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "messages.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_ctdb.h"
 #include "lib/util/util_tdb.h"
@@ -847,6 +848,269 @@ NTSTATUS cluster_level_db_nodes_foreach(struct ctdbd_connection *ctdb_conn,
 		return state.error;
 	}
 
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+struct cluster_level_db_upgrade_to_highest_state {
+	struct db_context *db;
+	uint32_t error_vnn;
+	NTSTATUS error;
+};
+
+static int cluster_level_db_upgrade_to_highest_cb(
+				uint32_t total_nodes_count,
+				const struct ctdb_node_and_flags *nf,
+				void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cluster_level_db_upgrade_to_highest_state *state =
+		(struct cluster_level_db_upgrade_to_highest_state *)private_data;
+	struct timeval n_update_time = {};
+	struct timeval n_ctdb_start_time = {};
+	pid_t n_ctdb_pid = -1;
+	struct cluster_level_ranges *n_ranges = NULL;
+	const struct cluster_level_ranges *supported_ranges =
+		cluster_level_supported_ranges();
+	NTSTATUS status;
+	uint32_t i;
+
+	status = cluster_level_db_fetch_ranges(state->db,
+					       nf->pnn,
+					       frame,
+					       &n_update_time,
+					       &n_ctdb_start_time,
+					       &n_ctdb_pid,
+					       &n_ranges);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("node[%"PRIu32"] cluster_level_db_fetch_ranges() %s\n",
+			nf->pnn, nt_errstr(status));
+		TALLOC_FREE(frame);
+		state->error_vnn = nf->pnn;
+		state->error = status;
+		return -1;
+	}
+
+	/*
+	 * We expect the same software on all nodes, not
+	 * only the highest level in common.
+	 */
+
+	if (n_ranges->num_ranges != supported_ranges->num_ranges) {
+		DBG_ERR("node[%"PRIu32"] num_ranges[%"PRIu32"] != %"PRIu32".\n",
+			nf->pnn,
+			n_ranges->num_ranges,
+			supported_ranges->num_ranges);
+		TALLOC_FREE(frame);
+		state->error_vnn = nf->pnn;
+		state->error = NT_STATUS_REVISION_MISMATCH;
+		return -1;
+	}
+
+	for (i = 0; i < n_ranges->num_ranges; i++) {
+		const struct cluster_level_range *nr =
+			&n_ranges->ranges[i];
+		const struct cluster_level_range *sr =
+			&supported_ranges->ranges[i];
+
+		if (nr->major != sr->major) {
+			DBG_ERR("node[%"PRIu32"] range[%"PRIu32"] "
+				"major[%"PRIu32"] != %"PRIu32".\n",
+				nf->pnn,
+				i,
+				nr->major,
+				sr->major);
+			TALLOC_FREE(frame);
+			state->error_vnn = nf->pnn;
+			state->error = NT_STATUS_REVISION_MISMATCH;
+			return -1;
+		}
+
+		if (nr->minor_max != sr->minor_max) {
+			DBG_ERR("node[%"PRIu32"] range[%"PRIu32"] "
+				"major[%"PRIu32"] "
+				"minor_max[%"PRIu32"] != %"PRIu32".\n",
+				nf->pnn,
+				i,
+				nr->major,
+				nr->minor_max,
+				sr->minor_max);
+			TALLOC_FREE(frame);
+			state->error_vnn = nf->pnn;
+			state->error = NT_STATUS_REVISION_MISMATCH;
+			return -1;
+		}
+
+		if (nr->minor_min != sr->minor_min) {
+			DBG_ERR("node[%"PRIu32"] range[%"PRIu32"] "
+				"major[%"PRIu32"] "
+				"minor_min[%"PRIu32"] != %"PRIu32".\n",
+				nf->pnn,
+				i,
+				nr->major,
+				nr->minor_min,
+				sr->minor_min);
+			TALLOC_FREE(frame);
+			state->error_vnn = nf->pnn;
+			state->error = NT_STATUS_REVISION_MISMATCH;
+			return -1;
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return 0;
+}
+
+NTSTATUS cluster_level_db_upgrade(struct ctdbd_connection *ctdb_conn,
+				  struct messaging_context *msg_ctx,
+				  struct cluster_level_db_upgrade_req *req)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cluster_level_db_upgrade_to_highest_state state = {
+		.db = NULL,
+	};
+	const struct cluster_level_ranges *supported_ranges =
+		cluster_level_supported_ranges();
+	const struct cluster_level_active *conn_level = NULL;
+	struct cluster_level_active active_level = {};
+	struct cluster_level_active highest_level = {};
+	enum cluster_level_db_version version = CLUSTER_LEVEL_DB_VERSION_1;
+	struct timeval now = timeval_current();
+	NTSTATUS status;
+	int ret;
+
+	SMB_ASSERT(msg_ctx != NULL);
+	req->out.error_vnn = ctdbd_vnn(ctdb_conn);
+
+	state.db = cluster_level_db_open(frame,
+				   ctdb_conn,
+				   msg_ctx);
+	if (state.db == NULL) {
+		DBG_ERR("cluster_level_db_open() failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	ret = dbwrap_transaction_start(state.db);
+	if (ret != 0) {
+		DBG_ERR("dbwrap_transaction_start() failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	highest_level = (struct cluster_level_active) {
+		.major = supported_ranges->ranges[0].major,
+		.minor = supported_ranges->ranges[0].minor_max,
+	};
+
+	conn_level = ctdbd_conn_get_cluster_level(ctdb_conn);
+	if (conn_level == NULL) {
+		dbwrap_transaction_cancel(state.db);
+		DBG_ERR("ctdbd_conn_get_cluster_level() failed.\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_CONNECTION;
+	}
+
+	status = cluster_level_db_fetch_active(state.db, &active_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		dbwrap_transaction_cancel(state.db);
+		DBG_ERR("cluster_level_db_fetch_active() %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+	req->out.old_level = active_level;
+
+	if (conn_level->major != active_level.major ||
+	    conn_level->minor != active_level.minor)
+	{
+		dbwrap_transaction_cancel(state.db);
+		DBG_ERR("conn_level[%"PRIu32".%"PRIu32"] != "
+			"active_level[%"PRIu32".%"PRIu32"].\n",
+			conn_level->major, conn_level->minor,
+			active_level.major, active_level.minor);
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_CONNECTION;
+	}
+
+	if (highest_level.major == active_level.major &&
+	    highest_level.minor == active_level.minor)
+	{
+		dbwrap_transaction_cancel(state.db);
+		DBG_ERR("highest_level[%"PRIu32".%"PRIu32"] == "
+			"active_level[%"PRIu32".%"PRIu32"].\n",
+			highest_level.major, highest_level.minor,
+			active_level.major, active_level.minor);
+		TALLOC_FREE(frame);
+		return NT_STATUS_ALREADY_COMMITTED;
+	}
+
+	ret = ctdbd_nodes_foreach(ctdb_conn,
+				  cluster_level_db_upgrade_to_highest_cb,
+				  &state);
+	if (ret != 0) {
+		dbwrap_transaction_cancel(state.db);
+		if (NT_STATUS_IS_OK(state.error)) {
+			state.error_vnn = ctdbd_vnn(ctdb_conn);
+			state.error = NT_STATUS_INTERNAL_ERROR;
+		}
+		DBG_ERR("cluster_level_db_upgrade_to_highest_cb() "
+			"vnn=%"PRIu32" %s\n",
+			state.error_vnn, nt_errstr(state.error));
+		req->out.error_vnn = state.error_vnn;
+		TALLOC_FREE(frame);
+		return state.error;
+	}
+
+	active_level = highest_level;
+
+	/*
+	 * If needed adjust version based on active_level!
+	 */
+	version = CLUSTER_LEVEL_DB_VERSION_1;
+
+	status = cluster_level_db_store_active(state.db,
+					       version,
+					       now,
+					       &active_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		dbwrap_transaction_cancel(state.db);
+		DBG_ERR("cluster_level_db_store_active() %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	req->out.new_level = active_level;
+
+	if (req->in.dry_run) {
+		dbwrap_transaction_cancel(state.db);
+		status = NT_STATUS_NOT_COMMITTED;
+		DBG_DEBUG("active_level: %"PRIu32".%"PRIu32" - %s\n",
+			  active_level.major, active_level.minor,
+			  nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	ret = dbwrap_transaction_commit(state.db);
+	if (ret != 0) {
+		DBG_ERR("dbwrap_transaction_commit() failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	DBG_DEBUG("active_level: %"PRIu32".%"PRIu32" - %s\n",
+		  active_level.major, active_level.minor,
+		  nt_errstr(status));
+
+	/*
+	 * Announce the change and let every process connected
+	 * to ctdb notice it.
+	 */
+	messaging_send_all(msg_ctx, MSG_CLUSTER_LEVEL_UPGRADED, NULL, 0);
+
+	ctdbd_conn_set_cluster_level(ctdb_conn, &active_level);
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }

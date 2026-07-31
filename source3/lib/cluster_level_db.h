@@ -48,4 +48,19 @@ NTSTATUS cluster_level_db_nodes_foreach(struct ctdbd_connection *ctdb_conn,
 					cluster_level_db_nodes_foreach_cb_t cb,
 					void *private_data);
 
+struct cluster_level_db_upgrade_req {
+	struct {
+		bool dry_run;
+	} in;
+	struct {
+		struct cluster_level_active old_level;
+		struct cluster_level_active new_level;
+		uint32_t error_vnn;
+	} out;
+};
+
+NTSTATUS cluster_level_db_upgrade(struct ctdbd_connection *ctdb_conn,
+				  struct messaging_context *msg_ctx,
+				  struct cluster_level_db_upgrade_req *req);
+
 #endif /* CLUSTER_LEVEL_DB_H */
