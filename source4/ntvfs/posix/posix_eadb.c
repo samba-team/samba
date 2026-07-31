@@ -181,7 +181,6 @@ NTSTATUS push_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
 
 	status = posix_eadb_add_list(ea_tdb,mem_ctx, attr_name, fname, fd);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
 		goto done;
 	}
 
