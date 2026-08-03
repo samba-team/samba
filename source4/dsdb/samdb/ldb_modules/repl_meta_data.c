@@ -2447,11 +2447,14 @@ static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb
 	struct ldb_dn *dn = dsdb_dn->dn;
 	const char *tstring, *usn_string, *flags_string;
 	struct ldb_val tval;
-	struct ldb_val iid;
+	struct GUID_ndr_buf iid_buf = {};
+	struct ldb_val iid = {
+		.data = iid_buf.buf,
+		.length = sizeof(iid_buf.buf),
+	};
 	struct ldb_val usnv, local_usnv;
 	struct ldb_val vers, flagsv;
 	const struct ldb_val *old_addtime = NULL;
-	NTSTATUS status;
 	int ret;
 	const char *dnstring;
 	char *vstring;
@@ -2475,10 +2478,7 @@ static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb
 	}
 	local_usnv = data_blob_string_const(usn_string);
 
-	status = GUID_to_ndr_blob(invocation_id, dn, &iid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	GUID_to_ndr_buf(invocation_id, &iid_buf);
 
 	flags_string = talloc_asprintf(mem_ctx, "%u", rmd_flags);
 	if (!flags_string) {

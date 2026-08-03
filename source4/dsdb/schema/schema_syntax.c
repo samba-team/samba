@@ -1654,7 +1654,6 @@ static WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_
 {
 	struct drsuapi_DsReplicaObjectIdentifier3 id3;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB guid_blob;
 	struct ldb_dn *dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
@@ -1693,18 +1692,17 @@ static WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_
 	}
 
 	if (!GUID_all_zero(&id3.guid)) {
-		status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(tmp_ctx);
-			return ntstatus_to_werror(status);
-		}
+		struct GUID_ndr_buf guid_buf = {};
+		DATA_BLOB guid_blob = {.data = guid_buf.buf,
+				       .length = sizeof(guid_buf.buf)};
+
+		GUID_to_ndr_buf(&id3.guid, &guid_buf);
 
 		ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return WERR_FOOBAR;
 		}
-		talloc_free(guid_blob.data);
 	}
 
 	if (id3.__ndr_size_sid) {
@@ -1983,7 +1981,6 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 	for (i=0; i < out->num_values; i++) {
 		struct drsuapi_DsReplicaObjectIdentifier3Binary id3;
 		enum ndr_err_code ndr_err;
-		DATA_BLOB guid_blob;
 		struct ldb_dn *dn;
 		struct dsdb_dn *dsdb_dn;
 		NTSTATUS status;
@@ -2021,18 +2018,17 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 		}
 
 		if (!GUID_all_zero(&id3.guid)) {
-			status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(tmp_ctx);
-				return ntstatus_to_werror(status);
-			}
+			struct GUID_ndr_buf guid_buf = {};
+			DATA_BLOB guid_blob = {.data = guid_buf.buf,
+					       .length = sizeof(guid_buf.buf)};
+
+			GUID_to_ndr_buf(&id3.guid, &guid_buf);
 
 			ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return WERR_FOOBAR;
 			}
-			talloc_free(guid_blob.data);
 		}
 
 		if (id3.__ndr_size_sid) {

@@ -973,8 +973,11 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 	const struct dsdb_class *target_class;
 	for (cur = schema->classes; cur; cur = cur->next) {
 		const struct ldb_val *rdn;
-		struct ldb_val guid;
-		NTSTATUS status;
+		struct GUID_ndr_buf guid_buf = {};
+		struct ldb_val guid = {
+			.data = guid_buf.buf,
+			.length = sizeof(guid_buf.buf),
+		};
 		int ret;
 		struct ldb_dn *dn = ldb_dn_new(NULL, ldb, cur->defaultObjectCategory);
 
@@ -992,11 +995,8 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		status = GUID_to_ndr_blob(&target_class->objectGUID, dn, &guid);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(dn);
-			return ldb_operr(ldb);
-		}
+		GUID_to_ndr_buf(&target_class->objectGUID, &guid_buf);
+
 		ret = ldb_dn_set_extended_component(dn, "GUID", &guid);
 		if (ret != LDB_SUCCESS) {
 			ret = ldb_error(ldb, ret, "Could not set GUID");
