@@ -206,10 +206,6 @@ _PUBLIC_ char* GUID_buf_string(const struct GUID *guid,
 		return NULL;
 	}
 
-	if (sizeof(dst->buf) < 37) {
-		return NULL;
-	}
-
 	dst->buf[0] = nybble_to_hex_lower(guid->time_low >> 28);
 	dst->buf[1] = nybble_to_hex_lower(guid->time_low >> 24);
 	dst->buf[2] = nybble_to_hex_lower(guid->time_low >> 20);
