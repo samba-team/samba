@@ -1,0 +1,233 @@
+{
+    "attribute_mappings": {
+        "All": {
+            "type": "fts",
+            "attribute": "content",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+	"Path" : {
+            "type": "str",
+            "attribute": "path.real",
+            "elastic_to_wsp": "builtin_real_to_winpath"
+        },
+        "Scope": {
+            "type": "str",
+            "attribute": "path.real.fulltext",
+            "elastic_to_wsp": "builtin_url_to_winpath",
+	    "wsp_to_elastic" : "builtin_wspscope_to_unixpath"
+        },
+       "System.Search.AutoSummary": {
+            "type": "str",
+            "attribute": "content",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+       "System.Author": {
+            "type": "str",
+            "attribute": "meta.author",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.DateAccessed": {
+            "type": "date",
+            "attribute": "file.last_accessed",
+            "elastic_to_wsp": "builtin_date_to_filetime"
+        },
+        "System.DateModified": {
+            "type": "date",
+            "attribute": "file.last_modified",
+            "elastic_to_wsp": "builtin_date_to_filetime"
+        },
+        "System.FileName": {
+            "type": "str",
+            "attribute": "file.filename",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.ItemAuthors": {
+            "type": "str",
+            "attribute": "meta.author",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.ItemFolderPathDisplay" : {
+            "type": "str",
+            "attribute": "path.real",
+            "elastic_to_wsp": "builtin_real_to_item_folder"
+        },
+        "System.ItemFolderPathDisplayNarrow" : {
+            "type": "str",
+            "attribute": "path.real",
+            "elastic_to_wsp": "builtin_real_to_item_folder_narrow"
+	},
+        "System.ItemDate": {
+            "type": "date",
+            "attribute": "file.last_modified",
+            "elastic_to_wsp": "builtin_date_to_filetime"
+        },
+        "System.ItemNameDisplay" : {
+            "type": "str",
+            "attribute": "file.filename",
+            "elastic_to_wsp": "builtin_default_conv"
+	},
+        "System.ItemType": {
+            "type": "str",
+            "attribute": "file.filename",
+            "elastic_to_wsp": "builtin_filename_to_itemtype"
+        },
+        "00000000-0000-0000-0000-000000000000/#SYSTEM.STRUCTUREDQUERY.VIRTUAL.TYPE" : {
+            "type": "str",
+            "attribute": "file.extension",
+            "elastic_to_wsp": "builtin_filename_to_itemtype"
+	},
+        "System.ItemTypeText": {
+            "type": "str",
+            "attribute": "file.filename",
+            "elastic_to_wsp": "builtin_filename_to_itemtypetext"
+        },
+        "System.ItemName" : {
+            "type": "str",
+            "attribute": "file.filename",
+            "elastic_to_wsp": "builtin_default_conv"
+	},
+        "System.ItemURL": {
+            "type": "str",
+            "attribute": "path.real",
+            "elastic_to_wsp": "builtin_real_to_winpath"
+        },
+        "System.Keywords": {
+            "type": "str",
+            "attribute": "meta.keywords",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.Kind": {
+            "type": "map",
+            "attribute": "file.content_type",
+            "elastic_to_wsp": "builtin_mimetype_to_kind",
+	    "wsp_to_elastic" : "builtin_kind_to_mimetype"
+        },
+        "System.MIMEType": {
+            "type": "str",
+            "attribute": "file.content_type",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.Music.AlbumTitle": {
+            "type": "str",
+            "attribute": "meta.raw.xmpDM:album",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.Music.Genre": {
+            "type": "str",
+            "attribute": "meta.raw.xmpDM:genre",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.Music.Artist": {
+            "type": "str",
+            "attribute": "meta.raw.xmpDM:artist",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.Music.AlbumID": {
+            "type": "str",
+            "attribute": "meta.raw.xmpDM:album",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.ParsingName" : {
+            "type": "str",
+            "attribute": "file.filename",
+            "elastic_to_wsp": "builtin_default_conv"
+	},
+        "System.Search.EntryID" : {
+            "type": "str",
+            "attribute": "_id",
+            "elastic_to_wsp": "builtin_get_entryid_for_url",
+	    "wsp_to_elastic" : "builtin_get_url_for_entryid"
+	},
+        "System.Search.RowID" : {
+            "type": "str",
+            "attribute": "_id",
+            "elastic_to_wsp": "builtin_generate_rowid"
+	},
+        "System.Size": {
+            "type": "num",
+            "attribute": "file.filesize",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "System.Title": {
+            "type": "str",
+            "attribute": "meta.title",
+            "elastic_to_wsp": "builtin_default_conv"
+        },
+        "ParentDir": {
+            "type": "str",
+            "attribute": "file.real.tree",
+            "elastic_to_wsp": "builtin_url_to_winpath",
+            "wsp_to_elastic" : "builtin_wspscope_to_unixpath"
+        },
+	"ParentDir": {
+		"type": "str",
+		"attribute": "file.real.tree",
+		"elastic_to_wsp": "builtin_url_to_winpath",
+		"wsp_to_elastic" : "builtin_wspscope_to_unixpath"
+	},
+        "System.Important.Unknown": {
+            "type": "num",
+            "attribute": "file.url",
+            "elastic_to_wsp": "builtin_get_entryid_for_url"
+        },
+        "System.FileAttributes": {
+            "type": "num",
+            "attribute": "path.real",
+            "elastic_to_wsp": "builtin_real_to_fileattrs"
+        },
+        "System.DateCreated": {
+            "type": "date",
+            "attribute": "file.created",
+            "elastic_to_wsp": "builtin_date_to_filetime"
+        }
+    },
+    "kind_mappings": {
+	"Calendar": "text/calendar",
+	"Communication":"",
+	"Contact": "text/*vcard",
+	"Folder":"text/directory",
+	"Document": "application/vnd.oasis.opendocument* application/pdf* text/csv*  text/plain* text/tsv* text/html* application/msword* application/vnd.ms-powerpoint* application/vnd.ms-excel* application/vnd.openxmlformats-officedocument*",
+	"Email": "application/mbox application/vnd.ms-outlook-ps message/rfc822 application/vnd.ms-outlook-pst application/vnd.ms-outlook application/vnd.ms-tnef application/x-tnef application/ms-tnef",
+	"Feed": "application/rss+xml application/atom+xml text/vnd.iptc.anpa text/xml",
+	"Game": "",
+	"InstantMessage": "",
+	"Journal": "",
+	"Link": "",
+	"Movie": "",
+	"Music": "audio/*",
+	"Note": "",
+	"Picture": "image/*",
+	"Program": "application/x-msdownload application/x-sharedlib application/x-elf application/x-object application/x-executable application/x-coredump application/x-dosexec application/x-ms-installer application/x-bat",
+	"RecordedTV": "",
+	"SearchFolder": "",
+	"Task": "",
+	"Video": "video/* application/mp4",
+	"WebHistory": ""
+    },
+
+    "type_mappings" : {
+	"bat" : "Windows Batch File",
+	"bmp" : "Bitmap image",
+	"cab" : "Cabinet File",
+	"dll" : "Application extension",
+	"docx" :"'Office Open XML Document",
+	"eml" : "Microsoft Email Message",
+	"exe" : "Application",
+	"gif" : "GIF image",
+	"htm" : "HTML Document",
+	"html" : "HTML Document",
+	"ini" : "Configuration settings",
+	"iso" : "Disc Image File",
+	"jpeg" : "JPEG image",
+	"jpg" : "JPEG image",
+	"msi" : "Windows Installer Package",
+	"odt" : "OpenDocument Text",
+	"png" : "PNG image",
+	"rtf" : "Rich Text Document",
+	"sys" : "System file",
+	"tif" : "TIFF image",
+	"tiff" : "TIFF image",
+	"txt" : "Text Document",
+	"zip" : "Compressed (zipped) Folder"
+    }
+}

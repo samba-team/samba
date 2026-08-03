@@ -158,8 +158,12 @@ if bld.env.wsp_backend_es:
     wsp_backends_sources += '''
                             wsp/wsp_es_conv.c
                             '''
+    bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
+                      'wsp/elasticsearch_mappings.json')
+
 bld.SAMBA3_SUBSYSTEM('WSP_BACKEND',
                     source=wsp_backends_sources,
+                    deps='ELASTIC-UTIL',
                     enabled=bld.env.with_wsp)
 
 bld.SAMBA3_SUBSYSTEM('WSP_GSS',
