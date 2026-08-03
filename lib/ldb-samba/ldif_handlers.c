@@ -271,7 +271,7 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-static bool ldif_comparision_objectGUID_isString(const struct ldb_val *v)
+static bool ldif_comparison_objectGUID_isString(const struct ldb_val *v)
 {
 	if (v->length != 36 && v->length != 38) return false;
 
@@ -316,10 +316,13 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 static int ldif_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	if (ldif_comparision_objectGUID_isString(v1) && ldif_comparision_objectGUID_isString(v2)) {
+	if (ldif_comparison_objectGUID_isString(v1) &&
+	    ldif_comparison_objectGUID_isString(v2))
+	{
 		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
-	} else if (ldif_comparision_objectGUID_isString(v1)
-		   && !ldif_comparision_objectGUID_isString(v2)) {
+	} else if (ldif_comparison_objectGUID_isString(v1) &&
+		   !ldif_comparison_objectGUID_isString(v2))
+	{
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v1, &v) != 0) {
@@ -329,8 +332,9 @@ static int ldif_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
 		return ret;
-	} else if (!ldif_comparision_objectGUID_isString(v1)
-		   && ldif_comparision_objectGUID_isString(v2)) {
+	} else if (!ldif_comparison_objectGUID_isString(v1) &&
+		   ldif_comparison_objectGUID_isString(v2))
+	{
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v2, &v) != 0) {
@@ -350,7 +354,7 @@ static int ldif_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 static int ldif_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				       const struct ldb_val *in, struct ldb_val *out)
 {
-	if (ldif_comparision_objectGUID_isString(in)) {
+	if (ldif_comparison_objectGUID_isString(in)) {
 		if (ldif_read_objectGUID(ldb, mem_ctx, in, out) != 0) {
 			/* Perhaps it wasn't a valid string after all */
 			return ldb_handler_copy(ldb, mem_ctx, in, out);
@@ -748,7 +752,7 @@ failed:
 	return -1;
 }
 
-static bool ldif_comparision_prefixMap_isString(const struct ldb_val *v)
+static bool ldif_comparison_prefixMap_isString(const struct ldb_val *v)
 {
 	if (v->length < 4) {
 		return true;
@@ -767,7 +771,7 @@ static bool ldif_comparision_prefixMap_isString(const struct ldb_val *v)
 static int ldif_canonicalise_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				       const struct ldb_val *in, struct ldb_val *out)
 {
-	if (ldif_comparision_prefixMap_isString(in)) {
+	if (ldif_comparison_prefixMap_isString(in)) {
 		return ldif_read_prefixMap(ldb, mem_ctx, in, out);
 	}
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
