@@ -283,11 +283,12 @@ else:
                           tevent_unix.c
                           tevent_ntstatus.c
                           tevent_werror.c
+                          tevent_hresult.c
                           tevent_req_profile.c
                       ''',
                       local_include=False,
                       public_deps='tevent time-basic samba-errors',
-                      public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
+                      public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h tevent_hresult.h',
                       header_path=[ ('*', 'util') ],
                       pc_files=[],
                       vnum='0.0.1'
