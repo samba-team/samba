@@ -1075,6 +1075,31 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 	return blob_out;
 }
 
+void smbd_server_guid(struct GUID *server_guid)
+{
+	fstring unix_name = {};
+	nstring dos_name = {};
+	DATA_BLOB blob = {
+		.data = (uint8_t *)dos_name,
+		.length = sizeof(dos_name),
+	};
+	NTSTATUS status;
+
+	/*
+	 * Strange way to create a GUID, but this is what
+	 * negprot_spnego() did.
+	 */
+	fstrcpy(unix_name, lp_netbios_name());
+	(void)strlower_m(unix_name);
+	push_ascii_nstring(dos_name, unix_name);
+
+	/*
+	 * "nstring" is 16 bytes, i.e. exactly a GUID
+	 */
+	status = GUID_from_ndr_blob(&blob, server_guid);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+}
+
 /*
  * MS-CIFS, 2.2.4.52.2 SMB_COM_NEGOTIATE Response:
  * If the server does not support any of the listed dialects, it MUST return a
