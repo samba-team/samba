@@ -317,14 +317,40 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 		}
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		DATA_BLOB spnego_blob = negprot_spnego(req, xconn);
+		struct GUID server_guid = {};
+		struct GUID_ndr_buf guid_buf = {};
+		DATA_BLOB spnego_blob = {};
 
+		smbd_server_guid(&server_guid);
+		GUID_to_ndr_buf(&server_guid, &guid_buf);
+		ret = message_push_blob(&req->outbuf,
+					(DATA_BLOB){
+						.data = guid_buf.buf,
+						.length = sizeof(guid_buf.buf),
+					});
+		if (ret == -1) {
+			DEBUG(0, ("Could not push server guid blob\n"));
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		spnego_blob = negprot_spnego(req, xconn);
 		if (spnego_blob.data == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		ret = message_push_blob(&req->outbuf, spnego_blob);
+		if (spnego_blob.length < 16) {
+			reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		ret = message_push_blob(&req->outbuf,
+					(DATA_BLOB){
+						.data = spnego_blob.data + 16,
+						.length = spnego_blob.length -
+							  16,
+					});
 		data_blob_free(&spnego_blob);
 		if (ret == -1) {
 			DEBUG(0, ("Could not push spnego blob\n"));
