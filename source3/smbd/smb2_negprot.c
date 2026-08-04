@@ -230,7 +230,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint16_t out_negotiate_context_count = 0;
 	uint16_t dialect = 0;
 	uint32_t capabilities;
-	DATA_BLOB out_guid_blob;
+	struct GUID_ndr_buf out_guid_buf;
 	struct GUID out_guid;
 	enum protocol_types protocol = PROTOCOL_NONE;
 	uint32_t max_limit;
@@ -812,11 +812,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		outdyn = security_buffer;
 	}
 
-	out_guid_blob = data_blob_const(negprot_spnego_blob.data, 16);
-	status = GUID_from_ndr_blob(&out_guid_blob, &out_guid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return smbd_smb2_request_error(req, status);
-	}
+	smbd_server_guid(&out_guid);
+	GUID_to_ndr_buf(&out_guid, &out_guid_buf);
 
 	outbody = smbd_smb2_generate_outbody(req, 0x40);
 	if (outbody.data == NULL) {
@@ -830,7 +827,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	SSVAL(outbody.data, 0x06,
 	      out_negotiate_context_count);	/* reserved/NegotiateContextCount */
 	memcpy(outbody.data + 0x08,
-	       out_guid_blob.data, 16);	/* server guid */
+	       out_guid_buf.buf,
+	       sizeof(out_guid_buf.buf));	/* server guid */
 	SIVAL(outbody.data, 0x18,
 	      capabilities);			/* capabilities */
 	SIVAL(outbody.data, 0x1C, max_trans);	/* max transact size */
