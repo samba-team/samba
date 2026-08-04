@@ -340,16 +340,10 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (spnego_blob.length < 16) {
-			reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
 		ret = message_push_blob(&req->outbuf,
 					(DATA_BLOB){
-						.data = spnego_blob.data + 16,
-						.length = spnego_blob.length -
-							  16,
+						.data = spnego_blob.data,
+						.length = spnego_blob.length,
 					});
 		data_blob_free(&spnego_blob);
 		if (ret == -1) {

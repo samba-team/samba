@@ -385,14 +385,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	in_transport_caps =  smb2_negotiate_context_find(&in_c,
 					SMB2_TRANSPORT_CAPABILITIES);
 
-	/* negprot_spnego() returns the server guid in the first 16 bytes */
 	negprot_spnego_blob = negprot_spnego(req, xconn);
 	if (negprot_spnego_blob.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
-	}
-
-	if (negprot_spnego_blob.length < 16) {
-		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 
 	security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
@@ -748,8 +743,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	security_offset = SMB2_HDR_BODY + 0x40;
 
-	security_buffer = data_blob_const(negprot_spnego_blob.data + 16,
-					  negprot_spnego_blob.length - 16);
+	security_buffer = negprot_spnego_blob;
 
 	if (posix) {
 		/* Client correctly negotiated SMB2 unix extensions. */
@@ -1002,9 +996,6 @@ static void smbd_smb2_request_process_negprot_mc_done(struct tevent_req *subreq)
 DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 {
 	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB blob_out = data_blob_null;
-	nstring dos_name;
-	fstring unix_name;
 	NTSTATUS status;
 	struct gensec_security *gensec_security;
 
@@ -1053,24 +1044,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
 		return data_blob_null;
 	}
 
-	blob_out = data_blob_talloc(ctx, NULL, 16 + blob.length);
-	if (blob_out.data == NULL) {
-		data_blob_free(&blob);
-		return data_blob_null;
-	}
-
-	memset(blob_out.data, '\0', 16);
-
-	checked_strlcpy(unix_name, lp_netbios_name(), sizeof(unix_name));
-	(void)strlower_m(unix_name);
-	push_ascii_nstring(dos_name, unix_name);
-	strlcpy((char *)blob_out.data, dos_name, 17);
-
-	memcpy(&blob_out.data[16], blob.data, blob.length);
-
-	data_blob_free(&blob);
-
-	return blob_out;
+	return blob;
 }
 
 void smbd_server_guid(struct GUID *server_guid)
