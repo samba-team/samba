@@ -325,12 +325,12 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 		}
 
 		ret = message_push_blob(&req->outbuf, spnego_blob);
+		data_blob_free(&spnego_blob);
 		if (ret == -1) {
 			DEBUG(0, ("Could not push spnego blob\n"));
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return NT_STATUS_NO_MEMORY;
 		}
-		data_blob_free(&spnego_blob);
 
 		SCVAL(req->outbuf,smb_vwv16+1, 0);
 		DEBUG(3,("using SPNEGO\n"));
