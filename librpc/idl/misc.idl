@@ -4,6 +4,19 @@
   miscellaneous IDL structures
 */
 
+/*
+ * We used to push/pull timeval and timespec
+ * with NDR_SCALARS and a 2nd time with
+ * NDR_BUFFERS. This is wrong as it's a
+ * scalar type and the 2nd call with NDR_BUFFERS
+ * should do nothing.
+ *
+ * In order to support structures encoded
+ * with the old broken version we now
+ * have ndr_{push,pull,print}_{timeval,timespec}_legacy()
+ */
+cpp_quote("#define timespec_legacy timespec")
+cpp_quote("#define timeval_legacy timeval")
 
 [
 	pyhelper("librpc/ndr/py_misc.c"),

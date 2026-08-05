@@ -39,7 +39,7 @@ interface open_files
 		smb2_lease_key  lease_key;
 		uint32		access_mask;
 		uint32		share_access;
-		timeval		time;
+		timeval_legacy	time;
 		udlong		share_file_id;
 		uint32		uid;
 		share_entry_flags flags;
@@ -119,10 +119,10 @@ interface open_files
 		hyper		st_ex_gid;
 		hyper		st_ex_rdev;
 		hyper		st_ex_size;
-		timespec	st_ex_atime;
-		timespec	st_ex_mtime;
-		timespec	st_ex_ctime;
-		timespec	st_ex_btime;
+		timespec_legacy	st_ex_atime;
+		timespec_legacy	st_ex_mtime;
+		timespec_legacy	st_ex_ctime;
+		timespec_legacy	st_ex_btime;
 		hyper		st_ex_blksize;
 		hyper		st_ex_blocks;
 		uint32		st_ex_flags;
