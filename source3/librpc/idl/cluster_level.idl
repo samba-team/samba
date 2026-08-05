@@ -260,7 +260,7 @@ interface cluster_level
 	} cluster_level_db_version;
 
 	typedef struct {
-		timeval_legacy		update_time;
+		timeval			update_time;
 		cluster_level_active	active_level;
 	} cluster_level_global1;
 
@@ -276,8 +276,8 @@ interface cluster_level
 	const string CLUSTER_LEVEL_GLOBAL_KEY = "CLUSTER_LEVEL_GLOBAL";
 
 	typedef struct {
-		timeval_legacy		update_time;
-		timeval_legacy		ctdbd_start_time;
+		timeval			update_time;
+		timeval			ctdbd_start_time;
 		uint32			ctdbd_pid;
 		cluster_level_ranges	supported_ranges;
 	} cluster_level_node1;

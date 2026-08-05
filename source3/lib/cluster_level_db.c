@@ -159,7 +159,7 @@ static NTSTATUS cluster_level_db_store_active(
 	struct cluster_level_globalB globalB = {
 		.version = version,
 	};
-#define CLUSTER_LEVEL_DB_VERSION_1_REC_SIZE 44
+#define CLUSTER_LEVEL_DB_VERSION_1_REC_SIZE 28
 	uint8_t fixed_buf[CLUSTER_LEVEL_DB_VERSION_1_REC_SIZE] = {};
 	DATA_BLOB fixed_blob = {
 		.data = fixed_buf,
