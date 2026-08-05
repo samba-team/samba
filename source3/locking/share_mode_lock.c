@@ -259,9 +259,9 @@ static enum ndr_err_code get_share_mode_blob_header(
 		.data = discard_const_p(uint8_t, buf),
 		.data_size = buflen,
 	};
-	enum smbXsrv_version_values v;
-	NDR_CHECK(ndr_pull_smbXsrv_version_values(&ndr, NDR_SCALARS, &v));
-	if (v != SMBXSRV_VERSION_0) {
+	enum share_mode_data_version v;
+	NDR_CHECK(ndr_pull_share_mode_data_version(&ndr, NDR_SCALARS, &v));
+	if (v != SHARE_MODE_DATA_VERSION_1) {
 		DBG_ERR("Invalid version\n");
 		return NDR_ERR_VALIDATE;
 	}
@@ -357,7 +357,7 @@ static struct share_mode_data *share_mode_memcache_fetch(
  */
 
 struct share_mode_entry_buf {
-	uint8_t buf[140];
+	uint8_t buf[128];
 };
 #define SHARE_MODE_ENTRY_SIZE (sizeof(struct share_mode_entry_buf))
 
@@ -619,14 +619,14 @@ static struct share_mode_data *parse_share_mode_data(
 		goto fail;
 	}
 
-	if (data_blob.version != SMBXSRV_VERSION_0) {
+	if (data_blob.version != SHARE_MODE_DATA_VERSION_1) {
 		DBG_ERR("Invalid record in locking.tdb:"
 			 "key '%s' unsupported version: %d\n",
 			 file_id_str_buf(id, &idbuf),
 			 (int)data_blob.version);
 		goto fail;
 	}
-	d = data_blob.data.data0;
+	d = data_blob.data.data1;
 
 	if (DEBUGLEVEL >= 10) {
 		DBG_DEBUG("parse_share_modes:\n");
@@ -635,7 +635,7 @@ static struct share_mode_data *parse_share_mode_data(
 
 	return d;
 fail:
-	TALLOC_FREE(data_blob.data.data0);
+	TALLOC_FREE(data_blob.data.data1);
 	return NULL;
 }
 
@@ -669,11 +669,11 @@ static NTSTATUS share_mode_data_ltdb_store(struct share_mode_data *d,
 		enum ndr_err_code ndr_err;
 
 		data_blob = (struct share_mode_dataB) {
-			.version = smbXsrv_version_global_current(),
+			.version = SHARE_MODE_DATA_VERSION_1,
 			.unique_content_epoch = d->unique_content_epoch,
 			.flags = d->flags,
 		};
-		data_blob.data.data0 = d;
+		data_blob.data.data1 = d;
 
 		ndr_err = ndr_push_struct_blob(
 			&blob,

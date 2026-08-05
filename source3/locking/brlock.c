@@ -35,7 +35,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "source3/locking/share_mode_lock.h"
-#include "../librpc/gen_ndr/ndr_smbXsrv.h"
+#include "../librpc/gen_ndr/ndr_open_files.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -1654,7 +1654,7 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 			store_flags |= DBWRAP_STORE_PERSISTENT;
 		}
 
-		PUSH_BE_U32(version_buf, 0, smbXsrv_version_global_current());
+		PUSH_BE_U32(version_buf, 0, SHARE_MODE_DATA_VERSION_1);
 
 		status = dbwrap_record_storev(br_lck->record,
 					     data,
@@ -1692,7 +1692,7 @@ static bool brl_parse_data(struct byte_range_lock *br_lck, TDB_DATA data)
 		return false;
 	}
 	version = PULL_BE_U32(data.dptr, 0);
-	if (version != SMBXSRV_VERSION_0) {
+	if (version != SHARE_MODE_DATA_VERSION_1) {
 		DBG_WARNING("Invalid version: %"PRIu32"\n", version);
 		return false;
 	}
