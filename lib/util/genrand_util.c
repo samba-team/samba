@@ -80,13 +80,15 @@ _PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
 		};
 	}
 
+	generate_unique_u64_state.next_value++;
+
 	while (unlikely(generate_unique_u64_state.next_value == veto_value)) {
 		generate_nonce_buffer(
 				(void *)&generate_unique_u64_state.next_value,
 				sizeof(generate_unique_u64_state.next_value));
 	}
 
-	return generate_unique_u64_state.next_value++;
+	return generate_unique_u64_state.next_value;
 }
 
 /**
