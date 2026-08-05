@@ -1536,6 +1536,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_timespec(struct ndr_push *ndr,
 					     const struct timespec *t)
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
 	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t->tv_sec));
 	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, t->tv_nsec));
 	return NDR_ERR_SUCCESS;
@@ -1548,6 +1551,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timespec(struct ndr_pull *ndr,
 	uint64_t secs = 0;
 	uint32_t nsecs = 0;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &secs));
 	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &nsecs));
 	t->tv_sec = secs;
@@ -1568,6 +1574,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_timeval(struct ndr_push *ndr,
 					    const struct timeval *t)
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
 	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t->tv_sec));
 	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, t->tv_usec));
 	return NDR_ERR_SUCCESS;
@@ -1580,6 +1589,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timeval(struct ndr_pull *ndr,
 	uint64_t secs = 0;
 	uint32_t usecs = 0;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &secs));
 	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &usecs));
 	t->tv_sec = secs;
@@ -1592,6 +1604,86 @@ _PUBLIC_ void ndr_print_timeval(struct ndr_print *ndr, const char *name,
 {
 	ndr->print(ndr, "%-25s: %s.%ld", name, timestring(ndr, t->tv_sec),
 		   (long)t->tv_usec);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_timespec_legacy(struct ndr_push *ndr,
+						    ndr_flags_type ndr_flags,
+						    const struct timespec *t)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	/*
+	 * The legacy version didn't have:
+	 *
+	 * if (!(ndr_flags & NDR_SCALARS)) {
+	 *    return NDR_ERR_SUCCESS;
+	 * }
+	 *
+	 * So we force NDR_SCALARS here.
+	 */
+	return ndr_push_timespec(ndr, NDR_SCALARS, t);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_timespec_legacy(struct ndr_pull *ndr,
+						    ndr_flags_type ndr_flags,
+						    struct timespec *t)
+{
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	/*
+	 * The legacy version didn't have:
+	 *
+	 * if (!(ndr_flags & NDR_SCALARS)) {
+	 *    return NDR_ERR_SUCCESS;
+	 * }
+	 *
+	 * So we force NDR_SCALARS here.
+	 */
+	return ndr_pull_timespec(ndr, NDR_SCALARS, t);
+}
+
+_PUBLIC_ void ndr_print_timespec_legacy(struct ndr_print *ndr, const char *name,
+					const struct timespec *t)
+{
+	ndr_print_timespec(ndr, name, t);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_timeval_legacy(struct ndr_push *ndr,
+						   ndr_flags_type ndr_flags,
+						   const struct timeval *t)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	/*
+	 * The legacy version didn't have:
+	 *
+	 * if (!(ndr_flags & NDR_SCALARS)) {
+	 *    return NDR_ERR_SUCCESS;
+	 * }
+	 *
+	 * So we force NDR_SCALARS here.
+	 */
+	return ndr_push_timeval(ndr, NDR_SCALARS, t);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_timeval_legacy(struct ndr_pull *ndr,
+						   ndr_flags_type ndr_flags,
+						   struct timeval *t)
+{
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	/*
+	 * The legacy version didn't have:
+	 *
+	 * if (!(ndr_flags & NDR_SCALARS)) {
+	 *    return NDR_ERR_SUCCESS;
+	 * }
+	 *
+	 * So we force NDR_SCALARS here.
+	 */
+	return ndr_pull_timeval(ndr, NDR_SCALARS, t);
+}
+
+_PUBLIC_ void ndr_print_timeval_legacy(struct ndr_print *ndr, const char *name,
+				       const struct timeval *t)
+{
+	ndr_print_timeval(ndr, name, t);
 }
 
 _PUBLIC_ void ndr_print_libndr_flags(struct ndr_print *ndr, const char *name,
