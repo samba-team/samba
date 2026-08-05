@@ -545,7 +545,7 @@ static bool share_mode_entry_durable_reconnect_cb(
 	void *private_data)
 {
 	struct durable_reconnect_state *state = private_data;
-	struct smbXsrv_open_global0 *global = state->op->global;
+	struct smbXsrv_open_global *global = state->op->global;
 	uint64_t id = global->open_persistent_id;
 
 	if (e->share_file_id != id) {

@@ -114,7 +114,7 @@ struct tevent_req *smbd_cleanupd_send(TALLOC_CTX *mem_ctx,
 }
 
 static int cleanup_ph_fn(struct db_record *dbrec,
-			 struct smbXsrv_open_global0 *global,
+			 struct smbXsrv_open_global *global,
 			 TDB_DATA *rc_open_global_key,
 			 void *private_data)
 {

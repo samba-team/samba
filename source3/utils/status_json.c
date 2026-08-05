@@ -327,7 +327,7 @@ failure:
 }
 
 static int add_channel_to_json(struct json_object *parent_json,
-			       const struct smbXsrv_channel_global0 *channel)
+			       const struct smbXsrv_channel_global *channel)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct json_object sub_json;
@@ -413,7 +413,7 @@ failure:
 }
 
 static int add_channels_to_json(struct json_object *parent_json,
-				const struct smbXsrv_session_global0 *global)
+				const struct smbXsrv_session_global *global)
 {
 	struct json_object sub_json;
 	uint32_t i;
@@ -425,7 +425,7 @@ static int add_channels_to_json(struct json_object *parent_json,
 	}
 
 	for (i = 0; i < global->num_channels; i++) {
-		const struct smbXsrv_channel_global0 *c = &global->channels[i];
+		const struct smbXsrv_channel_global *c = &global->channels[i];
 
 		result = add_channel_to_json(&sub_json, c);
 		if (result < 0) {

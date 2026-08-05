@@ -2238,7 +2238,7 @@ struct smb2_signing_key *smbd_smb2_signing_key(struct smbXsrv_session *session,
 					       struct smbXsrv_connection *xconn,
 					       bool *_has_channel)
 {
-	struct smbXsrv_channel_global0 *c = NULL;
+	struct smbXsrv_channel_global *c = NULL;
 	NTSTATUS status;
 	struct smb2_signing_key *key = NULL;
 	bool has_channel = false;
@@ -4410,7 +4410,7 @@ static NTSTATUS smbXsrv_pending_break_submit(struct smbXsrv_pending_break *pb)
 		}
 
 		if (session != NULL) {
-			struct smbXsrv_channel_global0 *c = NULL;
+			struct smbXsrv_channel_global *c = NULL;
 
 			/*
 			 * Having a session means we're handling

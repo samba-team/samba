@@ -131,7 +131,7 @@ done:
 	return ret;
 }
 
-static int wipedbs_traverse_sessions(struct smbXsrv_session_global0 *session,
+static int wipedbs_traverse_sessions(struct smbXsrv_session_global *session,
 				     void *wipedbs_state)
 {
 	struct wipedbs_state *state =
@@ -186,7 +186,7 @@ done:
 	return ret;
 }
 
-static int wipedbs_traverse_tcon(struct smbXsrv_tcon_global0 *tcon,
+static int wipedbs_traverse_tcon(struct smbXsrv_tcon_global *tcon,
 				 void *wipedbs_state)
 {
 	struct wipedbs_state *state =
@@ -297,7 +297,7 @@ done:
 }
 
 static int wipedbs_traverse_open(struct db_record *db_rec,
-				 struct smbXsrv_open_global0 *open,
+				 struct smbXsrv_open_global *open,
 				 TDB_DATA *rc_open_global_key,
 				 void *wipedbs_state)
 {
@@ -569,7 +569,7 @@ static void wipedbs_delete_locking_record(
 	struct wipedbs_delete_state *delete_state)
 {
 	struct wipedbs_record_marker *cur = delete_state->cur;
-	struct smbXsrv_open_global0 *global = NULL;
+	struct smbXsrv_open_global *global = NULL;
 	NTSTATUS status;
 	bool ok;
 
@@ -623,15 +623,15 @@ static void wipedbs_delete_replay_record(
 		return;
 	}
 
-	if (global_blob.version != SMBXSRV_VERSION_0) {
+	if (global_blob.version != SMBXSRV_VERSION_1) {
 		DBG_ERR("Unsupported open record version %u\n",
 			global_blob.version);
 		TALLOC_FREE(mem_ctx);
 		return;
 	}
 
-	status = smbXsrv_replay_cleanup(&global_blob.info.info0->client_guid,
-					&global_blob.info.info0->create_guid);
+	status = smbXsrv_replay_cleanup(&global_blob.info.info1->client_guid,
+					&global_blob.info.info1->create_guid);
 	TALLOC_FREE(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Replay record cleanup failed\n");

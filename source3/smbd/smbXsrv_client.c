@@ -166,7 +166,7 @@ static NTSTATUS smbXsrv_client_table_create(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static int smbXsrv_client_global_destructor(struct smbXsrv_client_global0 *global)
+static int smbXsrv_client_global_destructor(struct smbXsrv_client_global *global)
 {
 	return 0;
 }
@@ -176,7 +176,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 					bool *was_free,
 					TALLOC_CTX *mem_ctx,
 					const struct server_id *dead_server_id,
-					struct smbXsrv_client_global0 **_g,
+					struct smbXsrv_client_global **_g,
 					uint32_t *pseqnum)
 {
 	TDB_DATA key;
@@ -184,7 +184,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 	DATA_BLOB blob;
 	struct smbXsrv_client_globalB global_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_client_global0 *global = NULL;
+	struct smbXsrv_client_global *global = NULL;
 	bool dead = false;
 	bool exists;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -231,7 +231,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 		NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
 	}
 
-	if (global_blob.version != SMBXSRV_VERSION_0) {
+	if (global_blob.version != SMBXSRV_VERSION_1) {
 		DBG_ERR("key '%s' uses unsupported version %u\n",
 			tdb_data_dbg(key),
 			global_blob.version);
@@ -240,7 +240,7 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 		return;
 	}
 
-	global = global_blob.info.info0;
+	global = global_blob.info.info1;
 
 	dead = server_id_equal(dead_server_id, &global->server_id);
 	if (dead) {
@@ -284,17 +284,17 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 }
 
 static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
-					       struct smbXsrv_client_global0 *global)
+					       struct smbXsrv_client_global *global)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	struct smbXsrv_connection_pass0 pass_info0;
+	struct smbXsrv_connection_pass pass_info;
 	struct smbXsrv_connection_passB pass_blob;
 	ssize_t reqlen;
 	struct iovec iov;
 
-	pass_info0 = (struct smbXsrv_connection_pass0) {
+	pass_info = (struct smbXsrv_connection_pass) {
 		.client_guid = global->client_guid,
 		.src_server_id = smb2req->xconn->client->global->server_id,
 		.xconn_connect_time = smb2req->xconn->client->global->initial_connect_time,
@@ -308,19 +308,19 @@ static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req
 		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
 
-	pass_info0.negotiate_request.length = reqlen;
-	pass_info0.negotiate_request.data = talloc_array(talloc_tos(), uint8_t,
-							 reqlen);
-	if (pass_info0.negotiate_request.data == NULL) {
+	pass_info.negotiate_request.length = reqlen;
+	pass_info.negotiate_request.data = talloc_array(talloc_tos(), uint8_t,
+							reqlen);
+	if (pass_info.negotiate_request.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	iov_buf(smb2req->in.vector, smb2req->in.vector_count,
-		pass_info0.negotiate_request.data,
-		pass_info0.negotiate_request.length);
+		pass_info.negotiate_request.data,
+		pass_info.negotiate_request.length);
 
 	ZERO_STRUCT(pass_blob);
 	pass_blob.version = smbXsrv_version_global_current();
-	pass_blob.info.info0 = &pass_info0;
+	pass_blob.info.info1 = &pass_info;
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
@@ -328,7 +328,7 @@ static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req
 
 	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &pass_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_connection_passB);
-	data_blob_free(&pass_info0.negotiate_request);
+	data_blob_free(&pass_info.negotiate_request);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
@@ -351,16 +351,16 @@ static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req
 }
 
 static NTSTATUS smb2srv_client_connection_drop(struct smbd_smb2_request *smb2req,
-					       struct smbXsrv_client_global0 *global)
+					       struct smbXsrv_client_global *global)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	struct smbXsrv_connection_drop0 drop_info0;
+	struct smbXsrv_connection_drop drop_info;
 	struct smbXsrv_connection_dropB drop_blob;
 	struct iovec iov;
 
-	drop_info0 = (struct smbXsrv_connection_drop0) {
+	drop_info = (struct smbXsrv_connection_drop) {
 		.client_guid = global->client_guid,
 		.src_server_id = smb2req->xconn->client->global->server_id,
 		.xconn_connect_time = smb2req->xconn->client->global->initial_connect_time,
@@ -370,7 +370,7 @@ static NTSTATUS smb2srv_client_connection_drop(struct smbd_smb2_request *smb2req
 
 	ZERO_STRUCT(drop_blob);
 	drop_blob.version = smbXsrv_version_global_current();
-	drop_blob.info.info0 = &drop_info0;
+	drop_blob.info.info1 = &drop_info;
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
@@ -399,7 +399,7 @@ static NTSTATUS smb2srv_client_connection_drop(struct smbd_smb2_request *smb2req
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *global)
+static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global *global)
 {
 	struct smbXsrv_client_globalB global_blob;
 	DATA_BLOB blob = data_blob_null;
@@ -410,7 +410,7 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	bool saved_stored = global->stored;
 
 	/*
-	 * TODO: if we use other versions than '0'
+	 * TODO: if we use other versions than '1'
 	 * we would add glue code here, that would be able to
 	 * store the information in the old format.
 	 */
@@ -428,7 +428,7 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 
 	global_blob = (struct smbXsrv_client_globalB) {
 		.version = smbXsrv_version_global_current(),
-		.info.info0 = global,
+		.info.info1 = global,
 	};
 	if (val.dsize >= 8) {
 		global_blob.seqnum = IVAL(val.dptr, 4);
@@ -538,7 +538,7 @@ static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
 	struct smbXsrv_client *client = xconn->client;
 	struct smbXsrv_client_table *table = client->table;
 	struct GUID client_guid = xconn->smb2.client.guid;
-	struct smbXsrv_client_global0 *global = NULL;
+	struct smbXsrv_client_global *global = NULL;
 	bool is_free = false;
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
@@ -591,8 +591,8 @@ verify_again:
 
 		if (DEBUGLVL(DBGLVL_DEBUG)) {
 			struct smbXsrv_clientB client_blob = {
-				.version = SMBXSRV_VERSION_0,
-				.info.info0 = client,
+				.version = SMBXSRV_VERSION_1,
+				.info.info1 = client,
 			};
 			struct GUID_txt_buf buf;
 
@@ -759,7 +759,7 @@ static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
 	struct messaging_rec *rec = NULL;
 	struct smbXsrv_connection_passB passed_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_connection_pass0 *passed_info0 = NULL;
+	struct smbXsrv_connection_pass *passed_info = NULL;
 	NTSTATUS status;
 	int ret;
 
@@ -791,28 +791,28 @@ static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 	}
 
-	if (passed_blob.version != SMBXSRV_VERSION_0) {
+	if (passed_blob.version != SMBXSRV_VERSION_1) {
 		DBG_ERR("ignore invalid version %u\n", passed_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
-	passed_info0 = passed_blob.info.info0;
-	if (passed_info0 == NULL) {
+	passed_info = passed_blob.info.info1;
+	if (passed_info == NULL) {
 		DBG_ERR("ignore NULL info %u\n", passed_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
-	if (!GUID_equal(&xconn->smb2.client.guid, &passed_info0->client_guid)) {
+	if (!GUID_equal(&xconn->smb2.client.guid, &passed_info->client_guid)) {
 		struct GUID_txt_buf buf1, buf2;
 
 		DBG_ERR("client's client_guid [%s] != passed guid [%s]\n",
 			GUID_buf_string(&xconn->smb2.client.guid,
 					&buf1),
-			GUID_buf_string(&passed_info0->client_guid,
+			GUID_buf_string(&passed_info->client_guid,
 					&buf2));
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
@@ -820,7 +820,7 @@ static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
 	}
 
 	if (client->global->initial_connect_time !=
-	    passed_info0->xconn_connect_time)
+	    passed_info->xconn_connect_time)
 	{
 		DBG_ERR("client's initial connect time [%s] (%llu) != "
 			"passed xconn connect time [%s] (%llu)\n",
@@ -828,16 +828,16 @@ static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
 				       client->global->initial_connect_time),
 			(unsigned long long)client->global->initial_connect_time,
 			nt_time_string(talloc_tos(),
-				       passed_info0->xconn_connect_time),
-			(unsigned long long)passed_info0->xconn_connect_time);
+				       passed_info->xconn_connect_time),
+			(unsigned long long)passed_info->xconn_connect_time);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
-	if (passed_info0->negotiate_request.length != 0) {
+	if (passed_info->negotiate_request.length != 0) {
 		DBG_ERR("negotiate_request.length[%zu]\n",
-			passed_info0->negotiate_request.length);
+			passed_info->negotiate_request.length);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -873,7 +873,7 @@ NTSTATUS smb2srv_client_mc_negprot_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-static NTSTATUS smbXsrv_client_global_remove(struct smbXsrv_client_global0 *global)
+static NTSTATUS smbXsrv_client_global_remove(struct smbXsrv_client_global *global)
 {
 	TDB_DATA key;
 	NTSTATUS status;
@@ -934,7 +934,7 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 {
 	struct smbXsrv_client_table *table;
 	struct smbXsrv_client *client = NULL;
-	struct smbXsrv_client_global0 *global = NULL;
+	struct smbXsrv_client_global *global = NULL;
 	NTSTATUS status;
 	struct tevent_req *subreq = NULL;
 
@@ -967,7 +967,7 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	client->table = talloc_move(client, &table);
 	table = client->table;
 
-	global = talloc_zero(client, struct smbXsrv_client_global0);
+	global = talloc_zero(client, struct smbXsrv_client_global);
 	if (global == NULL) {
 		TALLOC_FREE(client);
 		return NT_STATUS_NO_MEMORY;
@@ -985,8 +985,8 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_clientB client_blob = {
-			.version = SMBXSRV_VERSION_0,
-			.info.info0 = client,
+			.version = SMBXSRV_VERSION_1,
+			.info.info1 = client,
 		};
 		struct GUID_txt_buf buf;
 
@@ -1024,24 +1024,24 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS smb2srv_client_connection_passed(struct smbXsrv_client *client,
-				const struct smbXsrv_connection_pass0 *recv_info0)
+				const struct smbXsrv_connection_pass *recv_info)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	struct smbXsrv_connection_pass0 passed_info0;
+	struct smbXsrv_connection_pass passed_info;
 	struct smbXsrv_connection_passB passed_blob;
 	struct iovec iov;
 
 	/*
 	 * We echo back the message with a cleared negotiate_request
 	 */
-	passed_info0 = *recv_info0;
-	passed_info0.negotiate_request = data_blob_null;
+	passed_info = *recv_info;
+	passed_info.negotiate_request = data_blob_null;
 
 	ZERO_STRUCT(passed_blob);
 	passed_blob.version = smbXsrv_version_global_current();
-	passed_blob.info.info0 = &passed_info0;
+	passed_blob.info.info1 = &passed_info;
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
@@ -1058,7 +1058,7 @@ static NTSTATUS smb2srv_client_connection_passed(struct smbXsrv_client *client,
 	iov.iov_len = blob.length;
 
 	status = messaging_send_iov(client->msg_ctx,
-				    recv_info0->src_server_id,
+				    recv_info->src_server_id,
 				    MSG_SMBXSRV_CONNECTION_PASSED,
 				    &iov, 1,
 				    NULL, 0);
@@ -1093,7 +1093,7 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 	struct messaging_rec *rec = NULL;
 	struct smbXsrv_connection_passB pass_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_connection_pass0 *pass_info0 = NULL;
+	struct smbXsrv_connection_pass *pass_info = NULL;
 	NTSTATUS status;
 	int sock_fd = -1;
 	uint64_t seq_low;
@@ -1127,27 +1127,27 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 	}
 
-	if (pass_blob.version != SMBXSRV_VERSION_0) {
+	if (pass_blob.version != SMBXSRV_VERSION_1) {
 		DBG_ERR("ignore invalid version %u\n", pass_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		goto next;
 	}
 
-	pass_info0 = pass_blob.info.info0;
-	if (pass_info0 == NULL) {
+	pass_info = pass_blob.info.info1;
+	if (pass_info == NULL) {
 		DBG_ERR("ignore NULL info %u\n", pass_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		goto next;
 	}
 
-	if (!GUID_equal(&client->global->client_guid, &pass_info0->client_guid))
+	if (!GUID_equal(&client->global->client_guid, &pass_info->client_guid))
 	{
 		struct GUID_txt_buf buf1, buf2;
 
 		DBG_WARNING("client's client_guid [%s] != passed guid [%s]\n",
 			    GUID_buf_string(&client->global->client_guid,
 					    &buf1),
-			    GUID_buf_string(&pass_info0->client_guid,
+			    GUID_buf_string(&pass_info->client_guid,
 					    &buf2));
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
@@ -1156,7 +1156,7 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 	}
 
 	if (client->global->initial_connect_time !=
-	    pass_info0->client_connect_time)
+	    pass_info->client_connect_time)
 	{
 		DBG_WARNING("client's initial connect time [%s] (%llu) != "
 			"passed initial connect time [%s] (%llu)\n",
@@ -1164,24 +1164,24 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 				       client->global->initial_connect_time),
 			(unsigned long long)client->global->initial_connect_time,
 			nt_time_string(talloc_tos(),
-				       pass_info0->client_connect_time),
-			(unsigned long long)pass_info0->client_connect_time);
+				       pass_info->client_connect_time),
+			(unsigned long long)pass_info->client_connect_time);
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		}
 		goto next;
 	}
 
-	if (pass_info0->negotiate_request.length < SMB2_HDR_BODY) {
+	if (pass_info->negotiate_request.length < SMB2_HDR_BODY) {
 		DBG_WARNING("negotiate_request.length[%zu]\n",
-			    pass_info0->negotiate_request.length);
+			    pass_info->negotiate_request.length);
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		}
 		goto next;
 	}
 
-	status = smb2srv_client_connection_passed(client, pass_info0);
+	status = smb2srv_client_connection_passed(client, pass_info);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
 		 * We hit a race where, the client dropped the connection
@@ -1202,8 +1202,8 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 
 	status = smbd_add_connection(client,
 				     sock_fd,
-				     pass_info0->transport_type,
-				     pass_info0->xconn_connect_time,
+				     pass_info->transport_type,
+				     pass_info->xconn_connect_time,
 				     &xconn);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		rec->num_fds = 0;
@@ -1219,13 +1219,13 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 	/*
 	 * Set seq_low to mid received in negprot
 	 */
-	seq_low = BVAL(pass_info0->negotiate_request.data,
+	seq_low = BVAL(pass_info->negotiate_request.data,
 		       SMB2_HDR_MESSAGE_ID);
 
 	xconn->smb2.client.guid_verified = true;
 	smbd_smb2_process_negprot(xconn, seq_low,
-				  pass_info0->negotiate_request.data,
-				  pass_info0->negotiate_request.length);
+				  pass_info->negotiate_request.data,
+				  pass_info->negotiate_request.length);
 
 next:
 	if (rec != NULL) {
@@ -1277,7 +1277,7 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 	struct messaging_rec *rec = NULL;
 	struct smbXsrv_connection_dropB drop_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_connection_drop0 *drop_info0 = NULL;
+	struct smbXsrv_connection_drop *drop_info = NULL;
 	struct server_id_buf src_server_id_buf = {};
 	NTSTATUS status;
 
@@ -1307,27 +1307,27 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
 	}
 
-	if (drop_blob.version != SMBXSRV_VERSION_0) {
+	if (drop_blob.version != SMBXSRV_VERSION_1) {
 		DBG_ERR("ignore invalid version %u\n", drop_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
 		goto next;
 	}
 
-	drop_info0 = drop_blob.info.info0;
-	if (drop_info0 == NULL) {
+	drop_info = drop_blob.info.info1;
+	if (drop_info == NULL) {
 		DBG_ERR("ignore NULL info %u\n", drop_blob.version);
 		NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
 		goto next;
 	}
 
-	if (!GUID_equal(&client->global->client_guid, &drop_info0->client_guid))
+	if (!GUID_equal(&client->global->client_guid, &drop_info->client_guid))
 	{
 		struct GUID_txt_buf buf1, buf2;
 
 		DBG_WARNING("client's client_guid [%s] != dropped guid [%s]\n",
 			    GUID_buf_string(&client->global->client_guid,
 					    &buf1),
-			    GUID_buf_string(&drop_info0->client_guid,
+			    GUID_buf_string(&drop_info->client_guid,
 					    &buf2));
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
@@ -1336,7 +1336,7 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 	}
 
 	if (client->global->initial_connect_time !=
-	    drop_info0->client_connect_time)
+	    drop_info->client_connect_time)
 	{
 		DBG_WARNING("client's initial connect time [%s] (%llu) != "
 			"dropped initial connect time [%s] (%llu)\n",
@@ -1344,8 +1344,8 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 				       client->global->initial_connect_time),
 			(unsigned long long)client->global->initial_connect_time,
 			nt_time_string(talloc_tos(),
-				       drop_info0->client_connect_time),
-			(unsigned long long)drop_info0->client_connect_time);
+				       drop_info->client_connect_time),
+			(unsigned long long)drop_info->client_connect_time);
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_dropB, &drop_blob);
 		}
@@ -1361,7 +1361,7 @@ static void smbXsrv_client_connection_drop_loop(struct tevent_req *subreq)
 	 * The client will have to reopen all sessions, tcons and durable opens.
 	 */
 	smbd_server_disconnect_client(client,
-		server_id_str_buf(drop_info0->src_server_id, &src_server_id_buf));
+		server_id_str_buf(drop_info->src_server_id, &src_server_id_buf));
 	return;
 
 next:
@@ -1432,8 +1432,8 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_clientB client_blob = {
-			.version = SMBXSRV_VERSION_0,
-			.info.info0 = client,
+			.version = SMBXSRV_VERSION_1,
+			.info.info1 = client,
 		};
 		struct GUID_txt_buf buf;
 

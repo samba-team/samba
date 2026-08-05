@@ -649,7 +649,7 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_timer *te;
 	struct scavenger_timer_context *ctx;
-	const struct smbXsrv_open_global0 *global = NULL;
+	const struct smbXsrv_open_global *global = NULL;
 	struct timeval until;
 	struct file_id_buf idbuf;
 	NTTIME disconnect_time = 0;

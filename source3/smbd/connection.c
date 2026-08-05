@@ -35,7 +35,7 @@ struct count_stat {
  Count the entries belonging to a service in the connection db.
 ****************************************************************************/
 
-static int count_fn(struct smbXsrv_tcon_global0 *tcon,
+static int count_fn(struct smbXsrv_tcon_global *tcon,
 		    void *udp)
 {
 	struct count_stat *cs = (struct count_stat *)udp;

@@ -42,29 +42,29 @@ interface smbXsrv
 	 */
 	typedef [public, v1_enum] enum {
 		/*
-		 * NOTE: Version 0 is designed to be unstable and the format
+		 * NOTE: Version 0 was designed to be unstable and the format
 		 * may change during development.
 		 */
-		SMBXSRV_VERSION_0 = 0x00000000
+		SMBXSRV_VERSION_1 = 0x00000001
 	} smbXsrv_version_values;
 
-	const uint32 SMBXSRV_VERSION_CURRENT = SMBXSRV_VERSION_0;
+	const uint32 SMBXSRV_VERSION_CURRENT = SMBXSRV_VERSION_1;
 
 	typedef struct {
 		server_id				server_id;
 		smbXsrv_version_values			min_version;
 		smbXsrv_version_values			max_version;
 		smbXsrv_version_values			current_version;
-	} smbXsrv_version_node0;
+	} smbXsrv_version_node;
 
 	typedef struct {
 		[range(1, 1024)] uint32			num_nodes;
-		smbXsrv_version_node0			nodes[num_nodes];
-	} smbXsrv_version_global0;
+		smbXsrv_version_node			nodes[num_nodes];
+	} smbXsrv_version_global;
 
 	typedef union {
-		[case(0)] smbXsrv_version_global0	*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_version_global	*info1;
+		[default] ;
 	} smbXsrv_version_globalU;
 
 	typedef [public] struct {
@@ -84,11 +84,11 @@ interface smbXsrv
 		NTTIME					initial_connect_time;
 		GUID					client_guid;
 		boolean8				stored;
-	} smbXsrv_client_global0;
+	} smbXsrv_client_global;
 
 	typedef union {
-		[case(0)] smbXsrv_client_global0	*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_client_global	*info1;
+		[default] ;
 	} smbXsrv_client_globalU;
 
 	typedef [public] struct {
@@ -102,7 +102,7 @@ interface smbXsrv
 		[ignore] struct tevent_context		*raw_ev_ctx;
 		[ignore] struct messaging_context	*msg_ctx;
 
-		[ref] smbXsrv_client_global0		*global;
+		[ref] smbXsrv_client_global		*global;
 
 		/*
 		 * There's just one 'sconn' per client.
@@ -144,8 +144,8 @@ interface smbXsrv
 	} smbXsrv_client;
 
 	typedef union {
-		[case(0)] smbXsrv_client		*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_client		*info1;
+		[default] ;
 	} smbXsrv_clientU;
 
 	typedef [public] struct {
@@ -167,11 +167,11 @@ interface smbXsrv
 		NTTIME					client_connect_time;
 		uint8					transport_type;
 		DATA_BLOB 				negotiate_request;
-	} smbXsrv_connection_pass0;
+	} smbXsrv_connection_pass;
 
 	typedef union {
-		[case(0)] smbXsrv_connection_pass0	*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_connection_pass	*info1;
+		[default] ;
 	} smbXsrv_connection_passU;
 
 	typedef [public] struct {
@@ -190,11 +190,11 @@ interface smbXsrv
 		NTTIME					xconn_connect_time;
 		server_id				dst_server_id;
 		NTTIME					client_connect_time;
-	} smbXsrv_connection_drop0;
+	} smbXsrv_connection_drop;
 
 	typedef union {
-		[case(0)] smbXsrv_connection_drop0	*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_connection_drop	*info1;
+		[default] ;
 	} smbXsrv_connection_dropU;
 
 	typedef [public] struct {
@@ -232,7 +232,7 @@ interface smbXsrv
 		uint16					signing_algo;
 		uint16					encryption_cipher;
 		uint8					transport_type;
-	} smbXsrv_channel_global0;
+	} smbXsrv_channel_global;
 
 	typedef struct {
 		[ignore] db_record 			*db_rec;
@@ -262,12 +262,12 @@ interface smbXsrv
 		[noprint] DATA_BLOB			application_key_blob;
 		[ignore] smb2_signing_key		*application_key;
 		[range(1, 1024)] uint32			num_channels;
-		smbXsrv_channel_global0			channels[num_channels];
-	} smbXsrv_session_global0;
+		smbXsrv_channel_global			channels[num_channels];
+	} smbXsrv_session_global;
 
 	typedef union {
-		[case(0)] smbXsrv_session_global0	*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_session_global	*info1;
+		[default] ;
 	} smbXsrv_session_globalU;
 
 	typedef [public] struct {
@@ -279,19 +279,19 @@ interface smbXsrv
 	/*
 	 * The main server code should just work with
 	 * 'struct smbXsrv_session' and never use
-	 * smbXsrv_session0, smbXsrv_sessionU
+	 * smbXsrv_session1, smbXsrv_sessionU
 	 * and smbXsrv_sessionB directly.
 	 *
 	 * If we need to change the smbXsrv_session,
 	 * we can just rename smbXsrv_session
-	 * to smbXsrv_session0 and add a new
+	 * to smbXsrv_session1 and add a new
 	 * smbXsrv_session for version 1
 	 * and could implement transparent mapping.
 	 */
 
 	typedef struct {
-		[ignore] smbXsrv_session_auth0		*prev;
-		[max_recursion(20000)] smbXsrv_session_auth0 *next;
+		[ignore] smbXsrv_session_auth		*prev;
+		[max_recursion(20000)] smbXsrv_session_auth *next;
 		[ignore] smbXsrv_session		*session;
 		[ignore] smbXsrv_connection		*connection;
 		[ignore] gensec_security		*gensec;
@@ -301,14 +301,14 @@ interface smbXsrv
 		NTTIME					creation_time;
 		NTTIME					idle_time;
 		hyper					channel_id;
-	} smbXsrv_session_auth0;
+	} smbXsrv_session_auth;
 
 	typedef struct {
 		[ignore] smbXsrv_session_table		*table;
 		[ignore] db_record 			*db_rec;
 		[ignore] smbXsrv_client			*client;
 		uint32					local_id;
-		[ref] smbXsrv_session_global0		*global;
+		[ref] smbXsrv_session_global		*global;
 		NTSTATUS				status;
 		NTTIME					idle_time;
 		hyper					nonce_high_random;
@@ -317,12 +317,12 @@ interface smbXsrv
 		hyper					nonce_low;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
 		[ignore] uint32				homes_snum;
-		smbXsrv_session_auth0			*pending_auth;
+		smbXsrv_session_auth			*pending_auth;
 	} smbXsrv_session;
 
 	typedef union {
-		[case(0)] smbXsrv_session		*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_session		*info1;
+		[default] ;
 	} smbXsrv_sessionU;
 
 	typedef [public] struct {
@@ -340,11 +340,11 @@ interface smbXsrv
 		hyper					old_session_wire_id;
 		NTTIME					old_creation_time;
 		hyper					new_session_wire_id;
-	} smbXsrv_session_close0;
+	} smbXsrv_session_close;
 
 	typedef union {
-		[case(0)] smbXsrv_session_close0	*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_session_close	*info1;
+		[default] ;
 	} smbXsrv_session_closeU;
 
 	typedef [public] struct {
@@ -368,11 +368,11 @@ interface smbXsrv
 		 */
 		uint32					session_global_id;
 		smbXsrv_signing_flags                   signing_flags;
-	} smbXsrv_tcon_global0;
+	} smbXsrv_tcon_global;
 
 	typedef union {
-		[case(0)] smbXsrv_tcon_global0		*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_tcon_global	*info1;
+		[default] ;
 	} smbXsrv_tcon_globalU;
 
 	typedef [public] struct {
@@ -384,12 +384,12 @@ interface smbXsrv
 	/*
 	 * The main server code should just work with
 	 * 'struct smbXsrv_tcon' and never use
-	 * smbXsrv_tcon0, smbXsrv_tconU
+	 * smbXsrv_tcon1, smbXsrv_tconU
 	 * and smbXsrv_tconB directly.
 	 *
 	 * If we need to change the smbXsrv_tcon,
 	 * we can just rename smbXsrv_tcon
-	 * to smbXsrv_tcon0 and add a new
+	 * to smbXsrv_tcon1 and add a new
 	 * smbXsrv_tcon for version 1
 	 * and could implement transparent mapping.
 	 */
@@ -397,7 +397,7 @@ interface smbXsrv
 		[ignore] smbXsrv_tcon_table		*table;
 		[ignore] db_record 			*db_rec;
 		uint32					local_id;
-		[ref] smbXsrv_tcon_global0		*global;
+		[ref] smbXsrv_tcon_global		*global;
 		NTSTATUS				status;
 		NTTIME					idle_time;
 		uint8					share_type;
@@ -408,8 +408,8 @@ interface smbXsrv
 	} smbXsrv_tcon;
 
 	typedef union {
-		[case(0)] smbXsrv_tcon			*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_tcon		*info1;
+		[default] ;
 	} smbXsrv_tconU;
 
 	typedef [public] struct {
@@ -450,11 +450,11 @@ interface smbXsrv
 		uint16					channel_sequence;
 		hyper					channel_generation;
 		[flag(NDR_PAHEX)] uint8			lock_sequence_array[64];
-	} smbXsrv_open_global0;
+	} smbXsrv_open_global;
 
 	typedef union {
-		[case(0)] smbXsrv_open_global0		*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_open_global	*info1;
+		[default] ;
 	} smbXsrv_open_globalU;
 
 	typedef [public] struct {
@@ -467,19 +467,19 @@ interface smbXsrv
 	/*
 	 * The main server code should just work with
 	 * 'struct smbXsrv_open' and never use
-	 * smbXsrv_open0, smbXsrv_openU
+	 * smbXsrv_open1, smbXsrv_openU
 	 * and smbXsrv_openB directly.
 	 *
 	 * If we need to change the smbXsrv_open,
 	 * we can just rename smbXsrv_open
-	 * to smbXsrv_open0 and add a new
+	 * to smbXsrv_open1 and add a new
 	 * smbXsrv_open for version 1
 	 * and could implement transparent mapping.
 	 */
 	typedef struct {
 		[ignore] smbXsrv_open_table		*table;
 		uint32					local_id;
-		[ref] smbXsrv_open_global0		*global;
+		[ref] smbXsrv_open_global		*global;
 		smbXsrv_session				*session;
 		smbXsrv_tcon				*tcon;
 		NTSTATUS				status;
@@ -491,8 +491,8 @@ interface smbXsrv
 	} smbXsrv_open;
 
 	typedef union {
-		[case(0)] smbXsrv_open			*info0;
-		[default] hyper				*dummy;
+		[case(1),ref] smbXsrv_open		*info1;
+		[default] ;
 	} smbXsrv_openU;
 
 	typedef [public] struct {

@@ -33,7 +33,7 @@ struct sessionid_traverse_read_state {
 	void *private_data;
 };
 
-static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
+static int sessionid_traverse_read_fn(struct smbXsrv_session_global *global,
 				      void *private_data)
 {
 	struct sessionid_traverse_read_state *state =

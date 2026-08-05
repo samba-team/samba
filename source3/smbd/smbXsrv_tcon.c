@@ -469,7 +469,7 @@ static NTSTATUS smbXsrv_tcon_local_lookup(struct smbXsrv_tcon_table *table,
 	return state.tcon->status;
 }
 
-static int smbXsrv_tcon_global_destructor(struct smbXsrv_tcon_global0 *global)
+static int smbXsrv_tcon_global_destructor(struct smbXsrv_tcon_global *global)
 {
 	return 0;
 }
@@ -478,20 +478,20 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 					bool *is_free,
 					bool *was_free,
 					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_tcon_global0 **_g);
+					struct smbXsrv_tcon_global **_g);
 
 static NTSTATUS smbXsrv_tcon_global_allocate(struct db_context *db,
 					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_tcon_global0 **_global)
+					struct smbXsrv_tcon_global **_global)
 {
 	uint32_t i;
-	struct smbXsrv_tcon_global0 *global = NULL;
+	struct smbXsrv_tcon_global *global = NULL;
 	uint32_t last_free = 0;
 	const uint32_t min_tries = 3;
 
 	*_global = NULL;
 
-	global = talloc_zero(mem_ctx, struct smbXsrv_tcon_global0);
+	global = talloc_zero(mem_ctx, struct smbXsrv_tcon_global);
 	if (global == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -570,14 +570,14 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 					bool *is_free,
 					bool *was_free,
 					TALLOC_CTX *mem_ctx,
-					struct smbXsrv_tcon_global0 **_g)
+					struct smbXsrv_tcon_global **_g)
 {
 	TDB_DATA key;
 	TDB_DATA val;
 	DATA_BLOB blob;
 	struct smbXsrv_tcon_globalB global_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_tcon_global0 *global = NULL;
+	struct smbXsrv_tcon_global *global = NULL;
 	bool exists;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -620,7 +620,7 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 		NDR_PRINT_DEBUG(smbXsrv_tcon_globalB, &global_blob);
 	}
 
-	if (global_blob.version != SMBXSRV_VERSION_0) {
+	if (global_blob.version != SMBXSRV_VERSION_1) {
 		DBG_ERR("key '%s' uses unsupported version %u\n",
 			tdb_data_dbg(key),
 			global_blob.version);
@@ -629,7 +629,7 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 		return;
 	}
 
-	global = global_blob.info.info0;
+	global = global_blob.info.info1;
 
 	exists = serverid_exists(&global->server_id);
 	if (!exists) {
@@ -652,7 +652,7 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 	TALLOC_FREE(frame);
 }
 
-static NTSTATUS smbXsrv_tcon_global_store(struct smbXsrv_tcon_global0 *global)
+static NTSTATUS smbXsrv_tcon_global_store(struct smbXsrv_tcon_global *global)
 {
 	struct smbXsrv_tcon_globalB global_blob;
 	DATA_BLOB blob = data_blob_null;
@@ -662,7 +662,7 @@ static NTSTATUS smbXsrv_tcon_global_store(struct smbXsrv_tcon_global0 *global)
 	enum ndr_err_code ndr_err;
 
 	/*
-	 * TODO: if we use other versions than '0'
+	 * TODO: if we use other versions than '1'
 	 * we would add glue code here, that would be able to
 	 * store the information in the old format.
 	 */
@@ -680,7 +680,7 @@ static NTSTATUS smbXsrv_tcon_global_store(struct smbXsrv_tcon_global0 *global)
 		global_blob.seqnum = IVAL(val.dptr, 4);
 	}
 	global_blob.seqnum += 1;
-	global_blob.info.info0 = global;
+	global_blob.info.info1 = global;
 
 	ndr_err = ndr_push_struct_blob(&blob, global->db_rec, &global_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_tcon_globalB);
@@ -741,7 +741,7 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 	struct smbXsrv_tcon *tcon = NULL;
 	void *ptr = NULL;
 	TDB_DATA val;
-	struct smbXsrv_tcon_global0 *global = NULL;
+	struct smbXsrv_tcon_global *global = NULL;
 	NTSTATUS status;
 
 	if (table->local.num_tcons >= table->local.max_tcons) {
@@ -835,8 +835,8 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_tconB tcon_blob = {
-			.version = SMBXSRV_VERSION_0,
-			.info.info0 = tcon,
+			.version = SMBXSRV_VERSION_1,
+			.info.info1 = tcon,
 		};
 
 		DBG_DEBUG("global_id (0x%08x) stored\n",
@@ -878,8 +878,8 @@ NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon)
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
 		struct smbXsrv_tconB tcon_blob = {
-			.version = SMBXSRV_VERSION_0,
-			.info.info0 = tcon,
+			.version = SMBXSRV_VERSION_1,
+			.info.info1 = tcon,
 		};
 
 		DBG_DEBUG("global_id (0x%08x) stored\n",
@@ -1194,7 +1194,7 @@ NTSTATUS smb2srv_tcon_disconnect_all(struct smbXsrv_session *session)
 }
 
 struct smbXsrv_tcon_global_traverse_state {
-	int (*fn)(struct smbXsrv_tcon_global0 *, void *);
+	int (*fn)(struct smbXsrv_tcon_global *, void *);
 	void *private_data;
 };
 
@@ -1220,7 +1220,7 @@ static int smbXsrv_tcon_global_traverse_fn(struct db_record *rec, void *data)
 		goto done;
 	}
 
-	if (global_blob.version != SMBXSRV_VERSION_0) {
+	if (global_blob.version != SMBXSRV_VERSION_1) {
 		DBG_WARNING("Invalid record in smbXsrv_tcon_global.tdb:"
 			 "key '%s' unsupported version - %d\n",
 			 tdb_data_dbg(key),
@@ -1228,22 +1228,22 @@ static int smbXsrv_tcon_global_traverse_fn(struct db_record *rec, void *data)
 		goto done;
 	}
 
-	if (global_blob.info.info0 == NULL) {
+	if (global_blob.info.info1 == NULL) {
 		DBG_WARNING("Invalid record in smbXsrv_tcon_global.tdb:"
 			 "key '%s' info0 NULL pointer\n",
 			 tdb_data_dbg(key));
 		goto done;
 	}
 
-	global_blob.info.info0->db_rec = rec;
-	ret = state->fn(global_blob.info.info0, state->private_data);
+	global_blob.info.info1->db_rec = rec;
+	ret = state->fn(global_blob.info.info1, state->private_data);
 done:
 	TALLOC_FREE(frame);
 	return ret;
 }
 
 NTSTATUS smbXsrv_tcon_global_traverse(
-			int (*fn)(struct smbXsrv_tcon_global0 *, void *),
+			int (*fn)(struct smbXsrv_tcon_global *, void *),
 			void *private_data)
 {
 	NTSTATUS status;

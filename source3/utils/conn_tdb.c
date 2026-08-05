@@ -49,7 +49,7 @@ struct connections_forall_session {
 	bool authenticated;
 };
 
-static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
+static int collect_sessions_fn(struct smbXsrv_session_global *global,
 			       void *connections_forall_state)
 {
 	NTSTATUS status;
@@ -89,7 +89,7 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 	return 0;
 }
 
-static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
+static int traverse_tcon_fn(struct smbXsrv_tcon_global *global,
 			    void *connections_forall_state)
 {
 	NTSTATUS status;

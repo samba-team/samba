@@ -30,9 +30,9 @@ struct messaging_context;
 struct smbXsrv_client;
 struct smbXsrv_connection;
 struct smbXsrv_session;
-struct smbXsrv_session_global0;
-struct smbXsrv_channel_global0;
-struct smbXsrv_session_auth0;
+struct smbXsrv_session_global;
+struct smbXsrv_channel_global;
+struct smbXsrv_session_auth;
 
 NTSTATUS smbXsrv_session_global_init(struct messaging_context *msg_ctx);
 NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
@@ -41,24 +41,24 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 				     struct smbXsrv_connection *conn,
 				     NTTIME now,
-				     struct smbXsrv_channel_global0 **_c);
+				     struct smbXsrv_channel_global **_c);
 NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 					struct smbXsrv_connection *xconn);
 NTSTATUS smbXsrv_session_disconnect_xconn(struct smbXsrv_connection *xconn);
 NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session);
 NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
 				      const struct smbXsrv_connection *conn,
-				      struct smbXsrv_channel_global0 **_c);
+				      struct smbXsrv_channel_global **_c);
 NTSTATUS smbXsrv_session_find_auth(const struct smbXsrv_session *session,
 				   const struct smbXsrv_connection *conn,
 				   NTTIME now,
-				   struct smbXsrv_session_auth0 **_a);
+				   struct smbXsrv_session_auth **_a);
 NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 				     struct smbXsrv_connection *conn,
 				     NTTIME now,
 				     uint8_t in_flags,
 				     uint8_t in_security_mode,
-				     struct smbXsrv_session_auth0 **_a);
+				     struct smbXsrv_session_auth **_a);
 struct tevent_req *smb2srv_session_shutdown_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
@@ -96,7 +96,7 @@ NTSTATUS smbXsrv_session_local_traverse(
 	int (*caller_cb)(struct smbXsrv_session *session, void *caller_data),
 	void *caller_data);
 NTSTATUS smbXsrv_session_global_traverse(
-	int (*fn)(struct smbXsrv_session_global0 *, void *),
+	int (*fn)(struct smbXsrv_session_global *, void *),
 	void *private_data);
 struct tevent_req *smb2srv_session_close_previous_send(
 	TALLOC_CTX *mem_ctx,

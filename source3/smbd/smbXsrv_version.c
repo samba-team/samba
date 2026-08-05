@@ -56,11 +56,11 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 	DATA_BLOB blob;
 	struct smbXsrv_version_globalB global_blob;
 	enum ndr_err_code ndr_err;
-	struct smbXsrv_version_global0 *global = NULL;
+	struct smbXsrv_version_global *global = NULL;
 	uint32_t i;
 	uint32_t num_valid = 0;
-	struct smbXsrv_version_node0 *valid = NULL;
-	struct smbXsrv_version_node0 *local_node = NULL;
+	struct smbXsrv_version_node *valid = NULL;
+	struct smbXsrv_version_node *local_node = NULL;
 	bool exists;
 	NTSTATUS status;
 	const char *key_string = "smbXsrv_version_global";
@@ -110,15 +110,15 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 
 	val = dbwrap_record_get_value(db_rec);
 	if (val.dsize == 0) {
-		global = talloc_zero(frame, struct smbXsrv_version_global0);
+		global = talloc_zero(frame, struct smbXsrv_version_global);
 		if (global == NULL) {
 			DBG_ERR("talloc_zero failed - %s\n", __location__);
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 		global_blob = (struct smbXsrv_version_globalB) {
-			.version = SMBXSRV_VERSION_CURRENT,
-			.info.info0 = global,
+			.version = SMBXSRV_VERSION_1,
+			.info.info1 = global,
 		};
 	} else {
 		blob = data_blob_const(val.dptr, val.dsize);
@@ -134,8 +134,8 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 		}
 
 		switch (global_blob.version) {
-		case SMBXSRV_VERSION_0:
-			global = global_blob.info.info0;
+		case SMBXSRV_VERSION_1:
+			global = global_blob.info.info1;
 			if (global == NULL) {
 				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 				break;
@@ -156,7 +156,7 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 	}
 
 	valid = talloc_zero_array(global,
-				  struct smbXsrv_version_node0,
+				  struct smbXsrv_version_node,
 				  global->num_nodes + 1);
 	if (valid == NULL) {
 		DBG_ERR("talloc_zero_array failed - %s\n", __location__);
@@ -166,7 +166,7 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 
 	num_valid = 0;
 	for (i=0; i < global->num_nodes; i++) {
-		struct smbXsrv_version_node0 *n = &global->nodes[i];
+		struct smbXsrv_version_node *n = &global->nodes[i];
 
 		exists = serverid_exists(&n->server_id);
 		if (!exists) {
@@ -209,9 +209,9 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 		num_valid++;
 	}
 
-	*local_node = (struct smbXsrv_version_node0){
+	*local_node = (struct smbXsrv_version_node) {
 		.server_id = *server_id,
-		.min_version = SMBXSRV_VERSION_0,
+		.min_version = SMBXSRV_VERSION_1,
 		.max_version = SMBXSRV_VERSION_CURRENT,
 		.current_version = global_blob.version,
 	};
@@ -220,7 +220,7 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 	global->nodes = valid;
 
 	global_blob.seqnum += 1;
-	global_blob.info.info0 = global;
+	global_blob.info.info1 = global;
 
 	ndr_err = ndr_push_struct_blob(&blob, db_rec, &global_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_version_globalB);

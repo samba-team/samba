@@ -192,7 +192,7 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
-					struct smbXsrv_session_auth0 **_auth,
+					struct smbXsrv_session_auth **_auth,
 					struct smbd_smb2_request *smb2req,
 					uint8_t in_security_mode,
 					struct auth_session_info *session_info,
@@ -202,7 +202,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	NTSTATUS status;
 	bool guest = false;
 	struct smbXsrv_session *x = session;
-	struct smbXsrv_session_auth0 *auth = *_auth;
+	struct smbXsrv_session_auth *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
 	size_t i;
 	struct smb2_signing_derivations derivations = {
@@ -444,7 +444,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 							 &session_info);
 	session->global->auth_session_info_seqnum += 1;
 	for (i=0; i < session->global->num_channels; i++) {
-		struct smbXsrv_channel_global0 *_c =
+		struct smbXsrv_channel_global *_c =
 			&session->global->channels[i];
 
 		_c->auth_session_info_seqnum =
@@ -486,7 +486,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 }
 
 static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
-					struct smbXsrv_session_auth0 **_auth,
+					struct smbXsrv_session_auth **_auth,
 					struct smbd_smb2_request *smb2req,
 					struct auth_session_info *session_info,
 					uint16_t *out_session_flags,
@@ -494,7 +494,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 {
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
-	struct smbXsrv_session_auth0 *auth = *_auth;
+	struct smbXsrv_session_auth *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
 	size_t i;
 
@@ -526,7 +526,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 							 &session_info);
 	session->global->auth_session_info_seqnum += 1;
 	for (i=0; i < session->global->num_channels; i++) {
-		struct smbXsrv_channel_global0 *_c =
+		struct smbXsrv_channel_global *_c =
 			&session->global->channels[i];
 
 		_c->auth_session_info_seqnum =
@@ -553,7 +553,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 }
 
 static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
-					   struct smbXsrv_session_auth0 **_auth,
+					   struct smbXsrv_session_auth **_auth,
 					   struct smbd_smb2_request *smb2req,
 					   struct auth_session_info *session_info,
 					   uint16_t *out_session_flags,
@@ -561,9 +561,9 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 {
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
-	struct smbXsrv_session_auth0 *auth = *_auth;
+	struct smbXsrv_session_auth *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
-	struct smbXsrv_channel_global0 *c = NULL;
+	struct smbXsrv_channel_global *c = NULL;
 	size_t i;
 	struct smb2_signing_derivations derivations = {
 		.signing = NULL,
@@ -669,7 +669,7 @@ struct smbd_smb2_session_setup_state {
 	uint64_t in_previous_session_id;
 	DATA_BLOB in_security_buffer;
 	struct smbXsrv_session *session;
-	struct smbXsrv_session_auth0 *auth;
+	struct smbXsrv_session_auth *auth;
 	struct auth_session_info *session_info;
 	uint16_t out_session_flags;
 	DATA_BLOB out_security_buffer;
@@ -694,7 +694,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&smb2req->request_time);
 	struct tevent_req *subreq;
-	struct smbXsrv_channel_global0 *c = NULL;
+	struct smbXsrv_channel_global *c = NULL;
 	enum security_user_level seclvl;
 
 	req = tevent_req_create(mem_ctx, &state,

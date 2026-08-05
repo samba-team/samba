@@ -103,7 +103,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	struct smbXsrv_session *session = NULL;
 	uint16_t smb_bufsize = SVAL(req->vwv+2, 0);
 	uint32_t client_caps = IVAL(req->vwv+10, 0);
-	struct smbXsrv_session_auth0 *auth;
+	struct smbXsrv_session_auth *auth = NULL;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -498,7 +498,7 @@ struct shutdown_state {
 	struct messaging_context *msg_ctx;
 };
 
-static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
+static int shutdown_other_smbds(struct smbXsrv_session_global *session,
 				void *private_data)
 {
 	struct shutdown_state *state = (struct shutdown_state *)private_data;
