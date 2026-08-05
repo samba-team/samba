@@ -731,7 +731,7 @@ static int do_command(void)
 		/* Shell command */
 		ret = system(arg1);
 		if (ret != 0) {
-			terror("system() call failed\n");
+			terror("system() call failed");
 			return ret;
 		}
 		return 0;
