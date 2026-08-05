@@ -1738,11 +1738,10 @@ class KCC(object):
             # ELSE
             #     LET lbh be the result of GetBridgeheadDC(localSiteVertex.ID,
             #     cr, t, partialReplicaOkay, detectFailedDCs)
+            lsite = self.my_site
             if self.my_dsa.is_ro():
-                lsite = self.my_site
                 lbh = self.my_dsa
             else:
-                lsite = self.my_site
                 lbh = self.get_bridgehead(lsite, part, transport,
                                           partial_ok, detect_failed)
             # TODO
