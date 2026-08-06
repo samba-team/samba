@@ -4563,6 +4563,39 @@ sub wait_for_start_ctdb($$)
 
 	print "\nCTDB initialized\n";
 
+	#
+	# In order to do manual cluster level testing
+	# you can use something like this:
+	# make testenv \
+	# SELFTEST_TESTENV="clusteredmember:local" \
+	# TESTENV_CLUSTER_LEVEL_GLOBAL_HEX_VALUE=...
+	#
+	# For level 0.1 set TESTENV_CLUSTER_LEVEL_GLOBAL_HEX_VALUE to:
+	# 0x01000000010000000000000000000000000000000000000001000000
+	# See cluster_level.idl for more examples.
+	#
+	my $node0_ctdb = "ctdb/tests/local_daemons.sh ${prefix} onnode 0 ${ctdb}";
+	if (defined($ENV{TESTENV_CLUSTER_LEVEL_GLOBAL_HEX_VALUE})) {
+
+		# This is "CLUSTER_LEVEL_GLOBAL" in hex without zero termination
+		my $hexkey = "0x434c55535445525f4c4556454c5f474c4f42414c";
+		my $hexval = $ENV{TESTENV_CLUSTER_LEVEL_GLOBAL_HEX_VALUE};
+
+		my $cmd1 ="${node0_ctdb} attach cluster_level.tdb persistent";
+		my $ret1 = system($cmd1);
+		if ($ret1 != 0) {
+			print("\"$cmd1\" failed\n");
+			return undef;
+		}
+
+		my $cmd2 = "${node0_ctdb} pstore cluster_level.tdb ${hexkey} ${hexval}";
+		my $ret2 = system($cmd2);
+		if ($ret1 != 0) {
+			print("\"$cmd2\" failed\n");
+			return undef;
+		}
+	}
+
 	return 1;
 }
 
