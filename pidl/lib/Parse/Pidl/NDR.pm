@@ -1374,11 +1374,6 @@ sub ValidUnion($)
 			fatal($e, "Union member $e->{NAME} must have default or case property");
 		}
 
-		if (has_property($e, "ref")) {
-			fatal($e, el_name($e) . ": embedded ref pointers are not supported yet\n");
-		}
-
-
 		ValidElement($e);
 	}
 }
