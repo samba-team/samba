@@ -377,7 +377,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	if (secrets_tdb_password_more_recent) {
 		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
-		cli_credentials_set_old_password(cred, secrets_tdb_old_password, CRED_SPECIFIED);
+		cli_credentials_set_old_password(cred, secrets_tdb_old_password);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		if (strequal(domain, lpcfg_workgroup(lp_ctx))) {
 			enum credentials_use_kerberos use_kerberos =

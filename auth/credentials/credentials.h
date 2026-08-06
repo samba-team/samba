@@ -306,8 +306,7 @@ char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, T
  */
 const char *cli_credentials_get_old_password(struct cli_credentials *cred);
 bool cli_credentials_set_old_password(struct cli_credentials *cred,
-				      const char *val,
-				      enum credentials_obtained obtained);
+				      const char *val);
 bool cli_credentials_set_domain_callback(struct cli_credentials *cred,
 					 const char *(*domain_cb) (struct cli_credentials *));
 bool cli_credentials_set_realm_callback(struct cli_credentials *cred,

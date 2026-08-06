@@ -285,7 +285,7 @@ static PyObject *py_creds_set_old_password(PyObject *self, PyObject *args)
 	}
 	obt = _obt;
 
-	return PyBool_FromLong(cli_credentials_set_old_password(creds, oldval, obt));
+	return PyBool_FromLong(cli_credentials_set_old_password(creds, oldval));
 }
 
 static PyObject *py_creds_set_old_utf16_password(PyObject *self, PyObject *args)

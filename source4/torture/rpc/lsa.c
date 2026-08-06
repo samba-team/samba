@@ -4418,7 +4418,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	}
 	cli_credentials_set_kvno(incoming_creds, current_version);
 	cli_credentials_set_password(incoming_creds, current_password, CRED_SPECIFIED);
-	cli_credentials_set_old_password(incoming_creds, previous_password, CRED_SPECIFIED);
+	cli_credentials_set_old_password(incoming_creds, previous_password);
 	cli_credentials_set_workstation(incoming_creds, workstation, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(incoming_creds, secure_channel_type);
 
@@ -4581,7 +4581,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 
 	cli_credentials_set_kvno(incoming_creds, next_version);
 	cli_credentials_set_password(incoming_creds, next_password, CRED_SPECIFIED);
-	cli_credentials_set_old_password(incoming_creds, current_password, CRED_SPECIFIED);
+	cli_credentials_set_old_password(incoming_creds, current_password);
 
 	TALLOC_FREE(p2);
 	status = dcerpc_pipe_connect_b(tctx, &p2, b2,

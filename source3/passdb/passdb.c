@@ -2713,7 +2713,7 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 	}
 
 	if (prev_pw != NULL) {
-		ok = cli_credentials_set_old_password(creds, prev_pw, CRED_SPECIFIED);
+		ok = cli_credentials_set_old_password(creds, prev_pw);
 		if (!ok) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;

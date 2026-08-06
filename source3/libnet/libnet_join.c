@@ -1675,7 +1675,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	}
 
 	/* we don't want any old password */
-	cli_credentials_set_old_password(cli_creds, NULL, CRED_SPECIFIED);
+	cli_credentials_set_old_password(cli_creds, NULL);
 
 	cli_credentials_set_kerberos_state(cli_creds,
 					   kerberos_state,

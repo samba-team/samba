@@ -675,7 +675,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 	cli_credentials_set_realm(credentials, trusting_dom_dns_name,
 				  CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, trust_password, CRED_SPECIFIED);
-	cli_credentials_set_old_password(credentials, trust_password, CRED_SPECIFIED);
+	cli_credentials_set_old_password(credentials, trust_password);
 	cli_credentials_set_workstation(credentials,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);

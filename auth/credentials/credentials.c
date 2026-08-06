@@ -661,6 +661,8 @@ _PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
 		cred->nt_response = data_blob_null;
 		cred->nt_hash = NULL;
 		cred->password = NULL;
+		cred->old_nt_hash = NULL;
+		cred->old_password = NULL;
 
 		cli_credentials_invalidate_ccache(cred, obtained);
 
@@ -738,8 +740,7 @@ _PUBLIC_ const char *cli_credentials_get_old_password(struct cli_credentials *cr
 }
 
 _PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred,
-				      const char *val,
-				      enum credentials_obtained obtained)
+					       const char *val)
 {
 	cred->old_nt_hash = NULL;
 	if (val == NULL) {

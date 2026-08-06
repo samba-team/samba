@@ -407,7 +407,7 @@ _PUBLIC_ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cre
 	bool ok;
 
 	if (password_utf16 == NULL) {
-		return cli_credentials_set_old_password(cred, NULL, CRED_SPECIFIED);
+		return cli_credentials_set_old_password(cred, NULL);
 	}
 
 	nt_hash = talloc(cred, struct samr_Password);
@@ -428,7 +428,7 @@ _PUBLIC_ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cre
 	}
 
 	talloc_keep_secret(password_talloc);
-	ok = cli_credentials_set_old_password(cred, password_talloc, CRED_SPECIFIED);
+	ok = cli_credentials_set_old_password(cred, password_talloc);
 	TALLOC_FREE(password_talloc);
 	if (!ok) {
 		TALLOC_FREE(nt_hash);
@@ -487,7 +487,7 @@ _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 _PUBLIC_ bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
 					      const struct samr_Password *nt_hash)
 {
-	cli_credentials_set_old_password(cred, NULL, CRED_SPECIFIED);
+	cli_credentials_set_old_password(cred, NULL);
 	if (nt_hash) {
 		cred->old_nt_hash = talloc(cred, struct samr_Password);
 		if (cred->old_nt_hash == NULL) {
