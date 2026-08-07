@@ -241,6 +241,32 @@ interface cluster_level
 	 *    ^ dbvers ^ union      ^ tv_sec         ^ tv_usec ^ major  ^ minor
 	 */
 
+	/*
+	 * It's unclear if upstream will ever support upgrades from levels
+	 * before 4.25, but we may add support for upgrades from 4.24.
+	 *
+	 * For old branches we could start with these levels:
+	 * v4-24 => 0.42400  => 0xA5A0
+	 * => 0x010000000100000000000000000000000000000000000000A0A50000
+	 * v4-23 => 0.42300  => 0xA53C
+	 * => 0x0100000001000000000000000000000000000000000000003CA50000
+	 * v4-22 => 0.42200  => 0xA4D8
+	 * => 0x010000000100000000000000000000000000000000000000D8A40000
+	 * v4-21 => 0.42100  => 0xA474
+	 * => 0x01000000010000000000000000000000000000000000000074A40000
+	 * v4-20 => 0.42000  => 0xA410
+	 * => 0x01000000010000000000000000000000000000000000000010A40000
+	 */
+	const int CLUSTER_LEVEL_MAJOR_0			= 0x00000000;
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_42000	= 42000;
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_42100	= 42100;
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_42200	= 42200;
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_42300	= 42300;
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_42400	= 42400;
+	/* _MIN and _MAX are not really used yet */
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_MIN	= 0;
+	const int CLUSTER_LEVEL_MAJOR_0_MINOR_MAX	= 0;
+
 	const int CLUSTER_LEVEL_MAJOR_1			= 0x00000001;
 	const int CLUSTER_LEVEL_MAJOR_1_MINOR_0		= 0x00000000;
 	const int CLUSTER_LEVEL_MAJOR_1_MINOR_MIN	=
