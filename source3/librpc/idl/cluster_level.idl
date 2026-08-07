@@ -215,6 +215,32 @@ interface cluster_level
 	 * for the main logic in the code.
 	 */
 
+	/*
+	 * In order to simulate other cluster levels for
+	 * testing, or to mark cluster level unaware clusters
+	 * with a 0.y level in order to prevent uncontrolled
+	 * upgrades, the following can be used to set values
+	 * by hand:
+	 *
+	 * This might be useful for vendors implementing
+	 * their own upgrade logic for older Samba versions.
+	 *
+	 * ctdb attach cluster_level.tdb persistent
+	 * ctdb pstore cluster_level.tdb \
+	 *   0x434c55535445525f4c4556454c5f474c4f42414c \
+	 *   0x01000000010000000000000000000000000000000000000001000000
+	 *
+	 * Note: 0x434c55535445525f4c4556454c5f474c4f42414c
+	 * is the key 'CLUSTER_LEVEL_GLOBAL' without terminating zero
+	 *
+	 * This is the content of a valid record with
+	 * CLUSTER_LEVEL_DB_VERSION_1 and level 0.1
+	 * 0x01000000010000000000000000000000000000000000000001000000
+	 * =>
+	 * 0x 01000000 01000000     0000000000000000 00000000  00000000 01000000
+	 *    ^ dbvers ^ union      ^ tv_sec         ^ tv_usec ^ major  ^ minor
+	 */
+
 	const int CLUSTER_LEVEL_MAJOR_1			= 0x00000001;
 	const int CLUSTER_LEVEL_MAJOR_1_MINOR_0		= 0x00000000;
 	const int CLUSTER_LEVEL_MAJOR_1_MINOR_MIN	=
