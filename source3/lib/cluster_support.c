@@ -66,18 +66,18 @@ bool cluster_support_available(void)
 	BUILD_ASSERT( \
 		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_ ## __minor_min \
 		== (__minor_min)); \
-	BUILD_ASSERT( \
+	BUILD_ASSERT((__major) == 0 || \
 		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_MIN \
 		== (__minor_min)); \
 	BUILD_ASSERT( \
 		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_ ## __minor_max \
 		== (__minor_max)); \
-	BUILD_ASSERT( \
+	BUILD_ASSERT((__major) == 0 || \
 		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_MAX \
 		== (__minor_max)); \
 	BUILD_ASSERT((__minor_min)  <= __minor_max); \
 	BUILD_ASSERT((__major)     < UINT8_MAX); \
-	BUILD_ASSERT((__minor_max) < UINT8_MAX); \
+	BUILD_ASSERT((__major) == 0 || (__minor_max) < UINT8_MAX); \
 	BUILD_ASSERT((__major) != 0 || (__minor_max) != 0);
 	CFL_ALL_RANGES
 #undef CFL_RANGE
@@ -238,9 +238,9 @@ static const struct cluster_level_range supported_ranges[] = {
 		.major = \
 		CLUSTER_LEVEL_MAJOR_ ## __major, \
 		.minor_min = \
-		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_MIN, \
+		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_ ## __minor_min, \
 		.minor_max = \
-		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_MAX, \
+		CLUSTER_LEVEL_MAJOR_ ## __major  ## _MINOR_ ## __minor_max, \
 	},
 	CFL_ALL_RANGES
 #undef CFL_RANGE
@@ -286,6 +286,17 @@ static void cluster_level_range_asserts(void)
 	SMB_ASSERT(supported_ranges[0].minor_max ==
 		   CLUSTER_LEVEL_MAJOR_LATEST_MINOR_MAX);
 	for (i = 1; i < ARRAY_SIZE(supported_ranges); i++) {
+		if (supported_ranges[i-1].major == 0) {
+			/*
+			 * For legacy upgrades we use allow
+			 * multiple ranges with major level 0.
+			 */
+			SMB_ASSERT(supported_ranges[i].major == 0);
+			SMB_ASSERT(supported_ranges[i-1].minor_min >
+				   supported_ranges[i].minor_max);
+			continue;
+		}
+
 		SMB_ASSERT(supported_ranges[i-1].major >
 			   supported_ranges[i].major);
 	}
