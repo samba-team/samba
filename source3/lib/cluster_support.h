@@ -16,8 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct cluster_level_active;
-struct cluster_level_ranges;
+#include "librpc/gen_ndr/cluster_level.h"
 
 bool cluster_support_available(void);
 const char *cluster_support_features(void);
