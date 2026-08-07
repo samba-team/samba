@@ -296,6 +296,7 @@ static bool has_delete_access_opens_fn(
 
 	if (e->access_mask & SEC_STD_DELETE) {
 		state->delete_access = true;
+		return true;
 	}
 	return false;
 }
