@@ -363,6 +363,17 @@ void cluster_level_activate_latest(void)
 }
 
 /*
+ * Return the global functional level, even if its
+ * not valid yet.
+ */
+const struct cluster_level_active *cluster_level_global_active(void)
+{
+	cluster_level_range_asserts();
+
+	return &global_level_activated;
+}
+
+/*
  * This will allow code like this:
  *
  * if (CLUSTER_LEVEL_ACTIVATED(5, 2)) {
