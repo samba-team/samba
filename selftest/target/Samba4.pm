@@ -1279,7 +1279,6 @@ sub provision($$$$$$$$$$$)
 [simple]
 	path = $ctx->{share}
 	read only = no
-	ntvfs handler = simple
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol

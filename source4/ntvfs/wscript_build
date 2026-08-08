@@ -22,15 +22,6 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
     )
 
 
-    bld.SAMBA_MODULE('ntvfs_simple',
-	             source='simple/vfs_simple.c simple/svfs_util.c',
-	             autoproto='simple/proto.h',
-	             subsystem='ntvfs',
-	             init_function='ntvfs_simple_init',
-	             deps='talloc'
-    )
-
-
     bld.SAMBA_MODULE('ntvfs_ipc',
 	             source='ipc/vfs_ipc.c ipc/ipc_rap.c ipc/rap_server.c',
 	             autoproto='ipc/proto.h',

@@ -1014,10 +1014,6 @@ for env in ["ad_member_oneway:local", "fl2000dc:local", "fl2003dc:local", "fl200
 # gitlab
 planpythontestsuite("chgdcpass", "samba.tests.blackbox.netads_json")
 
-# Tests using the "Simple" NTVFS backend
-for t in ["base.rw1"]:
-    plansmbtorture4testsuite(t, "ad_dc_ntvfs", ["//$SERVER/simple", '-U$USERNAME%$PASSWORD'], modname="samba4.ntvfs.simple.%s" % t)
-
 # Domain S4member Tests
 plansmbtorture4testsuite('rpc.echo', "s4member", ['ncacn_np:$NETBIOSNAME', '-U$NETBIOSNAME/$USERNAME%$PASSWORD'], "samba4.rpc.echo against s4member server with local creds")
 plansmbtorture4testsuite('rpc.echo', "s4member", ['ncacn_np:$NETBIOSNAME', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'], "samba4.rpc.echo against s4member server with domain creds")
