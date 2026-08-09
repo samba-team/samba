@@ -258,6 +258,7 @@
 				      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
 				      &name);
 	if (ret) {
+		talloc_free(pac_data);
 		return ret;
 	}
 	LOGON_NAME->account_name	= talloc_strdup(LOGON_NAME, name);
