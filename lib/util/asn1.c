@@ -995,12 +995,12 @@ bool asn1_read_GeneralString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char *
 }
 
 
-/* read a octet string blob */
-bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+static bool asn1_read_blob_tag(struct asn1_data *data, TALLOC_CTX *mem_ctx,
+			       uint8_t tag, DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
-	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return false;
+	if (!asn1_start_tag(data, tag)) return false;
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
 		data->has_error = true;
@@ -1023,31 +1023,16 @@ bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLO
 	return false;
 }
 
+/* read a octet string blob */
+bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+{
+	return asn1_read_blob_tag(data, mem_ctx, ASN1_OCTET_STRING, blob);
+}
+
 bool asn1_read_ContextSimple(struct asn1_data *data, TALLOC_CTX *mem_ctx, uint8_t num,
 			     DATA_BLOB *blob)
 {
-	int len;
-	ZERO_STRUCTP(blob);
-	if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(num))) return false;
-	len = asn1_tag_remaining(data);
-	if (len < 0) {
-		data->has_error = true;
-		return false;
-	}
-	*blob = data_blob_talloc(mem_ctx, NULL, len + 1);
-	if (!blob->data || blob->length < (unsigned)len) {
-		data->has_error = true;
-		return false;
-	}
-	if (!asn1_read(data, blob->data, len)) goto err;
-	if (!asn1_end_tag(data)) goto err;
-	blob->length--;
-	blob->data[len] = 0;
-	return true;
-
-err:
-	data_blob_free(blob);
-	return false;
+	return asn1_read_blob_tag(data, mem_ctx, ASN1_CONTEXT_SIMPLE(num), blob);
 }
 
 /* read an integer without tag*/
