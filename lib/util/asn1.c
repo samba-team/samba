@@ -1007,7 +1007,7 @@ bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLO
 		return false;
 	}
 	*blob = data_blob_talloc(mem_ctx, NULL, len+1);
-	if (!blob->data || blob->length < len) {
+	if (!blob->data || blob->length < (unsigned)len) {
 		data->has_error = true;
 		return false;
 	}
@@ -1094,7 +1094,7 @@ bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB 
 	if (!asn1_read_uint8(data, padding)) return false;
 
 	*blob = data_blob_talloc(mem_ctx, NULL, len+1);
-	if (!blob->data || blob->length < len) {
+	if (!blob->data || blob->length < (unsigned)len) {
 		data->has_error = true;
 		return false;
 	}
