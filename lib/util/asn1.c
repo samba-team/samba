@@ -274,18 +274,22 @@ bool asn1_write_implicit_Integer(struct asn1_data *data, int i)
 /* write an integer */
 bool asn1_write_Integer(struct asn1_data *data, int i)
 {
-	if (!asn1_push_tag(data, ASN1_INTEGER)) return false;
-	if (!asn1_write_implicit_Integer(data, i)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_INTEGER);
+	ok = ok && asn1_write_implicit_Integer(data, i);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 /* write a BIT STRING */
 bool asn1_write_BitString(struct asn1_data *data, const void *p, size_t length, uint8_t padding)
 {
-	if (!asn1_push_tag(data, ASN1_BIT_STRING)) return false;
-	if (!asn1_write_uint8(data, padding)) return false;
-	if (!asn1_write(data, p, length)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_BIT_STRING);
+	ok = ok && asn1_write_uint8(data, padding);
+	ok = ok && asn1_write(data, p, length);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
@@ -408,9 +412,11 @@ bool asn1_write_OID(struct asn1_data *data, const char *OID)
 /* write an octet string */
 bool asn1_write_OctetString(struct asn1_data *data, const void *p, size_t length)
 {
-	if (!asn1_push_tag(data, ASN1_OCTET_STRING)) return false;
-	if (!asn1_write(data, p, length)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_OCTET_STRING);
+	ok = ok && asn1_write(data, p, length);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 /* write a LDAP string */
@@ -428,24 +434,30 @@ bool asn1_write_DATA_BLOB_LDAPString(struct asn1_data *data, const DATA_BLOB *s)
 /* write a general string */
 bool asn1_write_GeneralString(struct asn1_data *data, const char *s)
 {
-	if (!asn1_push_tag(data, ASN1_GENERAL_STRING)) return false;
-	if (!asn1_write_LDAPString(data, s)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_GENERAL_STRING);
+	ok = ok && asn1_write_LDAPString(data, s);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 bool asn1_write_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob)
 {
-	if (!asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(num))) return false;
-	if (!asn1_write(data, blob->data, blob->length)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(num));
+	ok = ok && asn1_write(data, blob->data, blob->length);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 /* write a BOOLEAN */
 bool asn1_write_BOOLEAN(struct asn1_data *data, bool v)
 {
-	if (!asn1_push_tag(data, ASN1_BOOLEAN)) return false;
-	if (!asn1_write_uint8(data, v ? 0xFF : 0)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_BOOLEAN);
+	ok = ok && asn1_write_uint8(data, v ? 0xFF : 0);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 bool asn1_read_BOOLEAN(struct asn1_data *data, bool *v)
@@ -463,9 +475,11 @@ bool asn1_read_BOOLEAN(struct asn1_data *data, bool *v)
 /* write a BOOLEAN in a simple context */
 bool asn1_write_BOOLEAN_context(struct asn1_data *data, bool v, int context)
 {
-	if (!asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(context))) return false;
-	if (!asn1_write_uint8(data, v ? 0xFF : 0)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(context));
+	ok = ok && asn1_write_uint8(data, v ? 0xFF : 0);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 bool asn1_read_BOOLEAN_context(struct asn1_data *data, bool *v, int context)
@@ -1137,9 +1151,11 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v)
 /* write an enumerated value to the stream */
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 {
-	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return false;
-	if (!asn1_write_uint8(data, v)) return false;
-	return asn1_pop_tag(data);
+	bool ok = !asn1_has_error(data);
+	ok = ok && asn1_push_tag(data, ASN1_ENUMERATED);
+	ok = ok && asn1_write_uint8(data, v);
+	ok = ok && asn1_pop_tag(data);
+	return ok;
 }
 
 /*
