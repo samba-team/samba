@@ -31,7 +31,7 @@ from samba.ndr import ndr_print
 from samba.dcerpc import witness
 from samba.tests import DynamicTestCase, BlackboxTestCase
 from samba.common import get_string
-from samba import werror, WERRORError
+from samba import werror, WERRORError, ntstatus, NTSTATUSError
 
 @DynamicTestCase
 class RpcdWitnessSambaTests(BlackboxTestCase):
@@ -263,7 +263,14 @@ class RpcdWitnessSambaTests(BlackboxTestCase):
         if disable_idx != -1:
             self.disable_node(disable_idx)
 
-        conn = witness.witness(binding_string, self.lp, self.remote_creds)
+        try:
+            conn = witness.witness(binding_string, self.lp, self.remote_creds)
+        except NTSTATUSError as e:
+            (num, string) = e.args
+            if num == ntstatus.NT_STATUS_IO_TIMEOUT:
+                raise AssertionError(e)
+            raise
+
         interface_list = conn.GetInterfaceList()
 
         if disable_idx != -1:
@@ -461,7 +468,13 @@ class RpcdWitnessSambaTests(BlackboxTestCase):
 
         computer_name = "test-rpcd-witness-samba-only-client-computer"
 
-        conn = witness.witness(binding_string, self.lp, self.remote_creds)
+        try:
+            conn = witness.witness(binding_string, self.lp, self.remote_creds)
+        except NTSTATUSError as e:
+            (num, string) = e.args
+            if num == ntstatus.NT_STATUS_IO_TIMEOUT:
+                raise AssertionError(e)
+            raise
 
         if disable_before_reg:
             self.assertFalse(disable_after_reg)
@@ -566,7 +579,14 @@ class RpcdWitnessSambaTests(BlackboxTestCase):
                     binding_string = node["binding_string32"]
                     ndr_name = "NDR32"
 
-                conn = witness.witness(binding_string, self.lp, self.remote_creds)
+                try:
+                    conn = witness.witness(binding_string, self.lp, self.remote_creds)
+                except NTSTATUSError as e:
+                    (num, string) = e.args
+                    if num == ntstatus.NT_STATUS_IO_TIMEOUT:
+                        raise AssertionError(e)
+                    raise
+
                 conn_ip = node["ip"]
 
                 net_name = self.server_hostname
