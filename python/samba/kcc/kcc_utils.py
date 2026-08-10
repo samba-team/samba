@@ -169,7 +169,7 @@ class NCReplica(NamingContext):
     def __init__(self, dsa, nc_dnstr):
         """Instantiate a Naming Context Replica
 
-        :param dsa_guid: GUID of DSA where replica appears
+        :param dsa: DSA where replica appears
         :param nc_dnstr: NC dn string
         """
         self.rep_dsa_dnstr = dsa.dsa_dnstr
