@@ -1035,7 +1035,7 @@ bool asn1_read_ContextSimple(struct asn1_data *data, TALLOC_CTX *mem_ctx, uint8_
 		return false;
 	}
 	*blob = data_blob_talloc(mem_ctx, NULL, len + 1);
-	if ((len != 0) && (!blob->data)) {
+	if (!blob->data || blob->length < (unsigned)len) {
 		data->has_error = true;
 		return false;
 	}
