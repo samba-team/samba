@@ -1477,9 +1477,9 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 	uint32_t session_info_flags = 0;
 	NTSTATUS status;
 
-	status = auth_system_user_info_dc(frame, lp_netbios_name(),
-					  &user_info_dc);
-	if (!NT_STATUS_IS_OK(status)) {
+	user_info_dc = auth_system_user_info_dc(frame, lp_netbios_name());
+	if (user_info_dc == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		DEBUG(0, ("auth_system_user_info_dc failed: %s\n",
 			  nt_errstr(status)));
 		goto done;

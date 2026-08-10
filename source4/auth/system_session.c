@@ -83,12 +83,12 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	if (mem_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	nt_status = auth_system_user_info_dc(mem_ctx, lpcfg_netbios_name(lp_ctx),
-					    &user_info_dc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+
+	user_info_dc = auth_system_user_info_dc(mem_ctx,
+						lpcfg_netbios_name(lp_ctx));
+	if (user_info_dc == NULL) {
 		talloc_free(mem_ctx);
-		return nt_status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* references the user_info_dc into the session_info */
@@ -120,22 +120,23 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
-				 struct auth_user_info_dc **_user_info_dc)
+struct auth_user_info_dc *auth_system_user_info_dc(TALLOC_CTX *mem_ctx,
+						   const char *netbios_name)
 {
-	struct auth_user_info_dc *user_info_dc;
-	struct auth_user_info *info;
+	struct auth_user_info_dc *user_info_dc = NULL;
+	struct auth_user_info *info = NULL;
 
 	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
-	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
+	if (user_info_dc == NULL) {
+		return NULL;
+	}
 
 	/* This returns a pointer to a struct dom_sid, which is the
 	 * same as a 1 element list of struct dom_sid */
 	user_info_dc->num_sids = 1;
 	user_info_dc->sids = talloc(user_info_dc, struct auth_SidAttr);
 	if (user_info_dc->sids == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	user_info_dc->sids[0] = (struct auth_SidAttr) {
@@ -145,92 +146,68 @@ NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */
-	user_info_dc->user_session_key = data_blob_talloc(user_info_dc, NULL, 16);
+	user_info_dc->user_session_key = data_blob_talloc_zero(user_info_dc,
+							       16);
 	if (user_info_dc->user_session_key.data == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
-	user_info_dc->lm_session_key = data_blob_talloc(user_info_dc, NULL, 16);
+	user_info_dc->lm_session_key = data_blob_talloc_zero(user_info_dc, 16);
 	if (user_info_dc->lm_session_key.data == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
-
-	data_blob_clear(&user_info_dc->user_session_key);
-	data_blob_clear(&user_info_dc->lm_session_key);
 
 	user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
 	if (user_info_dc->info == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	};
 
 	info->account_name = talloc_strdup(info, "SYSTEM");
 	if (info->account_name == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	};
 
 	info->domain_name = talloc_strdup(info, "NT AUTHORITY");
 	if (info->domain_name == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
+		goto nomem;
+	}
 
 	info->full_name = talloc_strdup(info, "System");
 	if (info->full_name == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
+		goto nomem;
+	}
 
 	info->logon_script = talloc_strdup(info, "");
 	if (info->logon_script == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
+		goto nomem;
+	}
 
 	info->profile_path = talloc_strdup(info, "");
 	if (info->profile_path == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
+		goto nomem;
+	}
 
 	info->home_directory = talloc_strdup(info, "");
 	if (info->home_directory == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
+		goto nomem;
+	}
 
 	info->home_drive = talloc_strdup(info, "");
 	if (info->home_drive == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
+		goto nomem;
+	}
 
 	info->logon_server = talloc_strdup(info, netbios_name);
 	if (info->logon_server == NULL) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
-	};
-
-	info->last_logon = 0;
-	info->last_logoff = 0;
-	info->acct_expiry = 0;
-	info->last_password_change = 0;
-	info->allow_password_change = 0;
-	info->force_password_change = 0;
-
-	info->logon_count = 0;
-	info->bad_password_count = 0;
+		goto nomem;
+	}
 
 	info->acct_flags = ACB_NORMAL;
 
-	info->user_flags = 0;
-
-	*_user_info_dc = user_info_dc;
-
-	return NT_STATUS_OK;
+	return user_info_dc;
+nomem:
+	TALLOC_FREE(user_info_dc);
+	return NULL;
 }
 
 

@@ -131,7 +131,6 @@ static NTSTATUS gensec_ncalrpc_update_internal(
 	DATA_BLOB magic_fail = data_blob_string_const("NCALRPC_AUTH_FAIL");
 	char *unix_path = NULL;
 	int cmp;
-	NTSTATUS status;
 
 	*out = data_blob_null;
 
@@ -217,16 +216,13 @@ static NTSTATUS gensec_ncalrpc_update_internal(
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		status = auth_system_user_info_dc(state,
-				lpcfg_netbios_name(gensec_security->settings->lp_ctx),
-				&state->user_info_dc);
-		if (!NT_STATUS_IS_OK(status)) {
+		state->user_info_dc = auth_system_user_info_dc(
+			state,
+			lpcfg_netbios_name(gensec_security->settings->lp_ctx));
+		if (state->user_info_dc == NULL) {
 			state->step = GENSEC_NCALRPC_ERROR;
 			*out = data_blob_dup_talloc(mem_ctx, magic_fail);
-			if (out->data == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			return status;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		*out = data_blob_dup_talloc(mem_ctx, magic_ok);
