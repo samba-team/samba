@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.25.  This is *not*
+This is the first pre release of Samba 4.26.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.25 will be the next version of the Samba suite.
+Samba 4.26 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,167 +16,6 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-SMB3 Persistent Handles (Experimental)
---------------------------------------
-
-Samba now includes experimental support for SMB3 Persistent Handles,
-a fundamental building block for Transparent Failover.
-
-Persistent Handles allow SMB clients to reconnect after a server
-restart or outage while retaining valid file handles. Samba persists
-all necessary handle state to durable on-disk storage so that open
-files can be reconstructed when clients reconnect. This enables
-applications that depend on uninterrupted file access, such as virtual
-machine storage and clustered database workloads, to tolerate
-temporary server failures without having to reopen files.
-
-Persistent Handles are advertised through the SMB3 protocol capability
-SMB2_CAP_PERSISTENT_HANDLES. To make use of them on a share, both the
-global "smb3 persistent handles" option and the per-share
-"continuous availability" option must be enabled.
-
-Because Persistent Handles require Samba to maintain SMB state, they
-are only available on shares configured for SMB-exclusive
-access. Specifically, they require:
-
-kernel oplocks = no
-kernel share modes = no
-posix locking = no
-
-These settings disable interoperability with local POSIX file access
-and NFS clients on the affected share.
-
-Administrators should be aware that Persistent Handles incur a
-significant performance cost. File handle metadata is synchronously
-persisted to durable storage for every open, update, lease, and close
-operation, increasing latency compared to traditional SMB file
-serving. For this reason, the feature is intended only for workloads
-that require Continuous Availability semantics and is not recommended
-for general-purpose file servers.
-
-This feature is currently considered experimental.
-
-Cluster-wide rate limiting in vfs_aio_ratelimit
-------------------------------------------------
-
-The vfs_aio_ratelimit VFS module has been extended with cluster-wide
-coordination. When Samba clustering is enabled, the configured per-share rate
-limits are now enforced as a global ceiling across the entire cluster rather than
-per-node. Each share's limits are tracked and enforced independently.
-
-Coordination is handled by a new per-node daemon, ratelimitd, which aggregates
-activity from all smbd processes on the node and broadcasts node-level summaries
-to the rest of the cluster via Samba's messaging layer.
-
-To enable this feature, Samba must be built with --with-ratelimitd.
-
-JSON Audit logging
-------------------
-
-The two leading spaces before the opening '{' on JSON audit log lines have been
-removed. And any embedded new line characters '\n' are converted to spaces.
-
-Domain encryption types changed to AES by default
--------------------------------------------------
-
-The default value of the smb.conf option ‘kdc default domain supported enctypes’
-now corresponds to ‘aes128-cts-hmac-sha1-96 aes256-cts-hmac-sha1-96’ (both AES
-encryption types) if the domain functional level is 2008 or higher. This
-addresses CVE-2026-20833.
-
-CTDB changes
-------------
-
-* CTDB's locations for locks, PID files and sockets now use ctdb/
-  subdirectories of the Samba locations configured at build time.
-  This means that the relevant top-level Samba configure options
-  (--with-lockdir, --with-piddir, --with-sockets-dir) are now also
-  used by CTDB.
-
-  The standalone CTDB build does not support these options.  However,
-  it is generally only used for developer/standalone testing.
-
-* The CTDB initscript (ctdb.init) has been moved to ctdb/doc/examples.
-  This recognises that it isn't installed by default so it is
-  basically unmaintained and untested.
-
-* Monitoring of (infrastructure) hosts is now supported.  A good use
-  of this is to monitor DNS servers.  See the NETWORK MONITORING
-  section in ctdb-script.options(5) for more details.
-
-* The detect_init_style() script function and associated
-  CTDB_INIT_STYLE variable are deprecated, so will be removed in a
-  future release.  Use the new, more general CTDB_PLATFORM_STYLE
-  variable instead.  This may affect site-local CTDB (event) scripts.
-  See ctdb.sysconfig(5) for more details.
-
-Cluster functional level
-------------------------
-
-Samba now maintains a cluster functional level, a cluster wide value
-that is kept as persistent global state and shared by all nodes. It
-is similar in spirit to the domain and forest functional levels known
-from Active Directory.
-
-The purpose of the functional level is to allow controlled upgrades
-of a cluster. New database formats, new internal messages and other
-changes that affect the communication between nodes are gated behind
-an explicit raise of the cluster functional level. As long as the
-level has not been raised, all nodes keep writing and sending the old
-formats, so that nodes running different Samba versions can
-interoperate during a rolling upgrade.
-
-A level consists of a major and a minor number, e.g. "1.0". Samba
-4.25 implements the initial level 1.0, which is currently also the
-only defined level.
-
-On a non-clustered server the highest supported level is always
-activated automatically, there is nothing to configure or maintain.
-
-On a cluster the currently active level is stored persistently in
-cluster_level.tdb. On a fresh cluster it is initialized with the
-highest level supported by the first node that starts up. From then
-on the level never changes on its own, it is only raised when an
-administrator explicitly asks for it. A node that does not support
-the currently active level refuses to start, which keeps a node
-running an incompatible Samba version from joining the cluster.
-
-Once all nodes of a cluster have been upgraded to a new Samba
-version, the administrator can raise the cluster functional level.
-The new 'net clusterlevel' subcommands are available for this:
-
-  net clusterlevel features
-        List the cluster functional levels supported by the
-        installed binaries.
-
-  net clusterlevel show
-        Show the currently active cluster functional level.
-
-  net clusterlevel showall
-        Show the levels supported by each node of the cluster,
-        together with the currently active level and the highest
-        level that could be activated.
-
-  net clusterlevel upgrade [--test] [--apply]
-        Raise the active cluster functional level to the highest
-        level supported by all nodes. With --test (the default) only
-        checks and reports whether the upgrade would be possible,
-        --apply performs the actual upgrade.
-
-Note that raising the cluster functional level is a one way
-operation, there is no way to lower it again. It should only be done
-once all nodes have been upgraded and the new version has proven to
-work.
-
-The current implementation is deliberately strict: an upgrade is only
-possible if all nodes announce the exact same set of supported
-levels, which in practice means that all nodes run the same Samba
-version.
-
-Also note that this change only prepares for the future. It
-is not designed help with upgrades from older versions before
-4.25 to 4.25 as a target. However vendors are free to use their
-own backports and use custom levels >= 0.1 and < 1.0.
 
 REMOVED FEATURES
 ================
@@ -187,14 +26,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  allow dcerpc auth level connect         deprecated
-  kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.25#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.26#Release_blocking_bugs
 
 
 #######################################
