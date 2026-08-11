@@ -231,6 +231,80 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         fd = smb2.create("sub\\lnk\\x")
         smb2.close(fd)
 
+    def check_follow_symlink_reparse_point(self, smb1share, smb2share,
+                                           verify):
+        (smb1,smb2) = self.connections(smb1share=smb1share,
+                                       smb2share=smb2share)
+        symlink="syml"
+        target="foo"
+
+        fd = smb2.create(target, CreateDisposition=libsmb.FILE_CREATE)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, target)
+
+        self.create_symlink(smb1, target, symlink)
+        if verify:
+            self.verify_symlink(smb2, symlink, target)
+        self.addCleanup(self.clean_file, smb1, symlink);
+
+        try:
+            fd = smb2.create(symlink,
+                             CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        except Exception as e:
+            self.fail(f'Could not open file with FILE_OPEN_REPARSE_POINT: {e}')
+        smb2.close(fd);
+
+    def test_follow_symlink_reparse_point(self):
+        """Open a symlink with FILE_OPEN_REPARSE_POINT, follow symlinks = yes
+
+        The open follows the link, it can't be verified as a symlink.
+        """
+        self.check_follow_symlink_reparse_point("local_symlinks",
+                                                "local_symlinks",
+                                                verify=False)
+
+    def test_follow_symlink_reparse_point_nofollow(self):
+        """Open a symlink with FILE_OPEN_REPARSE_POINT, follow symlinks = no"""
+        self.check_follow_symlink_reparse_point("nosymlinks_smb1allow",
+                                                "nosymlinks",
+                                                verify=True)
+
+    def test_symlink_reparse_point_share_mode(self):
+        """Share modes apply to a symlink opened as reparse point"""
+        (smb1,smb2) = self.connections(smb1share="nosymlinks_smb1allow",
+                                       smb2share="nosymlinks")
+        symlink="syml"
+        target="foo"
+
+        fd = smb2.create(target, CreateDisposition=libsmb.FILE_CREATE)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, target)
+
+        self.create_symlink(smb1, target, symlink)
+        self.verify_symlink(smb2, symlink, target)
+        self.addCleanup(self.clean_file, smb1, symlink)
+
+        fd = self.assertNoNTSTATUSError(
+            smb2.create,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_READ_DATA,
+            ShareAccess=0,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        try:
+            fd2 = smb2.create(symlink,
+                              DesiredAccess=sec.SEC_FILE_READ_DATA,
+                              ShareAccess=(libsmb.FILE_SHARE_READ |
+                                           libsmb.FILE_SHARE_WRITE |
+                                           libsmb.FILE_SHARE_DELETE),
+                              CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        except NTSTATUSError as e:
+            self.assertEqual(e.args[0], ntstatus.NT_STATUS_SHARING_VIOLATION)
+        else:
+            smb2.close(fd2)
+            self.fail("Second open ignored ShareAccess=0 of the first")
+
 if __name__ == '__main__':
     import unittest
     unittest.main()
