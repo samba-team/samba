@@ -32,7 +32,9 @@ static void wb_lookupusergroups_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
-					    const struct dom_sid *sid)
+					    const struct dom_sid *sid,
+					    const char *domain_name,
+					    const char *acct_name)
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupusergroups_state *state;
@@ -45,9 +47,19 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	D_INFO("WB command lookupusergroups start.\nLooking up SID %s.\n",
-	       dom_sid_str_buf(sid, &buf));
+	D_INFO("WB command lookupusergroups start.\nLooking up SID %s "
+	       "(domain_name: %s, acct_name: %s).\n",
+	       dom_sid_str_buf(sid, &buf),
+	       domain_name,
+	       acct_name);
 	sid_copy(&state->sid, sid);
+
+	if (acct_name == NULL || domain_name == NULL) {
+		DBG_ERR("No account name for %s\n",
+			dom_sid_str_buf(&state->sid, &buf));
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
 
 	status = lookup_usergroups_cached(state,
 					  &state->sid,
@@ -61,6 +73,16 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 	domain = find_domain_from_sid_noinit(&state->sid);
 	if (domain == NULL) {
 		DBG_WARNING("could not find domain entry for sid %s\n",
+			    dom_sid_str_buf(&state->sid, &buf));
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
+		return tevent_req_post(req, ev);
+	}
+
+	if (!strequal(domain_name, domain->name)) {
+		DBG_WARNING("Account domain name %s does not match winbindd "
+			    "domain name %s for %s\n",
+			    domain_name,
+			    domain->name,
 			    dom_sid_str_buf(&state->sid, &buf));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);

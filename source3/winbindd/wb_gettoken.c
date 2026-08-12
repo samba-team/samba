@@ -103,7 +103,11 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 	sid_copy(&state->sids[1], &info->group_sid);
 
 	D_DEBUG("Looking up user groups for the user SID.\n");
-	subreq = wb_lookupusergroups_send(state, state->ev, &info->user_sid);
+	subreq = wb_lookupusergroups_send(state,
+					  state->ev,
+					  &info->user_sid,
+					  info->domain_name,
+					  info->acct_name);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

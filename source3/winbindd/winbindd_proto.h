@@ -732,7 +732,9 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 				     struct winbindd_response *response);
 struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
-					    const struct dom_sid *sid);
+					    const struct dom_sid *sid,
+					    const char *domain_name,
+					    const char *acct_name);
 NTSTATUS wb_lookupusergroups_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				  uint32_t *num_sids, struct dom_sid **sids);
 
