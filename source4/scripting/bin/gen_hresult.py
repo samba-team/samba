@@ -63,6 +63,7 @@ def generateHeaderFile(out_file, errors):
     macro_magic += "#endif\n"
     macro_magic += "\n"
     macro_magic += "#define HRES_IS_OK(x) (HRES_ERROR_V(x) == 0)\n"
+    macro_magic += "#define HRES_IS_SUCCESS(x) ((HRES_ERROR_V(x) & 0x80000000) == 0x00000000)\n"
     macro_magic += "#define HRES_IS_EQUAL(x,y) (HRES_ERROR_V(x) == HRES_ERROR_V(y))\n"
 
     out_file.write(macro_magic)
@@ -73,15 +74,19 @@ def generateHeaderFile(out_file, errors):
     out_file.write(" */\n")
     out_file.write("\n")
 
+    out_file.write("#define HRES_OK                                           HRES_ERROR(0)\n")
     for err in errors:
         line = "#define {0:49} HRES_ERROR(0x{1:08X})\n".format(err.err_define ,err.err_code)
         out_file.write(line)
     out_file.write("\nconst char *hresult_errstr_const(HRESULT err_code);\n")
     out_file.write("\nconst char *hresult_errstr(HRESULT err_code);\n")
     out_file.write("\n#define FACILITY_WIN32 0x0007\n")
+    out_file.write("#define FACILITY_NT_BIT 0x10000000\n\n")
     out_file.write("#define WIN32_FROM_HRESULT(x) (HRES_ERROR_V(x) == 0 ? HRES_ERROR_V(x) : ~((FACILITY_WIN32 << 16) | 0x80000000) & HRES_ERROR_V(x))\n")
     out_file.write("#define HRESULT_IS_LIKELY_WERR(x) ((HRES_ERROR_V(x) & 0xFFFF0000) == 0x80070000)\n")
     out_file.write("#define HRESULT_FROM_WERROR(x) (HRES_ERROR(0x80070000 | W_ERROR_V(x)))\n")
+    out_file.write("#define HRESULT_FROM_NT(x) (HRES_ERROR(NT_STATUS_V(x) | FACILITY_NT_BIT))\n")
+    out_file.write("#define HRESULT_TO_NT(x) (HRES_ERROR(HRES_ERROR_V(x) & ~FACILITY_NT_BIT))\n")
     out_file.write("\n\n\n#endif /*_HRESULT_H_*/")
 
 
