@@ -1799,19 +1799,44 @@ The top commit for the tree that was built was:
     if add_log_tail and os.access(log_stdout, os.R_OK):
         f = open(log_stdout, 'r')
         lines = f.readlines()
-        log_tail = "".join(lines[-50:])
         num_lines = len(lines)
-        log_stderr = "%s/%s.stderr" % (gitroot, failed_tag)
-        if num_lines < 50 and os.access(log_stderr, os.R_OK):
-            # Also include stderr (compile failures) if < 50 lines of stdout
-            f = open(log_stderr, 'r')
-            log_tail += "".join(f.readlines()[-(50 - num_lines):])
-
+        num_tail = 50
+        if num_tail > num_lines:
+            num_tail = num_lines
+        log_tail = "".join(lines[-num_tail:])
         text += '''
-The last 50 lines of log messages:
+The last %s lines of %s.stdout:
 
 %s
-    ''' % log_tail
+    ''' % (num_tail, failed_tag, log_tail)
+        log_stderr = "%s/%s.stderr" % (gitroot, failed_tag)
+        if os.access(log_stderr, os.R_OK):
+            # Also include stderr (compile failures) if < 50 lines of stdout
+            f = open(log_stderr, 'r')
+            lines = f.readlines()
+            num_lines = len(lines)
+            num_tail = 0
+            for i in range(num_lines):
+                if lines[i].find('INTERNAL ERROR') != -1:
+                    num_tail = num_lines - i
+                    break
+                if lines[i].find('PANIC') != -1:
+                    num_tail = num_lines - i
+                    break
+                if lines[i].find('BACKTRACE') != -1:
+                    num_tail = num_lines - i
+                    break
+            if num_tail < 50:
+                num_tail = 50
+            if num_tail > num_lines:
+                num_tail = num_lines
+            log_tail = "".join(lines[-num_tail:])
+
+            text += '''
+The last %u lines of %s.stderr:
+
+%s
+    ''' % (num_tail, failed_tag, log_tail)
         f.close()
 
     logs = os.path.join(gitroot, 'logs.tar.gz')
