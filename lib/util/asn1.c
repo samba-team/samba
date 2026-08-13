@@ -972,21 +972,34 @@ bool asn1_check_OID(struct asn1_data *data, const char *OID)
 }
 
 /* read a LDAPString from a ASN1 buffer */
-bool asn1_read_LDAPString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s)
+bool asn1_read_LDAPString(struct asn1_data *data,
+			  TALLOC_CTX *mem_ctx,
+			  char **_s)
 {
 	int len;
+	char *s = NULL;
+	bool ok;
+
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
 		data->has_error = true;
 		return false;
 	}
-	*s = talloc_array(mem_ctx, char, len+1);
-	if (! *s) {
+	s = talloc_array(mem_ctx, char, len + 1);
+	if (s == NULL) {
 		data->has_error = true;
 		return false;
 	}
-	(*s)[len] = 0;
-	return asn1_read(data, *s, len);
+	s[len] = 0;
+
+	ok = asn1_read(data, s, len);
+	if (!ok) {
+		TALLOC_FREE(s);
+		return false;
+	}
+
+	*_s = s;
+	return true;
 }
 
 
