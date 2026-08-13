@@ -1,4 +1,72 @@
                    ==============================
+                   Release Notes for Samba 4.24.6
+                          August 13, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.24 release series.
+
+
+Changes since 4.24.5
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15978: leases torture test flappy (marked flappy)
+   * BUG 16065: Memory leak in DRS when replication fails
+
+o  Matthias Grandl <matthias.grandl@croit.io>
+   * BUG 16176: vfs_ceph_snapshots: smbd panics on snapshot access for a share
+     mounted at the CephFS root ("/")
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16191: race condition in pthreadpool when forking
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 16065: Memory leak in DRS when replication fails
+   * BUG 16077: witness test flappy needs to be fixed
+   * BUG 16093: temporary read of unrelated or non-existing memory in s3 dfs
+     server
+   * BUG 16094: source4/dsdb/samdb/cracknames.c doesn't use
+     ldb_binary_encode_string() consistently
+   * BUG 16153: dsgetdcname() may not detect an active directory domain if the
+     netbios domain name is given and nmbd nor the nbt service is
+     available
+   * BUG 16199: ndr_{push,pull,print}_{timeval,timespec} encode/decode the value
+     twice
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 16186: vfs_ceph_new: smbd crashes when mixing proxy and non-proxy
+     CephFS shares
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15994: CTDB doesn't send tickle ACKs when taking over a released IP
+   * BUG 16152: CTDB can run nested elections, in rare circumstances
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.24.5
                            July 28, 2026
                    ==============================
@@ -105,8 +173,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.24.4
                            June 30, 2026
