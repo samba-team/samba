@@ -1004,11 +1004,24 @@ bool asn1_read_LDAPString(struct asn1_data *data,
 
 
 /* read a GeneralString from a ASN1 buffer */
-bool asn1_read_GeneralString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s)
+bool asn1_read_GeneralString(struct asn1_data *data,
+			     TALLOC_CTX *mem_ctx,
+			     char **_s)
 {
+	char *s = NULL;
+	bool ok = false;
+
 	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return false;
-	if (!asn1_read_LDAPString(data, mem_ctx, s)) return false;
-	return asn1_end_tag(data);
+	if (!asn1_read_LDAPString(data, mem_ctx, &s)) return false;
+
+	ok = asn1_end_tag(data);
+	if (!ok) {
+		TALLOC_FREE(s);
+		return false;
+	}
+
+	*_s = s;
+	return true;
 }
 
 
