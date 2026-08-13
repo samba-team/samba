@@ -935,7 +935,11 @@ bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **OID)
 		return false;
 	}
 
-	if (!asn1_read(data, blob.data, len)) return false;
+	if (!asn1_read(data, blob.data, len)) {
+		data_blob_free(&blob);
+		return false;
+	}
+
 	if (!asn1_end_tag(data)) {
 		data_blob_free(&blob);
 		return false;
