@@ -3620,15 +3620,12 @@ out:
 	return status;
 }
 
-NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
-				      TALLOC_CTX *mem_ctx,
-				      bool *p_is_trusted,
-				      uint16_t *p_validation_level,
-				      union netr_Validation **p_validation)
+NTSTATUS winbindd_pam_auth_pac_validate(TALLOC_CTX *mem_ctx,
+					struct PAC_DATA *pac_data,
+					bool is_trusted,
+					uint16_t *p_validation_level,
+					union netr_Validation **p_validation)
 {
-	struct winbindd_request *req = state->request;
-	DATA_BLOB pac_blob;
-	struct PAC_DATA *pac_data = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
 	struct netr_SamInfo6 *info6 = NULL;
@@ -3636,7 +3633,6 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 	union netr_Validation *validation = NULL;
 	struct netr_SamInfo3 *info3_copy = NULL;
 	NTSTATUS result;
-	bool is_trusted = false;
 	uint32_t i;
 	TALLOC_CTX *tmp_ctx = NULL;
 
@@ -3645,31 +3641,8 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*p_is_trusted = false;
 	*p_validation_level = 0;
 	*p_validation = NULL;
-
-	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
-	result = extract_pac_vrfy_sigs(tmp_ctx, pac_blob, &pac_data);
-	if (NT_STATUS_IS_OK(result)) {
-		is_trusted = true;
-	}
-	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
-		/* Try without signature verification */
-		result = kerberos_decode_pac(tmp_ctx,
-					     pac_blob,
-					     NULL, /* krb5_context */
-					     NULL, /* krbtgt_keyblock */
-					     NULL, /* service_keyblock */
-					     NULL, /* client_principal */
-					     0, /* tgs_authtime */
-					     &pac_data);
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(1, ("Error during PAC signature verification: %s\n",
-			  nt_errstr(result)));
-		goto out;
-	}
 
 	for (i=0; i < pac_data->num_buffers; i++) {
 		if (pac_data->buffers[i].type == PAC_TYPE_LOGON_INFO) {
@@ -3754,6 +3727,69 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 		}
 	}
 
+	*p_validation_level = validation_level;
+	*p_validation = talloc_move(mem_ctx, &validation);
+
+	result = NT_STATUS_OK;
+out:
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
+				      TALLOC_CTX *mem_ctx,
+				      bool *p_is_trusted,
+				      uint16_t *p_validation_level,
+				      union netr_Validation **p_validation)
+{
+	struct winbindd_request *req = state->request;
+	DATA_BLOB pac_blob;
+	struct PAC_DATA *pac_data = NULL;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	NTSTATUS result;
+	bool is_trusted = false;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*p_is_trusted = false;
+	*p_validation_level = 0;
+	*p_validation = NULL;
+
+	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
+	result = extract_pac_vrfy_sigs(tmp_ctx, pac_blob, &pac_data);
+	if (NT_STATUS_IS_OK(result)) {
+		is_trusted = true;
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+		/* Try without signature verification */
+		result = kerberos_decode_pac(tmp_ctx,
+					     pac_blob,
+					     NULL, /* krb5_context */
+					     NULL, /* krbtgt_keyblock */
+					     NULL, /* service_keyblock */
+					     NULL, /* client_principal */
+					     0, /* tgs_authtime */
+					     &pac_data);
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("Error during PAC signature verification: %s\n",
+			  nt_errstr(result)));
+		goto out;
+	}
+
+	result = winbindd_pam_auth_pac_validate(
+		tmp_ctx, pac_data, is_trusted, &validation_level, &validation);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("Error during PAC validation: %s\n",
+			  nt_errstr(result)));
+		goto out;
+	}
+
 	*p_is_trusted = is_trusted;
 	*p_validation_level = validation_level;
 	*p_validation = talloc_move(mem_ctx, &validation);
@@ -3772,6 +3808,17 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 {
 
 	*p_is_trusted = false;
+	*p_validation_level = 0;
+	*p_validation = NULL;
+	return NT_STATUS_NO_SUCH_USER;
+}
+
+NTSTATUS winbindd_pam_auth_pac_validate(TALLOC_CTX *mem_ctx,
+					struct PAC_DATA *pac_data,
+					bool is_trusted,
+					uint16_t *p_validation_level,
+					union netr_Validation **p_validation)
+{
 	*p_validation_level = 0;
 	*p_validation = NULL;
 	return NT_STATUS_NO_SUCH_USER;
