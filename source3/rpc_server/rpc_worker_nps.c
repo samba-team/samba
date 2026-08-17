@@ -253,7 +253,7 @@ int nps_worker_main(
 
 	nworker = talloc_zero(frame, struct rpc_worker_nps_state);
 	if (nworker == NULL) {
-		DBG_ERR("talloc_zero(struct rpc_worker_nps_state)  failed\n");
+		DBG_ERR("talloc_zero(struct rpc_worker_nps_state) failed\n");
 		TALLOC_FREE(frame);
 		exit(1);
 	}
