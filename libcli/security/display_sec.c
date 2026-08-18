@@ -140,7 +140,7 @@ static char *get_sec_ace_flags_str(TALLOC_CTX *ctx, uint8_t flags)
  display sec_ace object
  ****************************************************************************/
 static char *get_sec_ace_object_str(TALLOC_CTX *ctx,
-				    struct security_ace_object *object)
+				    const struct security_ace_object *object)
 {
 	struct GUID_txt_buf buf;
 	char *objstr = talloc_strdup(ctx, "");
@@ -167,7 +167,7 @@ static char *get_sec_ace_object_str(TALLOC_CTX *ctx,
 /****************************************************************************
  display sec_ace structure
  ****************************************************************************/
-static char *get_sec_ace_str(TALLOC_CTX *ctx, struct security_ace *ace)
+static char *get_sec_ace_str(TALLOC_CTX *ctx, const struct security_ace *ace)
 {
 	struct dom_sid_buf sid_str;
 	const char *type_str = NULL;
@@ -240,7 +240,8 @@ static char *get_sec_ace_str(TALLOC_CTX *ctx, struct security_ace *ace)
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-static char *get_sec_acl_str(TALLOC_CTX *ctx, struct security_acl *sec_acl)
+static char *get_sec_acl_str(TALLOC_CTX *ctx,
+			     const struct security_acl *sec_acl)
 {
 	char *aclstr = NULL;
 	uint32_t i;
@@ -330,7 +331,8 @@ static char *get_acl_type_str(TALLOC_CTX *ctx, uint16_t type)
 /****************************************************************************
  display sec_desc structure
  ****************************************************************************/
-static char *get_sec_desc_str(TALLOC_CTX *ctx, struct security_descriptor *sec)
+static char *get_sec_desc_str(TALLOC_CTX *ctx,
+			      const struct security_descriptor *sec)
 {
 	struct dom_sid_buf sid_str;
 	char *secstr = NULL;
@@ -379,7 +381,7 @@ static char *get_sec_desc_str(TALLOC_CTX *ctx, struct security_descriptor *sec)
 	return secstr;
 }
 
-void display_sec_desc(struct security_descriptor *sec)
+void display_sec_desc(const struct security_descriptor *sec)
 {
 	char *secstr = get_sec_desc_str(NULL, sec);
 	printf("%s", (secstr != NULL) ? secstr : "");
