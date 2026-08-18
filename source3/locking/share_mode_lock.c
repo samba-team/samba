@@ -351,7 +351,7 @@ static struct share_mode_data *share_mode_memcache_fetch(
 }
 
 /*
- * 140 is the sizeof an ndr-encoded struct share_mode_entry_buf.
+ * 128 is the sizeof an ndr-encoded struct share_mode_entry_buf.
  * Reading/writing entries will immediately error out if this
  * size differs (push/pull is done without allocs).
  */
