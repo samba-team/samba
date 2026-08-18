@@ -2611,9 +2611,9 @@ static void del_share_mode_fn(
 	state->ok = true;
 }
 
-bool del_share_mode_open_id(struct share_mode_lock *lck,
-			    struct server_id open_pid,
-			    uint64_t open_file_id)
+static bool del_share_mode_open_id(struct share_mode_lock *lck,
+				   struct server_id open_pid,
+				   uint64_t open_file_id)
 {
 	struct del_share_mode_state state = { .ok = false };
 	struct share_mode_data *d = NULL;
