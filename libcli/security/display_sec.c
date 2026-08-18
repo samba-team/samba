@@ -167,25 +167,29 @@ static char *get_sec_ace_object_str(TALLOC_CTX *ctx,
 /****************************************************************************
  display sec_ace structure
  ****************************************************************************/
-void display_sec_ace(struct security_ace *ace)
+static char *get_sec_ace_str(TALLOC_CTX *ctx, struct security_ace *ace)
 {
 	struct dom_sid_buf sid_str;
+	const char *type_str = NULL;
+	char *flags_str = NULL;
+	char *access_str = NULL;
+	char *obj_str = NULL;
+	char *acestr = NULL;
 
-	printf("\tACE\n\t\ttype: ");
 	switch (ace->type) {
 		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			printf("ACCESS ALLOWED");
+			type_str = "ACCESS ALLOWED";
 			break;
 		case SEC_ACE_TYPE_ACCESS_DENIED:
-			printf("ACCESS DENIED");
+			type_str = "ACCESS DENIED";
 			break;
 		case SEC_ACE_TYPE_SYSTEM_AUDIT:
-			printf("SYSTEM AUDIT");
+			type_str = "SYSTEM AUDIT";
 			break;
 		case SEC_ACE_TYPE_SYSTEM_ALARM:
-			printf("SYSTEM ALARM");
+			type_str = "SYSTEM ALARM";
 			break;
-#define ACE_CASE(x) case x: printf(#x); break
+#define ACE_CASE(x) case x: type_str = #x; break
 		ACE_CASE(SEC_ACE_TYPE_ALLOWED_COMPOUND);
 		ACE_CASE(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT);
 		ACE_CASE(SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
@@ -201,30 +205,36 @@ void display_sec_ace(struct security_ace *ace)
 		ACE_CASE(SEC_ACE_TYPE_SYSTEM_ALARM_CALLBACK_OBJECT);
 #undef ACE_CASE
 		default:
-			printf("????");
+			type_str = "????";
 			break;
 	}
 
-	printf(" (%d) flags: 0x%02x ", ace->type, ace->flags);
-	{
-		char *flags_str = get_sec_ace_flags_str(NULL, ace->flags);
-		printf("%s\n", (flags_str != NULL) ? flags_str : "");
-		TALLOC_FREE(flags_str);
-	}
-	{
-		char *access_str = get_sec_access_str(NULL, ace->access_mask);
-		printf("%s", (access_str != NULL) ? access_str : "");
-		TALLOC_FREE(access_str);
-	}
-	printf("\t\tSID: %s\n\n", dom_sid_str_buf(&ace->trustee, &sid_str));
+	flags_str = get_sec_ace_flags_str(ctx, ace->flags);
+	access_str = get_sec_access_str(ctx, ace->access_mask);
+
+	acestr = talloc_asprintf(ctx,
+				 "\tACE\n\t\ttype: %s (%d) flags: 0x%02x %s\n"
+				 "%s"
+				 "\t\tSID: %s\n\n",
+				 type_str,
+				 ace->type,
+				 ace->flags,
+				 (flags_str != NULL) ? flags_str : "",
+				 (access_str != NULL) ? access_str : "",
+				 dom_sid_str_buf(&ace->trustee, &sid_str));
+
+	TALLOC_FREE(flags_str);
+	TALLOC_FREE(access_str);
 
 	if (sec_ace_object(ace->type)) {
-		char *obj_str = get_sec_ace_object_str(NULL,
-						       &ace->object.object);
-		printf("%s", (obj_str != NULL) ? obj_str : "");
+		obj_str = get_sec_ace_object_str(ctx, &ace->object.object);
+		talloc_asprintf_addbuf(&acestr,
+				       "%s",
+				       (obj_str != NULL) ? obj_str : "");
 		TALLOC_FREE(obj_str);
 	}
 
+	return acestr;
 }
 
 /****************************************************************************
@@ -241,7 +251,10 @@ void display_sec_acl(struct security_acl *sec_acl)
 
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0) {
 		for (i = 0; i < sec_acl->num_aces; i++) {
-			display_sec_ace(&sec_acl->aces[i]);
+			char *ace_str = get_sec_ace_str(NULL,
+							&sec_acl->aces[i]);
+			printf("%s", (ace_str != NULL) ? ace_str : "");
+			TALLOC_FREE(ace_str);
 		}
 	}
 }
