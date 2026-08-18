@@ -65,8 +65,6 @@ char *get_sec_mask_str(TALLOC_CTX *ctx, uint32_t type)
 		talloc_asprintf_addbuf(&typestr, "DELETE_ACCESS ");
 	}
 
-	printf("\t\tSpecific bits: 0x%lx\n", (unsigned long)type&SEC_MASK_SPECIFIC);
-
 	return typestr;
 }
 
@@ -76,6 +74,8 @@ char *get_sec_mask_str(TALLOC_CTX *ctx, uint32_t type)
 void display_sec_access(uint32_t *info)
 {
 	char *mask_str = get_sec_mask_str(NULL, *info);
+	printf("\t\tSpecific bits: 0x%lx\n",
+	       (unsigned long)(*info & SEC_MASK_SPECIFIC));
 	printf("\t\tPermissions: 0x%x: %s\n", *info, mask_str ? mask_str : "");
 	talloc_free(mask_str);
 }
