@@ -69,15 +69,22 @@ char *get_sec_mask_str(TALLOC_CTX *ctx, uint32_t type)
 }
 
 /****************************************************************************
- display sec_access structure
+ get sec_access structure as a string
  ****************************************************************************/
-void display_sec_access(uint32_t *info)
+static char *get_sec_access_str(TALLOC_CTX *ctx, uint32_t info)
 {
-	char *mask_str = get_sec_mask_str(NULL, *info);
-	printf("\t\tSpecific bits: 0x%lx\n",
-	       (unsigned long)(*info & SEC_MASK_SPECIFIC));
-	printf("\t\tPermissions: 0x%x: %s\n", *info, mask_str ? mask_str : "");
-	talloc_free(mask_str);
+	char *mask_str = get_sec_mask_str(ctx, info);
+	char *access_str = NULL;
+
+	access_str = talloc_asprintf(ctx,
+				     "\t\tSpecific bits: 0x%lx\n"
+				     "\t\tPermissions: 0x%x: %s\n",
+				     (unsigned long)(info & SEC_MASK_SPECIFIC),
+				     info,
+				     (mask_str != NULL) ? mask_str : "");
+
+	TALLOC_FREE(mask_str);
+	return access_str;
 }
 
 /****************************************************************************
@@ -168,7 +175,11 @@ void display_sec_ace(struct security_ace *ace)
 
 	printf(" (%d) flags: 0x%02x ", ace->type, ace->flags);
 	display_sec_ace_flags(ace->flags);
-	display_sec_access(&ace->access_mask);
+	{
+		char *access_str = get_sec_access_str(NULL, ace->access_mask);
+		printf("%s", (access_str != NULL) ? access_str : "");
+		TALLOC_FREE(access_str);
+	}
 	printf("\t\tSID: %s\n\n", dom_sid_str_buf(&ace->trustee, &sid_str));
 
 	if (sec_ace_object(ace->type)) {
