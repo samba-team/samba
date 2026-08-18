@@ -240,23 +240,31 @@ static char *get_sec_ace_str(TALLOC_CTX *ctx, struct security_ace *ace)
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-void display_sec_acl(struct security_acl *sec_acl)
+static char *get_sec_acl_str(TALLOC_CTX *ctx, struct security_acl *sec_acl)
 {
+	char *aclstr = NULL;
 	uint32_t i;
 
-	printf("\tACL\tNum ACEs:\t%" PRIu32 "\trevision:\t%x\n",
-	       sec_acl->num_aces,
-	       sec_acl->revision);
-	printf("\t---\n");
+	aclstr = talloc_asprintf(ctx,
+				 "\tACL\tNum ACEs:\t%" PRIu32
+				 "\trevision:\t%x\n"
+				 "\t---\n",
+				 sec_acl->num_aces,
+				 sec_acl->revision);
 
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0) {
 		for (i = 0; i < sec_acl->num_aces; i++) {
-			char *ace_str = get_sec_ace_str(NULL,
+			char *ace_str = get_sec_ace_str(ctx,
 							&sec_acl->aces[i]);
-			printf("%s", (ace_str != NULL) ? ace_str : "");
+			talloc_asprintf_addbuf(&aclstr,
+					       "%s",
+					       (ace_str != NULL) ? ace_str
+								 : "");
 			TALLOC_FREE(ace_str);
 		}
 	}
+
+	return aclstr;
 }
 
 void display_acl_type(uint16_t type)
@@ -315,13 +323,15 @@ void display_sec_desc(struct security_descriptor *sec)
 	display_acl_type(sec->type);
 
 	if (sec->sacl) {
-		printf("SACL\n");
-		display_sec_acl(sec->sacl);
+		char *acl_str = get_sec_acl_str(NULL, sec->sacl);
+		printf("SACL\n%s", (acl_str != NULL) ? acl_str : "");
+		TALLOC_FREE(acl_str);
 	}
 
 	if (sec->dacl) {
-		printf("DACL\n");
-		display_sec_acl(sec->dacl);
+		char *acl_str = get_sec_acl_str(NULL, sec->dacl);
+		printf("DACL\n%s", (acl_str != NULL) ? acl_str : "");
+		TALLOC_FREE(acl_str);
 	}
 
 	if (sec->owner_sid) {
