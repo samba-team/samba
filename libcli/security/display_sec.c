@@ -330,41 +330,58 @@ static char *get_acl_type_str(TALLOC_CTX *ctx, uint16_t type)
 /****************************************************************************
  display sec_desc structure
  ****************************************************************************/
-void display_sec_desc(struct security_descriptor *sec)
+static char *get_sec_desc_str(TALLOC_CTX *ctx, struct security_descriptor *sec)
 {
 	struct dom_sid_buf sid_str;
+	char *secstr = NULL;
+	char *type_str = NULL;
 
 	if (!sec) {
-		printf("NULL\n");
-		return;
+		return talloc_strdup(ctx, "NULL\n");
 	}
 
-	printf("revision: %d\n", sec->revision);
-	{
-		char *type_str = get_acl_type_str(NULL, sec->type);
-		printf("%s\n", (type_str != NULL) ? type_str : "");
-		TALLOC_FREE(type_str);
-	}
+	type_str = get_acl_type_str(ctx, sec->type);
+	secstr = talloc_asprintf(ctx,
+				 "revision: %d\n"
+				 "%s\n",
+				 sec->revision,
+				 (type_str != NULL) ? type_str : "");
+	TALLOC_FREE(type_str);
 
 	if (sec->sacl) {
-		char *acl_str = get_sec_acl_str(NULL, sec->sacl);
-		printf("SACL\n%s", (acl_str != NULL) ? acl_str : "");
-		TALLOC_FREE(acl_str);
+		char *sacl_str = get_sec_acl_str(ctx, sec->sacl);
+		talloc_asprintf_addbuf(&secstr,
+				       "SACL\n%s",
+				       (sacl_str != NULL) ? sacl_str : "");
+		TALLOC_FREE(sacl_str);
 	}
-
 	if (sec->dacl) {
-		char *acl_str = get_sec_acl_str(NULL, sec->dacl);
-		printf("DACL\n%s", (acl_str != NULL) ? acl_str : "");
-		TALLOC_FREE(acl_str);
+		char *dacl_str = get_sec_acl_str(ctx, sec->dacl);
+		talloc_asprintf_addbuf(&secstr,
+				       "DACL\n%s",
+				       (dacl_str != NULL) ? dacl_str : "");
+		TALLOC_FREE(dacl_str);
 	}
 
 	if (sec->owner_sid) {
-		printf("\tOwner SID:\t%s\n",
-		       dom_sid_str_buf(sec->owner_sid, &sid_str));
+		talloc_asprintf_addbuf(&secstr,
+				       "\tOwner SID:\t%s\n",
+				       dom_sid_str_buf(sec->owner_sid,
+						       &sid_str));
+	}
+	if (sec->group_sid) {
+		talloc_asprintf_addbuf(&secstr,
+				       "\tGroup SID:\t%s\n",
+				       dom_sid_str_buf(sec->group_sid,
+						       &sid_str));
 	}
 
-	if (sec->group_sid) {
-		printf("\tGroup SID:\t%s\n",
-		       dom_sid_str_buf(sec->group_sid, &sid_str));
-	}
+	return secstr;
+}
+
+void display_sec_desc(struct security_descriptor *sec)
+{
+	char *secstr = get_sec_desc_str(NULL, sec);
+	printf("%s", (secstr != NULL) ? secstr : "");
+	TALLOC_FREE(secstr);
 }
