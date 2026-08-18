@@ -24,7 +24,6 @@
 /* The following definitions come from libcli/security/display_sec.c */
 
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32_t type);
-void display_acl_type(uint16_t type);
 void display_sec_desc(struct security_descriptor *sec);
 
 #endif /* _LIBCLI_SECURITY_DISPLAY_SEC_H */

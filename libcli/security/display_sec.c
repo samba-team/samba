@@ -267,44 +267,64 @@ static char *get_sec_acl_str(TALLOC_CTX *ctx, struct security_acl *sec_acl)
 	return aclstr;
 }
 
-void display_acl_type(uint16_t type)
+static char *get_acl_type_str(TALLOC_CTX *ctx, uint16_t type)
 {
-	printf("type: 0x%04x: ", type);
+	char *typestr = talloc_asprintf(ctx, "type: 0x%04x:", type);
 
-	if (type & SEC_DESC_OWNER_DEFAULTED)	/* 0x0001 */
-		printf("SEC_DESC_OWNER_DEFAULTED ");
-	if (type & SEC_DESC_GROUP_DEFAULTED)	/* 0x0002 */
-		printf("SEC_DESC_GROUP_DEFAULTED ");
-	if (type & SEC_DESC_DACL_PRESENT) 	/* 0x0004 */
-		printf("SEC_DESC_DACL_PRESENT ");
-	if (type & SEC_DESC_DACL_DEFAULTED)	/* 0x0008 */
-		printf("SEC_DESC_DACL_DEFAULTED ");
-	if (type & SEC_DESC_SACL_PRESENT)	/* 0x0010 */
-		printf("SEC_DESC_SACL_PRESENT ");
-	if (type & SEC_DESC_SACL_DEFAULTED)	/* 0x0020 */
-		printf("SEC_DESC_SACL_DEFAULTED ");
-	if (type & SEC_DESC_DACL_TRUSTED)	/* 0x0040 */
-		printf("SEC_DESC_DACL_TRUSTED ");
-	if (type & SEC_DESC_SERVER_SECURITY)	/* 0x0080 */
-		printf("SEC_DESC_SERVER_SECURITY ");
-	if (type & SEC_DESC_DACL_AUTO_INHERIT_REQ) /* 0x0100 */
-		printf("SEC_DESC_DACL_AUTO_INHERIT_REQ ");
-	if (type & SEC_DESC_SACL_AUTO_INHERIT_REQ) /* 0x0200 */
-		printf("SEC_DESC_SACL_AUTO_INHERIT_REQ ");
-	if (type & SEC_DESC_DACL_AUTO_INHERITED) /* 0x0400 */
-		printf("SEC_DESC_DACL_AUTO_INHERITED ");
-	if (type & SEC_DESC_SACL_AUTO_INHERITED) /* 0x0800 */
-		printf("SEC_DESC_SACL_AUTO_INHERITED ");
-	if (type & SEC_DESC_DACL_PROTECTED)	/* 0x1000 */
-		printf("SEC_DESC_DACL_PROTECTED ");
-	if (type & SEC_DESC_SACL_PROTECTED)	/* 0x2000 */
-		printf("SEC_DESC_SACL_PROTECTED ");
-	if (type & SEC_DESC_RM_CONTROL_VALID)	/* 0x4000 */
-		printf("SEC_DESC_RM_CONTROL_VALID ");
-	if (type & SEC_DESC_SELF_RELATIVE)	/* 0x8000 */
-		printf("SEC_DESC_SELF_RELATIVE ");
+	if (type & SEC_DESC_OWNER_DEFAULTED) { /* 0x0001 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_OWNER_DEFAULTED");
+	}
+	if (type & SEC_DESC_GROUP_DEFAULTED) { /* 0x0002 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_GROUP_DEFAULTED");
+	}
+	if (type & SEC_DESC_DACL_PRESENT) { /* 0x0004 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_DACL_PRESENT");
+	}
+	if (type & SEC_DESC_DACL_DEFAULTED) { /* 0x0008 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_DACL_DEFAULTED");
+	}
+	if (type & SEC_DESC_SACL_PRESENT) { /* 0x0010 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_SACL_PRESENT");
+	}
+	if (type & SEC_DESC_SACL_DEFAULTED) { /* 0x0020 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_SACL_DEFAULTED");
+	}
+	if (type & SEC_DESC_DACL_TRUSTED) { /* 0x0040 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_DACL_TRUSTED");
+	}
+	if (type & SEC_DESC_SERVER_SECURITY) { /* 0x0080 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_SERVER_SECURITY");
+	}
+	if (type & SEC_DESC_DACL_AUTO_INHERIT_REQ) { /* 0x0100 */
+		talloc_asprintf_addbuf(&typestr,
+				       " SEC_DESC_DACL_AUTO_INHERIT_REQ");
+	}
+	if (type & SEC_DESC_SACL_AUTO_INHERIT_REQ) { /* 0x0200 */
+		talloc_asprintf_addbuf(&typestr,
+				       " SEC_DESC_SACL_AUTO_INHERIT_REQ");
+	}
+	if (type & SEC_DESC_DACL_AUTO_INHERITED) { /* 0x0400 */
+		talloc_asprintf_addbuf(&typestr,
+				       " SEC_DESC_DACL_AUTO_INHERITED");
+	}
+	if (type & SEC_DESC_SACL_AUTO_INHERITED) { /* 0x0800 */
+		talloc_asprintf_addbuf(&typestr,
+				       " SEC_DESC_SACL_AUTO_INHERITED");
+	}
+	if (type & SEC_DESC_DACL_PROTECTED) { /* 0x1000 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_DACL_PROTECTED");
+	}
+	if (type & SEC_DESC_SACL_PROTECTED) { /* 0x2000 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_SACL_PROTECTED");
+	}
+	if (type & SEC_DESC_RM_CONTROL_VALID) { /* 0x4000 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_RM_CONTROL_VALID");
+	}
+	if (type & SEC_DESC_SELF_RELATIVE) { /* 0x8000 */
+		talloc_asprintf_addbuf(&typestr, " SEC_DESC_SELF_RELATIVE");
+	}
 
-	printf("\n");
+	return typestr;
 }
 
 /****************************************************************************
@@ -320,7 +340,11 @@ void display_sec_desc(struct security_descriptor *sec)
 	}
 
 	printf("revision: %d\n", sec->revision);
-	display_acl_type(sec->type);
+	{
+		char *type_str = get_acl_type_str(NULL, sec->type);
+		printf("%s\n", (type_str != NULL) ? type_str : "");
+		TALLOC_FREE(type_str);
+	}
 
 	if (sec->sacl) {
 		char *acl_str = get_sec_acl_str(NULL, sec->sacl);
