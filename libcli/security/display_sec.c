@@ -139,21 +139,29 @@ static char *get_sec_ace_flags_str(TALLOC_CTX *ctx, uint8_t flags)
 /****************************************************************************
  display sec_ace object
  ****************************************************************************/
-static void disp_sec_ace_object(struct security_ace_object *object)
+static char *get_sec_ace_object_str(TALLOC_CTX *ctx,
+				    struct security_ace_object *object)
 {
 	struct GUID_txt_buf buf;
+	char *objstr = talloc_strdup(ctx, "");
 
 	if (object->flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
-		printf("Object type: SEC_ACE_OBJECT_TYPE_PRESENT\n");
-		printf("Object GUID: %s\n",
-		       GUID_buf_string(&object->type.type, &buf));
+		talloc_asprintf_addbuf(
+			&objstr,
+			"Object type: SEC_ACE_OBJECT_TYPE_PRESENT\n"
+			"Object GUID: %s\n",
+			GUID_buf_string(&object->type.type, &buf));
 	}
 	if (object->flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
-		printf("Object type: SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT\n");
-		printf("Object GUID: %s\n",
-		       GUID_buf_string(&object->inherited_type.inherited_type,
-				       &buf));
+		talloc_asprintf_addbuf(
+			&objstr,
+			"Object type: SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT\n"
+			"Object GUID: %s\n",
+			GUID_buf_string(&object->inherited_type.inherited_type,
+					&buf));
 	}
+
+	return objstr;
 }
 
 /****************************************************************************
@@ -211,7 +219,10 @@ void display_sec_ace(struct security_ace *ace)
 	printf("\t\tSID: %s\n\n", dom_sid_str_buf(&ace->trustee, &sid_str));
 
 	if (sec_ace_object(ace->type)) {
-		disp_sec_ace_object(&ace->object.object);
+		char *obj_str = get_sec_ace_object_str(NULL,
+						       &ace->object.object);
+		printf("%s", (obj_str != NULL) ? obj_str : "");
+		TALLOC_FREE(obj_str);
 	}
 
 }
