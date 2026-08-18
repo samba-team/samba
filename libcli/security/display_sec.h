@@ -24,7 +24,6 @@
 /* The following definitions come from libcli/security/display_sec.c */
 
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32_t type);
-void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(struct security_ace *ace);
 void display_sec_acl(struct security_acl *sec_acl);
 void display_acl_type(uint16_t type);

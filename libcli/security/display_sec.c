@@ -90,26 +90,50 @@ static char *get_sec_access_str(TALLOC_CTX *ctx, uint32_t info)
 /****************************************************************************
  display sec_ace flags
  ****************************************************************************/
-void display_sec_ace_flags(uint8_t flags)
+static char *get_sec_ace_flags_str(TALLOC_CTX *ctx, uint8_t flags)
 {
-	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT)
-		printf("SEC_ACE_FLAG_OBJECT_INHERIT ");
-	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT)
-		printf(" SEC_ACE_FLAG_CONTAINER_INHERIT ");
-	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)
-		printf("SEC_ACE_FLAG_NO_PROPAGATE_INHERIT ");
-	if (flags & SEC_ACE_FLAG_INHERIT_ONLY)
-		printf("SEC_ACE_FLAG_INHERIT_ONLY ");
-	if (flags & SEC_ACE_FLAG_INHERITED_ACE)
-		printf("SEC_ACE_FLAG_INHERITED_ACE ");
-/*	if (flags & SEC_ACE_FLAG_VALID_INHERIT)
-		printf("SEC_ACE_FLAG_VALID_INHERIT "); */
-	if (flags & SEC_ACE_FLAG_SUCCESSFUL_ACCESS)
-		printf("SEC_ACE_FLAG_SUCCESSFUL_ACCESS ");
-	if (flags & SEC_ACE_FLAG_FAILED_ACCESS)
-		printf("SEC_ACE_FLAG_FAILED_ACCESS ");
+	char *flagstr = talloc_strdup(ctx, "");
 
-	printf("\n");
+	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_OBJECT_INHERIT");
+	}
+	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_CONTAINER_INHERIT");
+	}
+	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_NO_PROPAGATE_INHERIT");
+	}
+	if (flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_INHERIT_ONLY");
+	}
+	if (flags & SEC_ACE_FLAG_INHERITED_ACE) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_INHERITED_ACE");
+	}
+	/*	if (flags & SEC_ACE_FLAG_VALID_INHERIT)
+			talloc_asprintf_addsep(&flagstr, " ",
+			"SEC_ACE_FLAG_VALID_INHERIT"); */
+	if (flags & SEC_ACE_FLAG_SUCCESSFUL_ACCESS) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_SUCCESSFUL_ACCESS");
+	}
+	if (flags & SEC_ACE_FLAG_FAILED_ACCESS) {
+		talloc_asprintf_addsep(&flagstr,
+				       " ",
+				       "SEC_ACE_FLAG_FAILED_ACCESS");
+	}
+
+	return flagstr;
 }
 
 /****************************************************************************
@@ -174,7 +198,11 @@ void display_sec_ace(struct security_ace *ace)
 	}
 
 	printf(" (%d) flags: 0x%02x ", ace->type, ace->flags);
-	display_sec_ace_flags(ace->flags);
+	{
+		char *flags_str = get_sec_ace_flags_str(NULL, ace->flags);
+		printf("%s\n", (flags_str != NULL) ? flags_str : "");
+		TALLOC_FREE(flags_str);
+	}
 	{
 		char *access_str = get_sec_access_str(NULL, ace->access_mask);
 		printf("%s", (access_str != NULL) ? access_str : "");
