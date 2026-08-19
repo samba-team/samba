@@ -509,6 +509,12 @@ NTSTATUS create_conn_struct_chdir(TALLOC_CTX *mem_ctx,
 				  const char *path,
 				  const struct auth_session_info *session_info,
 				  struct conn_wrap **_wrap);
+NTSTATUS create_conn_struct(TALLOC_CTX *mem_ctx,
+			    struct messaging_context *msg,
+			    int snum,
+			    const char *path,
+			    const struct auth_session_info *session_info,
+			    struct conn_wrap **_wrap);
 struct connection_struct *conn_wrap_connection(const struct conn_wrap *w);
 
 /* The following definitions come from smbd/notify.c  */
