@@ -1,0 +1,23 @@
+<samba:parameter name="winbind use s4u2self"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para><emphasis>This option is experimental for now!</emphasis>
+	</para>
+
+	<para>This option controls whether winbindd tries to use S4U2SELF impersonation
+	for composing the user groupmembership token. Note currently this only applies to the primary domain</para>
+
+	<para>The behavior can be controlled per netbios domain
+	by using 'winbind use s4u2self:NETBIOSDOMAIN = yes|no' as option.
+	This can be used in order to activate it also for trusted domains,
+	but this is hits problems depending on the krb5 library,
+	e.g. currently heimdal only supports the primary domain
+	or firewalls may block krb5 to DC or other domains.</para>
+
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>
