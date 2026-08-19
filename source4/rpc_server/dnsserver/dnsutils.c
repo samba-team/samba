@@ -310,6 +310,27 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 		}
 	}
 
+	if (strcmp(zone->name, ".") != 0) {
+		if (zoneinfo->dwRefreshInterval == 0) {
+			zoneinfo->dwRefreshInterval =
+				serverinfo->dwDefaultRefreshInterval;
+		}
+		if (zoneinfo->dwNoRefreshInterval == 0) {
+			zoneinfo->dwNoRefreshInterval =
+				serverinfo->dwDefaultNoRefreshInterval;
+		}
+	}
+
+	/*
+	 * If any value is still 0 we disable aging
+	 */
+	if (zoneinfo->dwRefreshInterval == 0) {
+		zoneinfo->fAging = 0;
+	}
+	if (zoneinfo->dwNoRefreshInterval == 0) {
+		zoneinfo->fAging = 0;
+	}
+
 	return zoneinfo;
 }
 
