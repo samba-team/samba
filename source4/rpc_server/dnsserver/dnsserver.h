@@ -27,6 +27,22 @@
 #include "param/param.h"
 #include "ldb.h"
 
+/*
+ * See [MS-DNSP] 2.3.2.1.1 Property Id
+ *
+ * DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
+ * The zone no refresh interval. See
+ * dwNoRefreshInterval (section 2.2.5.2.4.1).
+ * Default: 168 hours/7 days.
+ *
+ * DSPROPERTY_ZONE_REFRESH_INTERVAL:
+ * The zone refresh interval. See
+ * dwRefreshInterval (section 2.2.5.2.4.1).
+ * Default: 168 hours/7 days.
+ */
+#define DNS_SERVER_DEFAULT_NO_REFRESH_INTERVAL (24 * 7)
+#define DNS_SERVER_DEFAULT_REFRESH_INTERVAL (24 * 7)
+
 struct dnsserver_serverinfo {
 	uint32_t	dwVersion;
 	uint8_t		fBootMethod;
