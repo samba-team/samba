@@ -196,9 +196,11 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 				       &serverinfo->dwScavengingInterval,
 				       NULL); /* _si_secs */
 	serverinfo->dwDefaultRefreshInterval = lpcfg_parm_int(
-	    lp_ctx, NULL, "dnsserver", "DefaultRefreshInterval", 24 * 3);
+	    lp_ctx, NULL, "dnsserver", "DefaultRefreshInterval",
+	    DNS_SERVER_DEFAULT_REFRESH_INTERVAL);
 	serverinfo->dwDefaultNoRefreshInterval = lpcfg_parm_int(
-	    lp_ctx, NULL, "dnsserver", "DefaultNoRefreshInterval", 24 * 3);
+	    lp_ctx, NULL, "dnsserver", "DefaultNoRefreshInterval",
+	    DNS_SERVER_DEFAULT_NO_REFRESH_INTERVAL);
 
 	serverinfo->dwLastScavengeTime = 0;
 
