@@ -37,6 +37,7 @@ struct dns_server_tkey {
 };
 
 #define TKEY_BUFFER_SIZE 128
+#define DNS_MAX_PACKET_LENGTH UINT16_MAX
 /*
 * We use 1232 as a conservative safe UDP size since Samba currently does not
 * support EDNS(0).
