@@ -606,7 +606,7 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 {
 
 	time_t current_time = time(NULL);
-	time_t dns_scavenge_interval;
+	time_t dns_scavenge_interval = 0;
 	NTSTATUS status;
 	char *error_string = NULL;
 
@@ -614,16 +614,14 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 	 * Only perform zone scavenging if it's been enabled.
 	 * (it still might be disabled on all zones).
 	 */
-	if (!lpcfg_dns_zone_scavenging(s->task->lp_ctx)) {
+	dns_server_scavenging_interval(s->task->lp_ctx,
+				       NULL, /* _si_hours */
+				       &dns_scavenge_interval);
+	if (dns_scavenge_interval == 0) {
 		DBG_INFO("DNS scavenging not enabled\n");
 		return NT_STATUS_OK;
 	}
 
-	dns_scavenge_interval = lpcfg_parm_int(s->task->lp_ctx,
-					       NULL,
-					       "dnsserver",
-					       "scavenging_interval",
-					       2 * 60 * 60);
 	if ((current_time - s->last_dns_scavenge) > dns_scavenge_interval) {
 		s->last_dns_scavenge = current_time;
 		status = dns_tombstone_records(mem_ctx, s->samdb,
