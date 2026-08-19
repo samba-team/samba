@@ -317,6 +317,8 @@ static NTSTATUS create_conn_struct_as_root(
 struct conn_wrap {
 	struct connection_struct *conn;
 	bool chdir;
+
+	struct conn_wrap_chdir_link *l;
 };
 
 static int conn_wrap_destructor(struct conn_wrap *w)
@@ -419,6 +421,42 @@ NTSTATUS create_conn_struct(TALLOC_CTX *mem_ctx,
 struct connection_struct *conn_wrap_connection(const struct conn_wrap *w)
 {
 	return w->conn;
+}
+
+struct conn_wrap_chdir_link {
+	struct conn_wrap *w;
+};
+
+static int conn_wrap_chdir_destructor(struct conn_wrap_chdir_link *l)
+{
+	SMB_ASSERT(chdir("/") == 0);
+	l->w->l = NULL;
+	return 0;
+}
+
+NTSTATUS conn_wrap_chdir(struct conn_wrap *w, TALLOC_CTX *mem_ctx)
+{
+	struct conn_wrap_chdir_link *l = NULL;
+	int ret;
+
+	SMB_ASSERT(w->l == NULL);
+
+	l = talloc_zero(mem_ctx, struct conn_wrap_chdir_link);
+	if (l == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	l->w = w;
+	w->l = l;
+
+	ret = vfs_ChDir_shareroot(w->conn);
+	if (ret != 0) {
+		DBG_ERR("vfs_ChDir_shareroot failed\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_set_destructor(l, conn_wrap_chdir_destructor);
+
+	return NT_STATUS_OK;
 }
 
 static void shuffle_strlist(char **list, int count)
