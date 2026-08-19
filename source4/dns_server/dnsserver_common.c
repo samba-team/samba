@@ -75,6 +75,44 @@ uint8_t werr_to_dns_err(WERROR werr)
 	return DNS_RCODE_SERVFAIL;
 }
 
+void dns_server_scavenging_interval(struct loadparm_context *lp_ctx,
+				    uint32_t *_si_hours,
+				    time_t *_si_secs)
+{
+	uint32_t si_hours = 0;
+	time_t si_secs = 0;
+
+	if (lpcfg_dns_zone_scavenging(lp_ctx)) {
+		int i_hours;
+
+		i_hours = lpcfg_parm_int(lp_ctx,
+					 NULL,
+					 "dnsserver",
+					 "ScavengingInterval",
+					 2);
+		i_hours = MAX(i_hours, 0);
+		i_hours = MIN(i_hours, (365*24));
+
+		si_secs = i_hours * (60 * 60);
+		si_secs = lpcfg_parm_int(lp_ctx,
+					 NULL,
+					 "dnsserver",
+					 "scavenging_interval",
+					 si_secs);
+		if (si_secs > 0) {
+			si_hours = si_secs / (60 * 60);
+			si_hours = MAX(si_hours, 1);
+		}
+	}
+
+	if (_si_hours != NULL) {
+		*_si_hours = si_hours;
+	}
+	if (_si_secs != NULL) {
+		*_si_secs = si_secs;
+	}
+}
+
 WERROR dns_common_extract(struct ldb_context *samdb,
 			  const struct ldb_message_element *el,
 			  TALLOC_CTX *mem_ctx,
