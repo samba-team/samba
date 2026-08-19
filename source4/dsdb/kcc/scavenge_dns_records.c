@@ -143,6 +143,22 @@ static NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	if (zi->fAging != 1) {
+		/*
+		 * Don't do scavenging if aging is not enabled
+		 * zi->dwNoRefreshInterval + zi->dwRefreshInterval
+		 * might be zero...
+		 */
+		DBG_INFO("ZONE[%s] fAging=%"PRIu32" "
+			 "dwNoRefreshInterval=%"PRIu32" "
+			 "dwRefreshInterval=%"PRIu32" - skipping\n",
+			 zone->name,
+			 zi->fAging,
+			 zi->dwNoRefreshInterval,
+			 zi->dwRefreshInterval);
+		return NT_STATUS_PROPSET_NOT_FOUND;
+	}
+
 	/* Subtract them from current time to get the earliest possible.
 	 * timestamp allowed for a non-expired DNS record. */
 	dns_timestamp -= zi->dwNoRefreshInterval + zi->dwRefreshInterval;
