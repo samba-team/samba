@@ -545,6 +545,7 @@ static bool inode_map_add(struct sl_query *slq,
 
 bool mds_add_result(struct sl_query *slq, const char *path)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname = NULL;
 	const char *relative = NULL;
 	char *fake_path = NULL;
@@ -576,7 +577,15 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 	 * any function exit below must ensure we switch back
 	 */
 
-	status = synthetic_pathref(talloc_tos(),
+	status = conn_wrap_chdir(slq->mds_ctx->wrap, frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("vfs_ChDir_shareroot failed\n");
+		unbecome_authenticated_pipe_user();
+		ok = false;
+		goto out;
+	}
+
+	status = synthetic_pathref(frame,
 				   slq->mds_ctx->conn->cwd_fsp,
 				   path,
 				   NULL,
@@ -585,11 +594,13 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 				   0,
 				   &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		/* Just ignore results the user has no access to */
 		DBG_DEBUG("synthetic_pathref [%s]: %s\n",
 			  smb_fname_str_dbg(smb_fname),
 			  nt_errstr(status));
 		unbecome_authenticated_pipe_user();
-		return true;
+		ok = true;
+		goto out;
 	}
 
 	fdos_mode(smb_fname->fsp);
@@ -602,12 +613,10 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 					      FILE_READ_DATA);
 	unbecome_authenticated_pipe_user();
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname);
-		return true;
+		/* Just ignore results the user has no access to */
+		ok = true;
+		goto out;
 	}
-
-	/* Done with smb_fname now. */
-	TALLOC_FREE(smb_fname);
 
 	ino64 = SMB_VFS_FS_FILE_ID(slq->mds_ctx->conn, &sb);
 
@@ -625,7 +634,8 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 				sizeof(uint64_t),
 				cnid_comp_fn);
 		if (!found) {
-			return true;
+			ok = true;
+			goto out;
 		}
 	}
 
@@ -637,7 +647,8 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		DBG_ERR("[%s] is not inside [%s]\n",
 			path, slq->mds_ctx->spath);
 		slq->state = SLQ_STATE_ERROR;
-		return false;
+		ok = false;
+		goto out;
 	}
 
 	/*
@@ -650,7 +661,8 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 	if (result != 0) {
 		DBG_ERR("dalloc error\n");
 		slq->state = SLQ_STATE_ERROR;
-		return false;
+		ok = false;
+		goto out;
 	}
 
 	fake_path = talloc_asprintf(slq,
@@ -659,7 +671,8 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 				    relative);
 	if (fake_path == NULL) {
 		slq->state = SLQ_STATE_ERROR;
-		return false;
+		ok = false;
+		goto out;
 	}
 
 	ok = add_filemeta(slq->mds_ctx,
@@ -671,7 +684,7 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		DBG_ERR("add_filemeta error\n");
 		TALLOC_FREE(fake_path);
 		slq->state = SLQ_STATE_ERROR;
-		return false;
+		goto out;
 	}
 
 	ok = inode_map_add(slq, ino64, fake_path, &sb);
@@ -679,11 +692,15 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 	if (!ok) {
 		DEBUG(1, ("inode_map_add error\n"));
 		slq->state = SLQ_STATE_ERROR;
-		return false;
+		goto out;
 	}
 
 	slq->query_results->num_results++;
-	return true;
+
+	ok = true;
+out:
+	TALLOC_FREE(frame);
+	return ok;
 }
 
 /***********************************************************
@@ -1735,12 +1752,12 @@ NTSTATUS mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	status = create_conn_struct_chdir(mds_ctx,
-					  msg_ctx,
-					  snum,
-					  lp_path(talloc_tos(), lp_sub, snum),
-					  session_info,
-					  &mds_ctx->wrap);
+	status = create_conn_struct(mds_ctx,
+				    msg_ctx,
+				    snum,
+				    lp_path(talloc_tos(), lp_sub, snum),
+				    session_info,
+				    &mds_ctx->wrap);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("failed to create conn for vfs: %s\n",
 			nt_errstr(status));
