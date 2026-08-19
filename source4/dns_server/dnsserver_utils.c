@@ -20,13 +20,12 @@
 */
 
 #include "includes.h"
-#include "dnsserver.h"
+#include "rpc_server/dnsserver/dnsserver.h"
 #include "rpc_server/common/common.h"
 #include "dns_server/dnsserver_common.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/socket/netif.h"
 #include "lib/util/util_net.h"
-#include "dnsserver_common.h"
 
 #undef strcasecmp
 
