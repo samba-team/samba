@@ -1375,7 +1375,7 @@ In general this parameter should be viewed as a system tuning tool and left seve
  If it is disabled, data will be transferred in little endian.
  The behaviour is independent of the endianness of the host machine.</string>
       <string id="POL_380E7843_58D7_505E_9092_392FE1FC4BA2">rpc server port</string>
-      <string id="POL_380E7843_58D7_505E_9092_392FE1FC4BA2_Help">Specifies which port the server should listen on for DCE/RPC over TCP/IP traffic. This controls the default port for all protocols, except for NETLOGON. If unset, the first available port from is used, e.g. 49152. The NETLOGON server will use the next available port, e.g. 49153. To change this port use (eg) rpc server port:netlogon = 4000. Furthermore, all RPC servers can have the port they use specified independenty, with (for example) rpc server port:drsuapi = 5000.
+      <string id="POL_380E7843_58D7_505E_9092_392FE1FC4BA2_Help">Specifies which port the server should listen on for DCE/RPC over TCP/IP traffic. This controls the default port for all protocols, except for NETLOGON. If unset, the first available port from is used, e.g. 49152. The NETLOGON server will use the next available port, e.g. 49153. To change this port use (eg) rpc server port:netlogon = 4000. Furthermore, all RPC servers can have the port they use specified independently, with (for example) rpc server port:drsuapi = 5000.
  This option applies currently only when samba 8 runs as an active directory domain controller.
  The default value 0 causes Samba to select the first available port from .</string>
       <string id="POL_D910FC29_975B_5105_97C8_BD75D68FDC5F">server max protocol</string>

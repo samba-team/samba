@@ -7,7 +7,7 @@
 	<para>This controls the default port for all protocols, except for NETLOGON.</para>
 	<para>If unset, the first available port from <smbconfoption name="rpc server dynamic port range"/> is used, e.g. 49152.</para>
 	<para>The NETLOGON server will use the next available port, e.g. 49153.  To change this port use (eg) rpc server port:netlogon = 4000.</para>
-	<para>Furthermore, all RPC servers can have the port they use specified independenty, with (for example) rpc server port:drsuapi = 5000.</para>
+	<para>Furthermore, all RPC servers can have the port they use specified independently, with (for example) rpc server port:drsuapi = 5000.</para>
 
 	<para>This option applies currently only when
 	<citerefentry><refentrytitle>samba</refentrytitle> <manvolnum>8</manvolnum></citerefentry>
