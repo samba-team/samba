@@ -4,8 +4,8 @@
 # when samba-tool is called where the ad-dc was not built. The server-side dns
 # code is used in the client when we do direct LDAP modification of DNS records.
 bld.SAMBA_LIBRARY('dnsserver_common',
-        source='dnsserver_common.c',
-        deps='samba-util samba-errors ldbsamba clidns',
+        source='dnsserver_common.c dnsserver_utils.c',
+        deps='samba-util samba-errors ldbsamba clidns netif',
         private_library=True
         )
 

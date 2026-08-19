@@ -40,7 +40,7 @@
 #include <cmocka.h>
 
 
-#include "../dnsserver/dnsutils.c"
+#include "../../dns_server/dnsserver_utils.c"
 
 
 /*

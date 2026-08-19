@@ -180,7 +180,6 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 bld.SAMBA_MODULE('dcerpc_dnsserver',
                  source='''
                         dnsserver/dcerpc_dnsserver.c
-                        dnsserver/dnsutils.c
                         dnsserver/dnsdata.c
                         dnsserver/dnsdb.c
                         ''',
