@@ -919,6 +919,8 @@ WERROR dns_get_zone_properties(struct ldb_context *samdb,
 	struct ldb_result *res = NULL;
 	enum ndr_err_code err;
 
+	*zoneinfo = (struct dnsserver_zoneinfo) {};
+
 	ret = ldb_search(samdb,
 			 mem_ctx,
 			 &res,
