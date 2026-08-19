@@ -909,7 +909,7 @@ class TestComplexQueries(DNSTest):
         self.finish_name_packet(p, questions)
 
         (response, response_packet) =\
-            self.dns_transaction_udp(p, host=self.server_ip)
+            self.dns_transaction_tcp(p, host=self.server_ip)
 
         self.assertEqual(len(response.answers), num_recs_to_enter)
 
@@ -959,7 +959,7 @@ class TestComplexQueries(DNSTest):
         self.finish_name_packet(p, questions)
 
         (response, response_packet) =\
-            self.dns_transaction_udp(p, host=self.server_ip)
+            self.dns_transaction_tcp(p, host=self.server_ip)
 
         self.assertEqual(len(response.answers), num_recs_to_enter)
 
