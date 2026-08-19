@@ -108,6 +108,7 @@ struct dns_process_state {
 	struct dns_name_packet in_packet;
 	struct dns_request_state state;
 	WERROR dns_err;
+	uint16_t max_response_size;
 	struct dns_name_packet out_packet;
 	DATA_BLOB out;
 };
@@ -119,6 +120,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 					   struct dns_server *dns,
 					   const struct tsocket_address *remote_address,
 					   const struct tsocket_address *local_address,
+					   uint16_t max_response_size,
 					   DATA_BLOB *in)
 {
 	struct tevent_req *req, *subreq;
@@ -132,7 +134,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	}
 	state->state.mem_ctx = state;
 	state->in = in;
-
+	state->max_response_size = max_response_size;
 	state->dns = dns;
 
 	if (in->length < 12) {
@@ -244,6 +246,7 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	uint16_t dns_err;
 	WERROR ret;
+	bool truncated = false;
 
 	if (tevent_req_is_werror(req, &ret)) {
 		DBG_NOTICE("ERROR: %s from %s\n", win_errstr(ret),
@@ -282,6 +285,7 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		}
 	}
 
+retry_truncated:
 	if (DEBUGLVLC(DBGC_DNS, 8)) {
 		NDR_PRINT_DEBUGC(DBGC_DNS, dns_name_packet, &state->out_packet);
 	}
@@ -294,6 +298,45 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    ndr_errstr(ndr_err));
 		dns_err = DNS_RCODE_SERVFAIL;
 		goto drop;
+	}
+	/*
+	 * If a UDP response exceeds the threshold, set the TC flag and return
+	 * an empty response, expecting the client to retry over TCP as required
+	 * by RFC 1035 Section 4.2.1 ("the message was truncated due to length
+	 * greater than that permitted on the transmission channel").
+	 */
+	if (out->length > state->max_response_size) {
+		if (state->max_response_size == DNS_MAX_PACKET_LENGTH) {
+			/*
+			 * We're on tcp and the response it
+			 * too large.
+			 */
+			DBG_WARNING("Response (%zu bytes) "
+				    "is too large!\n",
+				    out->length);
+			data_blob_free(out);
+			NDR_PRINT_DEBUGC(DBGC_DNS, dns_name_packet, &state->out_packet);
+			dns_err = DNS_RCODE_SERVFAIL;
+			goto drop;
+		}
+
+		if (truncated) {
+			DBG_WARNING("Truncated response (%zu bytes) "
+				    "is still too large!\n",
+				    out->length);
+			data_blob_free(out);
+			NDR_PRINT_DEBUGC(DBGC_DNS, dns_name_packet, &state->out_packet);
+			dns_err = DNS_RCODE_SERVFAIL;
+			goto drop;
+		}
+
+		state->out_packet.operation |= DNS_FLAG_TRUNCATION;
+		state->out_packet.ancount = 0;
+		state->out_packet.nscount = 0;
+		state->out_packet.arcount = 0;
+		data_blob_free(out);
+		truncated = true;
+		goto retry_truncated;
 	}
 	return WERR_OK;
 
@@ -363,6 +406,7 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	subreq = dns_process_send(call, dns->task->event_ctx, dns,
 				  dns_conn->conn->remote_address,
 				  dns_conn->conn->local_address,
+				  DNS_MAX_PACKET_LENGTH,
 				  &call->in);
 	if (subreq == NULL) {
 		dns_tcp_terminate_connection(
@@ -568,6 +612,7 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 	subreq = dns_process_send(call, dns->task->event_ctx, dns,
 				  call->src,
 				  sock->dns_socket->local_address,
+				  DNS_MAX_UDP_PACKET_LENGTH,
 				  &call->in);
 	if (subreq == NULL) {
 		TALLOC_FREE(call);
@@ -594,29 +639,9 @@ static void dns_udp_call_process_done(struct tevent_req *subreq)
 		subreq, struct dns_udp_call);
 	struct dns_udp_socket *sock = call->sock;
 	struct dns_server *dns = sock->dns_socket->dns;
-	struct dns_process_state *state = tevent_req_data(
-		subreq, struct dns_process_state);
 	WERROR err;
 
 	err = dns_process_recv(subreq, call, &call->out);
-	/*
-	* If a UDP response exceeds the threshold, set the TC flag and return an
-	* empty response, expecting the client to retry over TCP as required by
-	* RFC 1035 Section 4.2.1 ("the message was truncated due to length greater
-	* than that permitted on the transmission channel").
-	*/
-	if (W_ERROR_IS_OK(err) && call->out.length > DNS_MAX_UDP_PACKET_LENGTH) {
-		state->out_packet.operation |= DNS_FLAG_TRUNCATION;
-		state->out_packet.ancount = 0;
-		state->out_packet.nscount = 0;
-		state->out_packet.arcount = 0;
-		TALLOC_FREE(call->out.data);
-		err = dns_process_recv(subreq, call, &call->out);
-		if (!W_ERROR_IS_OK(err)) {
-			DBG_WARNING("Failed to build truncated DNS packet: %s!\n",
-				win_errstr(err));
-		}
-	}
 	TALLOC_FREE(subreq);
 	if (!W_ERROR_IS_OK(err)) {
 		DEBUG(1, ("dns_process returned %s\n", win_errstr(err)));
