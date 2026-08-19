@@ -27,6 +27,7 @@
 uint8_t werr_to_dns_err(WERROR werr);
 #define DNS_ERR(err_str) WERR_DNS_ERROR_RCODE_##err_str
 
+struct loadparm_context;
 struct ldb_message_element;
 struct ldb_context;
 struct dnsp_DnssrvRpcRecord;
@@ -36,6 +37,10 @@ struct dns_server_zone {
 	const char *name;
 	struct ldb_dn *dn;
 };
+
+void dns_server_scavenging_interval(struct loadparm_context *lp_ctx,
+				    uint32_t *_si_hours,
+				    time_t *_si_secs);
 
 WERROR dns_common_extract(struct ldb_context *samdb,
 			  const struct ldb_message_element *el,
