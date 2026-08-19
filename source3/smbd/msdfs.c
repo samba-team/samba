@@ -316,6 +316,7 @@ static NTSTATUS create_conn_struct_as_root(
 
 struct conn_wrap {
 	struct connection_struct *conn;
+	bool chdir;
 };
 
 static int conn_wrap_destructor(struct conn_wrap *w)
@@ -326,7 +327,9 @@ static int conn_wrap_destructor(struct conn_wrap *w)
 	/*
 	 * Make whatever directory we chdir()ed to umountable
 	 */
-	SMB_ASSERT(chdir("/") == 0);
+	if (w->chdir) {
+		SMB_ASSERT(chdir("/") == 0);
+	}
 
 	/*
 	 * Prevent vfs_ChDir() from skipping the real chdir()
@@ -336,18 +339,20 @@ static int conn_wrap_destructor(struct conn_wrap *w)
 	return 0;
 }
 
-NTSTATUS create_conn_struct_chdir(TALLOC_CTX *mem_ctx,
-				  struct messaging_context *msg,
-				  int snum,
-				  const char *path,
-				  const struct auth_session_info *session_info,
-				  struct conn_wrap **_wrap)
+static NTSTATUS create_conn_struct_chdir_internal(
+				TALLOC_CTX *mem_ctx,
+				struct messaging_context *msg,
+				int snum,
+				const char *path,
+				const struct auth_session_info *session_info,
+				bool chdir,
+				struct conn_wrap **_wrap)
 {
 	struct conn_wrap *w = NULL;
 	NTSTATUS status;
 	int ret;
 
-	w = talloc(mem_ctx, struct conn_wrap);
+	w = talloc_zero(mem_ctx, struct conn_wrap);
 	if (w == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -363,16 +368,36 @@ NTSTATUS create_conn_struct_chdir(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(w, conn_wrap_destructor);
 
-	ret = vfs_ChDir_shareroot(w->conn);
-	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
-		TALLOC_FREE(w);
-		return status;
+	if (chdir) {
+		ret = vfs_ChDir_shareroot(w->conn);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(w);
+			return status;
+		}
+		w->chdir = true;
 	}
 
 	*_wrap = w;
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS create_conn_struct_chdir(
+				TALLOC_CTX *mem_ctx,
+				struct messaging_context *msg,
+				int snum,
+				const char *path,
+				const struct auth_session_info *session_info,
+				struct conn_wrap **_wrap)
+{
+	return create_conn_struct_chdir_internal(mem_ctx,
+						 msg,
+						 snum,
+						 path,
+						 session_info,
+						 true,
+						 _wrap);
 }
 
 struct connection_struct *conn_wrap_connection(const struct conn_wrap *w)
