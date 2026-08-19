@@ -304,6 +304,30 @@ retry_truncated:
 	 * an empty response, expecting the client to retry over TCP as required
 	 * by RFC 1035 Section 4.2.1 ("the message was truncated due to length
 	 * greater than that permitted on the transmission channel").
+	 *
+	 * RFC 2181 "Clarifications to the DNS Specification" has this:
+	 * 9. The TC (truncated) header bit
+	 *
+	 *  The TC bit should be set in responses only when an RRSet is required
+	 *  as a part of the response, but could not be included in its
+	 *  entirety.  The TC bit should not be set merely because some extra
+	 *  information could have been included, but there was insufficient
+	 *  room.  This includes the results of additional section processing.
+	 *  In such cases the entire RRSet that will not fit in the response
+	 *  should be omitted, and the reply sent as is, with the TC bit clear.
+	 *  If the recipient of the reply needs the omitted data, it can
+	 *  construct a query for that data and send that separately.
+	 *
+	 *  Where TC is set, the partial RRSet that would not completely fit may
+	 *  be left in the response.  When a DNS client receives a reply with TC
+	 *  set, it should ignore that response, and query again, using a
+	 *  mechanism, such as a TCP connection, that will permit larger
+	 *  replies.
+	 *
+	 * TODO: we may want to optimize and retry with just
+	 * state->out_packet.arcount = 0 and without DNS_FLAG_TRUNCATION,
+	 * but only if no critical elements are in state->out_packet.additional,
+	 * e.g. TKEY/TSIG.
 	 */
 	if (out->length > state->max_response_size) {
 		if (state->max_response_size == DNS_MAX_PACKET_LENGTH) {
@@ -336,6 +360,10 @@ retry_truncated:
 		state->out_packet.arcount = 0;
 		data_blob_free(out);
 		truncated = true;
+		/*
+		 * Truncated responses should fit into 512 bytes
+		 */
+		state->max_response_size = DNS_MAX_UDP_PACKET_LENGTH;
 		goto retry_truncated;
 	}
 	return WERR_OK;
