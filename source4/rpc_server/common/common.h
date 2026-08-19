@@ -39,6 +39,32 @@ struct dcerpc_server_info {
 	uint32_t version_build;
 };
 
+#ifdef AD_DC_BUILD_IS_ENABLED
 #include "rpc_server/common/proto.h"
+#endif /* AD_DC_BUILD_IS_ENABLED */
+#include "lib/param/param.h"
+
+static inline
+struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx,
+						    struct loadparm_context *lp_ctx)
+{
+	struct dcerpc_server_info *ret = NULL;
+
+	ret = talloc_zero(mem_ctx, struct dcerpc_server_info);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	ret->domain_name = talloc_strdup(ret, lpcfg_workgroup(lp_ctx));
+	if (ret->domain_name == NULL) {
+		TALLOC_FREE(ret);
+		return NULL;
+	}
+	ret->version_major = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
+	ret->version_minor = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
+	ret->version_build = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
+
+	return ret;
+}
 
 #endif /* _DCERPC_SERVER_COMMON_H_ */
