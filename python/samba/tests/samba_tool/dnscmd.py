@@ -956,8 +956,9 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 (['--aging=2', '--norefreshinterval=1'], {}, True),
                 (['--aging=1', '--norefreshinterval=1'],
                  {'fAging': 'TRUE', 'dwNoRefreshInterval': '1'}, False),
+                # setting --norefreshinterval=0 results in the server default
                 (['--aging=1', '--norefreshinterval=0'],
-                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '0'}, False),
+                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '168'}, False),
                 (['--aging=0', '--norefreshinterval=99', '--refreshinterval=99'],
                  {'fAging': 'FALSE',
                   'dwNoRefreshInterval': '99',
