@@ -202,6 +202,7 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 #define SERVER_TCP_LOW_PORT  49152
 #define SERVER_TCP_HIGH_PORT 65535
 
+/* Documented in docs-xml/smbdotconf/rpc/rpcserverdynamicportrange.xml. */
 #define SERVER_TCP_PORT_MIN 1024
 #define SERVER_TCP_PORT_MAX 65535
 

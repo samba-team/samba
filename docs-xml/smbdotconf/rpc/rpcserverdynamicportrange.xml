@@ -14,6 +14,9 @@
 	<para>
 		This applies to RPC servers in all server roles.
 	</para>
+	<para>
+		Values must be between 1024 and 65535, inclusive.
+	</para>
 </description>
 
 <related>rpc server port</related>
