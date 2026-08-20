@@ -432,8 +432,9 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register_b(struct dcesrv_context *dce_ctx,
 		 * in the code above with eg 'rpc server port:drsuapi = 1027'
 		 *
 		 * If we have multiple endpoints on port 0, they each
-		 * get an epemeral port (currently by walking up from
-		 * 1024).
+		 * get an ephemeral port (currently by walking up from
+		 * the bottom of "rpc server dynamic port range" or
+		 * 49152 by default).
 		 *
 		 * Because one endpoint can only have one process
 		 * model, we add a new IP_TCP endpoint for each model.

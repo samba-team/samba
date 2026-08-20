@@ -274,7 +274,10 @@ static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *f
 
 /*
   setup a listen stream socket
-  if you pass *port == 0, then a port > 1024 is used
+
+  If you pass *port == 0, then a port from "rpc server dynamic port
+  range" is used, which usually means 49152-65535. Ports are allocated
+  from the low end.
 
   FIXME: This function is TCP/IP specific - uses an int rather than 
   	 a string for the port. Should leave allocating a port nr 
