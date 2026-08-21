@@ -1500,9 +1500,8 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	set_blocking(s->fd, False);
 
 	if (listen(s->fd, SMBD_LISTEN_BACKLOG) == -1) {
-		DEBUG(0,("smbd_open_one_socket: listen: "
-			"%s\n", strerror(errno)));
-			close(s->fd);
+		DBG_ERR("listen: %s\n", strerror(errno));
+		close(s->fd);
 		TALLOC_FREE(s);
 		return false;
 	}
@@ -1513,9 +1512,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			       smbd_accept_connection,
 			       s);
 	if (!s->fde) {
-		DEBUG(0,("smbd_open_one_socket: "
-			 "tevent_add_fd: %s\n",
-			 strerror(errno)));
+		DBG_ERR("tevent_add_fd: %s\n", strerror(errno));
 		close(s->fd);
 		TALLOC_FREE(s);
 		return false;
