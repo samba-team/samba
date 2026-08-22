@@ -43,6 +43,10 @@
 #include <sys/un.h>
 #endif
 
+#ifdef HAVE_PACKETSOCKET
+#include <linux/if_packet.h>
+#endif
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif

@@ -839,6 +839,9 @@ syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
     conf.CHECK_CODE('struct sockaddr_un sunaddr; sunaddr.sun_family = AF_UNIX;',
                     define='HAVE_UNIXSOCKET', headers='sys/socket.h sys/un.h')
 
+    conf.CHECK_CODE('struct sockaddr_ll sall; sall.sll_family = AF_PACKET;',
+                    define='HAVE_PACKETSOCKET',
+                    headers='sys/socket.h linux/if_packet.h')
 
     conf.CHECK_CODE('''
                     struct stat st;

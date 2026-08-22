@@ -134,10 +134,6 @@ def configure(conf):
                     define='HAVE_AF_PACKET',
                     headers='sys/socket.h linux/if_packet.h')
 
-    conf.CHECK_CODE('struct sockaddr_ll sall; sall.sll_family = AF_PACKET;',
-                    define='HAVE_PACKETSOCKET',
-                    headers='sys/socket.h linux/if_packet.h')
-
     conf.CHECK_CODE('''pthread_mutex_t m;
                        int pid = 0;
                        m.__data.__owner = pid;
