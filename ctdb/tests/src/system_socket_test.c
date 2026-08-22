@@ -127,8 +127,8 @@ static void test_arp(const char *addr_str,
 		     uint16_t arpop)
 {
 	ctdb_sock_addr addr;
-	struct sockaddr_storage hardware_addr = {};
-	struct sockaddr_ll *sall = (struct sockaddr_ll *)&hardware_addr;
+	struct samba_sockaddr hardware_addr = {};
+	struct sockaddr_ll *sall = &hardware_addr.u.ll;
 	uint8_t buf[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
 	size_t buflen = sizeof(buf);
 	size_t len;
@@ -138,6 +138,7 @@ static void test_arp(const char *addr_str,
 	assert(ret == 0);
 
 	hwaddr_to_sockaddr_ll(hwaddr_str, sall);
+	hardware_addr.sa_socklen = sall_len(sall);
 
 	switch (addr.ip.sin_family) {
 	case AF_INET:
@@ -157,10 +158,10 @@ static void test_arp(const char *addr_str,
 
 static void test_ip6_ll_multicast_build(const char *hwaddr_str)
 {
-	struct sockaddr_storage hardware_addr = {};
-	struct sockaddr_ll *sall = (struct sockaddr_ll *)&hardware_addr;
-	struct sockaddr_storage hardware_addr_out = {};
-	struct sockaddr_ll *sall_out = (struct sockaddr_ll *)&hardware_addr_out;
+	struct samba_sockaddr hardware_addr = {};
+	struct sockaddr_ll *sall = &hardware_addr.u.ll;
+	struct samba_sockaddr hardware_addr_out = {};
+	struct sockaddr_ll *sall_out = &hardware_addr_out.u.ll;
 	int ret;
 
 	hwaddr_to_sockaddr_ll(hwaddr_str, sall);

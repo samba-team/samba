@@ -60,6 +60,7 @@
 
 #include "lib/util/debug.h"
 #include "lib/util/blocking.h"
+#include "lib/util/samba_sockaddr.h"
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_util.h"
@@ -312,7 +313,7 @@ static inline socklen_t sall_len(struct sockaddr_ll *sll)
  * is actually allocated (perhaps struct sockaddr_storage?).
  * Similarly, struct sockaddr_ll, used for link-level (i.e. hardware)
  * addresses has only 8 octets of address space.  Therefore, struct
- * sockaddr_storage is used for allocations, with appropriate casts
+ * samba_sockaddr is used for allocations, with appropriate casts
  * throughout.
  */
 
@@ -351,8 +352,8 @@ static bool check_hwaddr(struct sockaddr *sa, unsigned int index)
 }
 
 static int find_interface(const char *name,
-			  struct sockaddr_storage *hardware_addr,
-			  struct sockaddr_storage *broadcast_addr)
+			  struct samba_sockaddr *hardware_addr,
+			  struct samba_sockaddr *broadcast_addr)
 {
 	unsigned int index = 0;
 	struct ifaddrs *ifa = NULL;
@@ -417,12 +418,16 @@ static int find_interface(const char *name,
 			continue;
 		}
 
-		memcpy(hardware_addr,
+		hardware_addr->sa_socklen =
+			sall_len((struct sockaddr_ll *)t->ifa_addr);
+		memcpy(&hardware_addr->u.ll,
 		       t->ifa_addr,
-		       sall_len((struct sockaddr_ll *)t->ifa_addr));
-		memcpy(broadcast_addr,
+		       hardware_addr->sa_socklen);
+		broadcast_addr->sa_socklen =
+			sall_len((struct sockaddr_ll *)t->ifa_broadaddr);
+		memcpy(&broadcast_addr->u.ll,
 		       t->ifa_broadaddr,
-		       sall_len((struct sockaddr_ll *)t->ifa_broadaddr));
+		       broadcast_addr->sa_socklen);
 
 		ret = 0;
 		goto done;
@@ -441,11 +446,11 @@ done:
 
 /*
  * Some link-level addresses are bigger than a sockaddr_ll.  However,
- * they must fit into a sockaddr_storage, so determine the maximum
+ * they must fit into a samba_sockaddr, so determine the maximum
  * possible size.
  */
 #define SOCKADDR_LL_ADDR_LEN						\
-	sizeof(struct sockaddr_storage) - offsetof(struct sockaddr_ll, sll_addr)
+	sizeof(struct samba_sockaddr) - offsetof(struct sockaddr_ll, sll_addr)
 
 #define ARP_BUFFER_SIZE				  \
 	sizeof(struct arphdr) +			  \
@@ -528,7 +533,7 @@ static int arp_build(uint8_t *buffer,
 }
 
 static int ip6_ll_multicast_build(struct sockaddr_ll *in,
-				  struct sockaddr_storage *out)
+				  struct samba_sockaddr *out)
 {
 	/*
 	 * Ethernet multicast: 33:33:00:00:00:01 (see RFC2464, section
@@ -540,10 +545,11 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 	};
 	uint8_t *in_sll_addr = (uint8_t *)in + offsetof(struct sockaddr_ll,
 							sll_addr);
-	uint8_t *out_sll_addr = (uint8_t *)out + offsetof(struct sockaddr_ll,
-							  sll_addr);
+	struct sockaddr_ll *out_ll = &out->u.ll;
+	uint8_t *out_sll_addr = (uint8_t *)out_ll + offsetof(struct sockaddr_ll,
+							     sll_addr);
 
-	*(struct sockaddr_ll *)out = (struct sockaddr_ll) {
+	*out_ll = (struct sockaddr_ll) {
 		.sll_family = AF_PACKET,
 		.sll_halen = in->sll_halen,
 		.sll_protocol = htons(ETH_P_IPV6),
@@ -613,6 +619,7 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 		return EPROTONOSUPPORT;
 	}
 
+	out->sa_socklen = sall_len(out_ll);
 	return 0;
 }
 
@@ -733,14 +740,12 @@ static int ip6_na_build(uint8_t *buffer,
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
-	struct sockaddr_storage hardware_addr = {};
-	struct sockaddr_storage broadcast_addr = {};
-	struct sockaddr_ll *hardware_addr_ll =
-		(struct sockaddr_ll *) &hardware_addr;
-	struct sockaddr_ll *broadcast_addr_ll =
-		(struct sockaddr_ll *) &broadcast_addr;
+	struct samba_sockaddr hardware_addr = {};
+	struct samba_sockaddr broadcast_addr = {};
+	struct sockaddr_ll *hardware_addr_ll = &hardware_addr.u.ll;
+	struct sockaddr_ll *broadcast_addr_ll = &broadcast_addr.u.ll;
 	int s = -1;
-	struct sockaddr_storage sas = {0};
+	struct samba_sockaddr sas = {0};
 	socklen_t dest_len = 0;
 	uint8_t buffer[MAX(ARP_BUFFER_SIZE, IP6_NA_BUFFER_SIZE)];
 	size_t len = 0;
@@ -875,8 +880,8 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			     buffer,
 			     len,
 			     0,
-			     (struct sockaddr *)&sas,
-			     sall_len((struct sockaddr_ll *)&sas));
+			     (struct sockaddr *)&sas.u.ll,
+			     sall_len(&sas.u.ll));
 		if (ret < 0 ) {
 			ret = errno;
 			DBG_ERR("Failed sendto\n");
