@@ -32,6 +32,9 @@ struct samba_sockaddr {
 		struct sockaddr_in6 in6;
 #endif
 		struct sockaddr_un un;
+#ifdef HAVE_PACKETSOCKET
+		struct sockaddr_ll ll;
+#endif
 		struct sockaddr_storage ss;
 	} u;
 };
