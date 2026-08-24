@@ -1477,7 +1477,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	s->fd = open_socket_in_protocol(SOCK_STREAM, protocol, ifss, port, rebind);
 	if (s->fd < 0) {
 		int err = -(s->fd);
-		DBG_ERR("open_socket_in failed: %s\n", strerror(err));
+		DBG_ERR("open_socket_in_protocol failed: %s\n", strerror(err));
 		TALLOC_FREE(s);
 		/*
 		 * We ignore an error here, as we've done before
