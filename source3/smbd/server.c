@@ -1427,15 +1427,16 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	force_check_log_size();
 }
 
-static bool smbd_open_one_socket(struct smbd_parent_context *parent,
-				 struct tevent_context *ev_ctx,
-				 const struct sockaddr_storage *ifss,
-				 const struct smb_transport *transport)
+static int smbd_open_one_socket(struct smbd_parent_context *parent,
+				struct tevent_context *ev_ctx,
+				const struct sockaddr_storage *ifss,
+				const struct smb_transport *transport)
 {
 	struct smbd_open_socket *s;
 	uint16_t port = 0;
 	int protocol = 0;
 	bool rebind = false;
+	int err = 0;
 
 	switch (transport->type) {
 	case SMB_TRANSPORT_TYPE_TCP:
@@ -1456,19 +1457,19 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		 * Should never happen
 		 */
 		smb_panic(__location__);
-		return false;
+		return EIO;
 	}
 
 	if (port == 0) {
 		/*
 		 * Transport not supported...
 		 */
-		return false;
+		return EPROTONOSUPPORT;
 	}
 
 	s = talloc_zero(parent, struct smbd_open_socket);
 	if (!s) {
-		return false;
+		return ENOMEM;
 	}
 
 	s->parent = parent;
@@ -1476,13 +1477,13 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 
 	s->fd = open_socket_in_protocol(SOCK_STREAM, protocol, ifss, port, rebind);
 	if (s->fd < 0) {
-		int err = -(s->fd);
+		err = -(s->fd);
 		DBG_ERR("open_socket_in_protocol failed: %s\n", strerror(err));
 		TALLOC_FREE(s);
 		/*
 		 * We ignore an error here, as we've done before
 		 */
-		return true;
+		return 0;
 	}
 
 	/* ready to listen */
@@ -1500,10 +1501,11 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	set_blocking(s->fd, False);
 
 	if (listen(s->fd, SMBD_LISTEN_BACKLOG) == -1) {
+		err = errno;
 		DBG_ERR("listen: %s\n", strerror(errno));
 		close(s->fd);
 		TALLOC_FREE(s);
-		return false;
+		return err;
 	}
 
 	s->fde = tevent_add_fd(ev_ctx,
@@ -1512,16 +1514,17 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			       smbd_accept_connection,
 			       s);
 	if (!s->fde) {
+		err = errno;
 		DBG_ERR("tevent_add_fd: %s\n", strerror(errno));
 		close(s->fd);
 		TALLOC_FREE(s);
-		return false;
+		return err;
 	}
 	tevent_fd_set_close_fn(s->fde, smbd_open_socket_close_fn);
 
 	DLIST_ADD_END(parent->sockets, s);
 
-	return true;
+	return 0;
 }
 
 static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
@@ -1962,13 +1965,13 @@ static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 	for (ti = 0; ti < ts->num_transports; ti++) {
 		const struct smb_transport *t =
 			&ts->transports[ti];
-		bool ok;
+		int ret = 0;
 
-		ok = smbd_open_one_socket(parent,
-					  ev_ctx,
-					  ifss,
-					  t);
-		if (!ok) {
+		ret = smbd_open_one_socket(parent,
+					   ev_ctx,
+					   ifss,
+					   t);
+		if (ret != 0) {
 			continue;
 		}
 
