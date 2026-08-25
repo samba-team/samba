@@ -570,7 +570,7 @@ static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req)
 		return;
 	}
 
-	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
 	timeout = timeval_sum(&smb2req->request_time, &timeout);
 
 	subreq = delay_for_handle_lease_break_send(state,
@@ -738,7 +738,7 @@ static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
 		return;
 	}
 
-	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
 	timeout = timeval_sum(&state->smb2req->request_time, &timeout);
 
 	subreq = delay_for_handle_lease_break_send(state,
@@ -904,7 +904,7 @@ static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
 		return;
 	}
 
-	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
 	timeout = timeval_sum(&state->smb2req->request_time, &timeout);
 
 	subreq = delay_for_handle_lease_break_send(state,

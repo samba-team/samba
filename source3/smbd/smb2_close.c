@@ -362,7 +362,7 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 			goto do_close;
 		}
 
-		timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+		timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
 		timeout = timeval_sum(&smb2req->request_time, &timeout);
 
 		subreq = delay_for_handle_lease_break_send(req,
