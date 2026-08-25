@@ -288,14 +288,6 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	domain->children = talloc_zero_array(domain,
-					     struct winbindd_child,
-					     lp_winbind_max_domain_connections());
-	if (domain->children == NULL) {
-		TALLOC_FREE(domain);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	domain->queue = tevent_queue_create(domain, "winbind_domain");
 	if (domain->queue == NULL) {
 		TALLOC_FREE(domain);
@@ -998,7 +990,7 @@ static void terminate_child(struct tevent_req *subreq)
 	}
 
 	for (ci = 0; ci < talloc_array_length(d->children); ci++) {
-		c = &d->children[ci];
+		c = d->children[ci];
 
 		if (c->pid != 0) {
 			/*
@@ -1026,7 +1018,7 @@ static void terminate_domain(struct tevent_req *subreq)
 	subreq = NULL;
 
 	for (ci = 0; ci < talloc_array_length(d->children); ci++) {
-		struct winbindd_child *c = &d->children[ci];
+		struct winbindd_child *c = d->children[ci];
 
 		if (c->pid == 0) {
 			continue;
@@ -1112,7 +1104,7 @@ static bool remove_trusted_domains_dc(void)
 		}
 
 		for (ci = 0; ci < talloc_array_length(d->children); ci++) {
-			c = &d->children[ci];
+			c = d->children[ci];
 
 			if (c->pid == 0) {
 				continue;

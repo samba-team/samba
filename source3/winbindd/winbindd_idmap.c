@@ -79,12 +79,26 @@ NTSTATUS init_idmap_child(TALLOC_CTX *mem_ctx)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	static_idmap_child = talloc_zero(mem_ctx, struct winbindd_child);
-	if (static_idmap_child == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	/*
+	 * Setup the child, but disable the queue
+	 * for now.
+	 *
+	 * It means that wb_child_request_waited()
+	 * is never reached and can't call
+	 * fork_domain_child().
+	 *
+	 * The queue will be enabled in
+	 * wb_parent_idmap_setup_lookupname_next()
+	 * when everything is ready.
+	 */
+	setup_child(NULL, /* domain */
+		    mem_ctx,
+		    &static_idmap_child,
+		    "log.winbindd",
+		    "idmap");
+	tevent_queue_stop(static_idmap_child->queue);
 
-	subreq = wb_parent_idmap_setup_send(static_idmap_child,
+	subreq = wb_parent_idmap_setup_send(mem_ctx,
 					    global_event_context());
 	if (subreq == NULL) {
 		/*
@@ -344,9 +358,9 @@ static void wb_parent_idmap_setup_lookupname_next(struct tevent_req *req)
  next_domain:
 	if (state->dom_idx == state->cfg->num_doms) {
 		/*
-		 * We're done, so start the idmap child
+		 * We're done, so activate the idmap child
 		 */
-		setup_child(NULL, static_idmap_child, "log.winbindd", "idmap");
+		tevent_queue_start(static_idmap_child->queue);
 		static_parent_idmap_config.initialized = true;
 		tevent_req_done(req);
 		return;
