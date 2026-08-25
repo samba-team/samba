@@ -55,11 +55,10 @@ NTSTATUS init_locator_child(TALLOC_CTX *mem_ctx)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	static_locator_child = talloc_zero(mem_ctx, struct winbindd_child);
-	if (static_locator_child == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	setup_child(NULL, static_locator_child, "log.winbindd", "locator");
+	setup_child(NULL, /* domain */
+		    mem_ctx,
+		    &static_locator_child,
+		    "log.winbindd",
+		    "locator");
 	return NT_STATUS_OK;
 }

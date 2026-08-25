@@ -154,7 +154,7 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 	ndr_print_NTSTATUS(ndr, "last_status", r->last_status);
 	ndr_print_winbindd_cm_conn(ndr, "conn", &r->conn);
 	for (i=0; i<talloc_array_length(r->children); i++) {
-		ndr_print_winbindd_child(ndr, "children", &r->children[i]);
+		ndr_print_winbindd_child(ndr, "children", r->children[i]);
 	}
 	ndr_print_ptr(ndr, "check_online_event", r->check_online_event);
 	ndr->depth--;

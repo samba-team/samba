@@ -212,7 +212,7 @@ struct winbindd_domain {
 
 	/* The child pid we're talking to */
 
-	struct winbindd_child *children;
+	struct winbindd_child **children;
 
 	struct tevent_queue *queue;
 	struct dcerpc_binding_handle *binding_handle;

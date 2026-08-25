@@ -63,7 +63,7 @@ static void forall_domain_children(bool (*fn)(struct winbindd_child *c,
 		size_t i;
 
 		for (i = 0; i < talloc_array_length(d->children); i++) {
-			struct winbindd_child *c = &d->children[i];
+			struct winbindd_child *c = d->children[i];
 			bool ok;
 
 			if (c->pid == 0) {
@@ -430,14 +430,14 @@ static void child_socket_readable(struct tevent_context *ev,
 
 static struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
 {
-	struct winbindd_child *shortest = &domain->children[0];
+	struct winbindd_child *shortest = domain->children[0];
 	struct winbindd_child *current;
 	size_t i;
 
 	for (i=0; i<talloc_array_length(domain->children); i++) {
 		size_t shortest_len, current_len;
 
-		current = &domain->children[i];
+		current = domain->children[i];
 		current_len = tevent_queue_length(current->queue);
 
 		if (current_len == 0) {
@@ -800,13 +800,18 @@ static void child_process_request(struct winbindd_child *child,
 	state->response->result = winbindd_dual_ndrcmd(domain, state);
 }
 
-void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
+void setup_child(struct winbindd_domain *domain,
+		 TALLOC_CTX *mem_ctx,
+		 struct winbindd_child **_child,
 		 const char *logprefix,
 		 const char *logname)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	TALLOC_CTX *mem_ctx = NULL;
+	struct winbindd_child *child = NULL;
+
+	child = talloc_zero(mem_ctx, struct winbindd_child);
+	SMB_ASSERT(child != NULL);
 
 	if (logprefix && logname) {
 		char *logbase = NULL;
@@ -827,32 +832,28 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 			}
 		}
 
-		if (asprintf(&child->logfilename, "%s/%s-%s",
-			     logbase, logprefix, logname) < 0) {
-			SAFE_FREE(logbase);
-			smb_panic("Internal error: asprintf failed");
-		}
-
+		child->logfilename = talloc_asprintf(child,
+						     "%s/%s-%s",
+						     logbase,
+						     logprefix,
+						     logname);
 		SAFE_FREE(logbase);
+		SMB_ASSERT(child->logfilename != NULL);
 	} else {
 		smb_panic("Internal error: logprefix == NULL && "
 			  "logname == NULL");
 	}
 
-	if (domain != NULL) {
-		mem_ctx = domain->children;
-	} else {
-		mem_ctx = child;
-	}
-
 	child->pid = 0;
 	child->sock = -1;
 	child->domain = domain;
-	child->queue = tevent_queue_create(mem_ctx, "winbind_child");
+	child->queue = tevent_queue_create(child, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
 
-	child->binding_handle = wbint_binding_handle(mem_ctx, NULL, child);
+	child->binding_handle = wbint_binding_handle(child, NULL, child);
 	SMB_ASSERT(child->binding_handle != NULL);
+
+	*_child = child;
 }
 
 struct winbind_child_died_state {
