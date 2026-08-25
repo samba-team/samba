@@ -87,7 +87,6 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 	char *client_name = NULL;
 	char *server_name = NULL;
 	char *netbios_name = NULL;
-	char *realm = NULL;
 	bool password_change = false;
 	krb5_const_principal client_princ;
 	DATA_BLOB int_data = { NULL, 0 };
@@ -106,17 +105,15 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	}
 
-	if (krb5_princ_size(context, kdcreq->server) == 2 &&
-	    ks_is_kadmin_changepw(context, kdcreq->server)) {
-		code = krb5_get_default_realm(context, &realm);
-		if (code) {
-			goto done;
-		}
-
-		if (ks_data_eq_string(kdcreq->server->realm, realm)) {
-			password_change = true;
-		}
-	}
+	/*
+	 * Use the validated server entry rather than the principal as sent by
+	 * the client.  Windows can use the NetBIOS domain as the realm in a
+	 * canonicalizing request for kadmin/changepw.  The KDB lookup accepts
+	 * that alias and marks only the local password-change service with
+	 * KRB5_KDB_PWCHANGE_SERVICE.
+	 */
+	password_change = server != NULL &&
+		(server->attributes & KRB5_KDB_PWCHANGE_SERVICE) != 0;
 
 	code = krb5_unparse_name(context, kdcreq->server, &server_name);
 	if (code) {
@@ -157,7 +154,6 @@ krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 		}
 	}
 done:
-	free(realm);
 	free(server_name);
 	free(client_name);
 	free(netbios_name);
