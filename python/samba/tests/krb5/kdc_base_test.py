@@ -3633,6 +3633,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 expected_cname=None,
                 expected_sid=None,
                 sname=None, realm=None,
+                expected_crealm=None, expected_srealm=None,
                 expected_groups=None,
                 unexpected_groups=None,
                 pac_request=True, expect_pac=True,
@@ -3656,6 +3657,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      str(expected_flags), str(unexpected_flags),
                      expected_account_name, expected_upn_name, expected_sid,
                      str(sname), str(realm),
+                     str(expected_crealm), str(expected_srealm),
                      str(expected_groups),
                      str(unexpected_groups),
                      str(expected_cname),
@@ -3770,7 +3772,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         padata = [ts_enc_padata]
 
-        expected_realm = realm.upper()
+        if expected_srealm is None:
+            expected_srealm = realm.upper()
+        if expected_crealm is None:
+            expected_crealm = expected_srealm
 
         rep, kdc_exchange_dict = self._test_as_exchange(
             creds=creds,
@@ -3779,9 +3784,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             sname=sname,
             till=till,
             expected_error_mode=0,
-            expected_crealm=expected_realm,
+            expected_crealm=expected_crealm,
             expected_cname=expected_cname,
-            expected_srealm=expected_realm,
+            expected_srealm=expected_srealm,
             expected_sname=expected_sname,
             expected_account_name=expected_account_name,
             expected_upn_name=expected_upn_name,

@@ -19,6 +19,7 @@
 
 import sys
 import os
+import time
 
 sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -28,6 +29,7 @@ from functools import partial
 from samba import generate_random_password
 from samba.dcerpc import krb5pac
 from samba.sd_utils import SDUtils
+from samba.tests.pso import PasswordSettings
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.rfc4120_constants import (
@@ -581,6 +583,55 @@ class KpasswdTests(KDCBaseTest):
                               expected_code,
                               expected_msg,
                               mode=self.KpasswdMode.CHANGE)
+
+    def _kpasswd_change_expired_password_short_realm(self, creds):
+        # Get an initial ticket to kpasswd using Windows-style KDC options and
+        # the short (NetBIOS) realm.
+        expected_srealm = (creds.get_domain() if self.kadmin_is_tgs
+                           else creds.get_realm()).upper()
+        ticket = self.get_tgt(
+            creds,
+            sname=self.get_kpasswd_sname(),
+            realm=creds.get_domain(),
+            expected_crealm=creds.get_realm().upper(),
+            expected_srealm=expected_srealm,
+            kdc_options='forwardable,renewable,canonicalize,renewable-ok')
+
+        expected_code = KPASSWD_SUCCESS
+        expected_msg = b'Password changed'
+
+        # Change the password and confirm that the new password authenticates.
+        new_password = generate_random_password(32, 32)
+        self.kpasswd_exchange(ticket,
+                              new_password,
+                              expected_code,
+                              expected_msg,
+                              mode=self.KpasswdMode.CHANGE)
+
+        creds.update_password(new_password)
+        self.get_tgt(creds, fresh=True)
+
+    # Test the Windows password-change flow for pwdLastSet=0. Windows requests
+    # kadmin/changepw using the NetBIOS domain as the realm and asks the KDC to
+    # canonicalize it.
+    def test_kpasswd_change_must_change_password_short_realm(self):
+        creds = self._get_creds(expired=True)
+        self._kpasswd_change_expired_password_short_realm(creds)
+
+    # Test the same Windows flow after the password naturally expires by age.
+    def test_kpasswd_change_aged_password_short_realm(self):
+        creds = self._get_creds()
+        samdb = self.get_samdb()
+
+        short_expiry_pso = PasswordSettings(self.get_new_username(),
+                                            samdb,
+                                            precedence=200,
+                                            password_age_max=1)
+        self.addCleanup(samdb.delete, short_expiry_pso.dn)
+        short_expiry_pso.apply_to(str(creds.get_dn()))
+        time.sleep(1)
+
+        self._kpasswd_change_expired_password_short_realm(creds)
 
     # Check the lifetime of a kpasswd ticket is not more than two minutes.
     def test_kpasswd_ticket_lifetime(self):
