@@ -29,8 +29,16 @@ void setup_domain_child(struct winbindd_domain *domain)
 {
 	int i;
 
-        for (i=0; i<talloc_array_length(domain->children); i++) {
-                setup_child(domain, &domain->children[i],
-                            "log.wb", domain->name);
+	domain->children = talloc_zero_array(domain,
+					     struct winbindd_child *,
+					     lp_winbind_max_domain_connections());
+	SMB_ASSERT(domain->children != NULL);
+
+	for (i=0; i<talloc_array_length(domain->children); i++) {
+		setup_child(domain,
+			    domain->children,
+			    &domain->children[i],
+			    "log.wb",
+			    domain->name);
 	}
 }
