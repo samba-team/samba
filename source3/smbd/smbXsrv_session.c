@@ -2636,7 +2636,7 @@ static struct files_struct *smbXsrv_wait_for_handle_lease_break_fn(
 	struct delay_for_handle_lease_break_state *state = private_data;
 	struct tevent_req *subreq = NULL;
 	struct share_mode_lock *lck = NULL;
-	struct timeval timeout = timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0);
+	struct timeval timeout = timeval_current_ofs(OPLOCK_BREAK_TIMEOUT*2, 0);
 	bool match;
 	NTSTATUS status;
 
