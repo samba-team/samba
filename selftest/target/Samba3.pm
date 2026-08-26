@@ -1397,6 +1397,7 @@ sub setup_ad_member_idmap_rid
         map to guest = bad user
 	winbind expand groups = 10
 	server signing = required
+	winbind use s4u2self = yes
 ";
 
 	my $ret = $self->provision(
