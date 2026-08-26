@@ -813,6 +813,43 @@ static bool dnsserver_db_msg_add_dnsproperty(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+static enum ndr_err_code dnsserver_push_property(
+				TALLOC_CTX *mem_ctx,
+				DATA_BLOB *blob,
+				struct dnsp_DnsProperty *prop,
+				const struct DNS_RPC_NAME_AND_PARAM *n_p)
+{
+	enum ndr_err_code err;
+
+	switch (prop->id) {
+	case DSPROPERTY_ZONE_AGING_STATE:
+		prop->data.aging_enabled = n_p->dwParam;
+		break;
+	case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
+		prop->data.norefresh_hours = n_p->dwParam;
+		break;
+	case DSPROPERTY_ZONE_REFRESH_INTERVAL:
+		prop->data.refresh_hours = n_p->dwParam;
+		break;
+	case DSPROPERTY_ZONE_ALLOW_UPDATE:
+		prop->data.allow_update_flag = n_p->dwParam;
+		break;
+	default:
+		return NDR_ERR_BAD_SWITCH;
+	}
+
+	err = ndr_push_struct_blob(
+		blob,
+		mem_ctx,
+		prop,
+		(ndr_push_flags_fn_t)ndr_push_dnsp_DnsProperty);
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		return err;
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
 WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 				   struct dnsserver_zone *z,
 				   struct DNS_RPC_NAME_AND_PARAM *n_p)
@@ -823,6 +860,7 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 	const char * const attrs[] = {"dNSProperty", NULL};
 	struct ldb_result *res = NULL;
 	int i, ret, prop_id;
+	bool replaced = false;
 
 	if (strcasecmp(n_p->pszNodeName, "Aging") == 0) {
 		z->zoneinfo->fAging = n_p->dwParam;
@@ -863,10 +901,25 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 
 	element = ldb_msg_find_element(res->msgs[0], "dNSProperty");
 	if (element == NULL) {
-		DBG_ERR("dnsserver: zone %s has no properties.\n",
-			ldb_dn_get_linearized(z->zone_dn));
-		TALLOC_FREE(tmp_ctx);
-		return WERR_INTERNAL_DB_ERROR;
+		/*
+		 * If there are no values yet,
+		 * just create an empty element
+		 * where we can add new values below.
+		 *
+		 * We'll force LDB_FLAG_MOD_REPLACE below,
+		 * so we use 0 here.
+		 */
+		ret = ldb_msg_add_empty(res->msgs[0],
+					"dNSProperty",
+					0,
+					&element);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("%s: ldb_msg_add_empty(dNSProperty) - %s\n",
+				ldb_dn_get_linearized(z->zone_dn),
+				ldb_strerror(ret));
+			TALLOC_FREE(tmp_ctx);
+			return WERR_INTERNAL_DB_ERROR;
+		}
 	}
 
 	for (i = 0; i < element->num_values; i++) {
@@ -928,37 +981,59 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 		}
 
 		if (prop->id == prop_id) {
-			switch (prop_id) {
-			case DSPROPERTY_ZONE_AGING_STATE:
-				prop->data.aging_enabled = n_p->dwParam;
-				break;
-			case DSPROPERTY_ZONE_NOREFRESH_INTERVAL:
-				prop->data.norefresh_hours = n_p->dwParam;
-				break;
-			case DSPROPERTY_ZONE_REFRESH_INTERVAL:
-				prop->data.refresh_hours = n_p->dwParam;
-				break;
-			case DSPROPERTY_ZONE_ALLOW_UPDATE:
-				prop->data.allow_update_flag = n_p->dwParam;
-				break;
-			}
-
-			err = ndr_push_struct_blob(
-				&(element->values[i]),
-				element->values,
-				prop,
-				(ndr_push_flags_fn_t)ndr_push_dnsp_DnsProperty);
+			err = dnsserver_push_property(element->values,
+						      &element->values[i],
+						      prop,
+						      n_p);
 			if (!NDR_ERR_CODE_IS_SUCCESS(err)){
 				DBG_ERR("dnsserver: couldn't PUSH dns prop id "
-					"%d in zone %s\n",
+					"%d in zone %s - %s\n",
 					prop->id,
-					ldb_dn_get_linearized(z->zone_dn));
+					ldb_dn_get_linearized(z->zone_dn),
+					ndr_errstr(err));
 				TALLOC_FREE(tmp_ctx);
 				return WERR_INTERNAL_DB_ERROR;
 			}
+
+			replaced = true;
 		}
 
 		TALLOC_FREE(prop);
+	}
+
+	/*
+	 * If it's not replaced we need to add a new one
+	 */
+	if (!replaced) {
+		struct dnsp_DnsProperty prop = {
+			.id = prop_id,
+		};
+		DATA_BLOB blob = {};
+
+		err = dnsserver_push_property(element,
+					      &blob,
+					      &prop,
+					      n_p);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)){
+			DBG_ERR("dnsserver: couldn't PUSH dns prop id "
+				"%d in zone %s - %s\n",
+				prop.id,
+				ldb_dn_get_linearized(z->zone_dn),
+				ndr_errstr(err));
+			TALLOC_FREE(tmp_ctx);
+			return WERR_INTERNAL_DB_ERROR;
+		}
+
+		ret = ldb_msg_add_steal_value(res->msgs[0],
+					      "dNSProperty",
+					      &blob);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("%s: ldb_msg_add_steal_value(dNSProperty) - %s\n",
+				ldb_dn_get_linearized(z->zone_dn),
+				ldb_strerror(ret));
+			TALLOC_FREE(tmp_ctx);
+			return WERR_INTERNAL_DB_ERROR;
+		}
 	}
 
 	element->flags = LDB_FLAG_MOD_REPLACE;
