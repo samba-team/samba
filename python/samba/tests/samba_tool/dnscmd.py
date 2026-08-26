@@ -116,11 +116,12 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 "SRV": bad_srv
         }
 
-    def resetZone(self):
+    def resetZone(self, clear_properties=False):
         self.deleteZone()
-        self.addZone()
+        self.addZone(clear_properties=clear_properties)
 
-    def addZone(self):
+    def addZone(self, clear_properties=False):
+        self.zone_dn = None
         self.zone = "zone"
         result, out, err = self.runsubcmd("dns",
                                           "zonecreate",
@@ -128,6 +129,24 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           self.zone,
                                           self.creds_string)
         self.assertCmdSuccess(result, out, err)
+        zones = self.samdb.search(base="DC=DomainDnsZones,%s"
+                                  % self.samdb.get_default_basedn(),
+                                  scope=ldb.SCOPE_SUBTREE,
+                                  expression="(objectClass=dnsZone)",
+                                  attrs=["cn"])
+
+        for zone in zones:
+            if self.zone in str(zone.dn):
+                self.zone_dn = zone.dn
+                break
+        self.assertIsNotNone(self.zone_dn)
+        if clear_properties:
+            msg_dict = {
+                "dn": self.zone_dn,
+                "dNSProperty": []
+            }
+            msg = ldb.Message.from_dict(self.samdb, msg_dict, ldb.FLAG_MOD_DELETE)
+            self.samdb.modify(msg)
 
     def deleteZone(self):
         result, out, err = self.runsubcmd("dns",
@@ -948,26 +967,48 @@ class DnsCmdTestCase(SambaToolCmdTest):
         self.assertTrue(out != '')
 
     def test_zoneoptions_aging(self):
-        for options, vals, error in (
-                (['--aging=1'], {'fAging': 'TRUE'}, False),
-                (['--aging=0'], {'fAging': 'FALSE'}, False),
-                (['--aging=-1'], {'fAging': 'FALSE'}, True),
-                (['--aging=2'], {}, True),
-                (['--aging=2', '--norefreshinterval=1'], {}, True),
+        for options, vals, error, clear_properties in (
+                (['--aging=1'], {'fAging': 'TRUE'}, False, False),
+                (['--aging=0'], {'fAging': 'FALSE'}, False, False),
+                (['--aging=-1'], {'fAging': 'FALSE'}, True, False),
+                (['--aging=2'], {}, True, False),
+                (['--aging=2', '--norefreshinterval=1'], {}, True, False),
                 (['--aging=1', '--norefreshinterval=1'],
-                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '1'}, False),
+                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '1'}, False, False),
                 # setting --norefreshinterval=0 results in the server default
                 (['--aging=1', '--norefreshinterval=0'],
-                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '168'}, False),
+                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '168'}, False, False),
                 (['--aging=0', '--norefreshinterval=99', '--refreshinterval=99'],
                  {'fAging': 'FALSE',
                   'dwNoRefreshInterval': '99',
-                  'dwRefreshInterval': '99'}, False),
+                  'dwRefreshInterval': '99'}, False, False),
                 (['--aging=0', '--norefreshinterval=-99', '--refreshinterval=99'],
-                 {}, True),
-                (['--refreshinterval=9999999'], {}, True),
-                (['--norefreshinterval=9999999'], {}, True),
+                 {}, True, False),
+                (['--refreshinterval=9999999'], {}, True, False),
+                (['--norefreshinterval=9999999'], {}, True, False),
+                (['--aging=1', '--norefreshinterval=100', '--refreshinterval=200'],
+                 {'fAging': 'TRUE',
+                  'dwNoRefreshInterval': '100',
+                  'dwRefreshInterval': '200'},
+                  False, True),
+                (['--aging=1'],
+                 {'fAging': 'TRUE',
+                  'dwNoRefreshInterval': '168',
+                  'dwRefreshInterval': '168'},
+                  False, True),
+                (['--norefreshinterval=100'],
+                 {'fAging': 'FALSE',
+                  'dwNoRefreshInterval': '100',
+                  'dwRefreshInterval': '168'},
+                  False, True),
+                (['--refreshinterval=200'],
+                 {'fAging': 'FALSE',
+                  'dwNoRefreshInterval': '168',
+                  'dwRefreshInterval': '200'},
+                  False, True),
                 ):
+            if clear_properties:
+                self.resetZone(clear_properties=True)
             result, out, err = self.runsubcmd("dns",
                                               "zoneoptions",
                                               os.environ["SERVER"],
