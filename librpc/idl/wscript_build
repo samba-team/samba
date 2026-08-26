@@ -10,7 +10,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        mgmt.idl netlogon.idl
                        svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
                        witness.idl clusapi.idl
-                       mdssvc.idl''',
+                       mdssvc.idl gkdi.idl''',
                     options='--header --ndr-parser --server-compat --server --client --python',
                     output_dir='../gen_ndr')
 
@@ -27,7 +27,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
 
 # Services that we only have a client for
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''atsvc.idl gkdi.idl''',
+                    '''atsvc.idl''',
                     options='--header --ndr-parser --client --python',
                     output_dir='../gen_ndr')
 

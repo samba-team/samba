@@ -2087,7 +2087,7 @@ sub provision_ad_dc()
 	dos filemode = yes
 	check parent directory delete on close = yes
 
-        dcerpc endpoint servers = -winreg -srvsvc
+        dcerpc endpoint servers = +gkdi -winreg -srvsvc
 
 	printcap name = /dev/null
 
