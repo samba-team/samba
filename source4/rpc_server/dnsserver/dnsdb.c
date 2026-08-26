@@ -818,7 +818,6 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 				   struct DNS_RPC_NAME_AND_PARAM *n_p)
 {
 	struct ldb_message_element *element = NULL;
-	struct dnsp_DnsProperty *prop = NULL;
 	enum ndr_err_code err;
 	TALLOC_CTX *tmp_ctx = NULL;
 	const char * const attrs[] = {"dNSProperty", NULL};
@@ -871,14 +870,16 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 	}
 
 	for (i = 0; i < element->num_values; i++) {
-		prop = talloc_zero(element, struct dnsp_DnsProperty);
+		struct dnsp_DnsProperty *prop = NULL;
+
+		prop = talloc_zero(tmp_ctx, struct dnsp_DnsProperty);
 		if (prop == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		err = ndr_pull_struct_blob(
 			&(element->values[i]),
-			tmp_ctx,
+			prop,
 			prop,
 			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty);
 		if (!NDR_ERR_CODE_IS_SUCCESS(err)){
@@ -889,18 +890,12 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 			 * formed property with a 0 length and cause a
 			 * failure here
 			 */
-			struct dnsp_DnsProperty_short
-				*short_property
-				= talloc_zero(element,
-					      struct dnsp_DnsProperty_short);
-			if (short_property == NULL) {
-				TALLOC_FREE(tmp_ctx);
-				return WERR_NOT_ENOUGH_MEMORY;
-			}
+			struct dnsp_DnsProperty_short short_property = {};
+
 			err = ndr_pull_struct_blob_all(
 				&(element->values[i]),
-				tmp_ctx,
-				short_property,
+				prop,
+				&short_property,
 				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty_short);
 			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 				/*
@@ -915,6 +910,7 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 					   i,
 					   ldb_dn_get_linearized(z->zone_dn),
 					   prop_id);
+				TALLOC_FREE(prop);
 				continue;
 			}
 
@@ -924,9 +920,9 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 			 * re-push
 			 */
 			*prop = (struct dnsp_DnsProperty){
-				.namelength = short_property->namelength,
-				.id = short_property->id,
-				.name = short_property->name
+				.namelength = short_property.namelength,
+				.id = short_property.id,
+				.name = short_property.name
 				/* .data will be filled in below */
 			};
 		}
@@ -949,7 +945,7 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 
 			err = ndr_push_struct_blob(
 				&(element->values[i]),
-				tmp_ctx,
+				element->values,
 				prop,
 				(ndr_push_flags_fn_t)ndr_push_dnsp_DnsProperty);
 			if (!NDR_ERR_CODE_IS_SUCCESS(err)){
@@ -961,6 +957,8 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 				return WERR_INTERNAL_DB_ERROR;
 			}
 		}
+
+		TALLOC_FREE(prop);
 	}
 
 	element->flags = LDB_FLAG_MOD_REPLACE;
