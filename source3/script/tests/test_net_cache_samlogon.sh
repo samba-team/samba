@@ -5,7 +5,7 @@
 
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: $0 SERVER SHARE USER PASS
+Usage: $0 SERVER SHARE USER PASS [S4U2SELF]
 EOF
 	exit 1
 fi
@@ -14,6 +14,10 @@ SERVER=$1
 SHARE=$2
 USER=$3
 PASS=$4
+EXTRA=""
+if [ $# -eq 5 ]; then
+	EXTRA=$5
+fi
 smbclient=$BINDIR/smbclient
 
 failed=0
@@ -51,5 +55,21 @@ testit_expect_failure "net cache samlogon show $usersid --option=netsamlogoncach
 	$BINDIR/net cache samlogon show $usersid \
 	--option=netsamlogoncache:timeout=$timeout ||
 	failed=$(expr $failed + 1)
+# Make sure samlogon cache entry for $usersid is removed even without
+# timeout
+testit_expect_failure "net cache samlogon show $usersid" \
+	$BINDIR/net cache samlogon show $usersid ||
+	failed=$(expr $failed + 1)
+
+# try to fill it up via winbind s4u2self feature and
+# check again for the entry
+test x"$EXTRA" = x"S4U2SELF" && {
+	testit "wbinfo --user-domgroups=$usersid" \
+		$BINDIR/wbinfo --user-domgroups=$usersid || \
+		failed=$(expr $failed + 1)
+	testit "net cache samlogon show $usersid" \
+		$BINDIR/net cache samlogon show $usersid || \
+		failed=$(expr $failed + 1)
+}
 
 testok $0 $failed

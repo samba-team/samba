@@ -1736,6 +1736,9 @@ plantestsuite("samba3.blackbox.durable_v2_delay", "simpleserver:local",
 plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
                '$SERVER', 'tmp', '$DC_USERNAME', '$DC_PASSWORD'])
+plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member_idmap_rid:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
+               '$SERVER', 'tmp', '$DC_USERNAME', '$DC_PASSWORD', "S4U2SELF"])
 
 plantestsuite("samba3.blackbox.net_rpc_share_allowedusers", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_net_rpc_share_allowedusers.sh"),
