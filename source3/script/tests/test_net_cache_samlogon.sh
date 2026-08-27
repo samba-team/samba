@@ -22,6 +22,9 @@ incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 . $incdir/common_test_fns.inc
 
+# Ensure samlogon cache is empty
+testit "net cache samlogon flush" $BINDIR/net cache samlogon flush || failed=$(expr $failed + 1)
+
 # Ensure the samlogon cache is primed
 test_smbclient "Prime samlogon cache" 'exit' //$SERVER/$SHARE -U$USER%$PASS || failed=$(expr $failed + 1)
 
