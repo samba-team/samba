@@ -278,7 +278,7 @@ interface epmapper
 		[in,ptr]        rpc_if_id_t        *interface_id,
 		[in]            epm_VersionOption  vers_option,
 		[in,out]        policy_handle      *entry_handle,
-		[in]            uint32             max_ents,
+		[in, range(0,500)] uint32          max_ents,
 		[out]           uint32             *num_ents,
 		[out, length_is(*num_ents), size_is(max_ents)]  epm_entry_t entries[]
 		);
@@ -295,7 +295,7 @@ interface epmapper
 		[in,ptr]       GUID            *object,
 		[in,ptr]       epm_twr_t       *map_tower,
 		[in,out]        policy_handle   *entry_handle,
-		[in]            uint32          max_towers,
+		[in, range(0,500)] uint32       max_towers,
 		[out]           uint32          *num_towers,
 		[out, length_is(*num_towers), size_is(max_towers)]  epm_twr_p_t towers[]
 		);
