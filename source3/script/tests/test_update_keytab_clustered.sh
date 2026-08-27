@@ -108,9 +108,9 @@ test_pwd_change()
 	# if keytab was updated the bigest vno should be incremented by one
 	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
 	new_vno_node0=$vno
-	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.1/keytab0"
 	new_vno_node1=$vno
-	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.2/keytab0"
 	new_vno_node2=$vno
 
 	if [ ! "$new_vno_node0" -eq $((old_vno_node0 + 1)) ] ; then
