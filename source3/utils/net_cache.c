@@ -548,6 +548,24 @@ static int net_cache_samlogon_delete(struct net_context *c,
 	return 0;
 }
 
+static int net_cache_samlogon_flush(struct net_context *c,
+				    int argc,
+				    const char **argv)
+{
+	if (c->display_usage) {
+		d_printf(  "%s\n"
+			   "net cache samlogon flush\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Flush entire samlogon cache database."));
+		return 0;
+	}
+
+	netsamlogon_cache_flush();
+
+	return 0;
+}
+
 static int net_cache_samlogon(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -582,6 +600,14 @@ static int net_cache_samlogon(struct net_context *c, int argc, const char **argv
 			N_("Delete samlogon cache entry"),
 			N_("net cache samlogon delete SID\n"
 			   "    Delete samlogon cache entry\n")
+		},
+		{
+			"flush",
+			net_cache_samlogon_flush,
+			NET_TRANSPORT_LOCAL,
+			N_("Flush entire samlogon cache"),
+			N_("net cache samlogon flush\n"
+			   "    Flush entire samlogon cache database\n")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};

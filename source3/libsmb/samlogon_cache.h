@@ -31,6 +31,7 @@ struct dom_sid;
 struct netr_SamInfo3;
 
 bool netsamlogon_cache_init(void);
+void netsamlogon_cache_flush(void);
 void netsamlogon_clear_cached_user(const struct dom_sid *user_sid);
 bool netsamlogon_cache_store(const char *username,
 			     struct netr_SamInfo3 *info3);

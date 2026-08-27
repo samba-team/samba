@@ -95,6 +95,23 @@ clear:
 }
 
 /***********************************************************************
+ Clear the whole cache
+***********************************************************************/
+
+void netsamlogon_cache_flush(void)
+{
+	if (!netsamlogon_cache_init()) {
+		DBG_ERR("cannot open %s for write!\n",
+			NETSAMLOGON_TDB);
+		return;
+	}
+
+	DBG_DEBUG("Wipe all!\n");
+
+	tdb_wipe_all(netsamlogon_tdb);
+}
+
+/***********************************************************************
  Clear cache getpwnam and getgroups entries from the winbindd cache
 ***********************************************************************/
 
