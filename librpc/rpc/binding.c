@@ -33,7 +33,8 @@
 #undef strcasecmp
 #undef strncasecmp
 
-#define MAX_PROTSEQ		10
+/* adjust MAX_PROTSEQ as necessary for the transports table below */
+#define MAX_PROTSEQ		3
 
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
