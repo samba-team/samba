@@ -1219,7 +1219,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_towe
 	}
 
 	/* Unknown transport */
-	return (unsigned int)-1;
+	return NCA_UNKNOWN;
 }
 
 _PUBLIC_ const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t)

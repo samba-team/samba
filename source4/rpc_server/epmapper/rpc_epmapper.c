@@ -236,7 +236,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 
 	transport = dcerpc_transport_by_tower(&r->in.map_tower->tower);
 
-	if (transport == -1) {
+	if (transport == NCA_UNKNOWN) {
 		DEBUG(2, ("Client requested unknown transport with levels: "));
 		for (i = 2; i < r->in.map_tower->tower.num_floors; i++) {
 			DEBUG(2, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
