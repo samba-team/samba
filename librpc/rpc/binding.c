@@ -899,7 +899,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_flags(struct dcerpc_binding *b,
 _PUBLIC_ NTSTATUS dcerpc_floor_get_uuid_full(const struct epm_floor *epm_floor,
 					     struct ndr_syntax_id *syntax)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
+	TALLOC_CTX *mem_ctx = talloc_init(__FUNCTION__);
 	struct ndr_pull *ndr;
 	enum ndr_err_code ndr_err;
 	uint16_t if_version=0;
