@@ -1192,8 +1192,7 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
 		}
 	}
 
-	/* Unknown transport */
-	return (unsigned int)-1;
+	return NCA_UNKNOWN;
 }
 
 _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower)
