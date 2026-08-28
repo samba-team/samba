@@ -3,21 +3,21 @@
 */
 
 
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 1997-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -203,7 +203,7 @@ void nbio_target_rate(double rate)
 
 void nbio_time_reset(void)
 {
-	children[nbio_id].starttime = timeval_current();	
+	children[nbio_id].starttime = timeval_current();
 }
 
 void nbio_time_delay(double targett)
@@ -292,23 +292,23 @@ void nb_alarm(int sig)
 	}
 
 	if (in_warmup) {
-		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \n", 
-		       num_connected, lines/nprocs, 
+		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \n",
+		       num_connected, lines/nprocs,
 		       nbio_result(), t);
 	} else if (in_cleanup) {
-		printf("%4d  %8d  %.2f MB/sec  cleanup %.0f sec   \n", 
-		       num_connected, lines/nprocs, 
+		printf("%4d  %8d  %.2f MB/sec  cleanup %.0f sec   \n",
+		       num_connected, lines/nprocs,
 		       nbio_result(), t);
 	} else {
-		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec  latency %.2f msec \n", 
-		       num_connected, lines/nprocs, 
+		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec  latency %.2f msec \n",
+		       num_connected, lines/nprocs,
 		       nbio_result(), t, nbio_latency() * 1.0e3);
 	}
 
 	fflush(stdout);
 next:
 	signal(SIGALRM, nb_alarm);
-	alarm(1);	
+	alarm(1);
 }
 
 void nbio_shmem(int n, int t_timelimit, int t_warmup)
@@ -366,7 +366,7 @@ static int find_handle(int handle, struct ftable **f_ret)
 			*f_ret = f;
 		return f->fd;
 	}
-	printf("(%d) ERROR: handle %d was not found\n", 
+	printf("(%d) ERROR: handle %d was not found\n",
 	       nbench_line_count, handle);
 	nb_exit(1);
 
@@ -380,7 +380,7 @@ static struct smbcli_state *c;
 /*
   a handler function for oplock break requests
 */
-static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, 
+static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid,
 			   uint16_t fnum, uint8_t level, void *private_data)
 {
 	struct smbcli_tree *tree = (struct smbcli_tree *)private_data;
@@ -406,20 +406,20 @@ static bool check_status(const char *op, NTSTATUS status, NTSTATUS ret)
 {
 	if ((NT_STATUS_EQUAL(ret, NT_STATUS_END_OF_FILE) ||
 	     NT_STATUS_EQUAL(ret, NT_STATUS_NET_WRITE_FAULT) ||
-	     NT_STATUS_EQUAL(ret, NT_STATUS_CONNECTION_RESET)) 
+	     NT_STATUS_EQUAL(ret, NT_STATUS_CONNECTION_RESET))
 		&& !NT_STATUS_EQUAL (status, ret))
 	{
 		return false;
 	}
 
 	if (!NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(ret)) {
-		printf("[%d] Error: %s should have failed with %s\n", 
+		printf("[%d] Error: %s should have failed with %s\n",
 		       nbench_line_count, op, nt_errstr(status));
 		nb_exit(1);
 	}
 
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(ret)) {
-		printf("[%d] Error: %s should have succeeded - %s\n", 
+		printf("[%d] Error: %s should have succeeded - %s\n",
 		       nbench_line_count, op, nt_errstr(ret));
 		nb_exit(1);
 	}
@@ -461,7 +461,7 @@ static bool nb_do_createx(struct ftable *f,
 			  NTSTATUS status,
 			  bool retry)
 {
-	union smb_open io;	
+	union smb_open io;
 	uint32_t desired_access;
 	NTSTATUS ret;
 	TALLOC_CTX *mem_ctx;
@@ -472,13 +472,13 @@ static bool nb_do_createx(struct ftable *f,
 	if (create_options & NTCREATEX_OPTIONS_DIRECTORY) {
 		desired_access = SEC_FILE_READ_DATA;
 	} else {
-		desired_access = 
-			SEC_FILE_READ_DATA | 
+		desired_access =
+			SEC_FILE_READ_DATA |
 			SEC_FILE_WRITE_DATA |
 			SEC_FILE_READ_ATTRIBUTE |
 			SEC_FILE_WRITE_ATTRIBUTE;
 		flags = NTCREATEX_FLAGS_EXTENDED |
-			NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+			NTCREATEX_FLAGS_REQUEST_OPLOCK |
 			NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	}
 
@@ -530,7 +530,7 @@ static bool nb_do_createx(struct ftable *f,
 	return true;
 }
 
-bool nb_createx(const char *fname, 
+bool nb_createx(const char *fname,
 	       unsigned int create_options, unsigned int create_disposition, int handle,
 	       NTSTATUS status)
 {
@@ -568,10 +568,10 @@ bool nb_writex(int handle, off_t offset, int size, int ret_size, NTSTATUS status
 		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.writex.out.nwritten != ret_size) {
-		printf("[%d] Warning: WriteX got count %d expected %d\n", 
+		printf("[%d] Warning: WriteX got count %d expected %d\n",
 		       nbench_line_count,
 		       io.writex.out.nwritten, ret_size);
-	}	
+	}
 
 	children[nbio_id].bytes += ret_size;
 
@@ -609,10 +609,10 @@ bool nb_write(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.write.out.nwritten != ret_size) {
-		printf("[%d] Warning: Write got count %d expected %d\n", 
+		printf("[%d] Warning: Write got count %d expected %d\n",
 		       nbench_line_count,
 		       io.write.out.nwritten, ret_size);
-	}	
+	}
 
 	children[nbio_id].bytes += ret_size;
 
@@ -734,11 +734,11 @@ bool nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.readx.out.nread != ret_size) {
-		printf("[%d] ERROR: ReadX got count %d expected %d\n", 
+		printf("[%d] ERROR: ReadX got count %d expected %d\n",
 		       nbench_line_count,
 		       io.readx.out.nread, ret_size);
 		nb_exit(1);
-	}	
+	}
 
 	children[nbio_id].bytes += ret_size;
 
@@ -898,8 +898,8 @@ bool nb_qfsinfo(int level, NTSTATUS status)
 	ret = smb_raw_fsinfo(c->tree, mem_ctx, &io);
 
 	talloc_free(mem_ctx);
-	
-	return check_status("Fsinfo", status, ret);	
+
+	return check_status("Fsinfo", status, ret);
 }
 
 /* callback function used for trans2 search */
@@ -923,7 +923,7 @@ bool nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 	io.t2ffirst.in.pattern = mask;
 	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE;
 	io.t2ffirst.in.storage_type = 0;
-			
+
 	ret = smb_raw_search_first(c->tree, mem_ctx, &io, NULL, findfirst_callback);
 
 	talloc_free(mem_ctx);
@@ -932,7 +932,7 @@ bool nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.t2ffirst.out.count != count) {
-		printf("[%d] Warning: got count %d expected %d\n", 
+		printf("[%d] Warning: got count %d expected %d\n",
 		       nbench_line_count,
 		       io.t2ffirst.out.count, count);
 	}
