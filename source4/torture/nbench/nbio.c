@@ -987,7 +987,9 @@ bool nb_deltree(const char *dname, bool retry)
 
 void nb_exit(int status)
 {
-	children[nbio_id].connected = false;
+	if (children != NULL) {
+		children[nbio_id].connected = false;
+	}
 	printf("[%d] client %d exiting with status %d\n",
 	       nbench_line_count, nbio_id, status);
 	exit(status);
