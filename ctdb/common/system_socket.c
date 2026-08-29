@@ -546,8 +546,8 @@ static int ip6_ll_multicast_build(struct sockaddr_ll *in,
 	uint8_t *in_sll_addr = (uint8_t *)in + offsetof(struct sockaddr_ll,
 							sll_addr);
 	struct sockaddr_ll *out_ll = &out->u.ll;
-	uint8_t *out_sll_addr = (uint8_t *)out_ll + offsetof(struct sockaddr_ll,
-							     sll_addr);
+	uint8_t *out_sll_addr =
+		(uint8_t *)&out->u.ss + offsetof(struct sockaddr_ll, sll_addr);
 
 	*out_ll = (struct sockaddr_ll) {
 		.sll_family = AF_PACKET,
