@@ -1207,7 +1207,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_towe
 			continue;
 		}
 
-		for (j = 0; j < transports[i].num_protocols && j < MAX_PROTSEQ; j++) {
+		for (j = 0; j < transports[i].num_protocols; j++) {
 			if (transports[i].protseq[j] != tower->floors[j+2].lhs.protocol) {
 				break;
 			}
@@ -1445,6 +1445,8 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Unable to find transport with id '%d'\n", binding->transport));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	SMB_ASSERT(num_protocols <= MAX_PROTSEQ);
 
 	tower->num_floors = 2 + num_protocols;
 	tower->floors = talloc_array(mem_ctx, struct epm_floor, tower->num_floors);
