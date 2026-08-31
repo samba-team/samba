@@ -356,20 +356,13 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	status = cli_credentials_set_secrets_lct(cred, lp_ctx, NULL,
 						 SECRETS_PRIMARY_DOMAIN_DN,
 						 filter, secrets_tdb_lct, secrets_tdb_password, &error_string);
-	if (secrets_tdb_password == NULL) {
+	if (secrets_tdb_lct == 0) {
 		secrets_tdb_password_more_recent = false;
 	} else if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
 	    || NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, status)) {
 		secrets_tdb_password_more_recent = true;
-	} else if (secrets_tdb_lct > cli_credentials_get_password_last_changed_time(cred)) {
+	} else if (secrets_tdb_lct >= cli_credentials_get_password_last_changed_time(cred)) {
 		secrets_tdb_password_more_recent = true;
-	} else if (secrets_tdb_lct == cli_credentials_get_password_last_changed_time(cred)) {
-		const char *pwd = cli_credentials_get_password(cred);
-		if (pwd == NULL || (strcmp(secrets_tdb_password, pwd) != 0)) {
-			secrets_tdb_password_more_recent = true;
-		} else {
-			secrets_tdb_password_more_recent = false;
-		}
 	} else {
 		secrets_tdb_password_more_recent = false;
 	}
