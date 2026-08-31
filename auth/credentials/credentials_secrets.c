@@ -25,6 +25,7 @@
 #include "lib/events/events.h"
 #include <ldb.h>
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
+#include "librpc/gen_ndr/secrets.h" /* for struct secrets_domain_info1 */
 #include "param/secrets.h"
 #include "system/filesys.h"
 #include "auth/credentials/credentials.h"
@@ -266,6 +267,14 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	return cli_credentials_set_machine_account_db_ctx(cred, lp_ctx, db_ctx);
 }
 
+static cli_credentials_secrets_domain_info_cb global_secrets_domain_info_cb;
+
+_PUBLIC_ void cli_credentials_set_global_secrets_domain_info_cb(
+		cli_credentials_secrets_domain_info_cb cb)
+{
+	global_secrets_domain_info_cb = cb;
+}
+
 /**
  * Fill in credentials for the machine trust account, from the
  * secrets.ldb or passed in handle to secrets.tdb (perhaps in CTDB).
@@ -285,6 +294,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	char *filter;
 	char *error_string = NULL;
 	const char *domain;
+	struct secrets_domain_info1 *tdb_info = NULL;
 	bool secrets_tdb_password_more_recent;
 	time_t secrets_tdb_lct = 0;
 	char *secrets_tdb_password = NULL;
@@ -305,7 +315,27 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	 * cli_credentials_set_secrets is to run as anonymous, so the domain is wiped */
 	domain = cli_credentials_get_domain(cred);
 
-	if (db_ctx) {
+	if (server_role < ROLE_ACTIVE_DIRECTORY_DC &&
+	    global_secrets_domain_info_cb != NULL)
+	{
+		/*
+		 * This indirectly calls
+		 * secrets_fetch_or_upgrade_domain_info()
+		 * as there would be a dependency loop
+		 * if it's called directly.
+		 */
+		status = global_secrets_domain_info_cb(domain,
+						       tmp_ctx,
+						       &tdb_info);
+		if (NT_STATUS_IS_OK(status)) {
+			secrets_tdb_lct = nt_time_to_full_time_t(
+					tdb_info->password_last_change);
+			secrets_tdb_secure_channel_type =
+				tdb_info->secure_channel_type;
+		} else {
+			tdb_info = NULL;
+		}
+	} else if (db_ctx != NULL) {
 		TDB_DATA dbuf;
 		keystr = talloc_asprintf(tmp_ctx, "%s/%s",
 					 SECRETS_MACHINE_LAST_CHANGE_TIME,
@@ -366,8 +396,41 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 
 	if (secrets_tdb_password_more_recent) {
 		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
-		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
-		cli_credentials_set_old_password(cred, secrets_tdb_old_password);
+		if (tdb_info != NULL) {
+			struct secrets_domain_info1_password *pw =
+				tdb_info->password;
+			struct secrets_domain_info1_password *old_pw =
+				tdb_info->old_password;
+			struct secrets_domain_info1_password *older_pw =
+				tdb_info->older_password;
+			struct secrets_domain_info1_password *next_pw = NULL;
+
+			if (tdb_info->next_change != NULL) {
+				next_pw = tdb_info->next_change->password;
+			}
+
+			cli_credentials_set_utf16_password(cred,
+						&pw->cleartext_blob,
+						CRED_SPECIFIED);
+			if (old_pw != NULL) {
+				cli_credentials_set_old_utf16_password(cred,
+						&old_pw->cleartext_blob);
+			}
+			if (older_pw != NULL) {
+				cli_credentials_set_older_utf16_password(cred,
+						&older_pw->cleartext_blob);
+			}
+			if (next_pw != NULL) {
+				cli_credentials_set_next_utf16_password(cred,
+						&next_pw->cleartext_blob);
+			}
+		} else {
+			cli_credentials_set_password(cred,
+						     secrets_tdb_password,
+						     CRED_SPECIFIED);
+			cli_credentials_set_old_password(cred,
+						secrets_tdb_old_password);
+		}
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		if (strequal(domain, lpcfg_workgroup(lp_ctx))) {
 			enum credentials_use_kerberos use_kerberos =

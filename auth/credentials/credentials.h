@@ -204,6 +204,19 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 					      const char *serviceprincipal);
 NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
 					     struct loadparm_context *lp_ctx);
+/*
+ * There would be a dependency loop if
+ * secrets_fetch_or_upgrade_domain_info() would be
+ * called directly, so it needs to be registered
+ * first.
+ */
+struct secrets_domain_info1;
+typedef NTSTATUS (*cli_credentials_secrets_domain_info_cb)(
+					const char *domain,
+					TALLOC_CTX *mem_ctx,
+					struct secrets_domain_info1 **pinfo);
+void cli_credentials_set_global_secrets_domain_info_cb(
+		cli_credentials_secrets_domain_info_cb cb);
 /**
  * Fill in credentials for the machine trust account, from the
  * secrets.ldb or passed in handle to secrets.tdb (perhaps in CTDB).
