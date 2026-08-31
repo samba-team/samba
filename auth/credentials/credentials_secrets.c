@@ -294,10 +294,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	int security = lpcfg_security(lp_ctx);
 	char *keystr;
 	char *keystr_upper = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_named(cred, 0, "cli_credentials_set_secrets from ldb");
-	if (!tmp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
