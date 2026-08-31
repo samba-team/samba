@@ -69,6 +69,9 @@ bool secrets_init_path(const char *private_dir)
 		return False;
 	}
 
+	cli_credentials_set_global_secrets_domain_info_cb(
+		secrets_fetch_or_upgrade_domain_info);
+
 	TALLOC_FREE(frame);
 	return True;
 }
