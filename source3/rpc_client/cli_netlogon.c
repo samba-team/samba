@@ -167,8 +167,9 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	uint8_t idx = 0;
 	uint8_t num_nt_hashes = 0;
-	const struct samr_Password *nt_hashes[2] = { NULL, NULL };
+	const struct samr_Password *nt_hashes[1+3] = { NULL, };
 	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
 	bool client_use_krb5_netlogon = true;
@@ -196,18 +197,47 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 		TALLOC_FREE(creds);
 	}
 
-	nt_hashes[0] = cli_credentials_get_nt_hash(cli_creds, talloc_tos());
-	if (nt_hashes[0] == NULL) {
+	errno = 0;
+	nt_hashes[idx] = cli_credentials_get_next_nt_hash(cli_creds, frame);
+	if (nt_hashes[idx] == NULL && errno != 0) {
 		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+		return map_nt_error_from_unix_common(errno);
 	}
-	num_nt_hashes = 1;
-
-	nt_hashes[1] = cli_credentials_get_old_nt_hash(cli_creds,
-						       talloc_tos());
-	if (nt_hashes[1] != NULL) {
-		num_nt_hashes = 2;
+	if (nt_hashes[idx] != NULL) {
+		idx += 1;
 	}
+	errno = 0;
+	nt_hashes[idx] = cli_credentials_get_nt_hash(cli_creds, frame);
+	if (nt_hashes[idx] == NULL && errno != 0) {
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(errno);
+	}
+	if (nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+	if (idx == 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_TRUST_LSA_SECRET;
+	}
+	errno = 0;
+	nt_hashes[idx] = cli_credentials_get_old_nt_hash(cli_creds, frame);
+	if (nt_hashes[idx] == NULL && errno != 0) {
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(errno);
+	}
+	if (nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+	errno = 0;
+	nt_hashes[idx] = cli_credentials_get_older_nt_hash(cli_creds, frame);
+	if (nt_hashes[idx] == NULL && errno != 0) {
+		TALLOC_FREE(frame);
+		return map_nt_error_from_unix_common(errno);
+	}
+	if (nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+	num_nt_hashes = idx;
 
 	if (client_use_krb5_netlogon) {
 		status = cli_rpc_pipe_open_with_creds(cli,
