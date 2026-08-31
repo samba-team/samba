@@ -54,6 +54,8 @@ struct cli_credentials {
 	const char *username;
 	const char *password;
 	const char *old_password;
+	const char *older_password;
+	const char *next_password;
 	const char *domain;
 	const char *realm;
 	const char *principal;
@@ -67,6 +69,8 @@ struct cli_credentials {
 	/* Allows authentication from a keytab or similar */
 	struct samr_Password *nt_hash;
 	struct samr_Password *old_nt_hash;
+	struct samr_Password *older_nt_hash;
+	struct samr_Password *next_nt_hash;
 
 	/* Allows NTLM pass-through authentication */
 	DATA_BLOB lm_response;
