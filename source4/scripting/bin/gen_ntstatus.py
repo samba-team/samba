@@ -36,7 +36,7 @@ def generateHeaderFile(out_file, errors):
         out_file.write(line)
     out_file.write("\n#endif /* _NTSTATUS_GEN_H */\n")
 
-def generateSourceFile(out_file, errors):
+def generateStrSourceFile(out_file, errors):
     out_file.write("/*\n")
     out_file.write(" * Names for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
@@ -49,11 +49,11 @@ def generateSourceFile(out_file, errors):
     out_file.write("{ 0, NT_STATUS(0) }\n")
     out_file.write("};\n")
 
-    out_file.write("\n/*\n")
-    out_file.write(" * Descriptions for errors generated from\n")
+def generateSourceFile(out_file, errors):
+    out_file.write("/*\n")
+    out_file.write(" * Switch-based name lookup for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
-
     out_file.write("static const char *get_nt_error_c_code_gen(uint32_t code)\n")
     out_file.write("{\n")
     out_file.write("\tswitch (code) {\n")
@@ -178,24 +178,27 @@ def transformErrorName( error_name ):
 
 # Very simple script to generate files nterr_gen.c & ntstatus_gen.h.
 # These files contain generated definitions.
-# This script takes four inputs:
+# This script takes six inputs:
 # [1]: The name of the text file which is the content of an HTML table
 #      (e.g. the one found at http://msdn.microsoft.com/en-us/library/cc231200.aspx)
 #      copied and pasted.
 # [2]: The name of the output generated header file with NTStatus #defines
-# [3]: The name of the output generated source file with C arrays
+# [3]: The name of the output generated source file (switch-based lookup + descriptions)
 # [4]: The name of the output generated python file
+# [5]: The name of the output generated rust file
+# [6]: The name of the output generated string-table source file (nt_errs[] array)
 def main ():
     input_file = None
 
-    if len(sys.argv) == 6:
+    if len(sys.argv) == 7:
         input_file =  sys.argv[1]
         gen_headerfile_name = sys.argv[2]
         gen_sourcefile_name = sys.argv[3]
         gen_pythonfile_name = sys.argv[4]
         gen_rustfile_name = sys.argv[5]
+        gen_strfile_name = sys.argv[6]
     else:
-        print("usage: %s winerrorfile headerfile sourcefile pythonfile rustfile" % (sys.argv[0]))
+        print("usage: %s winerrorfile headerfile sourcefile pythonfile rustfile strfile" % (sys.argv[0]))
         sys.exit()
 
     # read in the data
@@ -226,6 +229,10 @@ def main ():
     print("writing new rust file: %s" % gen_rustfile_name)
     out_file = io.open(gen_rustfile_name, "wt", encoding='utf8')
     generateRustFile(out_file, errors)
+    out_file.close()
+    print("writing new str source file: %s" % gen_strfile_name)
+    out_file = io.open(gen_strfile_name, "wt", encoding='utf8')
+    generateStrSourceFile(out_file, errors)
     out_file.close()
 
 if __name__ == '__main__':

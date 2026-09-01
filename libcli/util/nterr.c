@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "../libcli/ldap/ldap_errors.h"
+#include "nterr_private.h"
 #undef strcasecmp
 
 #if !defined(N_)
@@ -33,17 +34,11 @@
 #define DOS_CODE(class, code) { #class ":" #code, NT_STATUS_DOS(class, code) }
 #define LDAP_CODE(code) { #code, NT_STATUS_LDAP(code) }
 
-typedef struct
-{
-	const char *nt_errstr;
-	NTSTATUS nt_errcode;
-} nt_err_code_struct;
-
 #include "nterr_gen.c"
 
 /* Errors which aren't in the generated code because they're not in the
  * same table as the other ones. */
-static const nt_err_code_struct special_errs[] =
+const nt_err_code_struct special_nt_errs[] =
 {
         { "STATUS_NO_MORE_FILES", STATUS_NO_MORE_FILES },
         { "STATUS_INVALID_EA_NAME", STATUS_INVALID_EA_NAME },
@@ -240,10 +235,12 @@ const char *get_nt_error_c_code(TALLOC_CTX *mem_ctx, NTSTATUS nt_code)
 	const char *result;
 	int idx = 0;
 
-	while (special_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(special_errs[idx].nt_errcode) ==
-		    NT_STATUS_V(nt_code)) {
-			result = talloc_strdup(mem_ctx, special_errs[idx].nt_errstr);
+	while (special_nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(special_nt_errs[idx].nt_errcode) ==
+		    NT_STATUS_V(nt_code))
+		{
+			result = talloc_strdup(mem_ctx,
+					       special_nt_errs[idx].nt_errstr);
 			return result;
 		}
 		idx++;
@@ -257,33 +254,6 @@ const char *get_nt_error_c_code(TALLOC_CTX *mem_ctx, NTSTATUS nt_code)
 	result = talloc_asprintf(mem_ctx, "NT_STATUS(0x%08x)",
 				 NT_STATUS_V(nt_code));
 	return result;
-}
-
-/*****************************************************************************
- Returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
- *****************************************************************************/
-
-NTSTATUS nt_status_string_to_code(const char *nt_status_str)
-{
-	int idx = 0;
-
-	while (special_errs[idx].nt_errstr != NULL) {
-		if (strcasecmp(special_errs[idx].nt_errstr, nt_status_str) == 0) {
-			return special_errs[idx].nt_errcode;
-		}
-		idx++;
-	}
-
-	idx = 0;
-
-	while (nt_errs[idx].nt_errstr != NULL) {
-		if (strcasecmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
-			return nt_errs[idx].nt_errcode;
-		}
-		idx++;
-	}
-
-	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /**
@@ -323,10 +293,10 @@ const char *nt_errstr(NTSTATUS nt_code)
 	static char msg[20];
 	int idx = 0;
 
-	while (special_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(special_errs[idx].nt_errcode) ==
+	while (special_nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(special_nt_errs[idx].nt_errcode) ==
 		    NT_STATUS_V(nt_code)) {
-			return special_errs[idx].nt_errstr;
+			return special_nt_errs[idx].nt_errstr;
 		}
 		idx++;
 	}

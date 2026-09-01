@@ -225,7 +225,7 @@ bld.SAMBA_MODULE('TORTURE_NBENCH',
 	autoproto='nbench/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_nbench_init',
-	deps='TORTURE_UTIL',
+	deps='TORTURE_UTIL nterr-string-to-code',
 	internal_module=True
 	)
 

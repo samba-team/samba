@@ -29,7 +29,7 @@ bld.SAMBA_MODULE('auth4_developer',
 	source='auth_developer.c',
 	subsystem='auth4',
 	init_function='auth4_developer_init',
-	deps='tevent',
+	deps='tevent nterr-string-to-code',
         enabled=bld.env.DEVELOPER_MODE
 	)
 

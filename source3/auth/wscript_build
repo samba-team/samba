@@ -46,10 +46,15 @@ bld.SAMBA3_MODULE('auth_winbind',
                  init_function='',
                  internal_module=True)
 
+auth_builtin_deps='samba-util'
+
+if bld.env.DEVELOPER_MODE:
+    auth_builtin_deps += ' nterr-string-to-code'
+
 bld.SAMBA3_MODULE('auth_builtin',
                  subsystem='auth',
                  source='auth_builtin.c',
-                 deps='samba-util',
+                 deps=auth_builtin_deps,
                  init_function='',
                  internal_module=True)
 
