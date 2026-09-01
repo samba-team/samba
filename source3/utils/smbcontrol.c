@@ -610,7 +610,8 @@ static bool do_profilelevel(struct tevent_context *ev_ctx,
 	if (num_replies == 0)
 		printf("No replies received\n");
 
-	messaging_deregister(msg_ctx, MSG_PROFILE, NULL);
+	messaging_deregister(msg_ctx, MSG_PROFILELEVEL, NULL);
+	messaging_deregister(msg_ctx, MSG_REQ_PROFILELEVEL, NULL);
 
 	return num_replies;
 }
