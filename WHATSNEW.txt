@@ -1,4 +1,92 @@
                    ===============================
+                   Release Notes for Samba 4.23.12
+                         September 01, 2026
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.11
+---------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15978: leases torture test flappy (marked flappy)
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16225: dns client problems related to EDNS usage
+
+o  Andréas Leroux <aleroux@tranquil.it>
+   * BUG 15988: Samba internal DNS service doesn't handle switch from UDP to TCP
+     when packet is larger than 4k
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15988: Samba internal DNS service doesn't handle switch from UDP to TCP
+     when packet is larger than 4k
+   * BUG 16077: witness test flappy needs to be fixed
+   * BUG 16194: autobuild failures need to be reported in a more verbose way
+   * BUG 16199: ndr_{push,pull,print}_{timeval,timespec} encode/decode the value
+     twice
+   * BUG 16223: DNS scavenging happens even if fAging is FALSE
+   * BUG 16226: samba-tool dns zoneoptions $DC_SERVER_IP
+     _msdcs.addom.samba.example.com -P --aging=1 gives
+     WERR_INTERNAL_DB_ERROR
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15957: Double free of glue object  and core in
+     pthreadpool_tevent_register_ev
+   * BUG 15958: pthreadpool_tevent has race conditions accessing both
+     pthreadpool_tevent.jobs list and pthreadpool_tevent.glue_list
+
+o  Noel Power <nopower@suse.com>
+   * BUG 15958: pthreadpool_tevent has race conditions accessing both
+     pthreadpool_tevent.jobs list and pthreadpool_tevent.glue_list
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 16188: Build failure with cmocka >= 2.0: cm_print_error() conflicts
+     with cmocka.h macro
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 16144: Incorrect behavior on stream create-disposition when prior
+     handle is closed
+   * BUG 16188: Build failure with cmocka >= 2.0: cm_print_error() conflicts
+     with cmocka.h macro
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 16082: An inactive node can run recovery resulting in inconsistent
+     databases
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 16225: dns client problems related to EDNS usage
+
+o  Jennifer Sutton <jennifersutton@catalyst.net.nz>
+   * BUG 16225: dns client problems related to EDNS usage
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.23.11
                            August 03, 2026
                    ===============================
@@ -74,8 +162,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ===============================
                    Release Notes for Samba 4.23.10
                            July 28, 2026
