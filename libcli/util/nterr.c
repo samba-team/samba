@@ -367,13 +367,11 @@ const char *nt_errstr(NTSTATUS nt_code)
 
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 {
-	int idx = 0;
+	const char *result = NULL;
 
-	while (nt_err_desc[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_err_desc[idx].nt_errcode) == NT_STATUS_V(nt_code)) {
-			return nt_err_desc[idx].nt_errstr;
-		}
-		idx++;
+	result = get_friendly_nt_error_msg_gen(NT_STATUS_V(nt_code));
+	if (result != NULL) {
+		return result;
 	}
 
 	/* fall back to NT_STATUS_XXX string */
