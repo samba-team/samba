@@ -237,7 +237,7 @@ static const nt_err_code_struct special_errs[] =
 
 const char *get_nt_error_c_code(TALLOC_CTX *mem_ctx, NTSTATUS nt_code)
 {
-	char *result;
+	const char *result;
 	int idx = 0;
 
 	while (special_errs[idx].nt_errstr != NULL) {
@@ -249,15 +249,9 @@ const char *get_nt_error_c_code(TALLOC_CTX *mem_ctx, NTSTATUS nt_code)
 		idx++;
 	}
 
-	idx = 0;
-
-	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
-		    NT_STATUS_V(nt_code)) {
-			result = talloc_strdup(mem_ctx, nt_errs[idx].nt_errstr);
-			return result;
-		}
-		idx++;
+	result = get_nt_error_c_code_gen(NT_STATUS_V(nt_code));
+	if (result != NULL) {
+		return talloc_strdup(mem_ctx, result);
 	}
 
 	result = talloc_asprintf(mem_ctx, "NT_STATUS(0x%08x)",
@@ -325,6 +319,7 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status)
 
 const char *nt_errstr(NTSTATUS nt_code)
 {
+	const char *result = NULL;
 	static char msg[20];
 	int idx = 0;
 
@@ -336,14 +331,9 @@ const char *nt_errstr(NTSTATUS nt_code)
 		idx++;
 	}
 
-	idx = 0;
-
-	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
-		    NT_STATUS_V(nt_code)) {
-			return nt_errs[idx].nt_errstr;
-		}
-		idx++;
+	result = get_nt_error_c_code_gen(NT_STATUS_V(nt_code));
+	if (result != NULL) {
+		return result;
 	}
 
 	/*

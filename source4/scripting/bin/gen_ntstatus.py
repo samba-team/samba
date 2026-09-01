@@ -54,6 +54,21 @@ def generateSourceFile(out_file, errors):
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
 
+    out_file.write("static const char *get_nt_error_c_code_gen(uint32_t code)\n")
+    out_file.write("{\n")
+    out_file.write("\tswitch (code) {\n")
+    seen = set()
+    for err in errors:
+        if err.err_code in seen:
+            continue
+        seen.add(err.err_code)
+        out_file.write("\tcase 0x%08xU:\n" % err.err_code)
+        out_file.write("\t\treturn \"%s\";\n" % err.err_define)
+    out_file.write("\tdefault:\n")
+    out_file.write("\t\treturn NULL;\n")
+    out_file.write("\t}\n")
+    out_file.write("}\n\n")
+
     out_file.write("static const nt_err_code_struct nt_err_desc[] = \n")
     out_file.write("{\n")
     for err in errors:
