@@ -1269,7 +1269,9 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 
 		status = db_ctdb_delete_transaction(prec);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("db_ctdb_fetch_locked_persistent failed\n");
+			DBG_ERR("db_ctdb_delete_transaction failed: %s\n",
+				nt_errstr(status));
+			TALLOC_FREE(prec);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
@@ -1350,7 +1352,9 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 					    orig_num_dbufs,
 					    flag);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("db_ctdb_storev_transaction failed\n");
+		DBG_ERR("db_ctdb_storev_transaction failed: %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(prec);
 		return status;
 	}
 
