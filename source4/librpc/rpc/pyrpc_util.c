@@ -402,7 +402,8 @@ bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpc
 	int i;
 	for (i = 0; mds[i].name; i++) {
 		PyObject *ret;
-		struct wrapperbase *wb = (struct wrapperbase *)calloc(sizeof(struct wrapperbase), 1);
+		struct wrapperbase *wb = (struct wrapperbase *)
+			calloc(1, sizeof(struct wrapperbase));
 
 		if (wb == NULL) {
 			return false;

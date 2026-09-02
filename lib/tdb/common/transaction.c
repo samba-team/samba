@@ -480,7 +480,7 @@ static int _tdb_transaction_start(struct tdb_context *tdb,
 	}
 
 	tdb->transaction = (struct tdb_transaction *)
-		calloc(sizeof(struct tdb_transaction), 1);
+		calloc(1, sizeof(struct tdb_transaction));
 	if (tdb->transaction == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		return -1;

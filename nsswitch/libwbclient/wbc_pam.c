@@ -153,7 +153,7 @@ static wbcErr wbc_create_auth_info(const struct winbindd_response *resp,
 	i->num_sids	+= resp->data.auth.info3.num_other_sids;
 
 	i->sids	= (struct wbcSidWithAttr *)calloc(
-		sizeof(struct wbcSidWithAttr), i->num_sids);
+		i->num_sids, sizeof(struct wbcSidWithAttr));
 	BAIL_ON_PTR_ERROR(i->sids, wbc_status);
 
 	wbc_status = wbcStringToSid(resp->data.auth.info3.dom_sid,
