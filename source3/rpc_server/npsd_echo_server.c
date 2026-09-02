@@ -24,6 +24,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/tevent_unix.h"
 #include "rpc_server/rpc_worker_nps.h"
+#include "librpc/gen_ndr/named_pipe_auth.h"
 
 static const struct nps_interface npsd_echo_msg8_iface = {
 	.pipe_name		= "nps_echo_msg8",
@@ -120,15 +121,6 @@ static NTSTATUS npsd_echo_accept_client(
 	struct tevent_context *ev_ctx = global_event_context();
 	struct npsd_echo_connection *echo_conn = NULL;
 	struct tevent_req *subreq = NULL;
-	size_t max_size;
-
-	if (strcmp(npsd_echo_msg8_iface.pipe_name, pipe_name) == 0) {
-		max_size = npsd_echo_msg8_iface.allocation_size;
-	} else if (strcmp(npsd_echo_msg16_iface.pipe_name, pipe_name) == 0) {
-		max_size = npsd_echo_msg16_iface.allocation_size;
-	} else {
-		return NT_STATUS_REQUEST_NOT_ACCEPTED;
-	}
 
 	echo_conn = talloc_zero(worker_conn, struct npsd_echo_connection);
 	if (echo_conn == NULL) {
@@ -141,9 +133,10 @@ static NTSTATUS npsd_echo_accept_client(
 	echo_conn->tstream = talloc_move(echo_conn, tstream);
 	echo_conn->remote_client_addr = talloc_move(echo_conn, remote_client_addr);
 	echo_conn->local_server_addr = talloc_move(echo_conn, local_server_addr);
-	echo_conn->max_size = max_size;
+	echo_conn->max_size = np_info->allocation_size;
 
-	DBG_NOTICE("starting echo server loop max_size=%zu\n", max_size);
+	DBG_NOTICE("starting echo server loop max_size=%zu\n",
+		   echo_conn->max_size);
 
 	subreq = tstream_monitor_send(echo_conn,
 				      echo_conn->ev,
