@@ -34,6 +34,8 @@ struct nps_interface {
 	uint64_t allocation_size;
 };
 
+struct named_pipe_auth_rep_info8;
+
 int nps_worker_main(
 	int argc,
 	const char *argv[],
@@ -52,6 +54,7 @@ int nps_worker_main(
 		struct rpc_worker_connection *worker_conn,
 		struct auth_session_info **transport_session_info,
 		const char *pipe_name,
+		const struct named_pipe_auth_rep_info8 *np_info,
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr),

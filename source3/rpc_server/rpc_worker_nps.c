@@ -33,6 +33,7 @@ struct rpc_worker_nps_state {
 		struct rpc_worker_connection *worker_conn,
 		struct auth_session_info **transport_session_info,
 		const char *pipe_name,
+		const struct named_pipe_auth_rep_info8 *np_info,
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr);
@@ -149,6 +150,7 @@ static NTSTATUS rpc_worker_nps_accept_client(
 				      worker_conn,
 				      transport_session_info,
 				      pipe_name,
+				      np_info,
 				      tstream,
 				      remote_client_addr,
 				      local_server_addr);
@@ -240,6 +242,7 @@ int nps_worker_main(
 		struct rpc_worker_connection *worker_conn,
 		struct auth_session_info **transport_session_info,
 		const char *pipe_name,
+		const struct named_pipe_auth_rep_info8 *np_info,
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr),
