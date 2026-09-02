@@ -790,11 +790,11 @@ int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *
 }
 
 static const struct tdb_methods io_methods = {
-	tdb_read,
-	tdb_write,
-	tdb_next_hash_chain,
-	tdb_notrans_oob,
-	tdb_expand_file,
+	.tdb_read = tdb_read,
+	.tdb_write = tdb_write,
+	.next_hash_chain = tdb_next_hash_chain,
+	.tdb_oob = tdb_notrans_oob,
+	.tdb_expand_file = tdb_expand_file,
 };
 
 /*
