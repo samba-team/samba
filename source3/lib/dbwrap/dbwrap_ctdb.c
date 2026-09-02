@@ -1122,6 +1122,22 @@ again:
 		data.dsize - sizeof(struct ctdb_ltdb_header));
 	data.dsize -= sizeof(struct ctdb_ltdb_header);
 
+	if (persistent_in_progress) {
+		/* An in-progress header, remove it */
+		memmove(data.dptr,
+			data.dptr + SERVER_ID_BUF_LENGTH,
+			data.dsize - SERVER_ID_BUF_LENGTH);
+
+		data.dsize -= SERVER_ID_BUF_LENGTH;
+
+		/*
+		 * We hand out the value without the server_id prefix, so
+		 * the header the caller uses for subsequent stores must
+		 * not claim there is one.
+		 */
+		crec->header.flags &= ~CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS;
+	}
+
 	*_data = data;
 	return 0;
 }
@@ -1498,6 +1514,18 @@ static int db_ctdb_record_destr(struct db_record* data)
 /**
  * Check whether we have a valid local copy of the given record,
  * either for reading or for writing.
+ *
+ * While a store with DBWRAP_STORE_PERSISTENT is in progress the record
+ * value is prefixed with the server_id of the storing process and the
+ * record header carries CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS.
+ * *persistent_in_progress is set whenever the record carries that
+ * marker, whether or not the record can be used: if we return false the
+ * caller has to back off and retry, if we return true the caller has to
+ * check persistent_in_progress and skip SERVER_ID_BUF_LENGTH bytes to
+ * get at the record value.
+ *
+ * Note that this function must not modify the record: in the local parse
+ * case @data points directly into the tdb mmap.
  */
 static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 				      TDB_DATA data,
@@ -1519,29 +1547,30 @@ static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 
 		SMB_ASSERT(data.dsize >= SERVER_ID_BUF_LENGTH);
 
+		/*
+		 * The record data starts with a in-progress header containing
+		 * the owners server_id of size SERVER_ID_BUF_LENGTH, let the
+		 * caller know, so he can skip the header.
+		 */
+		*persistent_in_progress = true;
+
 		server_id_get(&id, data.dptr);
 		if (server_id_equal(&id, &my_id)) {
 			/*
-			 * Out own in-progress record, use it
+			 * Our own in-progress record, we can use it
 			 */
 			return true;
 		}
 		if (serverid_exists(&id)) {
 			/*
-			 * Someone else is using it, let the caller know.
+			 * Someone else is using it, we can't use it.
 			 */
-			*persistent_in_progress = true;
 			return false;
 		}
 		/*
 		 * This has a stale persistent_in_progress header,
-		 * remove the header and use the record.
+		 * we can use the record.
 		 */
-
-		memmove(data.dptr,
-			data.dptr + SERVER_ID_BUF_LENGTH,
-			data.dsize - SERVER_ID_BUF_LENGTH);
-		data.dsize -= SERVER_ID_BUF_LENGTH;
 		return true;
 	}
 
@@ -1722,6 +1751,19 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 			state->ask_for_readonly_copy = true;
 		}
 		return;
+	}
+
+	if (state->persistent_in_progress) {
+		/*
+		 * The record carries the server_id of an in-progress
+		 * DBWRAP_STORE_PERSISTENT store in front of the value.
+		 *
+		 * Clear the flag again: we were able to use the record, so
+		 * the caller must not treat this as "back off and retry".
+		 */
+		data.dptr += SERVER_ID_BUF_LENGTH;
+		data.dsize -= SERVER_ID_BUF_LENGTH;
+		state->persistent_in_progress = false;
 	}
 
 	/*
