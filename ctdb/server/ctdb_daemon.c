@@ -2122,6 +2122,7 @@ int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
 	struct ctdb_db_context *ctdb_db = NULL;
 	size_t np = 0;
 	int ret = 0;
+	int32_t status = -1;
 
 	ret = ctdb_push_record_data_pull(indata.dptr,
 					 indata.dsize,
@@ -2130,12 +2131,13 @@ int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
 					 &np);
 	if (ret != 0) {
 		DBG_ERR("Invalid data\n");
-		return -1;
+		goto done;
 	}
 
 	if (ctdb->vnn_map->generation != data->generation) {
 		DBG_INFO("Ignoring outdated push-record\n");
-		return 0;
+		status = 0;
+		goto done;
 	}
 
 	/*
@@ -2144,29 +2146,34 @@ int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
 	 * written record, which has an incremented RSN.
 	 */
 	if (data->hdr.dmaster == ctdb->pnn) {
-		return 0;
+		status = 0;
+		goto done;
 	}
 
 
 	ctdb_db = find_ctdb_db(ctdb, data->db_id);
 	if (ctdb_db == NULL) {
 		DBG_ERR(" Unknown db id 0x%08x\n", data->db_id);
-		return -1;
+		goto done;
 	}
 
 	data->hdr.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 
 	ret = ctdb_ltdb_store(ctdb_db, data->key, &data->hdr, data->value);
 	if (ret != 0) {
-		return -1;
+		goto done;
 	}
 
 	ret = ctdb_ltdb_sync(ctdb_db);
 	if (ret != 0) {
-		return -1;
+		goto done;
 	}
 
-	return 0;
+	status = 0;
+
+done:
+	talloc_free(data);
+	return status;
 }
 
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid)
