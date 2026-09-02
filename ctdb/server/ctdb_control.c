@@ -881,7 +881,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_start_ipreallocate(ctdb, c, async_reply);
 
 	case CTDB_CONTROL_PUSH_RECORD:
-		return ctdb_control_push_record(ctdb, indata);
+		return ctdb_control_push_record(ctdb, c, indata, async_reply);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

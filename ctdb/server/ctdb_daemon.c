@@ -2115,11 +2115,44 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
 	return 0;
 }
 
+struct ctdb_push_record_hdr_state {
+	struct ctdb_ltdb_header hdr;
+	bool found;
+};
+
+static int ctdb_push_record_hdr_parser(TDB_DATA key,
+				       TDB_DATA data,
+				       void *private_data)
+{
+	struct ctdb_push_record_hdr_state *state = private_data;
+
+	if (data.dsize < sizeof(state->hdr)) {
+		return 0;
+	}
+
+	memcpy(&state->hdr, data.dptr, sizeof(state->hdr));
+	state->found = true;
+	return 0;
+}
+
+/*
+ * called when we should retry a deferred push-record control
+ */
+static void ctdb_push_record_input_pkt(void *p, struct ctdb_req_header *hdr)
+{
+	struct ctdb_context *ctdb = talloc_get_type_abort(p, struct ctdb_context);
+
+	ctdb_input_pkt(ctdb, hdr);
+}
+
 int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
-				  TDB_DATA indata)
+				 struct ctdb_req_control_old *c,
+				 TDB_DATA indata,
+				 bool *async_reply)
 {
 	struct ctdb_push_record_data *data = NULL;
 	struct ctdb_db_context *ctdb_db = NULL;
+	struct ctdb_push_record_hdr_state hdr_state = {};
 	size_t np = 0;
 	int ret = 0;
 	int32_t status = -1;
@@ -2157,19 +2190,90 @@ int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
 		goto done;
 	}
 
+	/*
+	 * Take the chainlock without blocking. A client may be holding
+	 * the chainlock of this record while waiting for a reply
+	 * from this daemon, so blocking here deadlocks.
+	 * Instead defer the control and let it be redispatched once the
+	 * record becomes available, just like a record request.
+	 */
+	ret = ctdb_ltdb_lock_requeue(ctdb_db,
+				     data->key,
+				     &c->hdr,
+				     ctdb_push_record_input_pkt,
+				     ctdb,
+				     false);
+	if (ret == -1) {
+		DBG_ERR("Failed to lock record\n");
+		goto done;
+	}
+	if (ret == -2) {
+		DBG_INFO(__location__ " deferring ctdb_control_push_record\n");
+		*async_reply = true;
+		status = 0;
+		goto done;
+	}
+
+	/*
+	 * Ignore a push-record that lost the race against the normal
+	 * record protocol. The push is sent as an unsequenced broadcast
+	 * control while the sender still is the dmaster, but by the time
+	 * it arrives here the record may have been migrated on. Storing
+	 * it then resurrects an obsolete dmaster, which breaks the
+	 * dmaster chain.
+	 *
+	 * Read the header with tdb_parse_record() rather than
+	 * ctdb_ltdb_fetch(): for a missing record the latter synthesises an
+	 * initial header and, on the lmaster, stores it, which would add an
+	 * unrelated write to the push path.
+	 */
+	ret = tdb_parse_record(ctdb_db->ltdb->tdb,
+			       data->key,
+			       ctdb_push_record_hdr_parser,
+			       &hdr_state);
+	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(ctdb_db->ltdb->tdb);
+
+		if (err != TDB_ERR_NOEXIST) {
+			DBG_ERR("tdb_parse_record failed: %s\n",
+				tdb_errorstr(ctdb_db->ltdb->tdb));
+			goto unlock;
+		}
+		/*
+		 * No local copy, so there is nothing the push can be
+		 * older than.
+		 */
+	}
+
+	if (hdr_state.found && hdr_state.hdr.rsn >= data->hdr.rsn) {
+		DBG_DEBUG("Ignoring stale push-record for db 0x%08x: "
+			  "local rsn %"PRIu64" >= pushed rsn %"PRIu64"\n",
+			  data->db_id,
+			  hdr_state.hdr.rsn,
+			  data->hdr.rsn);
+		status = 0;
+		goto unlock;
+	}
+
 	data->hdr.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 
 	ret = ctdb_ltdb_store(ctdb_db, data->key, &data->hdr, data->value);
 	if (ret != 0) {
-		goto done;
+		goto unlock;
 	}
 
 	ret = ctdb_ltdb_sync(ctdb_db);
 	if (ret != 0) {
-		goto done;
+		goto unlock;
 	}
 
 	status = 0;
+
+unlock:
+	ret = ctdb_ltdb_unlock(ctdb_db, data->key);
+	if (ret != 0) {
+		DBG_ERR("ctdb_ltdb_unlock() failed with error %d\n", ret);
+	}
 
 done:
 	talloc_free(data);
