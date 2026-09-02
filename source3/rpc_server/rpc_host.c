@@ -1130,10 +1130,13 @@ static struct tevent_req *rpc_host_new_client_send(
 	tevent_req_set_cleanup_fn(req, rpc_host_new_client_cleanup);
 
 	state->is_npsd = endpoint->server->is_npsd;
-	state->client = talloc_zero(state, struct rpc_host_client);
+	state->client = talloc(state, struct rpc_host_client);
 	if (tevent_req_nomem(state->client, req)) {
 		return tevent_req_post(req, ev);
 	}
+	*state->client = (struct rpc_host_client){
+		.np_info = endpoint->np_info,
+	};
 
 	/*
 	 * Dup the socket to read the first RPC packet:

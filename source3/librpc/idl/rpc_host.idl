@@ -34,6 +34,11 @@ interface rpc_host_msg
 		named_pipe_auth_req_info8 *npa_info8;
 
 		/**
+		 * @brief Named pipe info for the new connection
+		 */
+		named_pipe_auth_rep_info8 np_info;
+
+		/**
 		 * @brief Raw bind PDU
 		 *
 		 * Already read from the socket by samba-dcerpcd

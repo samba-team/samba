@@ -261,11 +261,10 @@ static void rpc_worker_new_client(
 	}
 
 	if (transport == NCACN_NP) {
-		ret = tstream_npa_existing_socket(
-			worker_conn,
-			sock,
-			FILE_TYPE_MESSAGE_MODE_PIPE,
-			&tstream);
+		ret = tstream_npa_existing_socket(worker_conn,
+						  sock,
+						  client->np_info.file_type,
+						  &tstream);
 		if (ret == -1) {
 			DBG_DEBUG("tstream_npa_existing_socket failed: %s\n",
 				  strerror(errno));
