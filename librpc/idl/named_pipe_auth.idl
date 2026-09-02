@@ -36,7 +36,7 @@ interface named_pipe_auth
 		[switch_is(level)] named_pipe_auth_req_info info;
 	} named_pipe_auth_req;
 
-	typedef struct {
+	typedef [public] struct {
 		uint16 file_type;
 		uint16 device_state;
 		hyper allocation_size;
