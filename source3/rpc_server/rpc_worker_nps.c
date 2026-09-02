@@ -97,6 +97,7 @@ static NTSTATUS rpc_worker_nps_accept_client(
 		struct auth_session_info **transport_session_info,
 		struct dcerpc_binding **_b,
 		uint8_t _effective_transport,
+		const struct named_pipe_auth_rep_info8 *np_info,
 		DATA_BLOB *first_pdu,
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
