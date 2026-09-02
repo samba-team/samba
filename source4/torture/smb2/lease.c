@@ -6096,6 +6096,240 @@ done:
 }
 
 /*
+ * The servers lease break timeout, OPLOCK_BREAK_TIMEOUT from
+ * source3/include/local.h. When waiting for h-lease breaks triggered by a
+ * CLOSE the server waits twice as long, so a client that doesn't ack a lease
+ * break will have its lease dropped by the lease break timeout before the
+ * CLOSE gives up.
+ */
+#define TORTURE_LEASE_BREAK_TIMEOUT 35
+
+/*
+ * Test an unACKed lease break triggered by a CLOSE doesn't fail
+ * the close.
+ *
+ * 1. Create file with DELETE_ON_CLOSE and RWH lease
+ *
+ * 2. A second open on the file triggering a lease break from RWH to RH.
+ *
+ * 3. Wait for the lease break, but don't ACK it. This is handled by
+ * delay_for_oplock() in open.c and is known to work, so the second open will
+ * succeed after the lease-break timeout.
+ *
+ * 4. Close the first open with its DELETE_ON_CLOSE which triggers
+ * delete-on-close processing. That must check for other opens on the file so it
+ * triggers a H-lease break on the second open.
+ *
+ * 5. Wait for the lease-break timeout. The close must pass, but the file must
+ * not be deleted, as there's still the second open.
+ *
+ * 6. Trying to open the file now should return STATUS_DELETE_PENDING, which
+ * proves the file is still around.
+ *
+ * 7. Closing the second handle will now delete the file which we verify.
+ */
+static bool test_lease_delete_hlease_timeout(struct torture_context *tctx,
+					     struct smb2_tree *tree1,
+					     struct smb2_tree *tree2)
+{
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport *transport2 = tree2->session->transport;
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease lease1 = {};
+	struct smb2_lease lease2 = {};
+	struct smb2_handle d1 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_close cl = {};
+	struct smb2_request *req = NULL;
+	const char *dname = "test_lease_delete_hlease_timeout_dir";
+	const char *fname = "test_lease_delete_hlease_timeout_dir\\file";
+	struct timeval start;
+	double elapsed;
+	uint32_t caps;
+	bool ret = true;
+	enum protocol_types protocol;
+	NTSTATUS status;
+
+	caps = smb2cli_conn_server_capabilities(transport1->conn);
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done,
+			    "leases are not supported");
+
+	protocol = smbXcli_conn_protocol(tree1->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
+	/*
+	 * The create and close are pending for at least the lease break
+	 * timeout, make sure the client doesn't give up before the server.
+	 */
+	transport1->options.request_timeout = TORTURE_LEASE_BREAK_TIMEOUT * 2;
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+
+	transport2->lease.handler = torture_lease_handler;
+	transport2->lease.private_data = tree2;
+	transport2->options.request_timeout = TORTURE_LEASE_BREAK_TIMEOUT * 2;
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	smb2_deltree(tree1, dname);
+
+	status = torture_smb2_testdir(tree1, dname, &d1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	/*
+	 * 1. Create file with DELETE_ON_CLOSE and RWH lease
+	 */
+
+	smb2_lease_v2_create_share(&c1, &lease1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1,
+				   NULL,
+				   smb2_util_lease_state("RWH"),
+				   0);
+	c1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+	lease1.lease_epoch += 1;
+	CHECK_LEASE_V2(&c1, "RWH", true, LEASE1, 0, 0, lease1.lease_epoch);
+
+	/*
+	 * 2. A second open on the file triggering a lease break from RWH to RH.
+	 */
+
+	smb2_lease_v2_create_share(&c2, &lease2, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+
+	start = timeval_current();
+
+	req = smb2_create_send(tree2, &c2);
+	torture_assert_goto(tctx, req != NULL, ret, done, "smb2_create_send");
+	torture_assert_goto(tctx, req->state == SMB2_REQUEST_RECV, ret, done,
+			    "bad req state");
+
+	/*
+	 * 3. Wait for the lease break, but don't ACK it. This is handled by
+	 * delay_for_oplock() in open.c and is known to work, so the second open
+	 * will succeed after the lease-break timeout.
+	 */
+
+	torture_wait_for_lease_break(tctx);
+	lease1.lease_epoch += 1;
+	CHECK_BREAK_INFO_V2_NOWAIT(transport1, "RWH", "RH",
+				   LEASE1, lease1.lease_epoch);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_create_recv(req, tree2, &c2);
+	req = NULL;
+	elapsed = timeval_elapsed(&start);
+	torture_comment(tctx, "Create took %.2f seconds\n", elapsed);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Create failed\n");
+	h2 = c2.out.file.handle;
+	torture_assert_goto(tctx, elapsed >= TORTURE_LEASE_BREAK_TIMEOUT,
+			    ret, done,
+			    "Create returned before the lease break timeout\n");
+	lease2.lease_epoch++;
+	CHECK_LEASE_V2(&c2, "RH", true, LEASE2, 0, 0, lease2.lease_epoch);
+
+	/*
+	 * 4. Close the first open with its DELETE_ON_CLOSE which triggers
+	 * delete-on-close processing. That must check for other opens on the
+	 * file so it triggers a H-lease break on the second open.
+	 */
+
+	cl = (struct smb2_close) {
+		.in.file.handle = h1,
+	};
+
+	start = timeval_current();
+	req = smb2_close_send(tree1, &cl);
+	torture_assert_goto(tctx, req != NULL, ret, done, "smb2_close_send");
+	torture_assert_goto(tctx, req->state == SMB2_REQUEST_RECV, ret, done,
+			    "bad req state");
+
+	/*
+	 * 5. Wait for the lease-break timeout. The close must pass, but
+	 * the file must not be deleted, as there's still the second open.
+	 */
+
+	torture_wait_for_lease_break(tctx);
+	lease2.lease_epoch++;
+	CHECK_BREAK_INFO_V2_NOWAIT(transport2, "RH", "R",
+				   LEASE2, lease2.lease_epoch);
+
+	status = smb2_close_recv(req, &cl);
+	req = NULL;
+	elapsed = timeval_elapsed(&start);
+	torture_comment(tctx, "Close took %.2f seconds\n", elapsed);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Close failed\n");
+	ZERO_STRUCT(h1);
+	torture_assert_goto(tctx, elapsed >= TORTURE_LEASE_BREAK_TIMEOUT,
+			    ret, done,
+			    "Close returned before the lease break timeout\n");
+
+	/*
+	 * 6. Trying to open the file now should return STATUS_DELETE_PENDING,
+	 * which proves the file is still around.
+	 */
+
+	c1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_ATTRIBUTE,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_DELETE_PENDING,
+					   ret, done,
+					   "Delete not pending?\n");
+	/*
+	 * 7. Closing the second handle will now delete the file which we
+	 * verify.
+	 */
+
+	status = smb2_util_close(tree2, h2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Close failed\n");
+	ZERO_STRUCT(h2);
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "File still around?\n");
+
+done:
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(d1)) {
+		smb2_util_close(tree1, d1);
+	}
+	smb2_deltree(tree1, dname);
+	return ret;
+}
+
+/*
  * Verifies the lease epoch is not incremented by the server (returns what the
  * client sent in the request) if a lease was not granted ie lease_level=NONE.
  */
@@ -6480,6 +6714,8 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 				     test_initial_delete_disconnect);
 	torture_suite_add_2smb2_test(suite, "rename_dir_openfile",
 				     torture_rename_dir_openfile);
+	torture_suite_add_2smb2_test(suite, "delete_hlease_timeout",
+				     test_lease_delete_hlease_timeout);
 	torture_suite_add_1smb2_test(suite, "lease-epoch", test_lease_epoch);
 	torture_suite_add_1smb2_test(suite, "two-leases", test_two_leases);
 
