@@ -79,6 +79,7 @@ struct db_ctdb_rec {
 	struct db_ctdb_ctx *ctdb_ctx;
 	struct ctdb_ltdb_header header;
 	struct timeval lock_time;
+	bool locked;
 };
 
 struct ctdb_async_ctx {
@@ -1019,6 +1020,7 @@ static int db_ctdb_migrate_locked(struct db_ctdb_rec *crec,
 	TDB_DATA data;
 	int ret;
 
+	SMB_ASSERT(!crec->locked);
 	migrate_attempts = 0;
 	GetTimeOfDay(&migrate_start);
 
@@ -1041,6 +1043,7 @@ again:
 		DBG_ERR("tdb_chainlock failed\n");
 		return -1;
 	}
+	crec->locked = true;
 
 	chainlock_time += timeval_elapsed(&chainlock_start);
 
@@ -1051,6 +1054,7 @@ again:
 					&persistent_in_progress))
 	{
 		tdb_chainunlock(ctx->wtdb->tdb, key);
+		crec->locked = false;
 		if (persistent_in_progress) {
 			/*
 			 * Someone else is in the middle of doing a store with
@@ -1255,6 +1259,7 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 			DBG_ERR("tdb_chainunlock failed\n");
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
+		crec->locked = false;
 
 		pdb_ctdb_ctx = talloc_get_type_abort(
 			pdb->private_data, struct db_ctdb_ctx);
@@ -1335,6 +1340,7 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 		DBG_ERR("tdb_chainunlock failed\n");
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
+	crec->locked = false;
 
 	pdb_ctdb_ctx = talloc_get_type_abort(
 		pdb->private_data, struct db_ctdb_ctx);
@@ -1473,6 +1479,10 @@ static int db_ctdb_record_destr(struct db_record* data)
 		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
+	if (!crec->locked) {
+		goto after_unlock;
+	}
+
 	before = timeval_current();
 
 	ret = tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key);
@@ -1496,6 +1506,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 		return -1;
 	}
 
+after_unlock:
 	threshold = crec->ctdb_ctx->warn_locktime_msecs;
 	if (threshold != 0) {
 		timediff = timeval_elapsed(&crec->lock_time) * 1000;
