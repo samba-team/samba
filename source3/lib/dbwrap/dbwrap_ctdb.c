@@ -2311,6 +2311,24 @@ static void traverse_read_callback(TDB_DATA key, TDB_DATA data, void *private_da
 	data.dsize -= sizeof(h);
 	data.dptr += sizeof(h);
 
+	if (h.flags & CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS) {
+		/*
+		 * A store with DBWRAP_STORE_PERSISTENT is in progress for
+		 * this record, the value is prefixed with the server_id of
+		 * the storing process.
+		 */
+		if (data.dsize < SERVER_ID_BUF_LENGTH) {
+			DBG_ERR("Small in-progress record for key [%s]\n",
+				hex_encode_talloc(
+					talloc_tos(),
+					(unsigned char *)key.dptr,
+					key.dsize));
+			return;
+		}
+		data.dsize -= SERVER_ID_BUF_LENGTH;
+		data.dptr += SERVER_ID_BUF_LENGTH;
+	}
+
 	rec.db = state->db;
 	rec.key = key;
 	rec.value = data;
