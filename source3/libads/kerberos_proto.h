@@ -34,6 +34,7 @@
 
 struct PAC_DATA_CTR;
 struct samr_Password;
+struct cli_credentials;
 
 #define DEFAULT_KRB5_PORT 88
 
@@ -70,6 +71,10 @@ int ads_kdestroy(const char *cc_name);
 int kerberos_kinit_password(const char *principal,
 			    const char *password,
 			    const char *cache_name);
+
+NTSTATUS kerberos_prepare_cli_credentials_ccache(struct cli_credentials *creds,
+						 const char *explicit_kdc,
+						 const char *debug_target);
 
 bool create_local_private_krb5_conf_for_domain_internal(
 	const char *realm,

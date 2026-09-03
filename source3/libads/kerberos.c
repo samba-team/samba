@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/param/param.h"
 #include "libsmb/namequery.h"
 #include "system/filesys.h"
 #include "smb_krb5.h"
@@ -35,6 +36,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/util/asn1.h"
 #include "librpc/gen_ndr/netlogon.h"
+#include "auth/credentials/credentials.h"
 
 #ifdef HAVE_KRB5
 
@@ -1024,6 +1026,308 @@ int kerberos_kinit_password(const char *principal,
 
 /************************************************************************
 ************************************************************************/
+
+struct kerberos_prepare_cli_credentials_ccache {
+	krb5_context kctx;
+	krb5_ccache id;
+	char *name;
+};
+
+static int kerberos_prepare_cli_credentials_ccache_destructor(
+	struct kerberos_prepare_cli_credentials_ccache *ccache)
+{
+	if (ccache->id != NULL) {
+		krb5_cc_destroy(ccache->kctx, ccache->id);
+		ccache->id = NULL;
+	}
+
+	if (ccache->kctx != NULL) {
+		krb5_free_context(ccache->kctx);
+		ccache->kctx = NULL;
+	}
+
+	return 0;
+}
+
+static NTSTATUS kerberos_prepare_cli_credentials_ccache_create(
+			TALLOC_CTX *mem_ctx,
+			struct kerberos_prepare_cli_credentials_ccache **_ccache)
+{
+	struct kerberos_prepare_cli_credentials_ccache *ccache = NULL;
+	int ret;
+
+	*_ccache = NULL;
+
+	ccache = talloc_zero(mem_ctx, struct kerberos_prepare_cli_credentials_ccache);
+	if (ccache == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_set_destructor(ccache,
+		kerberos_prepare_cli_credentials_ccache_destructor);
+
+	ret = smb_krb5_init_context_common(&ccache->kctx);
+	if (ret != 0) {
+		TALLOC_FREE(ccache);
+		return krb5_to_nt_status(ret);
+	}
+
+	ret = smb_krb5_cc_new_unique_memory(ccache->kctx,
+					    ccache,
+					    &ccache->name,
+					    &ccache->id);
+	if (ret != 0) {
+		TALLOC_FREE(ccache);
+		return krb5_to_nt_status(ret);
+	}
+
+	*_ccache = ccache;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS kerberos_prepare_cli_credentials_ccache(struct cli_credentials *creds,
+						 const char *explicit_kdc,
+						 const char *debug_target)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	enum credentials_use_kerberos krb5_state = CRED_USE_KERBEROS_REQUIRED;
+	enum credentials_obtained user_obtained = CRED_UNINITIALISED;
+	const char *user_principal = NULL;
+	const char *debug_username = NULL;
+	enum credentials_obtained pass_obtained = CRED_UNINITIALISED;
+	/* [next] current [old [older]] = 4 at max */
+	uint8_t num_passwords = 0;
+	const char *passwords[4] = {};
+	const struct samr_Password *nt_hashes[4] = {};
+	uint8_t idx = 0;
+	bool ccache_valid = false;
+	enum credentials_obtained ccache_obtained = CRED_UNINITIALISED;
+	char *e_ccache_name = NULL;
+	struct kerberos_prepare_cli_credentials_ccache *ccache = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	const char *error_string = NULL;
+	char *canon_principal = NULL;
+	char *canon_realm = NULL;
+	NTSTATUS status;
+	int ret;
+	int dbg_fail_lvl = DBGLVL_NOTICE;
+	bool may_ignore_krb5 = true;
+
+	BUILD_ASSERT(ARRAY_SIZE(passwords) == ARRAY_SIZE(nt_hashes));
+
+	debug_username = cli_credentials_get_unparsed_name(creds, frame);
+
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+	if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+		DBG_DEBUG("Kerberos required username[%s]\n",
+			  debug_username);
+		dbg_fail_lvl = DBGLVL_ERR;
+		may_ignore_krb5 = false;
+	}
+
+	pass_obtained = cli_credentials_get_password_obtained(creds);
+	ccache_valid = cli_credentials_get_ccache_name_obtained(creds,
+								frame,
+								&e_ccache_name,
+								&ccache_obtained);
+	if (ccache_valid && ccache_obtained >= pass_obtained) {
+		DBG_INFO("No kinit required for %s to access %s, %s\n",
+			 debug_username, debug_target, e_ccache_name);
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+	TALLOC_FREE(e_ccache_name);
+
+	/*
+	 * gensec_kerberos_possible() already checked
+	 * cli_credentials_get_principal() worked
+	 */
+	user_principal = cli_credentials_get_principal_and_obtained(creds,
+								frame,
+								&user_obtained);
+	if (user_principal == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * We either need a cleartext password or the nt_hash
+	 *
+	 * We require the current one and use old, older and next
+	 * if they are available.
+	 */
+	passwords[idx] = cli_credentials_get_next_password(creds);
+	if (passwords[idx] == NULL) {
+		errno = 0;
+		nt_hashes[idx] = cli_credentials_get_next_nt_hash(creds, frame);
+		if (nt_hashes[idx] == NULL && errno != 0) {
+			TALLOC_FREE(frame);
+			return map_nt_error_from_unix_common(errno);
+		}
+	}
+	if (passwords[idx] != NULL || nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+
+	passwords[idx] = cli_credentials_get_password(creds);
+	if (passwords[idx] == NULL) {
+		errno = 0;
+		nt_hashes[idx] = cli_credentials_get_nt_hash(creds, frame);
+		if (nt_hashes[idx] == NULL && errno != 0) {
+			TALLOC_FREE(frame);
+			return map_nt_error_from_unix_common(errno);
+		}
+	}
+	if (passwords[idx] != NULL || nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+	if (idx == 0) {
+		DBG_PREFIX(dbg_fail_lvl, (
+			   "No password for user principal[%s]\n",
+			   user_principal));
+		TALLOC_FREE(frame);
+		if (may_ignore_krb5) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
+	}
+
+	passwords[idx] = cli_credentials_get_old_password(creds);
+	if (passwords[idx] == NULL) {
+		errno = 0;
+		nt_hashes[idx] = cli_credentials_get_old_nt_hash(creds, frame);
+		if (nt_hashes[idx] == NULL && errno != 0) {
+			TALLOC_FREE(frame);
+			return map_nt_error_from_unix_common(errno);
+		}
+	}
+	if (passwords[idx] != NULL || nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+
+	passwords[idx] = cli_credentials_get_older_password(creds);
+	if (passwords[idx] == NULL) {
+		errno = 0;
+		nt_hashes[idx] = cli_credentials_get_older_nt_hash(creds, frame);
+		if (nt_hashes[idx] == NULL && errno != 0) {
+			TALLOC_FREE(frame);
+			return map_nt_error_from_unix_common(errno);
+		}
+	}
+	if (passwords[idx] != NULL || nt_hashes[idx] != NULL) {
+		idx += 1;
+	}
+
+	num_passwords = idx;
+	SMB_ASSERT(num_passwords <= ARRAY_SIZE(passwords));
+
+	status = kerberos_prepare_cli_credentials_ccache_create(creds,
+								&ccache);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("kerberos_prepare_cli_credentials_ccache_create(): %s\n",
+			nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+	/* cleanup via frame on error */
+	talloc_reparent(creds, frame, ccache);
+
+	DBG_INFO("Doing kinit for %s to access %s into %s\n",
+		 user_principal, debug_target, ccache->name);
+
+	idx = 0;
+	ret = kerberos_kinit_passwords_ext(user_principal,
+					   num_passwords,
+					   passwords,
+					   nt_hashes,
+					   &idx,
+					   explicit_kdc,
+					   ccache->name,
+					   frame,
+					   &canon_principal,
+					   &canon_realm,
+					   &status);
+	if (ret != 0) {
+		switch (ret) {
+		case KRB5KDC_ERR_PREAUTH_FAILED:
+		case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+		case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+			/*
+			 * If the fail to authenticate a
+			 * valid user
+			 */
+			dbg_fail_lvl = DBGLVL_ERR;
+			may_ignore_krb5 = false;
+			status = NT_STATUS_LOGON_FAILURE;
+			break;
+		case KRB5KDC_ERR_CLIENT_REVOKED:
+			/*
+			 * If the fail to authenticate a
+			 * valid user
+			 */
+			dbg_fail_lvl = DBGLVL_ERR;
+			may_ignore_krb5 = false;
+			status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+			break;
+		case KRB5_REALM_UNKNOWN:
+		case KRB5_KDC_UNREACH:
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			break;
+		default:
+			status = krb5_to_nt_status(ret);
+			break;
+		}
+
+		DBG_PREFIX(dbg_fail_lvl, (
+			   "Kinit for %s to access %s failed "
+			   "pw[%u/%u]: %s: %s\n",
+			   user_principal,
+			   debug_target,
+			   idx+1, num_passwords,
+			   error_message(ret),
+			   nt_errstr(status)));
+		TALLOC_FREE(frame);
+		if (may_ignore_krb5) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return status;
+	}
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = cli_credentials_set_ccache(creds,
+					 lp_ctx,
+					 ccache->name,
+					 CRED_SPECIFIED,
+					 &error_string);
+	if (ret != 0) {
+		DBG_ERR("cli_credentials_set_ccache(%s) "
+			"for %s to access %s failed: %s\n",
+			ccache->name,
+			user_principal,
+			debug_target,
+			error_string);
+		TALLOC_FREE(frame);
+		return krb5_to_nt_status(ret);
+	}
+
+	DBG_DEBUG("Successfully kinit as %s (%s) pw[%u/%u] "
+		  "to access %s into %s\n",
+		  user_principal,
+		  canon_principal,
+		  idx+1, num_passwords,
+		  debug_target,
+		  ccache->name);
+
+	talloc_move(creds, &ccache);
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
 
 /************************************************************************
  Create a string list of available kdc's, possibly searching by sitename.
