@@ -81,6 +81,156 @@ static DATA_BLOB spnego_gen_krb5_wrap(
 	return ret;
 }
 
+static NTSTATUS kerberos_return_pac_internal(TALLOC_CTX *mem_ctx,
+					     time_t time_offset,
+					     const char *ccache_name,
+					     const char *impersonate_princ_s,
+					     const char *local_service,
+					     struct PAC_DATA_CTR **_pac_data_ctr)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	krb5_error_code ret;
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	DATA_BLOB tkt = {};
+	DATA_BLOB tkt_wrapped = {};
+	DATA_BLOB ap_rep = {};
+	DATA_BLOB sesskey1 = {};
+	struct auth_session_info *session_info = NULL;
+	struct gensec_security *gensec_server_context = NULL;
+	size_t idx = 0;
+	const struct gensec_security_ops **backends = NULL;
+	struct gensec_settings *gensec_settings = NULL;
+	struct auth4_context *auth_context = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	struct PAC_DATA_CTR *pac_data_ctr = NULL;
+
+	if (ccache_name == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ret = ads_krb5_cli_get_ticket(frame,
+				      local_service,
+				      time_offset,
+				      &tkt,
+				      &sesskey1,
+				      0,
+				      ccache_name,
+				      NULL,
+				      impersonate_princ_s);
+	if (ret) {
+		DEBUG(1,("failed to get ticket for %s: %s\n",
+			local_service, error_message(ret)));
+		if (impersonate_princ_s) {
+			DEBUGADD(1,("tried S4U2SELF impersonation as: %s\n",
+				impersonate_princ_s));
+		}
+		TALLOC_FREE(frame);
+		return krb5_to_nt_status(ret);
+	}
+
+	/* wrap that up in a nice GSS-API wrapping */
+	tkt_wrapped = spnego_gen_krb5_wrap(frame, tkt, TOK_ID_KRB_AP_REQ);
+	if (tkt_wrapped.data == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	auth_context = auth4_context_for_PAC_DATA_CTR(frame);
+	if (auth_context == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	gensec_settings = lpcfg_gensec_settings(frame, lp_ctx);
+	if (gensec_settings == NULL) {
+		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	backends = talloc_zero_array(gensec_settings,
+				     const struct gensec_security_ops *,
+				     2);
+	if (backends == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	gensec_settings->backends = backends;
+
+	gensec_init();
+
+	backends[idx++] = gensec_gse_security_by_oid(GENSEC_OID_KERBEROS5);
+
+	status = gensec_server_start(frame,
+				     gensec_settings,
+				     auth_context,
+				     &gensec_server_context);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Failed to start server-side GENSEC: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* Session info is not complete, do not pass to auth log */
+	gensec_want_feature(gensec_server_context, GENSEC_FEATURE_NO_AUTHZ_LOG);
+
+	status = gensec_start_mech_by_oid(gensec_server_context,
+					  GENSEC_OID_KERBEROS5);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Failed to start server-side GENSEC krb5: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* Do a client-server update dance */
+	status = gensec_update(gensec_server_context,
+			       frame,
+			       tkt_wrapped,
+			       &ap_rep);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("gensec_update() failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/*
+	 * Now return the PAC information to the callers.  We ignore
+	 * the session_info and instead pick out the PAC via the
+	 * private_data on the auth_context
+	 */
+	status = gensec_session_info(gensec_server_context,
+				     frame,
+				     &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Unable to obtain PAC via gensec_session_info: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	pac_data_ctr = auth4_context_get_PAC_DATA_CTR(auth_context, mem_ctx);
+	if (pac_data_ctr == NULL) {
+		DEBUG(1,("no PAC\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_IMPERSONATION_TOKEN;
+	}
+
+	*_pac_data_ctr = talloc_move(mem_ctx, &pac_data_ctr);
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 /*
  * Given the username/password, do a kinit, store the ticket in
  * cache_name if specified, and return the PAC_LOGON_INFO (the
@@ -105,19 +255,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	DATA_BLOB tkt = data_blob_null;
-	DATA_BLOB tkt_wrapped = data_blob_null;
-	DATA_BLOB ap_rep = data_blob_null;
-	DATA_BLOB sesskey1 = data_blob_null;
 	const char *auth_princ = NULL;
 	const char *cc = NULL;
-	struct auth_session_info *session_info;
-	struct gensec_security *gensec_server_context;
-	const struct gensec_security_ops **backends;
-	struct gensec_settings *gensec_settings;
-	size_t idx = 0;
-	struct auth4_context *auth_context;
-	struct loadparm_context *lp_ctx;
 	struct PAC_DATA_CTR *pac_data_ctr = NULL;
 	char *canon_principal = NULL;
 	char *canon_realm = NULL;
@@ -126,10 +265,6 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-
-	ZERO_STRUCT(tkt);
-	ZERO_STRUCT(ap_rep);
-	ZERO_STRUCT(sesskey1);
 
 	if (!name || !pass) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -215,106 +350,13 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	ret = ads_krb5_cli_get_ticket(mem_ctx,
-				      local_service,
-				      time_offset,
-				      &tkt,
-				      &sesskey1,
-				      0,
-				      cc,
-				      NULL,
-				      impersonate_princ_s);
-	if (ret) {
-		DEBUG(1,("failed to get ticket for %s: %s\n",
-			local_service, error_message(ret)));
-		if (impersonate_princ_s) {
-			DEBUGADD(1,("tried S4U2SELF impersonation as: %s\n",
-				impersonate_princ_s));
-		}
-		status = krb5_to_nt_status(ret);
-		goto out;
-	}
-
-	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(tmp_ctx, tkt, TOK_ID_KRB_AP_REQ);
-	if (tkt_wrapped.data == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	auth_context = auth4_context_for_PAC_DATA_CTR(tmp_ctx);
-	if (auth_context == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		status = NT_STATUS_INVALID_SERVER_STATE;
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		goto out;
-	}
-
-	gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
-	if (gensec_settings == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
-		goto out;
-	}
-
-	backends = talloc_zero_array(gensec_settings,
-				     const struct gensec_security_ops *, 2);
-	if (backends == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-	gensec_settings->backends = backends;
-
-	gensec_init();
-
-	backends[idx++] = gensec_gse_security_by_oid(GENSEC_OID_KERBEROS5);
-
-	status = gensec_server_start(tmp_ctx, gensec_settings,
-					auth_context, &gensec_server_context);
-
+	status = kerberos_return_pac_internal(mem_ctx,
+					      time_offset,
+					      cc,
+					      impersonate_princ_s,
+					      local_service,
+					      &pac_data_ctr);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, (__location__ "Failed to start server-side GENSEC to validate a Kerberos ticket: %s\n", nt_errstr(status)));
-		goto out;
-	}
-
-	talloc_unlink(tmp_ctx, lp_ctx);
-	talloc_unlink(tmp_ctx, gensec_settings);
-	talloc_unlink(tmp_ctx, auth_context);
-
-	/* Session info is not complete, do not pass to auth log */
-	gensec_want_feature(gensec_server_context, GENSEC_FEATURE_NO_AUTHZ_LOG);
-
-	status = gensec_start_mech_by_oid(gensec_server_context, GENSEC_OID_KERBEROS5);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, (__location__ "Failed to start server-side GENSEC krb5 to validate a Kerberos ticket: %s\n", nt_errstr(status)));
-		goto out;
-	}
-
-	/* Do a client-server update dance */
-	status = gensec_update(gensec_server_context, tmp_ctx, tkt_wrapped, &ap_rep);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("gensec_update() failed: %s\n", nt_errstr(status)));
-		goto out;
-	}
-
-	/* Now return the PAC information to the callers.  We ignore
-	 * the session_info and instead pick out the PAC via the
-	 * private_data on the auth_context */
-	status = gensec_session_info(gensec_server_context, tmp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Unable to obtain PAC via gensec_session_info\n"));
-		goto out;
-	}
-
-	pac_data_ctr = auth4_context_get_PAC_DATA_CTR(auth_context, mem_ctx);
-	if (pac_data_ctr == NULL) {
-		DEBUG(1,("no PAC\n"));
-		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
@@ -336,10 +378,6 @@ out:
 		ctx = NULL;
 	}
 	talloc_free(tmp_ctx);
-
-	data_blob_free(&tkt);
-	data_blob_free(&ap_rep);
-	data_blob_free(&sesskey1);
 
 	return status;
 }
