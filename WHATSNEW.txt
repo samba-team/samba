@@ -70,6 +70,15 @@ to the rest of the cluster via Samba's messaging layer.
 
 To enable this feature, Samba must be built with --with-ratelimitd.
 
+New Ceph RGW VFS module
+-----------------------
+
+Introduced a new VFS module, vfs_ceph_rgw, which uses the librgw APIs to
+export Ceph Object Gateway buckets as SMB shares. It provides a hierarchical
+view of the objects stored in a bucket, allowing them to be accessed as files
+and folders. The module supports standard POSIX uids and gids, as well as most
+basic file operations.
+
 JSON Audit logging
 ------------------
 
