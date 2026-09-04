@@ -29,6 +29,7 @@
 #include "auth/common_auth.h"
 #include "lib/param/param.h"
 #include "librpc/crypto/gse.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/auth/spnego.h"
 #include "lib/util/asn1.h"
@@ -378,6 +379,132 @@ out:
 		ctx = NULL;
 	}
 	talloc_free(tmp_ctx);
+
+	return status;
+}
+
+NTSTATUS kerberos_s4u2self_pac(TALLOC_CTX *mem_ctx,
+			       struct cli_credentials *machine_creds,
+			       const char *impersonate_princ_s,
+			       const char *local_service,
+			       struct PAC_DATA_CTR **_pac_data_ctr)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	krb5_context ctx = NULL;
+	char *machine_ccname = NULL;
+	krb5_ccache machine_cc_id = NULL;
+	char *s4u2self_ccname = NULL;
+	krb5_ccache s4u2self_cc_id = NULL;
+	struct PAC_DATA_CTR *pac_data_ctr = NULL;
+	krb5_error_code ret;
+	NTSTATUS status;
+	bool ok;
+
+	if (impersonate_princ_s == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	status = kerberos_prepare_cli_credentials_ccache(machine_creds,
+							 NULL, /* explicit_kdc */
+							 impersonate_princ_s);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	ok = cli_credentials_get_ccache_name_obtained(machine_creds,
+						      frame,
+						      &machine_ccname,
+						      NULL); /* obtained */
+	if (!ok) {
+		/*
+		 * This should work after
+		 * kerberos_prepare_cli_credentials_ccache()
+		 */
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
+
+	ret = smb_krb5_init_context_common(&ctx);
+	if (ret != 0) {
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
+
+	/*
+	 * We create a temporary copy of the creds.
+	 * The most important one is the TGT of
+	 * the machine account.
+	 *
+	 * As we don't want to add the s4u2self
+	 * creds to the ccache of the machine_creds.
+	 */
+
+	ret = krb5_cc_resolve(ctx,
+			      machine_ccname,
+			      &machine_cc_id);
+	if (ret != 0) {
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
+
+	ret = smb_krb5_cc_new_unique_memory(ctx,
+					    frame,
+					    &s4u2self_ccname,
+					    &s4u2self_cc_id);
+	if (ret != 0) {
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
+
+	ret = smb_krb5_cc_copy_creds(ctx,
+				     machine_cc_id,
+				     s4u2self_cc_id);
+	if (ret != 0) {
+		status = krb5_to_nt_status(ret);
+		goto out;
+	}
+
+	status = kerberos_return_pac_internal(mem_ctx,
+					      0, /* time_offset */
+					      s4u2self_ccname,
+					      impersonate_princ_s,
+					      local_service,
+					      &pac_data_ctr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	/* cleanup via frame on error */
+	talloc_reparent(mem_ctx, frame, pac_data_ctr);
+
+	/*
+	 * TODO: In future we can can copy
+	 * all creds (cross-forest TGTs) belonging
+	 * to the machine creds back into
+	 * machine_ccname.
+	 *
+	 * But currently cli_credentials is
+	 * typically only temporary and will
+	 * be fully reconstructed from secrets.tdb
+	 * each time. So for now it wouldn't gain much here.
+	 */
+
+	*_pac_data_ctr = talloc_move(mem_ctx, &pac_data_ctr);
+
+out:
+	if (s4u2self_cc_id != NULL) {
+		krb5_cc_destroy(ctx, s4u2self_cc_id);
+		s4u2self_cc_id = NULL;
+	}
+	if (machine_cc_id != NULL) {
+		krb5_cc_close(ctx, machine_cc_id);
+		machine_cc_id = NULL;
+	}
+	if (ctx != NULL) {
+		krb5_free_context(ctx);
+		ctx = NULL;
+	}
+	TALLOC_FREE(frame);
 
 	return status;
 }
