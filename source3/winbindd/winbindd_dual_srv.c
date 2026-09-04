@@ -2108,7 +2108,6 @@ NTSTATUS _wbint_KerberosImpersonationToken(struct pipes_struct *p,
 	struct PAC_DATA *pac_data = NULL;
 	struct cli_credentials *machine_creds = NULL;
 	const char *machine_principal = NULL;
-	const char *machine_password = NULL;
 	uint16_t validation_level = 0;
 	union netr_Validation *validation = NULL;
 	NTSTATUS status;
@@ -2155,29 +2154,13 @@ NTSTATUS _wbint_KerberosImpersonationToken(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	machine_password = cli_credentials_get_password(machine_creds);
-	if (machine_password == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	DBG_DEBUG("Trying S4U2Self for %s\n", r->in.impersonate_principal);
-	status = kerberos_return_pac(frame,
-				     machine_principal,
-				     machine_password,
-				     0,     /* time_offset */
-				     NULL,  /* *expire_time */
-				     NULL,  /* *renew_till_time */
-				     NULL,  /* cache_name */
-				     true,  /* request_pac */
-				     false, /* add_netbios_addr */
-				     0,     /* renew_time */
-				     r->in.impersonate_principal,
-				     /* local_service */
-				     machine_principal,
-				     NULL,	/* canon_principal */
-				     NULL,	/* canon_realm */
-				     &pac_data_ctr);
+	status = kerberos_s4u2self_pac(frame,
+				       machine_creds,
+				       r->in.impersonate_principal,
+				       /* local_service */
+				       machine_principal,
+				       &pac_data_ctr);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Failed to retrieve PAC for: %s as %s: %s\n",
 			 r->in.impersonate_principal,
