@@ -21,6 +21,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "smbd/smbXsrv_open.h"
+#include "source3/lib/split_path_below.h"
 #include "libcli/security/security.h"
 #include "util_tdb.h"
 #include "lib/util/bitmap.h"
@@ -2268,22 +2269,19 @@ struct files_struct *file_find_one_fsp_from_lease_key(
 
 bool file_find_subpath(files_struct *dir_fsp)
 {
+	struct split_path base = {};
 	files_struct *fsp;
-	size_t dlen;
-	char *d_fullname = NULL;
+	bool ok;
 
-	d_fullname = talloc_asprintf(talloc_tos(), "%s/%s",
-				     dir_fsp->conn->connectpath,
-				     dir_fsp->fsp_name->base_name);
-
-	if (!d_fullname) {
+	ok = split_path_init(dir_fsp->conn->connectpath,
+			     dir_fsp->fsp_name->base_name,
+			     &base);
+	if (!ok) {
 		return false;
 	}
 
-	dlen = strlen(d_fullname);
-
 	for (fsp=dir_fsp->conn->sconn->files; fsp; fsp=fsp->next) {
-		char *d1_fullname;
+		bool below;
 
 		if (fsp == dir_fsp) {
 			continue;
@@ -2294,25 +2292,15 @@ bool file_find_subpath(files_struct *dir_fsp)
 			continue;
 		}
 
-		d1_fullname = talloc_asprintf(talloc_tos(),
-					"%s/%s",
-					fsp->conn->connectpath,
-					fsp->fsp_name->base_name);
-
-		/*
-		 * If the open file has a path that is a longer
-		 * component, then it's a subpath.
-		 */
-		if (strnequal(d_fullname, d1_fullname, dlen) &&
-				(d1_fullname[dlen] == '/')) {
-			TALLOC_FREE(d1_fullname);
-			TALLOC_FREE(d_fullname);
+		below = split_path_below(&base,
+					 fsp->conn->connectpath,
+					 fsp->fsp_name->base_name,
+					 false);
+		if (below) {
 			return true;
 		}
-		TALLOC_FREE(d1_fullname);
 	}
 
-	TALLOC_FREE(d_fullname);
 	return false;
 }
 
