@@ -120,6 +120,11 @@ bld.SAMBA3_BINARY('test_tldap',
                        ''',
                   for_selftest=True)
 
+bld.SAMBA3_BINARY('test_split_path',
+                 source='lib/test_split_path.c',
+                 deps='cmocka samba3-util',
+                 for_selftest=True)
+
 # libpdb.so should not expose internal symbols that are only usable
 # to the statically linked modules that are merged into libpdb.
 # Note that we always filter these symbols out in libpdb, even
@@ -1015,6 +1020,7 @@ bld.SAMBA3_LIBRARY('samba3-util',
                           lib/file_id.c
                           lib/cbuf.c
                           lib/per_thread_cwd.c
+                          lib/split_path_below.c
                           ''',
                    deps='''
                         samba-util

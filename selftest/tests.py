@@ -536,6 +536,8 @@ plantestsuite("samba.unittests.talloc_keep_secret", "none",
 
 plantestsuite("samba.unittests.tldap", "none",
               [os.path.join(bindir(), "default/source3/test_tldap")])
+plantestsuite("samba.unittests.split_path", "none",
+              [os.path.join(bindir(), "default/source3/test_split_path")])
 plantestsuite("samba.unittests.rfc1738", "none",
               [os.path.join(bindir(), "default/lib/util/test_rfc1738")])
 plantestsuite("samba.unittests.kerberos", "none",
