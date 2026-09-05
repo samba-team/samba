@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/open_files.h"
 #include "lib/util/string_wrappers.h"
 #include "libcli/smb/reparse.h"
+#include "source3/lib/split_path_below.h"
 #include "source3/smbd/dir.h"
 #include "source3/include/serverid.h"
 
@@ -1337,8 +1338,7 @@ bool have_file_open_below(struct files_struct *fsp)
 }
 
 struct opens_below_forall_read_state {
-	char *dirpath;
-	ssize_t dirpath_len;
+	struct split_path base;
 	int (*fn)(const struct share_mode_data *data,
 		  const struct share_mode_entry *e,
 		  void *private_data);
@@ -1351,47 +1351,17 @@ static int opens_below_forall_read_fn(struct file_id fid,
 				      void *private_data)
 {
 	struct opens_below_forall_read_state *state = private_data;
-	char tmpbuf[PATH_MAX];
-	char *fullpath = NULL;
-	char *to_free = NULL;
-	ssize_t len;
+	bool below;
 
-	len = full_path_tos(data->servicepath,
-			    data->base_name,
-			    tmpbuf,
-			    sizeof(tmpbuf),
-			    &fullpath,
-			    &to_free);
-	if (len == -1) {
-		return -1;
-	}
-	if (state->dirpath_len >= len) {
-		/*
-		 * Filter files above dirpath
-		 */
-		goto out;
-	}
-	if (fullpath[state->dirpath_len] != '/') {
-		/*
-		 * Filter file that don't have a path separator at the end of
-		 * dirpath's length
-		 */
-		goto out;
+	below = split_path_below(&state->base,
+				 data->servicepath,
+				 data->base_name,
+				 true);
+	if (!below) {
+		return 1;
 	}
 
-	if (memcmp(state->dirpath, fullpath, state->dirpath_len) != 0) {
-		/*
-		 * Not a parent
-		 */
-		goto out;
-	}
-
-	TALLOC_FREE(to_free);
 	return state->fn(data, entry, state->private_data);
-
-out:
-	TALLOC_FREE(to_free);
-	return 1;
 }
 
 bool opens_below_forall_read(struct connection_struct *conn,
@@ -1406,21 +1376,16 @@ bool opens_below_forall_read(struct connection_struct *conn,
 		.private_data = private_data,
 	};
 	int ret;
-	char tmpbuf[PATH_MAX];
-	char *to_free = NULL;
+	bool ok;
 
-	state.dirpath_len = full_path_tos(conn->connectpath,
-					  dir_name->base_name,
-					  tmpbuf,
-					  sizeof(tmpbuf),
-					  &state.dirpath,
-					  &to_free);
-	if (state.dirpath_len == -1) {
+	ok = split_path_init(conn->connectpath,
+			     dir_name->base_name,
+			     &state.base);
+	if (!ok) {
 		return false;
 	}
 
 	ret = share_entry_forall_read(opens_below_forall_read_fn, &state);
-	TALLOC_FREE(to_free);
 	if (ret == -1) {
 		return false;
 	}
