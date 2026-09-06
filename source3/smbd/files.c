@@ -2292,12 +2292,36 @@ bool file_find_subpath(files_struct *dir_fsp)
 			continue;
 		}
 
-		below = split_path_below(&base,
-					 fsp->conn->connectpath,
-					 fsp->fsp_name->base_name,
-					 false);
-		if (below) {
-			return true;
+		if (dir_fsp->conn == fsp->conn) {
+			const char *f_base = fsp->fsp_name->base_name;
+
+			if (base.namelen == 0) {
+				/*
+				 * Everything is below the share root
+				 */
+				return true;
+			}
+
+			/*
+			 * base.namelen counts bytes
+			 */
+			below = strnequal_bytes(base.name,
+						f_base,
+						base.namelen);
+			if (!below) {
+				continue;
+			}
+			if (f_base[base.namelen] == '/') {
+				return true;
+			}
+		} else {
+			below = split_path_below(&base,
+						 fsp->conn->connectpath,
+						 fsp->fsp_name->base_name,
+						 false);
+			if (below) {
+				return true;
+			}
 		}
 	}
 
