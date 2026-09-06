@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.25.  This is *not*
+This is the second release candidate of Samba 4.25.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -135,7 +135,7 @@ activated automatically, there is nothing to configure or maintain.
 
 On a cluster the currently active level is stored persistently in
 cluster_level.tdb. On a fresh cluster it is initialized with the
-highest level supported by the first node that starts up. From then
+highest level supported by the second node that starts up. From then
 on the level never changes on its own, it is only raised when an
 administrator explicitly asks for it. A node that does not support
 the currently active level refuses to start, which keeps a node
@@ -189,6 +189,24 @@ smb.conf changes
   --------------                          -----------     -------
   allow dcerpc auth level connect         deprecated
   kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
+
+
+CHANGES SINCE 4.25.0rc1
+=======================
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15988: Samba internal DNS service doesn't handle switch from UDP to TCP
+     when packet is larger than 4k
+   * BUG 16194: autobuild failures need to be reported in a more verbose way
+   * BUG 16219: samba-cluster-support should depend on ndr-samba
+   * BUG 16223: DNS scavenging happens even if fAging is FALSE
+   * BUG 16226: samba-tool dns zoneoptions $DC_SERVER_IP
+     _msdcs.addom.samba.example.com -P --aging=1 gives
+     WERR_INTERNAL_DB_ERROR
+
+o  Jennifer Sutton <jennifersutton@catalyst.net.nz>
+   * BUG 16225: dns client problems related to EDNS usage
+
 
 
 KNOWN ISSUES
