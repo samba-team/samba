@@ -212,19 +212,19 @@ static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
 }
 
 static NTSTATUS db_ctdb_push_record(TALLOC_CTX *mem_ctx,
-				    struct db_record *rec,
+				    struct db_ctdb_ctx *ctx,
+				    const struct ctdb_ltdb_header *header,
+				    TDB_DATA key,
 				    const TDB_DATA *dbufs,
 				    int num_dbufs)
 {
 	struct ctdbd_connection *conn = messaging_ctdb_connection();
-	struct db_ctdb_rec *crec = talloc_get_type_abort(
-		rec->private_data, struct db_ctdb_rec);
 	TDB_DATA data = {};
 	TDB_DATA ctrl_data;
 	struct ctdb_push_record_data prd = {
-		.db_id = crec->ctdb_ctx->db_id,
-		.hdr = crec->header,
-		.key = rec->key,
+		.db_id = ctx->db_id,
+		.hdr = *header,
+		.key = key,
 	};
 	int32_t ctrl_ret;
 	NTSTATUS status;
@@ -256,7 +256,7 @@ static NTSTATUS db_ctdb_push_record(TALLOC_CTX *mem_ctx,
 
 	ret = ctdbd_control_broadcast(messaging_ctdb_connection(),
 				      CTDB_CONTROL_PUSH_RECORD,
-				      crec->ctdb_ctx->db_id,
+				      ctx->db_id,
 				      CTDB_CTRL_FLAG_NOREPLY,
 				      ctrl_data,
 				      NULL,
@@ -1372,7 +1372,9 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 	 * in that case anyway.
 	 */
 	status = db_ctdb_push_record(rec,
-				     rec,
+				     crec->ctdb_ctx,
+				     &crec->header,
+				     rec->key,
 				     orig_dbufs,
 				     orig_num_dbufs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2634,6 +2636,7 @@ static int migrate_persistent_traverse_fn(struct tdb_context *ctdb,
 	struct db_record *rec = NULL;
 	struct db_ctdb_rec *crec = NULL;
 	struct ctdb_ltdb_header header;
+	struct ctdb_ltdb_header push_header;
 	TDB_DATA d;
 	int cmp;
 	NTSTATUS status;
@@ -2667,6 +2670,7 @@ static int migrate_persistent_traverse_fn(struct tdb_context *ctdb,
 	};
 
 	crec->header.flags |= CTDB_REC_FLAG_PERSISTENT;
+	push_header = crec->header;
 	header = crec->header;
 	prepare_local_header_for_push_record(&header);
 
@@ -2682,7 +2686,9 @@ static int migrate_persistent_traverse_fn(struct tdb_context *ctdb,
 	}
 
 	status = db_ctdb_push_record(state->tmp_ctx,
-				     rec,
+				     state->db_ctdb_ctx,
+				     &push_header,
+				     key,
 				     &d,
 				     1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2710,6 +2716,7 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 	struct db_record *marker_rec = NULL;
 	struct db_ctdb_rec *crec = NULL;
 	struct ctdb_ltdb_header header;
+	struct ctdb_ltdb_header push_header;
 	TDB_DATA marker_key;
 	TDB_DATA marker_val;
 	char *curtime = NULL;
@@ -2799,6 +2806,9 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 	crec = talloc_get_type_abort(marker_rec->private_data,
 				     struct db_ctdb_rec);
 
+	push_header = crec->header;
+	push_header.flags &= ~CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS;
+
 	header = crec->header;
 	prepare_local_header_for_push_record(&header);
 	header.flags &= ~CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS;
@@ -2814,7 +2824,9 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 	}
 
 	status = db_ctdb_push_record(migration_state.tmp_ctx,
-				     marker_rec,
+				     db_ctdb_ctx,
+				     &push_header,
+				     marker_key,
 				     &marker_val,
 				     1);
 	if (!NT_STATUS_IS_OK(status)) {
