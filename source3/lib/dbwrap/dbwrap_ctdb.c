@@ -1314,26 +1314,14 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 	flag &= DBWRAP_TDB_FLAGS;
 
 	/*
-	 * First push out the record to the volatile dbs on all nodes. If this
-	 * returns success, this just means the push out succeeded, not that the
-	 * records are already on stable storage on the nodes.
+	 * Drop the chainlock. We must not hold it while talking to the local
+	 * ctdbd below, and holding it would deadlock with a ctdb recovery
+	 * during the transaction on the persistent db. This has consequences,
+	 * see below.
 	 *
-	 * That's where the subsequent transaction on the persistent db comes
-	 * into play: it's a kind of barrier and the transaction succeeding
-	 * means all previous operations, either a successful push-record, or a
-	 * recovery, succeeded. Either a successful push-record, or a recovery
-	 * happening between the initial local store and the final transaction
-	 * store, will have successfully pushed out the record to all nodes.
-	 */
-	status = db_ctdb_push_record(rec, orig_dbufs, orig_num_dbufs);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	 * We have to drop the chainlock, otherwise we could deadlock with ctdb
-	 * recovery while doing txn below, but this has consequences, see
-	 * below...
+	 * The record we stored above carries our server_id and
+	 * CTDB_REC_FLAG_PERSISTENT_IN_PROGRESS, which keeps other openers of
+	 * the database off this record until we're done.
 	 */
 	ret = tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, rec->key);
 	if (ret != 0) {
@@ -1341,6 +1329,45 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 	crec->locked = false;
+
+	/*
+	 * Push out the record to the volatile dbs on all nodes. If this
+	 * returns success, this just means the push out succeeded, not that the
+	 * records are already on stable storage on the nodes.
+	 *
+	 * The transaction on the persistent db below is what makes this a
+	 * sequence point: ctdb_control_trans3_commit() runs on our own ctdbd
+	 * and sends CTDB_CONTROL_UPDATE_RECORD to every active node over the
+	 * same connections that carried the push, and it only succeeds once
+	 * all of them acked with no recovery running. As ctdbd processes a
+	 * node's packets in order, the push is applied before the persistent
+	 * write, so a successful commit means every node holds this record,
+	 * or something newer, or a recovery has distributed our copy.
+	 *
+	 * That ordering is not absolute though: ctdb_control_push_record()
+	 * defers a push whose chainlock is busy, and a deferred push leaves the
+	 * packet order, so a node can ack the persistent write with the push
+	 * still pending. The race window is a lock helper turnaround against a
+	 * cluster wide commit, but any node dying inside may cause lost
+	 * pushed records, as deferred pending pushes are discarded as
+	 * part of recovery.
+	 *
+	 * The persistent db does not cover that. It is only read back into
+	 * the volatile db by db_ctdb_migrate_persistent_recs(), at db open
+	 * time and only when the migration marker is missing, ie after the
+	 * whole cluster has restarted. A single node failure rebuilds the
+	 * volatile db by merging the surviving nodes' copies alone and never
+	 * consults the backup.
+	 *
+	 * As the chainlock is not held here, the record may get migrated away
+	 * before the push is sent. The push then carries an outdated dmaster
+	 * and RSN and the receiving nodes discard it, they hold a newer copy
+	 * in that case anyway.
+	 */
+	status = db_ctdb_push_record(rec, orig_dbufs, orig_num_dbufs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	pdb_ctdb_ctx = talloc_get_type_abort(
 		pdb->private_data, struct db_ctdb_ctx);
