@@ -39,11 +39,10 @@ static int fcntl_lock(struct tdb_context *tdb,
 	int cmd;
 
 #ifdef USE_TDB_MUTEX_LOCKING
-	{
+	if (tdb_is_mutex_lock(tdb, off, len)) {
 		int ret;
-		if (tdb_mutex_lock(tdb, rw, off, len, waitflag, &ret)) {
-			return ret;
-		}
+		tdb_mutex_lock(tdb, rw, off, len, waitflag, &ret);
+		return ret;
 	}
 #endif
 
@@ -120,11 +119,10 @@ static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 #endif
 
 #ifdef USE_TDB_MUTEX_LOCKING
-	{
+	if (tdb_is_mutex_lock(tdb, off, len)) {
 		int ret;
-		if (tdb_mutex_unlock(tdb, rw, off, len, &ret)) {
-			return ret;
-		}
+		tdb_mutex_unlock(tdb, rw, off, len, &ret);
+		return ret;
 	}
 #endif
 

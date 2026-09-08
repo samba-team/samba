@@ -357,6 +357,7 @@ bool tdb_have_mutexes(struct tdb_context *tdb);
 int tdb_mutex_init(struct tdb_context *tdb);
 int tdb_mutex_mmap(struct tdb_context *tdb);
 int tdb_mutex_munmap(struct tdb_context *tdb);
+bool tdb_is_mutex_lock(struct tdb_context *tdb, off_t off, off_t len);
 bool tdb_mutex_lock(struct tdb_context *tdb, int rw, off_t off, off_t len,
 		    bool waitflag, int *pret);
 bool tdb_mutex_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len,

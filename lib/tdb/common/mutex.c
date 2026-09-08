@@ -109,7 +109,7 @@ static inline off_t tdb_freelist_lock_ofs(void)
 /*
  * Check whether a byte-range lock at (off, len) is handled by a chain mutex.
  */
-static bool tdb_is_mutex_lock(struct tdb_context *tdb, off_t off, off_t len)
+bool tdb_is_mutex_lock(struct tdb_context *tdb, off_t off, off_t len)
 {
 	const off_t freelist_lock_ofs = tdb_freelist_lock_ofs();
 
@@ -233,9 +233,6 @@ bool tdb_mutex_lock(struct tdb_context *tdb, int rw, off_t off, off_t len,
 	unsigned idx;
 	bool allrecord_ok;
 
-	if (!tdb_is_mutex_lock(tdb, off, len)) {
-		return false;
-	}
 	idx = tdb_mutex_offset_to_idx(off);
 	chain = &m->hashchains[idx];
 
@@ -348,9 +345,6 @@ bool tdb_mutex_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len,
 	int ret;
 	unsigned idx;
 
-	if (!tdb_is_mutex_lock(tdb, off, len)) {
-		return false;
-	}
 	idx = tdb_mutex_offset_to_idx(off);
 	chain = &m->hashchains[idx];
 
