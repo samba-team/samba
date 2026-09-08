@@ -1430,7 +1430,8 @@ static void smbd_accept_connection(struct tevent_context *ev,
 static int smbd_open_one_socket(struct smbd_parent_context *parent,
 				struct tevent_context *ev_ctx,
 				const struct sockaddr_storage *ifss,
-				const struct smb_transport *transport)
+				const struct smb_transport *transport,
+				bool ignore_bind_errors)
 {
 	struct smbd_open_socket *s;
 	uint16_t port = 0;
@@ -1481,9 +1482,13 @@ static int smbd_open_one_socket(struct smbd_parent_context *parent,
 		DBG_ERR("open_socket_in_protocol failed: %s\n", strerror(err));
 		TALLOC_FREE(s);
 		/*
-		 * We ignore an error here, as we've done before
+		 * For historical reasons, some callers like to ignore
+		 * errors here
 		 */
-		return 0;
+		if (ignore_bind_errors) {
+			return 0;
+		}
+		return err;
 	}
 
 	/* ready to listen */
@@ -1970,7 +1975,8 @@ static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 		ret = smbd_open_one_socket(parent,
 					   ev_ctx,
 					   ifss,
-					   t);
+					   t,
+					   true);
 		if (ret != 0) {
 			continue;
 		}
