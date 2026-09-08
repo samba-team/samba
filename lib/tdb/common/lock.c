@@ -32,21 +32,20 @@ _PUBLIC_ void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t
 	tdb->interrupt_sig_ptr = ptr;
 }
 
+/*
+ * Returns 0 on success, errno value on failure.
+ */
 static int fcntl_lock(struct tdb_context *tdb,
 		      int rw, off_t off, off_t len, bool waitflag)
 {
 	struct flock fl;
 	int cmd;
+	int ret;
 
 #ifdef USE_TDB_MUTEX_LOCKING
 	if (tdb_is_mutex_lock(tdb, off, len)) {
-		int ret;
 		ret = tdb_mutex_lock(tdb, rw, off, len, waitflag);
-		if (ret != 0) {
-			errno = ret;
-			return -1;
-		}
-		return 0;
+		return ret;
 	}
 #endif
 
@@ -58,12 +57,20 @@ static int fcntl_lock(struct tdb_context *tdb,
 
 	cmd = waitflag ? F_SETLKW : F_SETLK;
 
-	return fcntl(tdb->fd, cmd, &fl);
+	ret = fcntl(tdb->fd, cmd, &fl);
+	if (ret != 0) {
+		return errno;
+	}
+	return 0;
 }
 
+/*
+ * Returns 0 on success, errno value on failure.
+ */
 static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 {
 	struct flock fl;
+	int ret;
 #if 0 /* Check they matched up locks and unlocks correctly. */
 	char line[80];
 	FILE *locks;
@@ -124,13 +131,8 @@ static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 
 #ifdef USE_TDB_MUTEX_LOCKING
 	if (tdb_is_mutex_lock(tdb, off, len)) {
-		int ret;
 		ret = tdb_mutex_unlock(tdb, rw, off, len);
-		if (ret != 0) {
-			errno = ret;
-			return -1;
-		}
-		return 0;
+		return ret;
 	}
 #endif
 
@@ -140,7 +142,11 @@ static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 	fl.l_len = len;
 	fl.l_pid = 0;
 
-	return fcntl(tdb->fd, F_SETLKW, &fl);
+	ret = fcntl(tdb->fd, F_SETLKW, &fl);
+	if (ret != 0) {
+		return errno;
+	}
+	return 0;
 }
 
 /*
@@ -206,22 +212,23 @@ int tdb_brlock(struct tdb_context *tdb,
 		ret = fcntl_lock(tdb, rw_type, offset, len,
 				 flags & TDB_LOCK_WAIT);
 		/* Check for a sigalarm break. */
-		if (ret == -1 && errno == EINTR &&
-				tdb->interrupt_sig_ptr &&
-				*tdb->interrupt_sig_ptr) {
+		if (ret == EINTR && tdb->interrupt_sig_ptr &&
+		    *tdb->interrupt_sig_ptr)
+		{
 			break;
 		}
-	} while (ret == -1 && errno == EINTR);
+	} while (ret == EINTR);
 
-	if (ret == -1) {
+	if (ret != 0) {
 		tdb->ecode = TDB_ERR_LOCK;
 		/* Generic lock error. errno set by fcntl.
 		 * EAGAIN is an expected return from non-blocking
 		 * locks. */
-		if (!(flags & TDB_LOCK_PROBE) && errno != EAGAIN) {
+		if (!(flags & TDB_LOCK_PROBE) && ret != EAGAIN) {
 			TDB_LOG((tdb, TDB_DEBUG_TRACE,"tdb_brlock failed (fd=%d) at offset %u rw_type=%d flags=%d len=%zu\n",
 				 tdb->fd, offset, rw_type, flags, len));
 		}
+		errno = ret;
 		return -1;
 	}
 	return 0;
@@ -238,13 +245,15 @@ int tdb_brunlock(struct tdb_context *tdb,
 
 	do {
 		ret = fcntl_unlock(tdb, rw_type, offset, len);
-	} while (ret == -1 && errno == EINTR);
+	} while (ret == EINTR);
 
-	if (ret == -1) {
+	if (ret != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_TRACE,"tdb_brunlock failed (fd=%d) at offset %u rw_type=%u len=%zu\n",
 			 tdb->fd, offset, rw_type, len));
+		errno = ret;
+		return -1;
 	}
-	return ret;
+	return 0;
 }
 
 /*
