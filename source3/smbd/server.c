@@ -1534,7 +1534,8 @@ static int smbd_open_one_socket(struct smbd_parent_context *parent,
 
 static int smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 				   struct tevent_context *ev_ctx,
-				   const struct sockaddr_storage *ifss);
+				   const struct sockaddr_storage *ifss,
+				   bool ignore_bind_errors);
 
 /****************************************************************************
  Open the socket communication.
@@ -1612,7 +1613,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 			num_ok = smbd_open_socket_for_ip(parent,
 							 ev_ctx,
-							 ifss);
+							 ifss,
+							 true);
 			if ((size_t)num_ok != ts->num_transports) {
 				return false;
 			}
@@ -1641,7 +1643,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 			num_ok = smbd_open_socket_for_ip(parent,
 							 ev_ctx,
-							 &ss);
+							 &ss,
+							 true);
 			if (num_ok == 0) {
 				/*
 				 * If we fail to open any sockets
@@ -1961,7 +1964,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 
 static int smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 				   struct tevent_context *ev_ctx,
-				   const struct sockaddr_storage *ifss)
+				   const struct sockaddr_storage *ifss,
+				   bool ignore_bind_errors)
 {
 	const struct smb_transports *ts = &parent->transports;
 	int num_ok = 0;
@@ -1976,8 +1980,11 @@ static int smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 					   ev_ctx,
 					   ifss,
 					   t,
-					   true);
+					   ignore_bind_errors);
 		if (ret != 0) {
+			if (!ignore_bind_errors) {
+				return -ret;
+			}
 			continue;
 		}
 
@@ -2135,7 +2142,8 @@ static void smbd_addr_changed(struct tevent_req *req)
 
 		num_ok = smbd_open_socket_for_ip(state->parent,
 						 state->ev,
-						 &addr.u.ss);
+						 &addr.u.ss,
+						 true);
 		if (num_ok == 0) {
 			DBG_NOTICE("smbd: Unable to open socket on %s\n",
 				   addrstr);
