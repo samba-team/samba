@@ -198,6 +198,7 @@ smb.conf changes
   --------------                          -----------     -------
   allow dcerpc auth level connect         deprecated
   kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
+  getwd cache                             Removed
 
 
 CHANGES SINCE 4.25.0rc1
