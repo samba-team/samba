@@ -231,13 +231,10 @@ int tdb_mutex_lock(struct tdb_context *tdb,
 		   bool waitflag)
 {
 	struct tdb_mutexes *m = tdb->mutexes;
-	pthread_mutex_t *chain;
+	unsigned idx = tdb_mutex_offset_to_idx(off);
+	pthread_mutex_t *chain = &m->hashchains[idx];
 	int ret;
-	unsigned idx;
 	bool allrecord_ok;
-
-	idx = tdb_mutex_offset_to_idx(off);
-	chain = &m->hashchains[idx];
 
 again:
 	ret = chain_mutex_lock(chain, waitflag);
@@ -332,14 +329,9 @@ again:
 int tdb_mutex_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 {
 	struct tdb_mutexes *m = tdb->mutexes;
-	pthread_mutex_t *chain;
-	int ret;
-	unsigned idx;
-
-	idx = tdb_mutex_offset_to_idx(off);
-	chain = &m->hashchains[idx];
-
-	ret = pthread_mutex_unlock(chain);
+	unsigned idx = tdb_mutex_offset_to_idx(off);
+	pthread_mutex_t *chain = &m->hashchains[idx];
+	int ret = pthread_mutex_unlock(chain);
 	return ret;
 }
 
