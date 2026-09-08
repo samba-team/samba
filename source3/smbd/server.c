@@ -1532,9 +1532,9 @@ static int smbd_open_one_socket(struct smbd_parent_context *parent,
 	return 0;
 }
 
-static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
-				      struct tevent_context *ev_ctx,
-				      const struct sockaddr_storage *ifss);
+static int smbd_open_socket_for_ip(struct smbd_parent_context *parent,
+				   struct tevent_context *ev_ctx,
+				   const struct sockaddr_storage *ifss);
 
 /****************************************************************************
  Open the socket communication.
@@ -1601,7 +1601,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		for(i = 0; i < num_interfaces; i++) {
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
-			size_t num_ok;
+			int num_ok;
 
 			if (ifss == NULL) {
 				DEBUG(0,("open_sockets_smbd: "
@@ -1613,7 +1613,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			num_ok = smbd_open_socket_for_ip(parent,
 							 ev_ctx,
 							 ifss);
-			if (num_ok != ts->num_transports) {
+			if ((size_t)num_ok != ts->num_transports) {
 				return false;
 			}
 		}
@@ -1631,7 +1631,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		for (i = 0; i < ARRAY_SIZE(sock_addrs); i++) {
 			const char *sock_tok = sock_addrs[i];
 			struct sockaddr_storage ss;
-			size_t num_ok;
+			int num_ok;
 
 			/* open an incoming socket */
 			if (!interpret_string_addr(&ss, sock_tok,
@@ -1650,7 +1650,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 				 */
 				continue;
 			}
-			if (num_ok != ts->num_transports) {
+			if ((size_t)num_ok != ts->num_transports) {
 				return false;
 			}
 		}
@@ -1959,12 +1959,12 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
  Open socket communication on given ip address
 ****************************************************************************/
 
-static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
-				      struct tevent_context *ev_ctx,
-				      const struct sockaddr_storage *ifss)
+static int smbd_open_socket_for_ip(struct smbd_parent_context *parent,
+				   struct tevent_context *ev_ctx,
+				   const struct sockaddr_storage *ifss)
 {
 	const struct smb_transports *ts = &parent->transports;
-	size_t num_ok = 0;
+	int num_ok = 0;
 	uint8_t ti;
 
 	for (ti = 0; ti < ts->num_transports; ti++) {
@@ -2118,7 +2118,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 	}
 
 	if (type == ADDRCHANGE_ADD) {
-		size_t num_ok;
+		int num_ok;
 
 		if (!is_dynamic) {
 			DBG_DEBUG("smbd: kernel (AF_NETLINK) added ip %s "
