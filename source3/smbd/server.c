@@ -2080,6 +2080,176 @@ static void smbd_close_socket_for_ip(struct smbd_parent_context *parent,
 	}
 }
 
+struct smbd_dynamic_open_socket_state {
+	struct smbd_parent_context *parent;
+	struct tevent_context *ev;
+	struct samba_sockaddr addr;
+	struct ssaddr_buf addrbuf;
+	unsigned int max_attempts;
+	unsigned int num_attempts;
+};
+
+static void smbd_dynamic_open_socket_attempt(struct tevent_req *subreq)
+{
+	struct smbd_dynamic_open_socket_state *state = tevent_req_callback_data(
+			subreq, struct smbd_dynamic_open_socket_state);
+	bool ok = true;
+	int num_ok = 0;
+
+	state->num_attempts++;
+	DBG_INFO("Attempt #%u for %s\n", state->num_attempts, state->addrbuf.buf);
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		DBG_WARNING("tevent_wakeup_recv() error\n");
+		TALLOC_FREE(state);
+		return;
+	}
+
+	num_ok = smbd_open_socket_for_ip(state->parent,
+					 state->ev,
+					 &state->addr.u.ss,
+					 false);
+	if (num_ok > 0) {
+		/* Success */
+		TALLOC_FREE(state);
+		return;
+	}
+
+	if (num_ok == 0) {
+		DBG_NOTICE("smbd: Unable to open socket on %s\n",
+			   state->addrbuf.buf);
+		TALLOC_FREE(state);
+		return;
+	}
+
+	if (num_ok != -EADDRNOTAVAIL) {
+		DBG_WARNING("smbd: Error opening socket on %s - %s\n",
+			    state->addrbuf.buf,
+			    strerror(-num_ok));
+		TALLOC_FREE(state);
+		return;
+	}
+
+	/* EADDRNOTAVAIL, consider retry */
+	if (state->num_attempts >= state->max_attempts) {
+		DBG_WARNING("smbd: Too many attempts opening socket on %s\n",
+			    state->addrbuf.buf);
+		TALLOC_FREE(state);
+		return;
+	}
+
+	/*
+	 * Retry
+	 */
+	subreq = tevent_wakeup_send(state,
+				    state->ev,
+				    tevent_timeval_current_ofs(0, 1000));
+	if (subreq == NULL) {
+		DBG_WARNING("scheduling next attempt failed, giving up\n");
+		TALLOC_FREE(state);
+		return;
+	}
+
+	tevent_req_set_callback(subreq, smbd_dynamic_open_socket_attempt, state);
+}
+
+/*
+ * Races have been observed between an IPv4 address being added and
+ * trying to bind(2), with EADDRNOTAVAIL returned.  Delay the first
+ * attempt to add an address by 20µs and then retry up to 10 times at
+ * 1ms intervals.
+ */
+static void smbd_dynamic_open_socket_ipv4(struct smbd_parent_context *parent,
+					  struct tevent_context *ev,
+					  struct samba_sockaddr *addr,
+					  struct ssaddr_buf *addrstr_buf)
+{
+	struct smbd_dynamic_open_socket_state *state = NULL;
+	struct tevent_req *req = NULL;
+
+	state = talloc_zero(parent, struct smbd_dynamic_open_socket_state);
+	if (state == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return;
+	}
+
+	state->parent = parent;
+	state->ev = ev;
+	state->addr = *addr;
+	state->addrbuf = *addrstr_buf;
+	state->max_attempts = 10;
+
+	req = tevent_wakeup_send(state,
+				 state->ev,
+				 tevent_timeval_current_ofs(0, 20));
+	if (req == NULL) {
+		DBG_WARNING("scheduling initial attempt failed, giving up\n");
+		return;
+	}
+
+	tevent_req_set_callback(req, smbd_dynamic_open_socket_attempt, state);
+}
+
+#if defined(HAVE_IPV6)
+/*
+ * For IPv6, retries are not needed because an additional notification
+ * is sent when Duplicate Address Detection (DAD) completes, and
+ * bind(2) always succeeds after this notification.  However, failures
+ * are expected earlier in the process so complain more quietly about
+ * EADDRNOTAVAIL.  Also, RFC 4429 (Optimistic DAD) says:
+ *
+ *   Optimistic DAD SHOULD NOT be used for manually entered addresses.
+ *
+ * so regular DAD should be used here and a delay is always expected
+ * before the final notification.
+ *
+ * There should be no race between an address being added and trying
+ * to bind(2).
+ */
+static void smbd_dynamic_open_socket_ipv6(struct smbd_parent_context *parent,
+					  struct tevent_context *ev,
+					  struct samba_sockaddr *addr,
+					  struct ssaddr_buf *addrstr_buf)
+{
+	int num_ok = 0;
+
+	num_ok = smbd_open_socket_for_ip(parent,
+					 ev,
+					 &addr->u.ss,
+					 false);
+	if (num_ok == -EADDRNOTAVAIL) {
+		DBG_DEBUG("smbd: Address not available (DAD?) %s\n",
+			  addrstr_buf->buf);
+		return;
+	}
+	if (num_ok == 0) {
+		DBG_NOTICE("smbd: Unable to open socket on %s\n",
+			   addrstr_buf->buf);
+	}
+}
+#endif /* defined(HAVE_IPV6) */
+
+static void smbd_dynamic_open_socket(struct smbd_parent_context *parent,
+				     struct tevent_context *ev,
+				     struct samba_sockaddr *addr,
+				     struct ssaddr_buf *addrstr_buf)
+{
+	switch (addr->u.ss.ss_family) {
+	case AF_INET:
+		smbd_dynamic_open_socket_ipv4(parent, ev, addr, addrstr_buf);
+		break;
+#if defined(HAVE_IPV6)
+	case AF_INET6:
+		smbd_dynamic_open_socket_ipv6(parent, ev, addr, addrstr_buf);
+		break;
+#endif
+	default:
+		DBG_WARNING("smbd: Unknown family for %s\n", addrstr_buf->buf);
+	}
+}
+
 static void smbd_addr_changed(struct tevent_req *req)
 {
 	struct smbd_addrchanged_state *state = tevent_req_callback_data(
@@ -2125,8 +2295,6 @@ static void smbd_addr_changed(struct tevent_req *req)
 	}
 
 	if (type == ADDRCHANGE_ADD) {
-		int num_ok;
-
 		if (!is_dynamic) {
 			DBG_DEBUG("smbd: kernel (AF_NETLINK) added ip %s "
 				  "on if_index %u (not dynamic)\n",
@@ -2140,15 +2308,12 @@ static void smbd_addr_changed(struct tevent_req *req)
 			   addrstr,
 			   if_index);
 
-		num_ok = smbd_open_socket_for_ip(state->parent,
-						 state->ev,
-						 &addr.u.ss,
-						 true);
-		if (num_ok == 0) {
-			DBG_NOTICE("smbd: Unable to open socket on %s\n",
-				   addrstr);
-		}
+		smbd_dynamic_open_socket(state->parent,
+					 state->ev,
+					 &addr,
+					 &addrstr_buf);
 	}
+
 rearm:
 	req = addrchange_send(state, state->ev, state->ctx);
 	if (req == NULL) {
