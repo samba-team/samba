@@ -224,8 +224,11 @@ static int allrecord_mutex_lock(struct tdb_mutexes *m, bool waitflag)
 	return pthread_mutex_consistent(&m->allrecord_mutex);
 }
 
-bool tdb_mutex_lock(struct tdb_context *tdb, int rw, off_t off, off_t len,
-		    bool waitflag, int *pret)
+int tdb_mutex_lock(struct tdb_context *tdb,
+		   int rw,
+		   off_t off,
+		   off_t len,
+		   bool waitflag)
 {
 	struct tdb_mutexes *m = tdb->mutexes;
 	pthread_mutex_t *chain;
@@ -242,8 +245,7 @@ again:
 		ret = EAGAIN;
 	}
 	if (ret != 0) {
-		errno = ret;
-		goto fail;
+		return ret;
 	}
 
 	if (idx == 0) {
@@ -252,8 +254,7 @@ again:
 		 * the allrecord lock. So we're done once we got the
 		 * freelist mutex.
 		 */
-		*pret = 0;
-		return true;
+		return 0;
 	}
 
 	if (tdb_have_mutex_chainlocks(tdb)) {
@@ -274,8 +275,7 @@ again:
 		 * chain lock.
 		 */
 
-		*pret = 0;
-		return true;
+		return 0;
 	}
 
 	/*
@@ -299,16 +299,14 @@ again:
 	}
 
 	if (allrecord_ok) {
-		*pret = 0;
-		return true;
+		return 0;
 	}
 
 	ret = pthread_mutex_unlock(chain);
 	if (ret != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "pthread_mutex_unlock"
 			 "(chain_mutex) failed: %s\n", strerror(ret)));
-		errno = ret;
-		goto fail;
+		return ret;
 	}
 	ret = allrecord_mutex_lock(m, waitflag);
 	if (ret == EBUSY) {
@@ -320,25 +318,18 @@ again:
 				 "(allrecord_mutex) failed: %s\n",
 				 waitflag ? "" : "try_",  strerror(ret)));
 		}
-		errno = ret;
-		goto fail;
+		return ret;
 	}
 	ret = pthread_mutex_unlock(&m->allrecord_mutex);
 	if (ret != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "pthread_mutex_unlock"
 			 "(allrecord_mutex) failed: %s\n", strerror(ret)));
-		errno = ret;
-		goto fail;
+		return ret;
 	}
 	goto again;
-
-fail:
-	*pret = -1;
-	return true;
 }
 
-bool tdb_mutex_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len,
-		      int *pret)
+int tdb_mutex_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 {
 	struct tdb_mutexes *m = tdb->mutexes;
 	pthread_mutex_t *chain;
@@ -349,13 +340,7 @@ bool tdb_mutex_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len,
 	chain = &m->hashchains[idx];
 
 	ret = pthread_mutex_unlock(chain);
-	if (ret == 0) {
-		*pret = 0;
-		return true;
-	}
-	errno = ret;
-	*pret = -1;
-	return true;
+	return ret;
 }
 
 int tdb_mutex_allrecord_lock(struct tdb_context *tdb, int ltype,
