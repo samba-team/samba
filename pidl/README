@@ -50,7 +50,7 @@ Parse::Pidl::Util - Misc utility functions used by *.pm and pidl.pl
 Parse::Pidl::Typelist - Utility functions for keeping track of known types and their representation in C
 
 Tips for hacking on pidl:
- - Inspect pidl's parse tree by using the --keep option and looking at the
+ - Inspect pidl's parse tree by using the --dump-idl-tree option and looking at the
    generated .pidl file.
  - The various backends have a lot in common, if you don't understand how one
    implements something, look at the others.
