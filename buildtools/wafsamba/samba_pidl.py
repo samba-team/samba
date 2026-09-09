@@ -10,7 +10,7 @@ def SAMBA_PIDL(bld, pname, source,
                output_dir='.',
                generate_tables=True):
     '''Build a IDL file using pidl.
-       This will produce up to 17 output files depending on the options used'''
+       This will produce up to 15 output files depending on the options used'''
 
     bname = source[0:-4] # strip off the .idl suffix
     bname = os.path.basename(bname)
@@ -32,8 +32,6 @@ def SAMBA_PIDL(bld, pname, source,
                     '--client'            : 'ndr_%s_c.c ndr_%s_c.h',
                     '--python'            : 'py_%s.c',
                     '--tdr-parser'        : 'tdr_%s.c tdr_%s.h',
-                    '--dcom-proxy'        : '%s_p.c',
-                    '--com-header'        : 'com_%s.h'
                     }
 
     table_header_idx = None
