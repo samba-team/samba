@@ -41,11 +41,6 @@ Parse::Pidl::Samba4::TDR - Parser generator for the "Trivial Data Representation
 Parse::Pidl::Samba4::Template - Generates stubs in C for server implementation
 Parse::Pidl::Samba4::Python - Generates bindings for Python
 
--- Samba COM / DCOM --
-Parse::Pidl::Samba4::COM::Proxy - Generates proxy object for DCOM (client-side)
-Parse::Pidl::Samba4::COM::Stub - Generates stub call handler for DCOM (server-side)
-Parse::Pidl::Samba4::COM::Header - Generates headers for COM
-
 -- Wireshark --
 Parse::Pidl::Wireshark::NDR - Generates a parser for the Wireshark network sniffer
 Parse::Pidl::Wireshark::Conformance - Reads conformance files containing additional data for generating Wireshark parsers
