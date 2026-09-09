@@ -999,7 +999,6 @@ static int db_ctdb_transaction_cancel(struct db_context *db)
 
 static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data,
 				       uint32_t my_vnn,
-				       bool read_only,
 				       bool *persistent_in_progress);
 
 static int db_ctdb_migrate_locked(struct db_ctdb_rec *crec,
@@ -1049,7 +1048,6 @@ again:
 
 	if (!db_ctdb_can_use_local_copy(data,
 					get_my_vnn(),
-					false,
 					&persistent_in_progress))
 	{
 		tdb_chainunlock(ctx->wtdb->tdb, key);
@@ -1553,8 +1551,8 @@ static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
 }
 
-static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, uint32_t my_vnn,
-				       bool read_only,
+static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data,
+				       uint32_t my_vnn,
 				       bool *persistent_in_progress)
 {
 	TDB_DATA data;
@@ -1578,7 +1576,7 @@ static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, uint32_t my_vnn,
 		(struct ctdb_ltdb_header *)ctdb_data.dptr,
 		data,
 		my_vnn,
-		read_only,
+		false,
 		persistent_in_progress);
 }
 
