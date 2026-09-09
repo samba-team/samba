@@ -105,3 +105,30 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
         samdb_url = samba_lp.samdb_url()
         self.assertTrue(samdb_url.startswith('tdb://'))
         self.assertTrue(samdb_url.endswith('/sam.ldb'))
+
+    def _assert_enctypes(self, name, value, expected):
+        samba_lp = param.LoadParm()
+        samba_lp.set(name, value)
+        self.assertEqual(expected, samba_lp.get(name),
+                         "'%s = %s' was not parsed as 0x%x" %
+                         (name, value, expected))
+
+    def test_kdc_supported_enctypes_hex(self):
+        """The hex prefix of an enctype bitmask is case insensitive."""
+        for value in ('0x1c', '0X1C', '0x1C', '0X1c'):
+            self._assert_enctypes('kdc supported enctypes', value, 0x1c)
+
+    def test_kdc_default_domain_supported_enctypes_hex(self):
+        """The hex prefix of an enctype bitmask is case insensitive."""
+        for value in ('0x3c', '0X3C', '0x3C', '0X3c'):
+            self._assert_enctypes('kdc default domain supported enctypes',
+                                  value, 0x3c)
+
+    def test_kdc_supported_enctypes_decimal(self):
+        for value, expected in (('28', 28), ('0', 0)):
+            self._assert_enctypes('kdc supported enctypes', value, expected)
+
+    def test_kdc_default_domain_supported_enctypes_decimal(self):
+        for value, expected in (('60', 60), ('0', 0)):
+            self._assert_enctypes('kdc default domain supported enctypes',
+                                  value, expected)
