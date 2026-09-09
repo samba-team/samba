@@ -1,4 +1,74 @@
                    ==============================
+                   Release Notes for Samba 4.24.7
+                         September 09, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.24 release series.
+
+
+Changes since 4.24.6
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 16097: POSIX ACL backend silently discards erros when processing NT
+     ACLs with non-canonical ordering
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16225: dns client problems related to EDNS usage
+
+o  Andréas Leroux <aleroux@tranquil.it>
+   * BUG 15988: Samba internal DNS service doesn't handle switch from UDP to TCP
+     when packet is larger than 4k
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15988: Samba internal DNS service doesn't handle switch from UDP to TCP
+     when packet is larger than 4k
+   * BUG 16194: autobuild failures need to be reported in a more verbose way
+   * BUG 16223: DNS scavenging happens even if fAging is FALSE
+   * BUG 16226: samba-tool dns zoneoptions $DC_SERVER_IP
+     _msdcs.addom.samba.example.com -P --aging=1 gives
+     WERR_INTERNAL_DB_ERROR
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 16144: Incorrect behavior on stream create-disposition when prior
+     handle is closed
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 16082: An inactive node can run recovery resulting in inconsistent
+     databases
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 16225: dns client problems related to EDNS usage
+
+o  Jennifer Sutton <jennifersutton@catalyst.net.nz>
+   * BUG 16225: dns client problems related to EDNS usage
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.24.6
                           August 13, 2026
                    ==============================
@@ -64,8 +134,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.24.5
                            July 28, 2026
