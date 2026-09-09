@@ -1940,7 +1940,7 @@ bool handle_kdc_supported_enctypes(struct loadparm_context *lp_ctx,
 			bit = smb_strtoul(bitstr, NULL, base, &error, SMB_STR_FULL_STR_CONV);
 			if (error) {
 				DBG_ERR("WARNING: Ignoring invalid value '%s' "
-					"for parameter 'kdc default domain supported enctypes'\n",
+					"for parameter 'kdc supported enctypes'\n",
 					*enctype);
 				ok = false;
 			} else {
