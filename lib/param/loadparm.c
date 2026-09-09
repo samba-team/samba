@@ -1928,7 +1928,7 @@ bool handle_kdc_supported_enctypes(struct loadparm_context *lp_ctx,
 
 			/* See if the bit's specified in hexadecimal. */
 			if (bitstr[0] == '0' &&
-			    (bitstr[1] == 'x' || bitstr[2] == 'X'))
+			    (bitstr[1] == 'x' || bitstr[1] == 'X'))
 			{
 				base = 16;
 				bitstr += 2;
