@@ -41,7 +41,7 @@ sub gen_dispatch_switch($)
 			pidl "\t\tdcesrv_$fn->{NAME}(dce_call, mem_ctx, r2);\n";
 		}
 		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
-		pidl "\t\t\tDEBUG(5,(\"function $fn->{NAME} will reply async\\n\"));\n";
+		pidl "\t\t\tDBG_INFO(\"function $fn->{NAME} will reply async\\n\");\n";
 		pidl "\t\t}\n";
 		pidl "\t\tbreak;\n\t}\n";
 	}
@@ -59,7 +59,7 @@ sub gen_reply_switch($)
 		pidl "\tcase $fn->{OPNUM}: {\n";
 		pidl "\t\tstruct $fn->{NAME} *r2 = (struct $fn->{NAME} *)r;\n";
 		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
-		pidl "\t\t\tDEBUG(5,(\"function $fn->{NAME} replied async\\n\"));\n";
+		pidl "\t\t\tDBG_INFO(\"function $fn->{NAME} replied async\\n\");\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (DEBUGLEVEL >= 10 && dce_call->fault_code == 0) {\n";
 		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
@@ -233,7 +233,7 @@ static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const str
 						&dcesrv_$name\_interface,
 						NULL);
 		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(1,(\"$name\_op_init_server: failed to register endpoint \'%s\'\\n\",name));
+			DBG_WARNING(\"failed to register endpoint \'%s\'\\n\", name);
 			return ret;
 		}
 	}
@@ -295,7 +295,7 @@ NTSTATUS dcerpc_server_$name\_init(TALLOC_CTX *ctx)
 	ret = dcerpc_register_ep_server(&ep_server);
 
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,(\"Failed to register \'$name\' endpoint server!\\n\"));
+		DBG_ERR(\"Failed to register \'$name\' endpoint server!\\n\");
 		return ret;
 	}
 
