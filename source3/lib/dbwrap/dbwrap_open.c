@@ -127,9 +127,11 @@ struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 		if (try_mutex) {
 			if (tdb_runtime_check_for_robust_mutexes()) {
 				tdb_flags |= TDB_MUTEX_LOCKING;
+#ifdef HAVE_ROBUST_MUTEXES
 			} else {
 				DBG_ERR("mutexes requested but not "
 					"available\n");
+#endif
 			}
 		}
 
