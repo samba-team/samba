@@ -155,10 +155,13 @@ include:
     - free -h
     - CCACHE_BASEDIR="${PWD}" CCACHE_DIR="${PWD}/ccache" ccache -s -c
   artifacts:
+    # The *.stdout/*.stderr files of each autobuild task are bundled
+    # into logs.tar.gz, which keeps the upload small. They are most
+    # useful when the job failed, so upload them in that case too.
+    when: always
     expire_in: 1 week
     paths:
-      - "*.stdout"
-      - "*.stderr"
+      - logs.tar.gz
       - "*.info"
       - public
       - system-info.txt
