@@ -6679,19 +6679,21 @@ static bool test_persistent_reconnect_contended_do_one(
 					"smb2_close failed\n");
 	ZERO_STRUCT(h1);
 
-	if (stopped) {
-		ret = torture_start_ctdb_node(tctx, _tree, pnn);
-		torture_assert_goto(tctx, ret, ret, done,
-				    "torture_ctdb_start_node failed\n");
-		stopped = false;
-	}
-
 done:
+	/*
+	 * Restart the node from here only. Doing it on the success path as
+	 * well restarted it twice whenever that attempt failed, as the jump
+	 * to done: left stopped set. Don't assign to ret either: a failure
+	 * in the test body must not be overwritten by a successful restart.
+	 */
 	if (stopped) {
-		ret = torture_start_ctdb_node(tctx, _tree, pnn);
-		if (!ret) {
+		bool started;
+
+		started = torture_start_ctdb_node(tctx, _tree, pnn);
+		if (!started) {
 			torture_fail(tctx, "torture_ctdb_start_node failed");
 		}
+		stopped = false;
 	}
 
 	if (!smb2_util_handle_empty(h1)) {
@@ -9613,17 +9615,21 @@ static bool test_persistent_failover_reconnect(struct torture_context *tctx,
 					"smb2_util_close failed\n");
 	ZERO_STRUCT(h1);
 
-	ret = torture_start_ctdb_node(tctx, tree, pnn);
-	torture_assert_goto(tctx, ret, ret, done,
-			    "torture_ctdb_start_node failed\n");
-	stopped = false;
-
 done:
+	/*
+	 * Restart the node from here only. Doing it on the success path as
+	 * well restarted it twice whenever that attempt failed, as the jump
+	 * to done: left stopped set. Don't assign to ret either: a failure
+	 * in the test body must not be overwritten by a successful restart.
+	 */
 	if (stopped && tree != NULL) {
-		ret = torture_start_ctdb_node(tctx, tree, pnn);
-		if (!ret) {
+		bool started;
+
+		started = torture_start_ctdb_node(tctx, tree, pnn);
+		if (!started) {
 			torture_fail(tctx, "torture_ctdb_start_node failed");
 		}
+		stopped = false;
 	}
 
 	if (!smb2_util_handle_empty(h1)) {
