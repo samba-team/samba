@@ -154,14 +154,23 @@ include:
     - cat /proc/swaps
     - free -h
     - CCACHE_BASEDIR="${PWD}" CCACHE_DIR="${PWD}/ccache" ccache -s -c
+      # The daemons of the test environments log into files below the
+      # selftest prefix, which lives in the testbase and not in the git
+      # checkout, so gitlab can't collect them on its own. Pack them into
+      # a tarball in the checkout, but only when the job failed, as that
+      # is the only case where we want to upload them.
+    - if [ "$CI_JOB_STATUS" != "success" ]; then find /builds/samba-testbase/$CI_JOB_NAME/bin/ab \( -name '*.log' -o -name 'log.*' \) -type f -print0 > /tmp/testenv-logs.lst; fi || true
+    - if [ -s /tmp/testenv-logs.lst ]; then tar $SAMBA_TESTBASE_TAR_OPTIONS -cf samba-testenv-logs.tar --null -T /tmp/testenv-logs.lst && ls -la samba-testenv-logs.tar; fi || true
   artifacts:
     # The *.stdout/*.stderr files of each autobuild task are bundled
     # into logs.tar.gz, which keeps the upload small. They are most
     # useful when the job failed, so upload them in that case too.
+    # samba-testenv-logs.tar is only generated for a failed job.
     when: always
     expire_in: 1 week
     paths:
       - logs.tar.gz
+      - samba-testenv-logs.tar
       - "*.info"
       - public
       - system-info.txt
