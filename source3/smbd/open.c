@@ -4848,7 +4848,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 						SMBD_TMPDIR_PREFIX,
 						idstr,
 						smb_fname_atname->base_name);
-	if (tmp_atname == NULL) {
+	if (tmp_atname->base_name == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
