@@ -65,7 +65,7 @@ sub gen_reply_switch($)
 		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (dce_call->fault_code != 0) {\n";
-		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault %s in $fn->{NAME}\\n\", dcerpc_errstr(mem_ctx, dce_call->fault_code)));\n";
+		pidl "\t\t\tDBG_NOTICE(\"dcerpc_fault %s in $fn->{NAME}\\n\", dcerpc_errstr(mem_ctx, dce_call->fault_code));\n";
 		pidl "\t\t}\n";
 		pidl "\t\tbreak;\n\t}\n";
 	}
