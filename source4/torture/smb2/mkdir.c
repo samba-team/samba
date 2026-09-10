@@ -103,3 +103,26 @@ done:
 	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
+
+bool torture_smb2_mkdir_long_name(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	char component[256];
+	NTSTATUS status;
+	bool ret = true;
+
+	memset(component, 'a', sizeof(component) - 1);
+	component[sizeof(component) - 1] = '\0';
+
+	smb2_util_rmdir(tree, component);
+	status = smb2_util_mkdir(tree, component);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status");
+	status = smb2_util_rmdir(tree, component);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status");
+
+done:
+	smb2_util_rmdir(tree, component);
+	return ret;
+}
