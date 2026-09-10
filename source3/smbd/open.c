@@ -4758,6 +4758,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	struct server_id id = messaging_server_id(conn->sconn->msg_ctx);
 	struct server_id_buf idbuf;
 	char *idstr = server_id_str_buf_unique_ex(id, '%', &idbuf);
+	struct GUID tmp_guid = GUID_random();
+	struct GUID_txt_buf tmp_guid_buf = {};
+	const char *tmp_guid_str = GUID_buf_string(&tmp_guid, &tmp_guid_buf);
 	struct vfs_open_how how = { .flags = O_RDONLY|O_DIRECTORY, };
 	struct vfs_rename_how rhow = { .flags = VFS_RENAME_HOW_NO_REPLACE, };
 	int ret;
@@ -4832,6 +4835,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	 * see the directory before it is setup completely
 	 * we use a temporary name and rename it
 	 * when everything is ready.
+	 * The client name may already use the filesystem's full NAME_MAX,
+	 * so use a fixed-length unique suffix instead.
 	 */
 
 	orig_dname = smb_dname->base_name;
@@ -4847,7 +4852,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 						"%s%s:%s",
 						SMBD_TMPDIR_PREFIX,
 						idstr,
-						smb_fname_atname->base_name);
+						tmp_guid_str);
 	if (tmp_atname->base_name == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
