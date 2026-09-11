@@ -7329,6 +7329,39 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smb2cli_session_check_reauth(struct smbXcli_session *session,
+				      const struct iovec *recv_iov)
+{
+	struct smbXcli_conn *conn = session->conn;
+	uint32_t hdr_flags;
+	NTSTATUS status;
+
+	if (conn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (recv_iov[0].iov_len != SMB2_HDR_BODY) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (!smb2_signing_key_valid(session->smb2_channel.signing_key)) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
+					recv_iov, 3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	hdr_flags = IVAL(recv_iov[0].iov_base, SMB2_HDR_FLAGS);
+	if (!(hdr_flags & SMB2_HDR_FLAG_SIGNED)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
 {
 	if (session->smb2->anonymous_signing) {
