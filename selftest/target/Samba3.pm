@@ -4428,31 +4428,107 @@ sub provision_ctdb($$$$)
 
 	my $srcdir_abs = abs_path($self->{srcdir});
 
-	unless (open(SCRIPT, ">$abs_prefix/stop_node.sh")) {
-		warn("Unable to open '$abs_prefix/stop_node.sh'");
-		return undef;
-	}
-	print SCRIPT "
+	#
+	# Helpers used by smbd:FSCTL_SMBTORTURE, see
+	# smbd_fsctl_torture_[start|stop]_ctdb_node() in source3/smbd/.
+	#
+	my $node_script_tmpl = <<'NODE_SCRIPT_END';
 #!/bin/sh
-cmd=\"$srcdir_abs/ctdb/tests/local_daemons.sh $prefix onnode \$1 $srcdir_abs/bin/ctdb stop\"
-echo Running cmd = \$cmd >&2
-\$cmd
-";
-	close(SCRIPT);
-	chmod 0755, "$abs_prefix/stop_node.sh";
+#
+# @DESC@
+#
+# "ctdb @CTDB_CMD@" already waits for the node flag to propagate across the
+# cluster and for the takeover run to complete, but not for the recovery that
+# the flag change triggers. Poll until the cluster reports a finished recovery
+# and a vnnmap of the expected size.
+#
 
-	unless (open(SCRIPT, ">$abs_prefix/start_node.sh")) {
-		warn("Unable to open '$abs_prefix/start_node.sh'");
-		return undef;
+num_nodes=@NUM_NODES@
+timeout=30
+
+ctdb="@SRCDIR@/bin/ctdb"
+onnode="@SRCDIR@/ctdb/tests/local_daemons.sh @PREFIX@ onnode"
+
+pnn="$1"
+if [ -z "$pnn" ]; then
+	echo "usage: $0 <pnn>" >&2
+	exit 1
+fi
+
+# Ask a node that is part of the cluster about the cluster state: the node
+# itself after "continue", any other node after "stop", as a stopped node
+# stays in recovery mode itself.
+if [ "@QUERY@" = "other" ]; then
+	query=0
+	while [ "$query" -lt "$num_nodes" ] && [ "$query" -eq "$pnn" ]; do
+		query=$((query + 1))
+	done
+else
+	query="$pnn"
+fi
+
+cmd="$onnode $pnn $ctdb @CTDB_CMD@"
+echo "Running cmd = $cmd" >&2
+$cmd || exit 1
+
+want_size=@WANT_SIZE@
+
+t="$timeout"
+while [ "$t" -gt 0 ]; do
+	status=$($onnode "$query" $ctdb status 2>/dev/null)
+	if echo "$status" | grep -q "Recovery mode:NORMAL" &&
+	   echo "$status" | grep -q "Size:$want_size\$"; then
+		exit 0
+	fi
+	sleep 1
+	t=$((t - 1))
+done
+
+echo "Timed out after ${timeout}s waiting for @WAIT_DESC@" >&2
+$onnode "$query" $ctdb status >&2
+exit 1
+NODE_SCRIPT_END
+
+	my @node_scripts = (
+		{
+			name      => 'stop_node.sh',
+			ctdb_cmd  => 'stop',
+			query     => 'other',
+			want_size => '$((num_nodes - 1))',
+			desc      => 'Stop ctdb node $1 and wait until the remaining nodes have re-formed the cluster.',
+			wait_desc => 'the cluster to recover without node $pnn',
+		},
+		{
+			name      => 'start_node.sh',
+			ctdb_cmd  => 'continue',
+			query     => 'self',
+			want_size => '$num_nodes',
+			desc      => 'Continue ctdb node $1 and wait until it has rejoined the cluster.',
+			wait_desc => 'node $pnn to rejoin the cluster',
+		},
+	);
+
+	foreach my $node_script (@node_scripts) {
+		my $script = $node_script_tmpl;
+		my $path = "$abs_prefix/$node_script->{name}";
+
+		$script =~ s/\@NUM_NODES\@/$num_nodes/g;
+		$script =~ s/\@SRCDIR\@/$srcdir_abs/g;
+		$script =~ s/\@PREFIX\@/$prefix/g;
+		$script =~ s/\@CTDB_CMD\@/$node_script->{ctdb_cmd}/g;
+		$script =~ s/\@QUERY\@/$node_script->{query}/g;
+		$script =~ s/\@WANT_SIZE\@/$node_script->{want_size}/g;
+		$script =~ s/\@DESC\@/$node_script->{desc}/g;
+		$script =~ s/\@WAIT_DESC\@/$node_script->{wait_desc}/g;
+
+		unless (open(SCRIPT, ">$path")) {
+			warn("Unable to open '$path'");
+			return undef;
+		}
+		print SCRIPT $script;
+		close(SCRIPT);
+		chmod 0755, $path;
 	}
-	print SCRIPT "
-#!/bin/sh
-cmd=\"$srcdir_abs/ctdb/tests/local_daemons.sh $prefix onnode \$1 $srcdir_abs/bin/ctdb continue\"
-echo Running cmd = \$cmd >&2
-\$cmd
-";
-	close(SCRIPT);
-	chmod 0755, "$abs_prefix/start_node.sh";
 
 	my %ret = ();
 
