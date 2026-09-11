@@ -3769,8 +3769,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	if ((req->current_idx > SMBD_SMB2_NUM_IOV_PER_REQ) &&
-	    (smb2_signing_key_valid(req->last_sign_key)) &&
-	    (firsttf->iov_len == 0))
+	    smb2_signing_key_valid(req->last_sign_key))
 	{
 		int last_idx = req->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
 		struct iovec *lasthdr = SMBD_SMB2_IDX_HDR_IOV(req,out,last_idx);
@@ -3812,7 +3811,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (req->do_signing && firsttf->iov_len == 0) {
+		if (req->do_signing) {
 			struct smbXsrv_session *x = req->session;
 			struct smb2_signing_key *signing_key =
 				smbd_smb2_signing_key(x, xconn, NULL);
@@ -3858,15 +3857,13 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	/*
 	 * now check if we need to sign the current response
+	 *
+	 * This may even happen within a encrypted response, but it's
+	 * not the default, as we check req->was_encrypted and then
+	 * don't set req->do_signing. But other code can later force
+	 * req->do_signing, e.g. the session reauth code.
 	 */
-	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
-		status = smb2_signing_encrypt_pdu(req->first_enc_key,
-					firsttf,
-					req->out.vector_count - first_idx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	} else if (req->do_signing) {
+	if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
 		struct smb2_signing_key *signing_key =
 			smbd_smb2_signing_key(x, xconn, NULL);
@@ -3874,6 +3871,20 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		status = smb2_signing_sign_pdu(signing_key,
 					       outhdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	/*
+	 * Finally encrypt the whole response, which might be multiple
+	 * compound responses at the core SMB2 layer, with the
+	 * encryption key of the first response in the compound chain.
+	 */
+	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
+		status = smb2_signing_encrypt_pdu(req->first_enc_key,
+					firsttf,
+					req->out.vector_count - first_idx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
