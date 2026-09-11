@@ -1947,6 +1947,13 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	status = smb2cli_session_check_reauth(cli->smb2.session, recv_iov);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_check_reauth returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_flush(cli->conn, cli->timeout, cli->smb2.session,
 			       cli->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
