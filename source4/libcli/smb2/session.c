@@ -387,11 +387,6 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 		return;
 	}
 
-	if (state->reauth) {
-		tevent_req_done(req);
-		return;
-	}
-
 	if (cli_credentials_is_anonymous(state->credentials) &&
 	    !state->session->anonymous_session_key)
 	{
@@ -426,6 +421,12 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 			return;
 		}
 		session->needs_bind = false;
+	} else if (state->reauth) {
+		status = smb2cli_session_check_reauth(session->smbXcli,
+						      state->recv_iov);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	} else {
 		status = smb2cli_session_set_session_key(session->smbXcli,
 							 session_key,
