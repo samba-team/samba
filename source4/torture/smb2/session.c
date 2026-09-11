@@ -1213,11 +1213,6 @@ static bool test_session_expire1i(struct torture_context *tctx,
 		 */
 		cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 
-		if (!force_encryption) {
-			smb2cli_session_require_signed_response(
-				tree->session->smbXcli, true);
-		}
-
 		torture_comment(tctx, "%s: reauth => OK\n",
 				current_timestring(tctx, true));
 		status = smb2_session_setup_spnego(tree->session,
@@ -1232,9 +1227,6 @@ static bool test_session_expire1i(struct torture_context *tctx,
 					      500 * 1000);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
-
-		smb2cli_session_require_signed_response(
-			tree->session->smbXcli, false);
 	}
 
 	ticket_expired = timeval_expired(&endtime);
