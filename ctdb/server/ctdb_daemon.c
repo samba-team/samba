@@ -2145,6 +2145,155 @@ static void ctdb_push_record_input_pkt(void *p, struct ctdb_req_header *hdr)
 	ctdb_input_pkt(ctdb, hdr);
 }
 
+struct push_record_fanout_state {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_control_old *c;
+	const char *errormsg;
+	uint32_t num_pending;
+	int32_t status;
+};
+
+static void ctdb_push_record_fanout_timeout(struct tevent_context *ev,
+					    struct tevent_timer *te,
+					    struct timeval t,
+					    void *private_data)
+{
+	struct push_record_fanout_state *state = talloc_get_type_abort(
+		private_data, struct push_record_fanout_state);
+
+	DBG_ERR("Timed out waiting for %"PRIu32" PUSH_RECORD_STORE replies\n",
+		state->num_pending);
+
+	ctdb_request_control_reply(state->ctdb,
+				   state->c,
+				   NULL,
+				   -1,
+				   "push-record timed out");
+	talloc_free(state);
+}
+
+/*
+  Called once for each node we fanned the store out to. Every control we
+  send produces exactly one callback, either a reply or a timeout from
+  ctdb_control_timeout(), so counting the replies is safe.
+ */
+static void ctdb_push_record_fanout_callback(struct ctdb_context *ctdb,
+					     int32_t status,
+					     TDB_DATA data,
+					     const char *errormsg,
+					     void *private_data)
+{
+	struct push_record_fanout_state *state = talloc_get_type_abort(
+		private_data, struct push_record_fanout_state);
+
+	if (status != 0) {
+		DBG_ERR("PUSH_RECORD_STORE failed: status=%"PRIi32" %s\n",
+			status,
+			errormsg != NULL ? errormsg : "no error message given");
+		if (state->status == 0) {
+			state->status = status;
+			state->errormsg = errormsg;
+		}
+	}
+
+	state->num_pending--;
+	if (state->num_pending != 0) {
+		return;
+	}
+
+	ctdb_request_control_reply(state->ctdb,
+				   state->c,
+				   NULL,
+				   state->status,
+				   state->errormsg);
+	talloc_free(state);
+}
+
+/*
+  Push a record out to the volatile databases of all other active nodes and
+  wait until they have acked it.
+
+  This is modelled on ctdb_control_trans3_commit(): the node holding the
+  record asks its own daemon to fan the store out as
+  CTDB_CONTROL_PUSH_RECORD_STORE, and we reply once every node has answered.
+  The caller therefore knows the record is on all nodes before it goes on,
+  instead of having to reason about an unsequenced broadcast that may be
+  applied at an arbitrary point in the future.
+ */
+int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
+				 struct ctdb_req_control_old *c,
+				 TDB_DATA indata,
+				 bool *async_reply)
+{
+	struct push_record_fanout_state *state = NULL;
+	unsigned int i;
+
+	state = talloc_zero(ctdb, struct push_record_fanout_state);
+	if (state == NULL) {
+		DBG_ERR("talloc_zero failed\n");
+		return -1;
+	}
+	state->ctdb = ctdb;
+	state->c = c;
+
+	for (i = 0; i < ctdb->vnn_map->size; i++) {
+		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+		int ret;
+
+		/* only send to active nodes */
+		if (node->flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		/*
+		 * Do not store on the pushing node. It has already written
+		 * the record, with an incremented RSN, and storing it here
+		 * would overwrite that.
+		 */
+		if (node->pnn == ctdb->pnn) {
+			continue;
+		}
+
+		ret = ctdb_daemon_send_control(ctdb,
+					       node->pnn,
+					       0,
+					       CTDB_CONTROL_PUSH_RECORD_STORE,
+					       c->client_id,
+					       0,
+					       indata,
+					       ctdb_push_record_fanout_callback,
+					       state);
+		if (ret != 0) {
+			DBG_ERR("Unable to send PUSH_RECORD_STORE to pnn %u\n",
+				node->pnn);
+			talloc_free(state);
+			return -1;
+		}
+
+		state->num_pending++;
+	}
+
+	if (state->num_pending == 0) {
+		talloc_free(state);
+		return 0;
+	}
+
+	/* we need to wait for the replies */
+	*async_reply = true;
+
+	/* need to keep the control structure around */
+	talloc_steal(state, c);
+
+	/* but we won't wait forever */
+	tevent_add_timer(ctdb->ev,
+			 state,
+			 timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			 ctdb_push_record_fanout_timeout,
+			 state);
+
+	return 0;
+}
+
 /*
   Store a record pushed to us by the node that holds it. This is the worker
   side of CTDB_CONTROL_PUSH_RECORD, fanned out by ctdb_control_push_record()
@@ -2173,8 +2322,11 @@ int32_t ctdb_control_push_record_store(struct ctdb_context *ctdb,
 	}
 
 	if (ctdb->vnn_map->generation != data->generation) {
-		DBG_INFO("Ignoring outdated push-record\n");
-		status = 0;
+		/*
+		 * A recovery happened since the push was sent. Tell the
+		 * pusher.
+		 */
+		DBG_INFO("Rejecting outdated push-record\n");
 		goto done;
 	}
 
