@@ -2831,7 +2831,7 @@ struct db_context *db_open_ctdb_ex(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!(db_ctdb = talloc(result, struct db_ctdb_ctx))) {
+	if (!(db_ctdb = talloc_zero(result, struct db_ctdb_ctx))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
