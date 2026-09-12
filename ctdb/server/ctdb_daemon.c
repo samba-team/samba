@@ -2145,10 +2145,15 @@ static void ctdb_push_record_input_pkt(void *p, struct ctdb_req_header *hdr)
 	ctdb_input_pkt(ctdb, hdr);
 }
 
-int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
-				 struct ctdb_req_control_old *c,
-				 TDB_DATA indata,
-				 bool *async_reply)
+/*
+  Store a record pushed to us by the node that holds it. This is the worker
+  side of CTDB_CONTROL_PUSH_RECORD, fanned out by ctdb_control_push_record()
+  on the pushing node.
+ */
+int32_t ctdb_control_push_record_store(struct ctdb_context *ctdb,
+				       struct ctdb_req_control_old *c,
+				       TDB_DATA indata,
+				       bool *async_reply)
 {
 	struct ctdb_push_record_data *data = NULL;
 	struct ctdb_db_context *ctdb_db = NULL;
