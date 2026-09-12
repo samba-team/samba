@@ -151,6 +151,12 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_ph_durability_vals[] = {
+	{PH_DURABILITY_FULL_OUTAGE, "full_outage"},
+	{PH_DURABILITY_PARTIAL_OUTAGE, "partial_outage"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_smb_encryption_vals[] = {
 	{SMB_ENCRYPTION_DEFAULT, "default"},
 	{SMB_ENCRYPTION_OFF, "No"},
