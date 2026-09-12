@@ -32,7 +32,7 @@ temporary server failures without having to reopen files.
 
 Persistent Handles are advertised through the SMB3 protocol capability
 SMB2_CAP_PERSISTENT_HANDLES. To make use of them on a share, both the
-global "smb3 persistent handles" option and the per-share
+global "persistent handles" option and the per-share
 "continuous availability" option must be enabled.
 
 Because Persistent Handles require Samba to maintain SMB state, they
@@ -199,7 +199,8 @@ smb.conf changes
   allow dcerpc auth level connect         deprecated
   kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
   getwd cache                             Removed
-
+  persistent handles                      New             no
+  continuous availability                 New             no
 
 CHANGES SINCE 4.25.0rc1
 =======================
