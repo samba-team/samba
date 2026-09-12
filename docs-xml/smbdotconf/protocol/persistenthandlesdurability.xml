@@ -1,0 +1,44 @@
+<samba:parameter name="persistent handles durability"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_ph_durability_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+      This parameter selects how much of an outage SMB3 Persistent Handles
+      are expected to survive. It only has an effect if
+      <smbconfoption name="persistent handles"/> is enabled and Samba is
+      clustered.
+    </para>
+
+    <para>
+      With <emphasis>full_outage</emphasis>, the default, Samba additionally
+      maintains a persistent backup copy of the handle state in a second,
+      persistent ctdb database. Handles then also survive an outage of every
+      node at the same time, planned or unplanned: a maintenance window in
+      which the whole cluster is shut down and restarted loses the volatile
+      databases, and the handle state is restored from the backup when the
+      cluster comes back.
+    </para>
+
+    <para>
+      With <emphasis>partial_outage</emphasis>, that backup database is not
+      used. Handles survive any outage that leaves at least one node running,
+      which covers a node crash, a rolling restart, and the loss of all but
+      one node, because the handle state is kept on every node of the
+      cluster. Handles are lost if every node is down at the same time.
+    </para>
+
+    <para>
+      The backup database is not free. Every change to the state of a
+      persistent handle costs an additional cluster wide transaction, and
+      that transaction is written to stable storage on every node, so it
+      involves an fsync per node. Sites that do not need handles to survive a
+      full cluster shutdown can set <emphasis>partial_outage</emphasis> and
+      avoid that cost.
+    </para>
+</description>
+
+<value type="default">full_outage</value>
+<value type="example">partial_outage</value>
+</samba:parameter>

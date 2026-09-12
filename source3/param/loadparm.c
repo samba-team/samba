@@ -1006,6 +1006,7 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.async_dns_timeout = 10;
 
 	Globals.client_smb_encrypt = SMB_ENCRYPTION_DEFAULT;
+	Globals.persistent_handles_durability = PH_DURABILITY_FULL_OUTAGE;
 
 	Globals._client_use_kerberos = CRED_USE_KERBEROS_DESIRED;
 
