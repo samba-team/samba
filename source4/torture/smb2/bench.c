@@ -543,6 +543,7 @@ struct test_smb2_bench_path_contention_shared_state {
 	struct timeval starttime;
 	int timecount;
 	int timelimit;
+	bool persistent;
 	struct {
 		uint64_t num_finished;
 		double total_latency;
@@ -614,6 +615,17 @@ static void test_smb2_bench_path_contention_loop_open(
 {
 	struct test_smb2_bench_path_contention_shared_state *state = loop->state;
 
+	if (state->persistent) {
+		/*
+		 * Every iteration is a new open, so it needs a new
+		 * create_guid. And as smb2_create_recv() only ever sets
+		 * io.out.persistent_open, reset it here in order to make
+		 * the check in the done handler meaningful.
+		 */
+		loop->opens.io.in.create_guid = GUID_random();
+		loop->opens.io.out.persistent_open = false;
+	}
+
 	loop->opens.num_started += 1;
 	loop->opens.starttime = timeval_current();
 	loop->opens.req = smb2_create_send(loop->conn->tree, &loop->opens.io);
@@ -644,6 +656,12 @@ static void test_smb2_bench_path_contention_loop_opened(struct smb2_request *req
 	loop->error = smb2_create_recv(req, frame, &loop->opens.io);
 	torture_assert_ntstatus_ok_goto(state->tctx, loop->error,
 					state->ok, asserted, __location__);
+	if (state->persistent) {
+		torture_assert_goto(state->tctx,
+				    loop->opens.io.out.persistent_open,
+				    state->ok, asserted,
+				    "persistent open not granted");
+	}
 	ZERO_STRUCT(loop->opens.io.out.blobs);
 	SMB_ASSERT(latency >= 0.000001);
 
@@ -887,11 +905,18 @@ bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 	size_t i;
 	size_t li = 0;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	bool persistent = torture_setting_bool(tctx, "persistent", false);
 	const char *path = torture_setting_string(tctx, "bench_path", "");
+	uint32_t tcon_caps;
 	struct smb2_create open_io = { .level = RAW_OPEN_SMB2, };
 	struct smb2_close close_io = { .level = RAW_CLOSE_SMB2, };
 	struct tevent_timer *te = NULL;
 	uint32_t timeout_msec;
+
+	tcon_caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (persistent && !(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "share is not continuously available");
+	}
 
 	state = talloc_zero(tctx, struct test_smb2_bench_path_contention_shared_state);
 	torture_assert(tctx, state != NULL, __location__);
@@ -908,6 +933,7 @@ bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 	torture_assert(tctx, state->loops != NULL, __location__);
 	state->ok = true;
 	state->timelimit = MAX(timelimit, 1);
+	state->persistent = persistent;
 
 	open_io.in.desired_access = SEC_DIR_READ_ATTRIBUTE;
 	open_io.in.alloc_size = 0;
@@ -920,6 +946,14 @@ bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 	open_io.in.fname = path;
 	open_io.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
 	open_io.in.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+	if (persistent) {
+		/*
+		 * in.create_guid is filled in per open by
+		 * test_smb2_bench_path_contention_loop_open().
+		 */
+		open_io.in.durable_open_v2 = true;
+		open_io.in.persistent_open = true;
+	}
 
 	timeout_msec = tree->session->transport->options.request_timeout * 1000;
 
