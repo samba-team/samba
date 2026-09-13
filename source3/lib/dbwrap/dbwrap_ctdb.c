@@ -2685,6 +2685,14 @@ static int migrate_persistent_traverse_fn(struct tdb_context *ctdb,
 		goto out;
 	}
 
+	/*
+	 * Release the record, and with it the chainlock, before talking to
+	 * the local ctdbd below. key and d point into the traverse buffers
+	 * of the persistent db, they stay valid.
+	 */
+	TALLOC_FREE(rec);
+	crec = NULL;
+
 	status = db_ctdb_push_record(state->tmp_ctx,
 				     state->db_ctdb_ctx,
 				     &push_header,
@@ -2796,7 +2804,7 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 		goto out;
 	}
 
-	curtime = current_timestring(marker_rec, false);
+	curtime = current_timestring(db_ctdb_ctx, false);
 	if (curtime == NULL) {
 		ret = -1;
 		goto out;
@@ -2823,6 +2831,13 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 		goto out;
 	}
 
+	/*
+	 * Release the record, and with it the chainlock, before talking to
+	 * the local ctdbd below.
+	 */
+	TALLOC_FREE(marker_rec);
+	crec = NULL;
+
 	status = db_ctdb_push_record(migration_state.tmp_ctx,
 				     db_ctdb_ctx,
 				     &push_header,
@@ -2838,6 +2853,7 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 
 out:
 	TALLOC_FREE(migration_state.tmp_ctx);
+	TALLOC_FREE(curtime);
 	TALLOC_FREE(marker_rec);
 	return ret;
 }
