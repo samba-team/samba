@@ -226,18 +226,12 @@ static NTSTATUS db_ctdb_push_record(TALLOC_CTX *mem_ctx,
 		.hdr = *header,
 		.key = key,
 	};
+	useconds_t sleep_time = 10000; /* Start with 10ms */
+	uint32_t new_generation;
 	int32_t ctrl_ret;
 	NTSTATUS status;
 	size_t np = 0;
 	int ret;
-
-	ret = ctdbd_generation(conn, &prd.generation);
-	if (ret != 0) {
-		DBG_ERR("ctdbd_generation() failed: %s\n",
-			strerror(ret));
-		status = NT_STATUS_CLUSTER_NODE_DOWN;
-		goto done;
-	}
 
 	status = dbwrap_merge_dbufs(&data, mem_ctx, dbufs, num_dbufs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -245,6 +239,21 @@ static NTSTATUS db_ctdb_push_record(TALLOC_CTX *mem_ctx,
 	}
 
 	prd.value = data;
+
+again:
+	/*
+	 * Re-read the generation on every attempt: it is part of the payload
+	 * and the receiving nodes reject a push that does not carry the
+	 * current one, so retrying with a stale generation would never
+	 * succeed.
+	 */
+	ret = ctdbd_generation(conn, &prd.generation);
+	if (ret != 0) {
+		DBG_ERR("ctdbd_generation() failed: %s\n",
+			strerror(ret));
+		status = NT_STATUS_CLUSTER_NODE_DOWN;
+		goto done;
+	}
 
 	ctrl_data.dsize = ctdb_push_record_data_len(&prd);
 	ctrl_data.dptr = talloc_zero_array(mem_ctx, uint8_t, ctrl_data.dsize);
@@ -254,15 +263,51 @@ static NTSTATUS db_ctdb_push_record(TALLOC_CTX *mem_ctx,
 	}
 	ctdb_push_record_data_push(&prd, ctrl_data.dptr, &np);
 
-	ret = ctdbd_control_broadcast(messaging_ctdb_connection(),
-				      CTDB_CONTROL_PUSH_RECORD,
-				      ctx->db_id,
-				      CTDB_CTRL_FLAG_NOREPLY,
-				      ctrl_data,
-				      NULL,
-				      NULL,
-				      &ctrl_ret);
+	/*
+	 * Hand the record to our own ctdbd, which fans it out to the other
+	 * nodes and only answers once they have all stored it. Returning
+	 * means the record is on every active node, so the caller does not
+	 * have to reason about an unsequenced broadcast that may land at an
+	 * arbitrary point in the future.
+	 */
+	ret = ctdbd_control_local(conn,
+				  CTDB_CONTROL_PUSH_RECORD,
+				  ctx->db_id,
+				  0,
+				  ctrl_data,
+				  NULL,
+				  NULL,
+				  &ctrl_ret);
 	if (ret != 0 || ctrl_ret != 0) {
+		/*
+		 * Like the TRANS3_COMMIT control in
+		 * db_ctdb_transaction_commit(), this should only fail when a
+		 * recovery ran concurrently. Compare the generation to find
+		 * out: if it moved, retry with an exponential backoff,
+		 * starting with 10 ms up to one second. Repeating the push is
+		 * harmless, a node that already has the record discards the
+		 * duplicate on its RSN test.
+		 */
+		TALLOC_FREE(ctrl_data.dptr);
+
+		if (ctdbd_generation(conn, &new_generation) != 0) {
+			DBG_ERR("ctdbd_generation() failed\n");
+			status = NT_STATUS_CLUSTER_NODE_DOWN;
+			goto done;
+		}
+
+		if (new_generation != prd.generation) {
+			DBG_NOTICE("PUSH_RECORD failed across a recovery "
+				   "(generation 0x%"PRIx32" -> 0x%"PRIx32"), "
+				   "retrying\n",
+				   prd.generation, new_generation);
+			usleep(sleep_time);
+			if (sleep_time < 1000000) {
+				sleep_time *= 2;
+			}
+			goto again;
+		}
+
 		DBG_ERR("Error sending PUSH_RECORD control: %s, "
 			"ctrl_ret = %" PRIi32 "\n",
 			strerror(ret), ctrl_ret);

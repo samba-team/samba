@@ -881,6 +881,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_start_ipreallocate(ctdb, c, async_reply);
 
 	case CTDB_CONTROL_PUSH_RECORD:
+		return ctdb_control_push_record(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_PUSH_RECORD_STORE:
 		return ctdb_control_push_record_store(ctdb,
 						     c,
