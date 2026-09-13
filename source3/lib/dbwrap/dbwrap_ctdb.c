@@ -211,7 +211,8 @@ static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
 
 }
 
-static NTSTATUS db_ctdb_push_record(struct db_record *rec,
+static NTSTATUS db_ctdb_push_record(TALLOC_CTX *mem_ctx,
+				    struct db_record *rec,
 				    const TDB_DATA *dbufs,
 				    int num_dbufs)
 {
@@ -234,20 +235,22 @@ static NTSTATUS db_ctdb_push_record(struct db_record *rec,
 	if (ret != 0) {
 		DBG_ERR("ctdbd_generation() failed: %s\n",
 			strerror(ret));
-		return NT_STATUS_CLUSTER_NODE_DOWN;
+		status = NT_STATUS_CLUSTER_NODE_DOWN;
+		goto done;
 	}
 
-	status = dbwrap_merge_dbufs(&data, rec, dbufs, num_dbufs);
+	status = dbwrap_merge_dbufs(&data, mem_ctx, dbufs, num_dbufs);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
 	prd.value = data;
 
 	ctrl_data.dsize = ctdb_push_record_data_len(&prd);
-	ctrl_data.dptr = talloc_zero_array(crec, uint8_t, ctrl_data.dsize);
+	ctrl_data.dptr = talloc_zero_array(mem_ctx, uint8_t, ctrl_data.dsize);
 	if (ctrl_data.dptr == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 	ctdb_push_record_data_push(&prd, ctrl_data.dptr, &np);
 
@@ -259,19 +262,23 @@ static NTSTATUS db_ctdb_push_record(struct db_record *rec,
 				      NULL,
 				      NULL,
 				      &ctrl_ret);
-	TALLOC_FREE(ctrl_data.dptr);
-
 	if (ret != 0 || ctrl_ret != 0) {
 		DBG_ERR("Error sending PUSH_RECORD control: %s, "
 			"ctrl_ret = %" PRIi32 "\n",
 			strerror(ret), ctrl_ret);
 		if (ret != 0) {
-			return map_nt_error_from_unix(ret);
+			status = map_nt_error_from_unix(ret);
+		} else {
+			status = NT_STATUS_UNSUCCESSFUL;
 		}
-		return NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+done:
+	TALLOC_FREE(data.dptr);
+	TALLOC_FREE(ctrl_data.dptr);
+	return status;
 }
 
 /*
@@ -1364,7 +1371,10 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 	 * and RSN and the receiving nodes discard it, they hold a newer copy
 	 * in that case anyway.
 	 */
-	status = db_ctdb_push_record(rec, orig_dbufs, orig_num_dbufs);
+	status = db_ctdb_push_record(rec,
+				     rec,
+				     orig_dbufs,
+				     orig_num_dbufs);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2611,6 +2621,7 @@ static int db_ctdb_wipe(struct db_context *db,
 
 struct migrate_persistent_state {
 	struct db_ctdb_ctx *db_ctdb_ctx;
+	TALLOC_CTX *tmp_ctx;
 };
 
 static int migrate_persistent_traverse_fn(struct tdb_context *ctdb,
@@ -2670,7 +2681,10 @@ static int migrate_persistent_traverse_fn(struct tdb_context *ctdb,
 		goto out;
 	}
 
-	status = db_ctdb_push_record(rec, &d, 1);
+	status = db_ctdb_push_record(state->tmp_ctx,
+				     rec,
+				     &d,
+				     1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("db_ctdb_push_record failed: %s\n", nt_errstr(status));
 		ret = -1;
@@ -2701,6 +2715,11 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 	char *curtime = NULL;
 	NTSTATUS status;
 	int ret;
+
+	migration_state = (struct migrate_persistent_state) {
+		.db_ctdb_ctx = db_ctdb_ctx,
+		.tmp_ctx = talloc_stackframe(),
+	};
 
 	/*
 	 * First let's check if the volatile db was cleared by
@@ -2751,10 +2770,6 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 
 	TALLOC_FREE(marker_rec);
 
-	migration_state = (struct migrate_persistent_state) {
-		.db_ctdb_ctx = db_ctdb_ctx,
-	};
-
 	ret = tdb_traverse_read(pdb_ctdb_ctx->wtdb->tdb,
 				migrate_persistent_traverse_fn,
 				&migration_state);
@@ -2798,7 +2813,10 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 		goto out;
 	}
 
-	status = db_ctdb_push_record(marker_rec, &marker_val, 1);
+	status = db_ctdb_push_record(migration_state.tmp_ctx,
+				     marker_rec,
+				     &marker_val,
+				     1);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		goto out;
@@ -2807,6 +2825,7 @@ static int db_ctdb_migrate_persistent_recs(struct db_context *db,
 	ret = 0;
 
 out:
+	TALLOC_FREE(migration_state.tmp_ctx);
 	TALLOC_FREE(marker_rec);
 	return ret;
 }
