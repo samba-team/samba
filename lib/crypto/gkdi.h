@@ -163,6 +163,12 @@ NTSTATUS kdf_algorithm_from_params(
 	const DATA_BLOB *const kdf_param,
 	struct KdfAlgorithm *const kdf_algorithm_out);
 
+NTSTATUS kdf_params_from_algorithm(
+	TALLOC_CTX *mem_ctx,
+	const struct KdfAlgorithm *const kdf_algorithm,
+	const char **const kdf_algorithm_id_out,
+	DATA_BLOB *const kdf_param_out);
+
 bool gkdi_current_time(NTTIME *current_time_out);
 
 #endif /* LIB_CRYPTO_GKDI_H */

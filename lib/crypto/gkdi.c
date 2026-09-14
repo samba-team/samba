@@ -677,6 +677,52 @@ out:
 	return status;
 }
 
+static NTSTATUS kdf_params_from_kdf_sp_800_108(
+	TALLOC_CTX *mem_ctx,
+	const enum KdfSp800_108Param sp800_108,
+	DATA_BLOB *const kdf_param_out)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	enum ndr_err_code err;
+	const char *hash_algorithm = NULL;
+	struct KdfParameters kdf_parameters;
+
+	switch (sp800_108) {
+	case KDF_PARAM_SHA1:
+		hash_algorithm = "SHA1";
+		break;
+	case KDF_PARAM_SHA256:
+		hash_algorithm = "SHA256";
+		break;
+	case KDF_PARAM_SHA384:
+		hash_algorithm = "SHA384";
+		break;
+	case KDF_PARAM_SHA512:
+		hash_algorithm = "SHA512";
+		break;
+	default:
+		status = NT_STATUS_NOT_SUPPORTED;
+		goto out;
+	}
+
+	kdf_parameters = (struct KdfParameters){
+		.hash_algorithm = hash_algorithm,
+	};
+
+	err = ndr_push_struct_blob(kdf_param_out,
+				   mem_ctx,
+				   &kdf_parameters,
+				   (ndr_push_flags_fn_t)
+					   ndr_push_KdfParameters);
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = ndr_map_error2ntstatus(err);
+		goto out;
+	}
+
+out:
+	return status;
+}
+
 NTSTATUS kdf_algorithm_from_params(const char *const kdf_algorithm_id,
 				   const DATA_BLOB *const kdf_param,
 				   struct KdfAlgorithm *const kdf_algorithm_out)
@@ -688,6 +734,29 @@ NTSTATUS kdf_algorithm_from_params(const char *const kdf_algorithm_id,
 	/* This string comparison is case‐sensitive. */
 	if (strcmp(kdf_algorithm_id, "SP800_108_CTR_HMAC") == 0) {
 		return kdf_sp_800_108_from_params(kdf_param, kdf_algorithm_out);
+	}
+
+	/* Unknown algorithm. */
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+NTSTATUS kdf_params_from_algorithm(
+	TALLOC_CTX *mem_ctx,
+	const struct KdfAlgorithm *const kdf_algorithm,
+	const char **const kdf_algorithm_id_out,
+	DATA_BLOB *const kdf_param_out)
+{
+	if (kdf_algorithm == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (kdf_algorithm->id) {
+	case KDF_ALGORITHM_SP800_108_CTR_HMAC:
+		*kdf_algorithm_id_out = SP800_108_CTR_HMAC;
+		return kdf_params_from_kdf_sp_800_108(
+			mem_ctx,
+			kdf_algorithm->param.sp800_108,
+			kdf_param_out);
 	}
 
 	/* Unknown algorithm. */
