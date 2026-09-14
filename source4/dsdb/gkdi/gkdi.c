@@ -238,7 +238,7 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 			status = ndr_map_error2ntstatus(err);
 			ldb_asprintf_errstring(ldb,
-					       "KdfParameters pull failed: %s\n",
+					       "KdfParameters push failed: %s\n",
 					       nt_errstr(status));
 			ret = LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
 			goto out;
