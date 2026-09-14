@@ -16,7 +16,7 @@ import "misc.idl";
 
 [
   uuid("b9785960-524f-11df-8b6d-83dcded72085"),
-  endpoint("ncacn_np:[\\pipe\\lsass]", "ncacn_ip_tcp:", "ncalrpc:"),
+  endpoint("ncacn_np:[\\pipe\\gkdi]", "ncacn_ip_tcp:", "ncalrpc:"),
   version(1.0),
   pointer_default(unique),
   helpstring("Active Directory Group Key Distribution Service")
