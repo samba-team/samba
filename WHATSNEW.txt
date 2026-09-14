@@ -11,7 +11,7 @@ Changes since 4.24.6
 --------------------
 
 o  Ralph Boehme <slow@samba.org>
-   * BUG 16097: POSIX ACL backend silently discards erros when processing NT
+   * BUG 16097: POSIX ACL backend silently discards errors when processing NT
      ACLs with non-canonical ordering
 
 o  Volker Lendecke <vl@samba.org>
