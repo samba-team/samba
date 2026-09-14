@@ -255,14 +255,5 @@ NTSTATUS gmsa_talloc_password_based_on_key_id(
 
 bool gmsa_current_time(NTTIME *current_time_out)
 {
-	struct timespec current_timespec;
-	int ret;
-
-	ret = clock_gettime(CLOCK_REALTIME, &current_timespec);
-	if (ret) {
-		return false;
-	}
-
-	*current_time_out = full_timespec_to_nt_time(&current_timespec);
-	return true;
+	return gkdi_current_time(current_time_out);
 }

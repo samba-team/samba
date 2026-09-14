@@ -693,3 +693,17 @@ NTSTATUS kdf_algorithm_from_params(const char *const kdf_algorithm_id,
 	/* Unknown algorithm. */
 	return NT_STATUS_NOT_SUPPORTED;
 }
+
+bool gkdi_current_time(NTTIME *current_time_out)
+{
+	struct timespec current_timespec;
+	int ret;
+
+	ret = clock_gettime(CLOCK_REALTIME, &current_timespec);
+	if (ret) {
+		return false;
+	}
+
+	*current_time_out = full_timespec_to_nt_time(&current_timespec);
+	return true;
+}
