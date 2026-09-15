@@ -824,6 +824,9 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 		 * then we must keep reading and discard until we get one.
 		 */
 		linebuf_len = strlen(linebuf);
+		if (linebuf_len == 0) {
+			continue;
+		}
 		if (linebuf[linebuf_len - 1] != '\n') {
 			while (!ferror(fp) && !feof(fp)) {
 				int c;
