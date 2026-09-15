@@ -622,6 +622,7 @@ int main(int argc, char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx = NULL;
 	struct memcache *mcache = NULL;
+	struct messaging_context *msg_ctx = NULL;
 	int local_flags = 0;
 	int ret;
 
@@ -662,15 +663,27 @@ int main(int argc, char **argv)
 	if (local_flags & LOCAL_AM_ROOT) {
 		bool ok;
 
+		msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
+		if (msg_ctx == NULL) {
+			fprintf(stderr, "Could not init messaging context\n");
+			ret = 1;
+			goto out;
+		}
+
 		ok = secrets_init();
 		if (!ok) {
-			return 1;
+			ret = 1;
+			goto out;
 		}
 		ret = process_root(local_flags);
 	} else {
 		ret = process_nonroot(local_flags);
 	}
 
+out:
+	if (msg_ctx != NULL) {
+		cmdline_messaging_context_free();
+	}
 	gfree_all();
 
 	TALLOC_FREE(frame);
