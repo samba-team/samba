@@ -439,7 +439,13 @@ class GkdiImplicitRootKeyTests(GkdiKdcBaseTest):
             gkid,
         )
 
-        self.rpc_get_key(self.gkdi_conn(), self.gmsa_sd, None, gkid)
+        try:
+            self.rpc_get_key(self.gkdi_conn(), self.gmsa_sd, None, gkid)
+        except GetKeyError as rpc_err:
+            if rpc_err.args[0] != HRES_E_INVALIDARG:
+                raise
+
+            self.fail('making a request with the default GKID failed')
 
 
 class GkdiSelfTests(GkdiKdcBaseTest):
