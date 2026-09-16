@@ -27,7 +27,7 @@
 #include "lib/util/samba_util.h"
 #include "lib/util/util_str_hex.h"
 #include "librpc/ndr/libndr.h"
-#include "dsdb/gmsa/gkdi.h"
+#include "dsdb/gkdi/gkdi.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/proto.h"

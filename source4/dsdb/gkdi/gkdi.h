@@ -18,8 +18,8 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef DSDB_GMSA_GKDI_H
-#define DSDB_GMSA_GKDI_H
+#ifndef DSDB_GKDI_GKDI_H
+#define DSDB_GKDI_GKDI_H
 
 #include <talloc.h>
 #include "lib/util/data_blob.h"
@@ -66,4 +66,4 @@ int gkdi_most_recently_created_root_key(
 	struct GUID *const root_key_id_out,
 	const struct ldb_message **const root_key_out);
 
-#endif /* DSDB_GMSA_GKDI_H */
+#endif /* DSDB_GKDI_GKDI_H */

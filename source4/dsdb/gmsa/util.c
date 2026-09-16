@@ -35,7 +35,7 @@
 #include "librpc/gen_ndr/ndr_gmsa.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "dsdb/common/util.h"
-#include "dsdb/gmsa/gkdi.h"
+#include "dsdb/gkdi/gkdi.h"
 #include "dsdb/gmsa/util.h"
 #include "dsdb/samdb/samdb.h"
 

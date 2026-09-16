@@ -36,7 +36,7 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "dsdb/common/util.h"
-#include "dsdb/gmsa/gkdi.h"
+#include "dsdb/gkdi/gkdi.h"
 #include "dsdb/gmsa/util.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/irpc.h"
