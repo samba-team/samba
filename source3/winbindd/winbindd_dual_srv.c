@@ -136,11 +136,15 @@ bool reset_cm_connection_on_error(struct winbindd_domain *domain,
 		goto out;
 	}
 
-	/* Set failover flag if we're invalidating the connection */
+	/*
+	 * Set failover flag if we're invalidating the connection.
+	 * Connection error detected.
+	 */
 out:
 	if (ret) {
 		set_domain_failover_state(domain,
-					WINBINDD_FAILOVER_DC_CONNECTIVITY);
+					  WINBINDD_FAILOVER_DC_CONNECTIVITY,
+					  status);
 	}
 
 	return ret;

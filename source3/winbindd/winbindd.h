@@ -205,6 +205,7 @@ struct winbindd_domain {
 	struct timeval start_dc_time;
 	char *src_dc;
 	enum winbindd_failover_reason failover_reason;
+	NTSTATUS failover_status;
 
 	/* The smb connection */
 
