@@ -1,0 +1,85 @@
+<samba:parameter name="winbind ad site : DOMAIN"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+
+	<para>
+	This parameter forces
+	<citerefentry><refentrytitle>winbindd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> to use a specific Active
+	Directory site for a domain, instead of relying on the normal
+	CLDAP-based site auto-discovery.
+	</para>
+
+	<para>
+	Without this option, winbind determines the site it belongs to by
+	sending a CLDAP ping to a Domain Controller and using the site name
+	the Domain Controller returns, based on the AD Sites and Subnets
+	configuration on the Domain Controller matching the client's source
+	address. This works well as long as the client's outgoing address is
+	correctly mapped to a site in Active Directory, but does not help
+	when, for example, firewall rules restrict which Domain Controllers a
+	client is actually allowed to reach and that set of Domain
+	Controllers does not match what Active Directory's own subnet mapping
+	would have picked.
+	</para>
+
+	<para>
+	This parameter consists of the
+	<smbconfoption name="winbind ad site"/> prefix, followed by a colon
+	and the DNS domain (realm) name the site should be forced for, and is
+	set to the name of the Active Directory site to use for that domain.
+	Each domain is configured independently, so a site can be forced for
+	one domain while another is left on normal auto-discovery.
+	</para>
+
+	<para>
+	When set for a domain, winbind restricts its DNS SRV lookups and DC
+	selection to the given site for that domain, and does not fall back
+	to whichever site a contacted Domain Controller reports as the
+	client's closest site. If no Domain Controller can be found for the
+	forced site, winbind falls back to a site-less lookup, the same way
+	it does when auto-discovery finds no Domain Controller for the
+	discovered site.
+	</para>
+
+	<para>
+	The following example forces winbind to use the
+	<literal>Site-HQ</literal> Active Directory site for the
+	<literal>EARTH.ORG</literal> domain, while
+	<literal>MILKWAY.ORG</literal> continues to use normal site
+	auto-discovery:
+	</para>
+
+	<programlisting>
+	winbind ad site : EARTH.ORG = Site-HQ
+	</programlisting>
+
+	<para>
+	Multiple domains can each be forced to their own site:
+	</para>
+
+	<programlisting>
+	winbind ad site : EARTH.ORG = Site-HQ
+	winbind ad site : MILKWAY.ORG = Site-Core
+	</programlisting>
+
+	<para>
+	The currently discovered or forced site for a domain can be checked
+	with <command>wbinfo --dsgetdcname=DOMAIN</command>, which prints the
+	Domain Controller's own site (<parameter>dc_site_name</parameter>)
+	and the client's site (<parameter>client_site_name</parameter>):
+	</para>
+
+	<programlisting>
+	wbinfo --dsgetdcname=EARTH.ORG
+	</programlisting>
+
+</description>
+
+<value type="default"></value>
+<value type="example">winbind ad site : EARTH.ORG = Site-HQ</value>
+<related>password server</related>
+<related>realm</related>
+</samba:parameter>
