@@ -121,6 +121,18 @@ const struct KeyEnvelopeId *gkdi_pull_KeyEnvelopeId(
 	const DATA_BLOB key_env,
 	struct KeyEnvelopeId *key_env_out);
 
+struct GroupKeyEnvelope;
+NTSTATUS GroupKeyEnvelope(TALLOC_CTX *mem_ctx,
+			  const struct Gkid gkid,
+			  const struct ProvRootKey *const root_key,
+			  uint8_t *const l1_key,
+			  const size_t l1_key_len,
+			  uint8_t *const l2_key,
+			  const size_t l2_key_len,
+			  const char *const domain_name,
+			  const char *const forest_name,
+			  const struct GroupKeyEnvelope **const envelope_out);
+
 enum GkidType gkid_key_type(const struct Gkid gkid);
 
 bool gkid_is_valid(const struct Gkid gkid);

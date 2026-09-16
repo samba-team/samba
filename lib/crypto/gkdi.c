@@ -128,6 +128,93 @@ out:
 	return key_env_ret;
 }
 
+NTSTATUS GroupKeyEnvelope(TALLOC_CTX *mem_ctx,
+			  const struct Gkid gkid,
+			  const struct ProvRootKey *const root_key,
+			  uint8_t *const l1_key,
+			  const size_t l1_key_len,
+			  uint8_t *const l2_key,
+			  const size_t l2_key_len,
+			  const char *const domain_name,
+			  const char *const forest_name,
+			  const struct GroupKeyEnvelope **const envelope_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	struct GroupKeyEnvelope *envelope = NULL;
+	const char *kdf_algorithm_id = NULL;
+	DATA_BLOB kdf_param = {};
+
+	if (envelope_out == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+	*envelope_out = NULL;
+
+	if (root_key == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (l1_key_len > UINT32_MAX) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	if (l2_key_len > UINT32_MAX) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	envelope = talloc(tmp_ctx, struct GroupKeyEnvelope);
+	if (envelope == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	status = kdf_params_from_algorithm(envelope,
+					   &root_key->kdf_algorithm,
+					   &kdf_algorithm_id,
+					   &kdf_param);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	*envelope = (struct GroupKeyEnvelope){
+		.version = root_key->version,
+		.flags = ENVELOPE_FLAG_KEY_MAY_ENCRYPT_NEW_DATA,
+		.l0_index = gkid.l0_idx,
+		.l1_index = gkid.l1_idx,
+		.l2_index = gkid.l2_idx,
+		.root_key_id = root_key->id,
+		.kdf_parameters_len = kdf_param.length,
+		.secret_agreement_parameters_len = 0,
+		.private_key_len = 0,
+		.public_key_len = 0,
+		.l1_key_len = l1_key_len,
+		.l2_key_len = l2_key_len,
+		.kdf_algorithm = kdf_algorithm_id,
+		.kdf_parameters = kdf_param.data,
+		.secret_agreement_algorithm = "",
+		.secret_agreement_parameters = NULL,
+		.domain_name = domain_name,
+		.forest_name = forest_name,
+		.l1_key = l1_key,
+		.l2_key = l2_key,
+	};
+
+	*envelope_out = talloc_steal(mem_ctx, envelope);
+out:
+	talloc_free(tmp_ctx);
+	return status;
+}
+
 NTSTATUS ProvRootKey(TALLOC_CTX *mem_ctx,
 		     const struct GUID root_key_id,
 		     const int32_t version,
