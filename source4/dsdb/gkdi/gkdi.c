@@ -333,7 +333,7 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 	server_config_PrivateKeyLength
 		= ldb_msg_find_attr_as_uint64(server_config_msg,
 					      "msKds-PrivateKeyLength",
-					      256);
+					      512);
 
 	add_msg = ldb_msg_new(tmp_ctx);
 	if (add_msg == NULL) {
