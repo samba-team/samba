@@ -238,6 +238,20 @@ bool gkid_less_than_or_equal_to(const struct Gkid g1, const struct Gkid g2)
 	return g1.l2_idx <= g2.l2_idx;
 }
 
+bool gkid_start_time_valid(const struct Gkid gkid, NTTIME current_time)
+{
+	struct Gkid current_gkid;
+
+	/*
+	 * The key being requested must not be from the future. That said, we
+	 * allow for a little bit of clock skew so that the next managed
+	 * password can be computed prior to the expiration of the current one.
+	 */
+	current_gkid = gkdi_get_interval_id(current_time +
+					    gkdi_max_clock_skew);
+	return gkid_less_than_or_equal_to(gkid, current_gkid);
+}
+
 bool gkdi_rollover_interval(const int64_t managed_password_interval,
 			    NTTIME *result)
 {

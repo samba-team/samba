@@ -142,6 +142,8 @@ NTTIME gkdi_get_interval_start_time(const NTTIME time);
 
 bool gkid_less_than_or_equal_to(const struct Gkid g1, const struct Gkid g2);
 
+bool gkid_start_time_valid(const struct Gkid gkid, NTTIME current_time);
+
 bool gkdi_rollover_interval(const int64_t managed_password_interval,
 			    NTTIME *result);
 
