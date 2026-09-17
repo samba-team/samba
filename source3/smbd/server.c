@@ -2072,6 +2072,8 @@ static void smbd_addr_changed(struct tevent_req *req)
 	struct samba_sockaddr addr = { .sa_socklen = 0, };
 	NTSTATUS status;
 	uint32_t if_index;
+	struct ssaddr_buf addrstr_buf = { 0 };
+	char *addrstr = NULL;
 	bool is_dynamic = false;
 
 	status = addrchange_recv(req, &type, &addr.u.ss, &if_index);
@@ -2083,22 +2085,22 @@ static void smbd_addr_changed(struct tevent_req *req)
 		return;
 	}
 
+	addrstr = ssaddr_str_buf(&addr, &addrstr_buf);
 	is_dynamic = interface_ifindex_exists_with_options(if_index,
 							   IFACE_DYNAMIC_OPTION);
-	if (!is_dynamic) {
-		DBG_NOTICE(
-			"smbd: No interface present for if_index %u "
-			"with dynamic option\n",
-			if_index);
-		goto rearm;
-	}
 
 	if (type == ADDRCHANGE_DEL) {
-		struct ssaddr_buf addrstr_buf;
+		if (!is_dynamic) {
+			DBG_DEBUG("smbd: kernel (AF_NETLINK) dropped ip %s "
+				  "on if_index %u (not dynamic)\n",
+				  addrstr,
+				  if_index);
+			goto rearm;
+		}
 
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s "
 			   "on if_index %u\n",
-			   ssaddr_str_buf(&addr, &addrstr_buf),
+			   addrstr,
 			   if_index);
 
 		smbd_close_socket_for_ip(state->parent, state->msg_ctx, &addr);
@@ -2107,13 +2109,20 @@ static void smbd_addr_changed(struct tevent_req *req)
 	}
 
 	if (type == ADDRCHANGE_ADD) {
-		struct ssaddr_buf addrstr_buf;
-		char *addrstr = ssaddr_str_buf(&addr, &addrstr_buf);
 		size_t num_ok;
+
+		if (!is_dynamic) {
+			DBG_DEBUG("smbd: kernel (AF_NETLINK) added ip %s "
+				  "on if_index %u (not dynamic)\n",
+				  addrstr,
+				  if_index);
+			goto rearm;
+		}
 
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s "
 			   "on if_index %u\n",
-			   addrstr, if_index);
+			   addrstr,
+			   if_index);
 
 		num_ok = smbd_open_socket_for_ip(state->parent,
 						 state->ev,
