@@ -1473,6 +1473,29 @@ int lp_parm_enum(int snum, const char *type, const char *option,
 }
 
 /**
+ * @brief Return the AD site administratively forced for a realm, if any.
+ *
+ * Looks up the "winbind ad site:<realm> = <site>" parametric smb.conf
+ * option. If set, winbind uses this site instead of the site it would
+ * otherwise discover via a CLDAP ping to a Domain Controller.
+ *
+ * @param[in]   realm   The realm (DNS domain name) to look up. Must not
+ *                       be NULL or empty.
+ *
+ * @return              The forced site name, or NULL if no site was
+ *                       forced for this realm, or if realm is NULL or
+ *                       empty.
+ */
+const char *lp_winbind_ad_site(const char *realm)
+{
+	if (realm == NULL || realm[0] == '\0') {
+		return NULL;
+	}
+
+	return lp_parm_const_string(-1, "winbind ad site", realm, NULL);
+}
+
+/**
  * free a param_opts structure.
  * param_opts handling should be moved to talloc;
  * then this whole functions reduces to a TALLOC_FREE().

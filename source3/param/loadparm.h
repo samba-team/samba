@@ -102,6 +102,7 @@ bool lp_parm_bool(int snum, const char *type, const char *option, bool def);
 struct enum_list;
 int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def);
+const char *lp_winbind_ad_site(const char *realm);
 char *canonicalize_servicename(TALLOC_CTX *ctx, const char *src);
 bool lp_add_home(const char *pszHomename, int iDefaultService,
 		 const char *user, const char *pszHomedir);
