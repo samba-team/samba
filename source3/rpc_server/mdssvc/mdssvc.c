@@ -198,8 +198,23 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 				return false;
 			}
 		} else if (strcmp(attribute, "kMDItemLastUsedDate") == 0) {
-			sl_time = convert_timespec_to_timeval(sp->st_ex_atime);
-			result = dalloc_add_copy(meta, &sl_time, sl_time_t);
+			/*
+			 * Treat a zero atime as unavailable metadata. Encoding
+			 * it as a date makes Finder display 1970-01-01 as the
+			 * Last Opened date; returning nil makes Finder display
+			 * "--" instead.
+			 */
+			if (sp->st_ex_atime.tv_sec == 0 &&
+			    sp->st_ex_atime.tv_nsec == 0)
+			{
+				result = dalloc_add_copy(meta, &nil, sl_nil_t);
+			} else {
+				sl_time = convert_timespec_to_timeval(
+					sp->st_ex_atime);
+				result = dalloc_add_copy(meta,
+							 &sl_time,
+							 sl_time_t);
+			}
 			if (result != 0) {
 				return false;
 			}
