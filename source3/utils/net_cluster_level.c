@@ -29,19 +29,67 @@
 #include "lib/cluster_level_db.h"
 #endif /* CLUSTER_SUPPORT */
 
+#ifdef HAVE_JANSSON
+#include "lib/util/tjson.h"
+#endif			   /* HAVE_JANSSON */
+
 static int net_cluster_level_features(struct net_context *c,
 				      int argc,
 				      const char **argv)
 {
 	if (c->display_usage || argc != 0) {
-		d_printf("Usage: net clusterlevel features\n");
+		d_printf("Usage: net clusterlevel features [--json]\n");
 		return -1;
 	}
 
+#ifdef HAVE_JANSSON
 	if (c->opt_json) {
-		d_printf("--json not supported yet!\n");
+		TALLOC_CTX *frame = talloc_stackframe();
+		const struct cluster_level_ranges
+			*ranges = cluster_level_supported_ranges();
+		struct tjson *result = tjson_new_object(frame);
+		struct tjson *ranges_arr = tjson_new_array(frame);
+		char *json_str = NULL;
+		uint32_t i;
+
+		tjson_add_bool(result,
+			       "cluster_support",
+			       cluster_support_available());
+#ifdef CTDB_SOCKET
+		tjson_add_string(result, "ctdb_socket", CTDB_SOCKET);
+#endif /* CTDB_SOCKET */
+#ifdef CTDB_PROTOCOL
+		tjson_add_int(result, "ctdb_protocol", CTDB_PROTOCOL);
+#endif /* CTDB_PROTOCOL */
+
+		for (i = 0; i < ranges->num_ranges; i++) {
+			const struct cluster_level_range
+				*range = &ranges->ranges[i];
+			struct tjson *r = tjson_new_object(frame);
+
+			tjson_add_int(r, "major", range->major);
+			tjson_add_int(r, "minor_min", range->minor_min);
+			tjson_add_int(r, "minor_max", range->minor_max);
+			tjson_add_object(ranges_arr, NULL, &r);
+		}
+
+		tjson_add_object(result, "supported_ranges", &ranges_arr);
+
+		json_str = tjson_to_string(frame, result);
+		if (json_str == NULL) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+		d_printf("%s\n", json_str);
+		TALLOC_FREE(frame);
+		return 0;
+	}
+#else  /* HAVE_JANSSON */
+	if (c->opt_json) {
+		d_fprintf(stderr, "JSON support not available\n");
 		return -1;
 	}
+#endif /* HAVE_JANSSON */
 
 	d_printf("%s", cluster_support_features());
 	return 0;
@@ -56,7 +104,7 @@ static int net_cluster_level_show(struct net_context *c,
 	const struct cluster_level_active *active_level = NULL;
 
 	if (c->display_usage || argc != 0) {
-		d_printf("Usage: net clusterlevel show\n");
+		d_printf("Usage: net clusterlevel show [--json]\n");
 		return -1;
 	}
 
@@ -65,26 +113,69 @@ static int net_cluster_level_show(struct net_context *c,
 	}
 
 	if (c->msg_ctx == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"'net clusterlevel show' needs "
+				 "to run as root.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("'net clusterlevel show' needs to run as root.\n");
-		return -1;
-	}
-
-	if (c->opt_json) {
-		d_printf("--json not supported yet!\n");
 		return -1;
 	}
 
 	ctdb_conn = messaging_ctdb_connection();
 	if (ctdb_conn == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"Unable to connect to local "
+				 "ctdbd.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("Unable to connect to local ctdbd.\n");
 		return -1;
 	}
 
 	active_level = ctdbd_conn_get_cluster_level(ctdb_conn);
 	if (active_level == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"Unable to get active cluster "
+				 "functional level.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("Unable to get active cluster functional level.\n");
 		return -1;
 	}
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		TALLOC_CTX *frame = talloc_stackframe();
+		struct tjson *result = tjson_new_object(frame);
+		struct tjson *active_obj = tjson_new_object(frame);
+		char *json_str = NULL;
+
+		tjson_add_int(active_obj, "major", active_level->major);
+		tjson_add_int(active_obj, "minor", active_level->minor);
+		tjson_add_object(result, "active_level", &active_obj);
+
+		json_str = tjson_to_string(frame, result);
+		if (json_str == NULL) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+		d_printf("%s\n", json_str);
+		TALLOC_FREE(frame);
+		return 0;
+	}
+#else  /* HAVE_JANSSON */
+	if (c->opt_json) {
+		d_fprintf(stderr, "JSON support not available\n");
+		return -1;
+	}
+#endif /* HAVE_JANSSON */
 
 	d_printf("Active cluster functional level: %"PRIu32".%"PRIu32"\n",
 		 active_level->major,
@@ -93,6 +184,13 @@ static int net_cluster_level_show(struct net_context *c,
 	return 0;
 nocluster:
 #endif /* CLUSTER_SUPPORT */
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		d_printf("{\"error\":\"'net clusterlevel show' needs "
+			 "to run on a cluster.\"}\n");
+		return -1;
+	}
+#endif
 	d_printf("'net clusterlevel show' needs to run on a cluster.\n");
 	return -1;
 }
@@ -104,6 +202,9 @@ struct net_cluster_level_showall_state {
 	uint32_t total_nodes_count;
 	uint32_t total_highest_count;
 	struct cluster_level_active highest_level;
+#ifdef HAVE_JANSSON
+	struct tjson *nodes_json;
+#endif			    /* HAVE_JANSSON */
 };
 
 static NTSTATUS net_cluster_level_showall_cb(
@@ -124,6 +225,42 @@ static NTSTATUS net_cluster_level_showall_cb(
 		SMB_ASSERT(state->total_nodes_count == total_nodes_count);
 	}
 
+#ifdef HAVE_JANSSON
+	if (state->nodes_json != NULL) {
+		TALLOC_CTX *frame = talloc_stackframe();
+		struct tjson *node_obj = tjson_new_object(frame);
+		struct tjson *ranges_arr = tjson_new_array(frame);
+
+		tjson_add_int(node_obj, "pnn", node->nf->pnn);
+
+		for (i = 0; i < node->supported_ranges->num_ranges; i++) {
+			const struct cluster_level_range
+				*range = &node->supported_ranges->ranges[i];
+			struct tjson *range_obj = tjson_new_object(frame);
+
+			tjson_add_int(range_obj, "major", range->major);
+			tjson_add_int(range_obj,
+				      "minor_min",
+				      range->minor_min);
+			tjson_add_int(range_obj,
+				      "minor_max",
+				      range->minor_max);
+			tjson_add_object(ranges_arr, NULL, &range_obj);
+		}
+
+		tjson_add_object(node_obj, "supported_ranges", &ranges_arr);
+		tjson_add_object(state->nodes_json, NULL, &node_obj);
+
+		TALLOC_FREE(frame);
+
+		if (tjson_has_error(state->nodes_json)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		goto update_highest;
+	}
+#endif /* HAVE_JANSSON */
+
 	d_printf("Node[%"PRIu32"] supported_ranges[%"PRIu32"]\n",
 		 node->nf->pnn, node->supported_ranges->num_ranges);
 
@@ -137,6 +274,9 @@ static NTSTATUS net_cluster_level_showall_cb(
 			 range->major, range->minor_max);
 	}
 
+#ifdef HAVE_JANSSON
+update_highest:
+#endif /* HAVE_JANSSON */
 	if (node->supported_ranges->num_ranges > 0) {
 		const struct cluster_level_range *range =
 			&node->supported_ranges->ranges[0];
@@ -176,11 +316,14 @@ static int net_cluster_level_showall(struct net_context *c,
 	struct net_cluster_level_showall_state state = {
 		.active_level = NULL,
 	};
+#ifdef HAVE_JANSSON
+	TALLOC_CTX *frame = NULL;
+#endif /* HAVE_JANSSON */
 	NTSTATUS status;
 	bool upgrade = false;
 
 	if (c->display_usage || argc != 0) {
-		d_printf("Usage: net clusterlevel showall\n");
+		d_printf("Usage: net clusterlevel showall [--json]\n");
 		return -1;
 	}
 
@@ -189,23 +332,57 @@ static int net_cluster_level_showall(struct net_context *c,
 	}
 
 	if (c->msg_ctx == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"'net clusterlevel showall' "
+				 "needs to run as root.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("'net clusterlevel showall' needs to run as root.\n");
 		return -1;
 	}
 
+#ifdef HAVE_JANSSON
 	if (c->opt_json) {
-		d_printf("--json not supported yet!\n");
+		frame = talloc_stackframe();
+		state.nodes_json = tjson_new_array(frame);
+		if (state.nodes_json == NULL) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+	}
+#else  /* HAVE_JANSSON */
+	if (c->opt_json) {
+		d_fprintf(stderr, "JSON support not available\n");
 		return -1;
 	}
+#endif /* HAVE_JANSSON */
 
 	state.ctdb_conn = messaging_ctdb_connection();
 	if (state.ctdb_conn == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			TALLOC_FREE(frame);
+			d_printf("{\"error\":\"Unable to connect to local "
+				 "ctdbd.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("Unable to connect to local ctdbd.\n");
 		return -1;
 	}
 
 	state.active_level = ctdbd_conn_get_cluster_level(state.ctdb_conn);
 	if (state.active_level == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			TALLOC_FREE(frame);
+			d_printf("{\"error\":\"Unable to get active cluster "
+				 "functional level.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("Unable to get active cluster functional level.\n");
 		return -1;
 	}
@@ -214,13 +391,18 @@ static int net_cluster_level_showall(struct net_context *c,
 						net_cluster_level_showall_cb,
 						&state);
 	if (!NT_STATUS_IS_OK(status)) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			TALLOC_FREE(frame);
+			d_printf("{\"error\":\"Unable to iterate nodes - "
+				 "%s.\"}\n",
+				 nt_errstr(status));
+			return -1;
+		}
+#endif
 		d_printf("Unable to iterate nodes - %s.\n", nt_errstr(status));
 		return -1;
 	}
-
-	d_printf("Active cluster functional level: %"PRIu32".%"PRIu32"\n",
-		 state.active_level->major,
-		 state.active_level->minor);
 
 	if (state.highest_level.major > state.active_level->major) {
 		upgrade = true;
@@ -230,6 +412,50 @@ static int net_cluster_level_showall(struct net_context *c,
 	{
 		upgrade = true;
 	}
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		struct tjson *result = tjson_new_object(frame);
+		struct tjson *active_obj = tjson_new_object(frame);
+		bool upgrade_possible = upgrade &&
+					(state.total_highest_count ==
+					 state.total_nodes_count);
+		char *json_str = NULL;
+
+		tjson_add_int(active_obj, "major", state.active_level->major);
+		tjson_add_int(active_obj, "minor", state.active_level->minor);
+		tjson_add_object(result, "active_level", &active_obj);
+		tjson_add_object(result, "nodes", &state.nodes_json);
+		tjson_add_bool(result, "upgrade_possible", upgrade_possible);
+
+		if (upgrade) {
+			struct tjson *highest_obj = tjson_new_object(frame);
+
+			tjson_add_int(highest_obj,
+				      "major",
+				      state.highest_level.major);
+			tjson_add_int(highest_obj,
+				      "minor",
+				      state.highest_level.minor);
+			tjson_add_object(result,
+					 "highest_level",
+					 &highest_obj);
+		}
+
+		json_str = tjson_to_string(frame, result);
+		if (json_str == NULL) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+		d_printf("%s\n", json_str);
+		TALLOC_FREE(frame);
+		return 0;
+	}
+#endif /* HAVE_JANSSON */
+
+	d_printf("Active cluster functional level: %" PRIu32 ".%" PRIu32 "\n",
+		 state.active_level->major,
+		 state.active_level->minor);
 
 	if (upgrade && state.total_highest_count == state.total_nodes_count) {
 		d_printf("Upgrade possible to cluster functional level: "
@@ -246,6 +472,13 @@ static int net_cluster_level_showall(struct net_context *c,
 	return 0;
 nocluster:
 #endif /* CLUSTER_SUPPORT */
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		d_printf("{\"error\":\"'net clusterlevel showall' needs "
+			 "to run on a cluster.\"}\n");
+		return -1;
+	}
+#endif
 	d_printf("'net clusterlevel showall' needs to run on a cluster.\n");
 	return -1;
 }
@@ -266,13 +499,20 @@ static int net_cluster_level_upgrade(struct net_context *c,
 
 	if (c->display_usage || argc != 0) {
 		d_printf("Usage: net clusterlevel upgrade "
-			 "[--test] [--apply]\n");
+			 "[--test] [--apply] [--json]\n");
 		return -1;
 	}
 
 	if (c->opt_testmode != 0 && c->opt_apply != 0) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"Only one of --test or "
+				 "--apply is allowed.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("Usage: net clusterlevel upgrade "
-			 "[--test] [--apply]\n");
+			 "[--test] [--apply] [--json]\n");
 		d_printf("Only one of --test or --apply is allowed!\n");
 		return -1;
 	} else if (c->opt_apply != 0) {
@@ -288,22 +528,107 @@ static int net_cluster_level_upgrade(struct net_context *c,
 	}
 
 	if (c->msg_ctx == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"'net clusterlevel upgrade' "
+				 "needs to run as root.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("'net clusterlevel upgrade' needs to run as root.\n");
 		return -1;
 	}
 
+#ifndef HAVE_JANSSON
 	if (c->opt_json) {
-		d_printf("--json not supported yet!\n");
+		d_fprintf(stderr, "JSON support not available\n");
 		return -1;
 	}
+#endif /* ! HAVE_JANSSON */
 
 	ctdb_conn = messaging_ctdb_connection();
 	if (ctdb_conn == NULL) {
+#ifdef HAVE_JANSSON
+		if (c->opt_json) {
+			d_printf("{\"error\":\"Unable to connect to local "
+				 "ctdbd.\"}\n");
+			return -1;
+		}
+#endif
 		d_printf("Unable to connect to local ctdbd.\n");
 		return -1;
 	}
 
 	status = cluster_level_db_upgrade(ctdb_conn, c->msg_ctx, &req);
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		TALLOC_CTX *frame = talloc_stackframe();
+		struct tjson *result = tjson_new_object(frame);
+		const char *status_str = NULL;
+		char *json_str = NULL;
+		int ret_val;
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ALREADY_COMMITTED)) {
+			status_str = "already_current";
+			ret_val = -1;
+		} else if (!NT_STATUS_EQUAL(status, expected_status)) {
+			status_str = "error";
+			ret_val = -1;
+		} else {
+			status_str = req.in.dry_run ? "dry_run_ok"
+						    : "upgraded";
+			ret_val = 0;
+		}
+
+		tjson_add_bool(result, "dry_run", req.in.dry_run);
+		tjson_add_string(result, "status", status_str);
+
+		if (!NT_STATUS_EQUAL(status, expected_status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_ALREADY_COMMITTED))
+		{
+			tjson_add_int(result, "error_vnn", req.out.error_vnn);
+			tjson_add_string(result,
+					 "error_status",
+					 nt_errstr(status));
+		} else {
+			struct tjson *old_obj = tjson_new_object(frame);
+			struct tjson *new_obj = tjson_new_object(frame);
+
+			tjson_add_int(old_obj,
+				      "major",
+				      req.out.old_level.major);
+			tjson_add_int(old_obj,
+				      "minor",
+				      req.out.old_level.minor);
+			tjson_add_object(result, "old_level", &old_obj);
+
+			if (!NT_STATUS_EQUAL(status,
+					     NT_STATUS_ALREADY_COMMITTED))
+			{
+				tjson_add_int(new_obj,
+					      "major",
+					      req.out.new_level.major);
+				tjson_add_int(new_obj,
+					      "minor",
+					      req.out.new_level.minor);
+				tjson_add_object(result,
+						 "new_level",
+						 &new_obj);
+			}
+		}
+
+		json_str = tjson_to_string(frame, result);
+		if (json_str == NULL) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+		d_printf("%s\n", json_str);
+		TALLOC_FREE(frame);
+		return ret_val;
+	}
+#endif /* HAVE_JANSSON */
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ALREADY_COMMITTED)) {
 		d_printf("Already at active cluster functional level: "
 			 "%"PRIu32".%"PRIu32"\n",
@@ -330,6 +655,13 @@ static int net_cluster_level_upgrade(struct net_context *c,
 	return 0;
 nocluster:
 #endif /* CLUSTER_SUPPORT */
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		d_printf("{\"error\":\"'net clusterlevel upgrade' needs "
+			 "to run on a cluster.\"}\n");
+		return -1;
+	}
+#endif
 	d_printf("'net clusterlevel upgrade' needs to run on a cluster.\n");
 	return -1;
 }
@@ -342,21 +674,21 @@ int net_cluster_level(struct net_context *c, int argc, const char **argv)
 			net_cluster_level_features,
 			NET_TRANSPORT_LOCAL,
 			N_("List the supported build features"),
-			N_("net clusterlevel features\n")
+			N_("net clusterlevel features [--json]\n")
 		},
 		{
 			"show",
 			net_cluster_level_show,
 			NET_TRANSPORT_LOCAL,
 			N_("Show the currently active cluster functional level"),
-			N_("net clusterlevel show\n")
+			N_("net clusterlevel show [--json]\n")
 		},
 		{
 			"showall",
 			net_cluster_level_showall,
 			NET_TRANSPORT_LOCAL,
 			N_("Show details about the whole cluster"),
-			N_("net clusterlevel showall\n")
+			N_("net clusterlevel showall [--json]\n")
 		},
 		{
 			"upgrade",
@@ -364,7 +696,7 @@ int net_cluster_level(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_LOCAL,
 			N_("Upgrade the cluster functional level "
 			   "to the highest supported level."),
-			N_("net clusterlevel upgrade [--test] [--apply]\n")
+			N_("net clusterlevel upgrade [--test] [--apply] [--json]\n")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
