@@ -680,9 +680,18 @@ NTSTATUS _wbint_QueryUserRidList(struct pipes_struct *p,
 
 NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 {
-	return dsgetdcname(p->mem_ctx, global_messaging_context(),
-			   r->in.domain_name, r->in.domain_guid,
-			   r->in.site_name ? r->in.site_name : "",
+	const char *site_name = r->in.site_name;
+
+	if (site_name == NULL || site_name[0] == '\0') {
+		const char *realm = find_dns_domain_name(r->in.domain_name);
+		site_name = lp_winbind_ad_site(realm);
+	}
+
+	return dsgetdcname(p->mem_ctx,
+			   global_messaging_context(),
+			   r->in.domain_name,
+			   r->in.domain_guid,
+			   site_name != NULL ? site_name : "",
 			   r->in.flags,
 			   r->out.dc_info);
 }

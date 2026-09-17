@@ -362,7 +362,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	sitename = sitename_fetch(talloc_tos(), lp_realm());
+	sitename = winbind_sitename_fetch(talloc_tos(), lp_realm());
 
 	/*
 	 * create_local_private_krb5_conf_for_domain() can deal with

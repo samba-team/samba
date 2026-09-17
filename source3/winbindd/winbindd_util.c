@@ -39,6 +39,7 @@
 #include "lib/global_contexts.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/lsarpc/util_lsarpc.h"
+#include "libads/sitename_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -2690,6 +2691,34 @@ const char *find_dns_domain_name(const char *domain_name)
 	}
 
 	return wbdom->name;
+}
+
+/**
+ * @brief Fetch the AD site winbind should use for a realm.
+ *
+ * Returns the AD site administratively forced via "winbind ad site :
+ * <realm>" for the given realm, if any; otherwise falls back to the
+ * CLDAP-discovered site cached by sitename_fetch().
+ *
+ * @param[in]   mem_ctx talloc context to allocate the returned string on.
+ * @param[in]   realm   The realm (DNS domain name) to look up.
+ *
+ * @return              The site name, or NULL if none is forced or cached.
+ */
+char *winbind_sitename_fetch(TALLOC_CTX *mem_ctx, const char *realm)
+{
+	const char *forced_site = NULL;
+
+	forced_site = lp_winbind_ad_site(realm);
+	if (forced_site != NULL) {
+		DBG_INFO("Using administratively forced site '%s' for "
+			 "realm '%s'\n",
+			 forced_site,
+			 realm);
+		return talloc_strdup(mem_ctx, forced_site);
+	}
+
+	return sitename_fetch(mem_ctx, realm);
 }
 
 bool winbind_s4u2self_krb5_api_support(void)
