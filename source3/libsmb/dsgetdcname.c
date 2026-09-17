@@ -1001,7 +1001,9 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 					query_site,
 					&info);
 
-	if (NT_STATUS_IS_OK(status) && !is_closest_site(info)) {
+	if (NT_STATUS_IS_OK(status) && !is_closest_site(info) &&
+	    (site_name == NULL || site_name[0] == '\0'))
+	{
 		struct netr_DsRGetDCNameInfo *closest_info = NULL;
 		NTSTATUS closest_status;
 
