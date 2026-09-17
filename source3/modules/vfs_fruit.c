@@ -1922,6 +1922,7 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	struct smb_filename *src_adp_smb_fname = NULL;
 	struct smb_filename *dst_adp_smb_fname = NULL;
+	bool adp_renamed = false;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
@@ -1967,7 +1968,11 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 					   dst_dirfsp,
 					   dst_adp_smb_fname,
 					   how);
-		if (rc == 0 || errno == ENOENT) {
+		if (rc == 0) {
+			adp_renamed = true;
+			goto base_rename;
+		}
+		if (errno == ENOENT) {
 			goto base_rename;
 		}
 		if (errno != ENAMETOOLONG) {
@@ -1976,10 +1981,10 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 
 		/*
 		 * ENAMETOOLONG doesn't tell us whether src or dst was
-		 * too long.  Check whether dst exists: if not, there
-		 * is nothing to rename and the base rename can
-		 * proceed; if it does exist, we got ENAMETOOLONG due
-		 * to "dst" being too long, so we have to fail with
+		 * too long.  Check whether the src sidecar exists: if
+		 * not, there is nothing to rename and the base rename
+		 * can proceed; if it does exist, we got ENAMETOOLONG
+		 * due to "dst" being too long, so we have to fail with
 		 * that error code.
 		 */
 		{
@@ -2012,6 +2017,14 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 			/* src sidecar doesn't exist, proceed */
 			goto base_rename;
 		}
+
+		/*
+		 * Any other error from fstatat() leaves us unable to
+		 * tell whether the sidecar is there. Fail with it
+		 * rather than falling through to the base rename,
+		 * which would overwrite rc and hide the error.
+		 */
+		goto done;
 	}
 
 base_rename:
@@ -2021,6 +2034,32 @@ base_rename:
 				   dst_dirfsp,
 				   smb_fname_dst,
 				   how);
+	if ((rc != 0) && adp_renamed) {
+		int saved_errno = errno;
+		int rollback_rc;
+
+		/*
+		 * The sidecar has already moved but the base file has
+		 * not. Put the sidecar back, otherwise it is orphaned
+		 * under the destination name while the base file is
+		 * still under the source name.
+		 */
+		rollback_rc = SMB_VFS_NEXT_RENAMEAT(handle,
+						    dst_dirfsp,
+						    dst_adp_smb_fname,
+						    src_dirfsp,
+						    src_adp_smb_fname,
+						    how);
+		if (rollback_rc != 0) {
+			DBG_ERR("Failed to roll back sidecar rename "
+				"[%s] -> [%s]: %s\n",
+				smb_fname_str_dbg(dst_adp_smb_fname),
+				smb_fname_str_dbg(src_adp_smb_fname),
+				strerror(errno));
+		}
+
+		errno = saved_errno;
+	}
 
 done:
 	TALLOC_FREE(src_adp_smb_fname);
