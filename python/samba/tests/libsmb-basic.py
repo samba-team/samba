@@ -371,6 +371,85 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
             self.clean_file(c, srcname)
             self.clean_file(c, dstname)
 
+    def test_fruit_rename_sidecar_rolled_back_when_base_rename_fails(self):
+        """
+        fruit_renameat() renames the "._" sidecar before the base file.
+        If the base rename then fails, the sidecar move has to be
+        rolled back, otherwise the sidecar is left orphaned under the
+        destination name while the base file is still under the source
+        name.
+
+        A directory at the destination makes the base rename fail with
+        EISDIR in the rename() syscall, which happens only after the
+        sidecar rename has already succeeded.
+        """
+        c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
+
+        srcname = "datafile"
+        dstname = "somefolder"
+        src_adname = "._" + srcname
+        dst_adname = "._" + dstname
+
+        self.clean_file(c, srcname)
+        self.clean_file(c, src_adname)
+        self.clean_file(c, dst_adname)
+
+        try:
+            fnum = c.create(srcname,
+                            DesiredAccess=security.SEC_FILE_ALL,
+                            CreateDisposition=libsmb.FILE_CREATE)
+            c.close(fnum)
+
+            # Force creation of a real "._<srcname>" AppleDouble file
+            self.create_appledouble(c, srcname)
+
+            ls = [f['name'] for f in c.list("\\")]
+            self.assertIn(srcname, ls)
+            self.assertIn(src_adname, ls)
+
+            # The resource fork is what lives in the "._" sidecar.
+            rsrc_before = c.loadfile(srcname +
+                                     libsmb.AFPRESOURCE_STREAM_NAME)
+            self.assertEqual(rsrc_before, b'\x01' * 16)
+
+            # A directory at the destination: smbd's collision check
+            # passes with replace_if_exists, but the base rename()
+            # syscall fails because the target is a directory.
+            c.mkdir(dstname)
+
+            with self.assertRaises(NTSTATUSError) as cm:
+                c.rename(srcname, dstname, replace=True)
+            self.assertEqual(cm.exception.args[0],
+                             ntstatus.NT_STATUS_OBJECT_NAME_COLLISION)
+
+            ls = [f['name'] for f in c.list("\\")]
+
+            # The client was told the rename failed, and indeed the
+            # base file did not move.
+            self.assertIn(srcname, ls)
+
+            # The sidecar must be back under the source name. Without
+            # the rollback it would be sitting under dst_adname, ie
+            # the metadata of "srcname" parked under the name of an
+            # unrelated object.
+            self.assertIn(src_adname, ls)
+            self.assertNotIn(dst_adname, ls)
+
+            # And "srcname" still has the resource fork it had before
+            # the failed rename.
+            rsrc_after = c.loadfile(srcname +
+                                    libsmb.AFPRESOURCE_STREAM_NAME)
+            self.assertEqual(rsrc_before, rsrc_after,
+                             "sidecar move was not rolled back")
+        finally:
+            self.clean_file(c, srcname)
+            self.clean_file(c, src_adname)
+            self.clean_file(c, dst_adname)
+            try:
+                c.rmdir(dstname)
+            except NTSTATUSError:
+                pass
+
     def fruit_trailing_setup(self):
         c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
         testdir = "test_fruit_trailing_dot_space"
