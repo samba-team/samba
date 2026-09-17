@@ -150,6 +150,20 @@ static NTSTATUS cleanup_ph(struct smbd_cleanupd_state *state)
 		return NT_STATUS_OK;
 	}
 
+	if (lp_clustering() &&
+	    lp_persistent_handles_durability() == PH_DURABILITY_PARTIAL_OUTAGE)
+	{
+		/*
+		 * "persistent handles durability" only has an effect on a
+		 * cluster, where partial_outage means there is no backup db
+		 * to traverse, so no handles were restored and there is
+		 * nothing to schedule scavenging for. Without clustering the
+		 * database is a plain tdb that survives a restart all by
+		 * itself, so the traverse below is still needed.
+		 */
+		return NT_STATUS_OK;
+	}
+
 	DBG_INFO("Cleaning up persistent handles\n");
 
 	status = smbXsrv_open_global_traverse_per_rec_persistent_read(

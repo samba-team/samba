@@ -1313,27 +1313,35 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 		}
 		crec->locked = false;
 
-		pdb_ctdb_ctx = talloc_get_type_abort(
-			pdb->private_data, struct db_ctdb_ctx);
+		/*
+		 * With "persistent handles durability = partial_outage"
+		 * there is no backup db to remove the record from, but the
+		 * record still has to lose CTDB_REC_FLAG_PERSISTENT below.
+		 */
+		if (pdb != NULL) {
+			pdb_ctdb_ctx = talloc_get_type_abort(
+				pdb->private_data, struct db_ctdb_ctx);
 
-		prec = db_ctdb_fetch_locked_persistent(pdb_ctdb_ctx,
-						       talloc_tos(),
-						       rec->key);
-		if (prec == NULL) {
-			DBG_ERR("db_ctdb_fetch_locked_persistent failed\n");
-			return NT_STATUS_INTERNAL_ERROR;
-		}
+			prec = db_ctdb_fetch_locked_persistent(pdb_ctdb_ctx,
+							       talloc_tos(),
+							       rec->key);
+			if (prec == NULL) {
+				DBG_ERR("db_ctdb_fetch_locked_persistent "
+					"failed\n");
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 
-		status = db_ctdb_delete_transaction(prec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("db_ctdb_delete_transaction failed: %s\n",
-				nt_errstr(status));
+			status = db_ctdb_delete_transaction(prec);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("db_ctdb_delete_transaction failed: "
+					"%s\n", nt_errstr(status));
+				TALLOC_FREE(prec);
+				return status;
+			}
+
+			/* This commits the transaction */
 			TALLOC_FREE(prec);
-			return NT_STATUS_INTERNAL_ERROR;
 		}
-
-		/* This commits the transaction */
-		TALLOC_FREE(prec);
 
 		ret = db_ctdb_migrate_locked(crec, rec->key, &data);
 		if (ret != 0) {
@@ -1426,30 +1434,37 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 		return status;
 	}
 
-	pdb_ctdb_ctx = talloc_get_type_abort(
-		pdb->private_data, struct db_ctdb_ctx);
+	/*
+	 * With "persistent handles durability = partial_outage" there is no
+	 * backup db. The push above has put the record on every node, which
+	 * is all that setting promises.
+	 */
+	if (pdb != NULL) {
+		pdb_ctdb_ctx = talloc_get_type_abort(
+			pdb->private_data, struct db_ctdb_ctx);
 
-	prec = db_ctdb_fetch_locked_persistent(pdb_ctdb_ctx,
-					       talloc_tos(),
-					       rec->key);
-	if (prec == NULL) {
-		DBG_ERR("db_ctdb_fetch_locked_persistent failed\n");
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+		prec = db_ctdb_fetch_locked_persistent(pdb_ctdb_ctx,
+						       talloc_tos(),
+						       rec->key);
+		if (prec == NULL) {
+			DBG_ERR("db_ctdb_fetch_locked_persistent failed\n");
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 
-	status = db_ctdb_storev_transaction(prec,
-					    orig_dbufs,
-					    orig_num_dbufs,
-					    flag);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("db_ctdb_storev_transaction failed: %s\n",
-			nt_errstr(status));
+		status = db_ctdb_storev_transaction(prec,
+						    orig_dbufs,
+						    orig_num_dbufs,
+						    flag);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("db_ctdb_storev_transaction failed: %s\n",
+				nt_errstr(status));
+			TALLOC_FREE(prec);
+			return status;
+		}
+
+		/* This will commit the transaction */
 		TALLOC_FREE(prec);
-		return status;
 	}
-
-	/* This will commit the transaction */
-	TALLOC_FREE(prec);
 
 
 	/*
@@ -2561,14 +2576,21 @@ static int db_ctdb_traverse_per_rec_persistent_read(
 {
 	struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 							struct db_ctdb_ctx);
-	struct db_ctdb_ctx *pctx = talloc_get_type_abort(ctx->pdb->private_data,
-							struct db_ctdb_ctx);
+	struct db_ctdb_ctx *pctx = NULL;
 	struct traverse_state state;
 	int nrecs;
 
 	if (!(db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT)) {
 		return 0;
 	}
+
+	if (ctx->pdb == NULL) {
+		/* "persistent handles durability = partial_outage" */
+		return 0;
+	}
+
+	pctx = talloc_get_type_abort(ctx->pdb->private_data,
+				     struct db_ctdb_ctx);
 
 	state.db = db;
 	state.fn = fn;
@@ -2640,6 +2662,14 @@ static int db_ctdb_wipe(struct db_context *db,
 
 	if (flags.wipe_persistent_backup_db) {
 		if (!(db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT)) {
+			return 0;
+		}
+
+		if (ctx->pdb == NULL) {
+			/*
+			 * "persistent handles durability = partial_outage",
+			 * there is no backup db to wipe.
+			 */
 			return 0;
 		}
 
@@ -2929,6 +2959,18 @@ static NTSTATUS db_ctdb_open_per_rec_persistent_db(
 		DBG_WARNING("DBWRAP_FLAG_PER_REC_PERSISTENT only allowed with "
 			    "TDB_CLEAR_IF_FIRST\n");
 		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (lp_persistent_handles_durability() == PH_DURABILITY_PARTIAL_OUTAGE) {
+		/*
+		 * The records are kept on every node by the push-record, which
+		 * covers any outage that leaves a node running. The backup db
+		 * only adds surviving an outage of all nodes at once, and the
+		 * admin has told us not to pay for that.
+		 */
+		DBG_NOTICE("No persistent backup db for %s, persistent handles "
+			   "durability is partial_outage\n", db->name);
+		return NT_STATUS_OK;
 	}
 
 	ptdb_flags = tdb_flags & ~(TDB_CLEAR_IF_FIRST | TDB_MUTEX_LOCKING);
