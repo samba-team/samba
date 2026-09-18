@@ -348,17 +348,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			 * Return endpoint map elements that contain the
 			 * interface identifier specified by the interface_id
 			 * and vers_option values.
-			 *
-			 * RPC_C_EP_MATCH_BY_IF and RPC_C_EP_MATCH_BY_BOTH
-			 * need both the same endpoint list. There is a second
-			 * check for the inquiry_type below which differentiates
-			 * between them.
-			 */
-		case RPC_C_EP_MATCH_BY_BOTH:
-			/*
-			 * Return endpoint map elements that contain the
-			 * interface identifier and object UUID specified by
-			 * interface_id, vers_option, and object.
 			 */
 			eps->count = build_ep_list(eps,
 						   &r->in.interface_id->uuid,
@@ -366,15 +355,12 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 						   &eps->e);
 			break;
 		case RPC_C_EP_MATCH_BY_OBJ:
+		case RPC_C_EP_MATCH_BY_BOTH:
 			/*
-			 * Return endpoint map elements that contain the object
-			 * UUID specified by object.
+			 * We can't do these because our ep list items
+			 * only have a syntax_id uuid field. We don't
+			 * know the object (FIXME?).
 			 */
-			eps->count = build_ep_list(eps,
-						   r->in.object,
-						   srv_addr,
-						   &eps->e);
-			break;
 		default:
 			rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
 			goto done;
@@ -467,34 +453,17 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			}
 			break;
 		case RPC_C_EP_MATCH_BY_OBJ:
-			/*
-			 * Return endpoint map elements that contain the object
-			 * UUID specified by object.
-			 */
-			if (GUID_equal(r->in.object,
-				       &eps->e[i].syntax_id.uuid)) {
-				match = true;
-			}
-			break;
 		case RPC_C_EP_MATCH_BY_BOTH:
 			/*
-			 * Return endpoint map elements that contain the
-			 * interface identifier and object UUID specified by
-			 * interface_id, vers_option, and object.
+			 * We can't do these because our ep list items
+			 * do not have an object uuid field.
 			 */
-			if (GUID_equal(&r->in.interface_id->uuid,
-				       &eps->e[i].syntax_id.uuid) &&
-			    GUID_equal(r->in.object, &eps->e[i].syntax_id.uuid)) {
-				match = true;
-			}
-			break;
 		default:
 			return EPMAPPER_STATUS_CANT_PERFORM_OP;
 		}
 
 		if (match) {
-			if (r->in.inquiry_type == RPC_C_EP_MATCH_BY_IF ||
-			    r->in.inquiry_type == RPC_C_EP_MATCH_BY_OBJ) {
+			if (r->in.inquiry_type == RPC_C_EP_MATCH_BY_IF) {
 				/* Check interface version */
 
 				match = false;
