@@ -54,6 +54,34 @@ serving. For this reason, the feature is intended only for workloads
 that require Continuous Availability semantics and is not recommended
 for general-purpose file servers.
 
+On a cluster the handle state is kept in a volatile ctdb database that
+is replicated to every node, and additionally in a backup copy in a
+persistent ctdb database. Only that backup copy makes handles survive
+an outage of every node at the same time, for example a maintenance
+window in which the whole cluster is shut down and restarted, because
+that loses the volatile databases. Maintaining the backup is expensive:
+every change to the state of a persistent handle costs an additional
+cluster wide transaction, and that transaction is written to stable
+storage on every node.
+
+The new global option "persistent handles durability" to choose to
+which side of the tradeof, performance or durability, they want to
+lean on:
+
+persistent handles durability = full_outage
+
+  The default. The backup copy is maintained and handles survive an
+  outage of the whole cluster.
+
+persistent handles durability = partial_outage
+
+  The backup copy is not maintained. Handles survive any outage that
+  leaves at least one node running, which covers a node crash, a
+  rolling restart and the loss of all but one node, because the handle
+  state is still kept on every node of the cluster. Handles are lost if
+  every node is down at the same time. In exchange, every open, update,
+  lease and close operation becomes noticeably cheaper.
+
 This feature is currently considered experimental.
 
 Cluster-wide rate limiting in vfs_aio_ratelimit
@@ -200,6 +228,7 @@ smb.conf changes
   kdc default domain supported enctypes   New default     AES encryption types (if supported by domain)
   getwd cache                             Removed
   persistent handles                      New             no
+  persistent handles durability           New             full_outage
   continuous availability                 New             no
 
 CHANGES SINCE 4.25.0rc1
