@@ -14,6 +14,7 @@ TORTURE3_ADDITIONAL_SOURCE=""
 
 if bld.env.with_ctdb:
     TORTURE3_ADDITIONAL_SOURCE += ' test_ctdbd_conn.c'
+    TORTURE3_ADDITIONAL_SOURCE += ' test_cluster_level_db.c'
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source='''

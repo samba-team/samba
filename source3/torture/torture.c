@@ -16460,6 +16460,10 @@ static struct {
 		.name  = "ctdbd-conn1",
 		.fn    = run_ctdbd_conn1,
 	},
+	{
+		.name  = "LOCAL-CLUSTER-LEVEL-DB",
+		.fn    = run_cluster_level_db,
+	},
 #endif
 	{
 		.name  = "readdir-timestamp",
