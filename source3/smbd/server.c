@@ -2072,7 +2072,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 	struct samba_sockaddr addr = { .sa_socklen = 0, };
 	NTSTATUS status;
 	uint32_t if_index;
-	bool match;
+	bool is_dynamic = false;
 
 	status = addrchange_recv(req, &type, &addr.u.ss, &if_index);
 	TALLOC_FREE(req);
@@ -2083,9 +2083,9 @@ static void smbd_addr_changed(struct tevent_req *req)
 		return;
 	}
 
-	match = interface_ifindex_exists_with_options(if_index,
-						      IFACE_DYNAMIC_OPTION);
-	if (!match) {
+	is_dynamic = interface_ifindex_exists_with_options(if_index,
+							   IFACE_DYNAMIC_OPTION);
+	if (!is_dynamic) {
 		DBG_NOTICE(
 			"smbd: No interface present for if_index %u "
 			"with dynamic option\n",
