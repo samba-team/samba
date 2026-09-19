@@ -1526,15 +1526,19 @@ struct brl_forall_cb {
  on each lock.
 ****************************************************************************/
 
+static bool brl_parse_data(TALLOC_CTX *mem_ctx,
+			   struct byte_range_lock *br_lck,
+			   TDB_DATA data);
+
 static int brl_traverse_fn(struct db_record *rec, void *state)
 {
 	struct brl_forall_cb *cb = (struct brl_forall_cb *)state;
-	struct lock_struct *locks;
+	struct byte_range_lock br_lck = {};
 	struct file_id *key;
 	unsigned int i;
-	unsigned int num_locks = 0;
 	TDB_DATA dbkey;
 	TDB_DATA value;
+	bool ok;
 
 	dbkey = dbwrap_record_get_key(rec);
 	value = dbwrap_record_get_value(rec);
@@ -1542,28 +1546,26 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
 
-	locks = (struct lock_struct *)talloc_memdup(
-		talloc_tos(), value.dptr, value.dsize);
-	if (!locks) {
+	ok = brl_parse_data(talloc_tos(), &br_lck, value);
+	if (!ok) {
 		return -1; /* Terminate traversal. */
 	}
 
 	key = (struct file_id *)dbkey.dptr;
-	num_locks = value.dsize/sizeof(*locks);
 
 	if (cb->fn) {
-		for ( i=0; i<num_locks; i++) {
+		for ( i=0; i<br_lck.num_locks; i++) {
 			cb->fn(*key,
-				locks[i].context.pid,
-				locks[i].lock_type,
-				locks[i].lock_flav,
-				locks[i].start,
-				locks[i].size,
+				br_lck.lock_data[i].context.pid,
+				br_lck.lock_data[i].lock_type,
+				br_lck.lock_data[i].lock_flav,
+				br_lck.lock_data[i].start,
+				br_lck.lock_data[i].size,
 				cb->private_data);
 		}
 	}
 
-	TALLOC_FREE(locks);
+	TALLOC_FREE(br_lck.lock_data);
 	return 0;
 }
 
@@ -1679,7 +1681,15 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 	return 0;
 }
 
-static bool brl_parse_data(struct byte_range_lock *br_lck, TDB_DATA data)
+/*
+ * Parse a brlock record into br_lck.
+ *
+ * mem_ctx owns the resulting lock data. It is normally br_lck itself, but
+ * brl_traverse_fn() keeps br_lck on the stack.
+ */
+static bool brl_parse_data(TALLOC_CTX *mem_ctx,
+			   struct byte_range_lock *br_lck,
+			   TDB_DATA data)
 {
 	size_t data_len = data.dsize;
 	uint32_t version;
@@ -1711,7 +1721,7 @@ static bool brl_parse_data(struct byte_range_lock *br_lck, TDB_DATA data)
 	}
 	data_len = br_lck->num_locks * sizeof(struct lock_struct);
 
-	br_lck->lock_data = talloc_memdup(br_lck,
+	br_lck->lock_data = talloc_memdup(mem_ctx,
 					  data.dptr + sizeof(uint32_t),
 					  data_len);
 	if (br_lck->lock_data == NULL) {
@@ -1751,7 +1761,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 
 	data = dbwrap_record_get_value(br_lck->record);
 
-	if (!brl_parse_data(br_lck, data)) {
+	if (!brl_parse_data(br_lck, br_lck, data)) {
 		TALLOC_FREE(br_lck);
 		return NULL;
 	}
@@ -1811,7 +1821,7 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 		return;
 	}
 	*br_lck = (struct byte_range_lock) { 0 };
-	if (!brl_parse_data(br_lck, data)) {
+	if (!brl_parse_data(br_lck, br_lck, data)) {
 		*state->br_lock = NULL;
 		return;
 	}
