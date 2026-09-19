@@ -1575,7 +1575,7 @@ class buildlist(object):
                 return (0, None, None, None, "retry")
             if b is None:
                 break
-            if os.WIFSIGNALED(b.status) or os.WEXITSTATUS(b.status) != 0:
+            if b.status != 0:
                 self.kill_kids()
                 return (b.status, b.name, b.stage, b.tag, "%s: [%s] failed '%s' with status %d" % (b.name, b.stage, b.cmd, b.status))
             b.start_next()
