@@ -883,28 +883,20 @@ tasks = {
         "sequence": [
             ("random-sleep", random_sleep(900, 1500)),
 
-        # make sure we have tdb around:
-            ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}"),
-            ("tdb-make", "cd lib/tdb && make"),
-            ("tdb-install", "cd lib/tdb && make install"),
-
         # build samba with cluster support (also building ctdb):
             ("samba-configure",
-         "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH "
-         "PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} "
          "./configure.developer ${PREFIX} "
          "--with-selftest-prefix=./bin/ab "
          "--with-cluster-support "
          "--with-profiling-data "
-         "--with-prometheus-exporter "
-         "--bundled-libraries=!tdb"),
+         "--with-prometheus-exporter"),
             ("samba-make", "make"),
             ("samba-check", "./bin/smbd --configfile=/dev/null -b | grep CLUSTER_SUPPORT"),
             ("samba-install", "make install"),
             ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd"),
 
             ("test", make_test(
-                cmd='PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH make test',
+                cmd='make test',
                 INJECT_SELFTEST_PREFIX=0,
                 include_envs=["clusteredmember"])
             ),
