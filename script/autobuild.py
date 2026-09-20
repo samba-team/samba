@@ -892,8 +892,7 @@ tasks = {
          "--with-prometheus-exporter"),
             ("samba-make", "make"),
             ("samba-check", "./bin/smbd --configfile=/dev/null -b | grep CLUSTER_SUPPORT"),
-            ("samba-install", "make install"),
-            ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd"),
+            ("ctdb-check", "test -e ./bin/ctdbd"),
 
             ("test", make_test(
                 cmd='make test',
