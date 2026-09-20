@@ -112,6 +112,10 @@ undump()
 	mkdir $PREFIX/${RELEASE}_upgrade_full/etc/
 	sed -e "s|@@PREFIX@@|$PREFIX/${RELEASE}_upgrade_full|g" $release_dir/etc/smb.conf.template \
 		>$PREFIX/${RELEASE}_upgrade_full/etc/smb.conf
+
+	# cp -a above preserved the source tree's mode, which can be
+	# read-only; the upgrade has to write to these copies.
+	chmod -R u+w $PREFIX/${RELEASE}_upgrade $PREFIX/${RELEASE}_upgrade_full
 }
 
 remove_dns_user()
