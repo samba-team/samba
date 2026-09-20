@@ -429,8 +429,9 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 		return NULL;
 	}
 
-	DEBUG(DEBUG_NOTICE,("Starting traverse on DB %s (id %d)\n",
-			    ctdb_db->db_name, state->reqid));
+	D_NOTICE("Starting traverse on DB %s (id %d)\n",
+		 ctdb_db->db_name,
+		 state->reqid);
 
 	/* timeout the traverse */
 	tevent_add_timer(ctdb->ev, state,
