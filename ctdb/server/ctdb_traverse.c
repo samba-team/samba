@@ -349,7 +349,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(
 	TDB_DATA data;
 	struct ctdb_traverse_all r;
 	struct ctdb_traverse_all_ext r_ext;
-	uint32_t destination;
+	uint32_t destination = CTDB_UNKNOWN_PNN;
 
 	state = talloc(start_state, struct ctdb_traverse_all_handle);
 	if (state == NULL) {
@@ -391,26 +391,53 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(
 		/* Volatile database: traverse all active nodes */
 		destination = CTDB_BROADCAST_ACTIVE;
 	} else {
-		unsigned int i;
+		struct ctdb_node *node = NULL;
+		unsigned int i = 0;
 
 		/*
 		 * Persistent database: traverse an active node, preferably
 		 * the local one
 		 */
-		destination = ctdb->pnn;
-		/* check we are in the vnnmap */
-		for (i=0; i < ctdb->vnn_map->size; i++) {
-			if (ctdb->vnn_map->map[i] == ctdb->pnn) {
-				break;
+		node = ctdb_find_node(ctdb, CTDB_CURRENT_NODE);
+		if ((node->flags & NODE_FLAGS_INACTIVE) == 0) {
+			/* Local/current node is active */
+			destination = ctdb->pnn;
+			goto found;
+		}
+
+		/*
+		 * Local node is inactive.
+		 */
+
+		/*
+		 * Try for the first node in the VNN map.  This avoids
+		 * a node with the lmaster capability disabled, which
+		 * is more likely to be remote.  VNN map size of 0
+		 * should not happen but be defensive.
+		 */
+		if (ctdb->vnn_map->size > 0) {
+			destination = ctdb->vnn_map->map[0];
+			goto found;
+		}
+
+		/*
+		 * Try to find another active node, which will have
+		 * the lmaster capability disabled
+		 */
+		destination = CTDB_UNKNOWN_PNN;
+		for (i = 0; i < ctdb->num_nodes; i++) {
+			node = ctdb->nodes[i];
+			if ((node->flags & NODE_FLAGS_INACTIVE) == 0) {
+				destination = node->pnn;
+				goto found;
 			}
 		}
-		/* if we are not in the vnn map we just pick the first
-		 * node instead
-		 */
-		if (i == ctdb->vnn_map->size) {
-			destination = ctdb->vnn_map->map[0];
-		}
+
+		DBG_ERR("No active node for persistent traverse\n");
+		talloc_free(state);
+		return NULL;
 	}
+found:
 
 	/*
 	 * Tell all the nodes in the cluster to start sending records
