@@ -331,16 +331,17 @@ struct traverse_start_state {
 
 
 /*
-  setup a cluster-wide non-blocking traverse of a ctdb. The
-  callback function will be called on every record in the local
-  ltdb. To stop the traverse, talloc_free() the traverse_handle.
-
-  The traverse is finished when the callback is called with tdb_null
-  for key and data
+ * Setup a cluster-wide non-blocking traverse of a ctdb. The callback
+ * function will be called on every record in the local ltdb. To stop
+ * the traverse, talloc_free() the traverse_handle.
+ *
+ * The traverse is finished when the callback is called with tdb_null
+ * for key and data.
  */
-static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context *ctdb_db,
-								 ctdb_traverse_fn_t callback,
-								 struct traverse_start_state *start_state)
+static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(
+	struct ctdb_db_context *ctdb_db,
+	ctdb_traverse_fn_t callback,
+	struct traverse_start_state *start_state)
 {
 	struct ctdb_traverse_all_handle *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -362,7 +363,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	state->private_data = start_state;
 	state->null_count   = 0;
 	state->timedout     = false;
-	
+
 	talloc_set_destructor(state, ctdb_traverse_all_destructor);
 
 	if (start_state->withemptyrecords) {
@@ -387,11 +388,13 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	}
 
 	if (ctdb_db_volatile(ctdb_db)) {
-		/* volatile database, traverse all active nodes */
+		/* Volatile database: traverse all active nodes */
 		destination = CTDB_BROADCAST_ACTIVE;
 	} else {
 		unsigned int i;
-		/* persistent database, traverse one node, preferably
+
+		/*
+		 * Persistent database: traverse an active node, preferably
 		 * the local one
 		 */
 		destination = ctdb->pnn;
@@ -409,9 +412,10 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 		}
 	}
 
-	/* tell all the nodes in the cluster to start sending records to this
-	 * node, or if it is a persistent database, just tell the local
-	 * node
+	/*
+	 * Tell all the nodes in the cluster to start sending records
+	 * to this node, or if it is a persistent database, just tell
+	 * the selected node.
 	 */
 
 	if (start_state->withemptyrecords) {
@@ -433,7 +437,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 		 ctdb_db->db_name,
 		 state->reqid);
 
-	/* timeout the traverse */
+	/* Timeout for traverse */
 	tevent_add_timer(ctdb->ev, state,
 			 timeval_current_ofs(ctdb->tunable.traverse_timeout, 0),
 			 ctdb_traverse_all_timeout, state);
