@@ -2236,8 +2236,8 @@ int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->c = c;
 
-	for (i = 0; i < ctdb->vnn_map->size; i++) {
-		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		struct ctdb_node *node = ctdb->nodes[i];
 		int ret;
 
 		/* only send to active nodes */
