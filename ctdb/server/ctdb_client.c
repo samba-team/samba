@@ -1381,34 +1381,6 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 	return 0;
 }
 
-uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
-				struct ctdb_vnn_map *vnn_map,
-				TALLOC_CTX *mem_ctx,
-				bool include_self)
-{
-	unsigned int i, j, num_nodes;
-	uint32_t *nodes;
-
-	for (i=num_nodes=0;i<vnn_map->size;i++) {
-		if (vnn_map->map[i] == ctdb->pnn && !include_self) {
-			continue;
-		}
-		num_nodes++;
-	}
-
-	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
-	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
-
-	for (i=j=0;i<vnn_map->size;i++) {
-		if (vnn_map->map[i] == ctdb->pnn && !include_self) {
-			continue;
-		}
-		nodes[j++] = vnn_map->map[i];
-	}
-
-	return nodes;
-}
-
 /* Get list of nodes not including those with flags specified by mask */
 static uint32_t *list_of_nodes(struct ctdb_context *ctdb,
 			       struct ctdb_node_map_old *node_map,

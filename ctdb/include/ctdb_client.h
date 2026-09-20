@@ -213,10 +213,6 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 			      client_async_callback fail_callback,
 			      void *callback_data);
 
-uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
-			       struct ctdb_vnn_map *vnn_map,
-			       TALLOC_CTX *mem_ctx, bool include_self);
-
 uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 			       struct ctdb_node_map_old *node_map,
 			       TALLOC_CTX *mem_ctx, bool include_self);
