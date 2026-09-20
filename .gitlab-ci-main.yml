@@ -330,7 +330,7 @@ samba-no-opath-build:
       artifacts: true
 
 samba:
-  extends: .shared_template
+  extends: .needs_samba-def-build
 
 samba-mitkrb5:
   extends: .shared_template

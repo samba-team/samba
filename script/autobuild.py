@@ -343,12 +343,10 @@ tasks = {
         ],
     },
 
-    # We have 'test' before 'install' because, 'test' should work without 'install (runs all the other envs)'
     "samba": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(exclude_envs=[
             "none",
             "nt4_dc",
@@ -404,11 +402,9 @@ tasks = {
             "ad_dc_fips",
             "ad_member_fips",
             ])),
-            ("test-slow-none", make_test(cmd='make test', TESTS="--include=selftest/slow-none", include_envs=["none"])),
+            ("test-slow-none", make_test(TESTS="--include=selftest/slow-none", include_envs=["none"])),
             ("lcov", LCOV_CMD),
-            ("install", "make install"),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
-            ("clean", "make clean"),
         ],
     },
 
