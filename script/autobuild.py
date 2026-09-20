@@ -579,7 +579,7 @@ tasks = {
                 "simpleserver",
                 ])),
             ("lcov", LCOV_CMD),
-            ("check-clean-tree", "script/clean-source-tree.sh"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
         ],
     },
 
@@ -595,7 +595,7 @@ tasks = {
                 "fileserver_smb1_done",
                 ])),
             ("lcov", LCOV_CMD),
-            ("check-clean-tree", "script/clean-source-tree.sh"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
         ],
     },
 
