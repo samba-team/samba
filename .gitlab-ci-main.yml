@@ -384,8 +384,19 @@ samba-fuzz:
 ctdb:
   extends: .shared_template
 
+samba-ctdb-build:
+  extends: .shared_template_build_only
+  stage: build_first
+
+.needs_samba-ctdb-build:
+  extends: .shared_template_test_only
+  needs:
+    - job: samba-ctdb-build
+      artifacts: true
+    - job: samba-codecheck
+
 samba-ctdb:
-  extends: .shared_template
+  extends: .needs_samba-ctdb-build
 
 samba-ad-dc-ntvfs:
   extends: .needs_samba-def-build

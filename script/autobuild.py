@@ -879,29 +879,28 @@ tasks = {
         ],
     },
 
-    "samba-ctdb": {
+    "samba-ctdb-build": {
+        "git-clone-required": True,
         "sequence": [
-            ("random-sleep", random_sleep(900, 1500)),
-
         # build samba with cluster support (also building ctdb):
             ("samba-configure",
          "./configure.developer ${PREFIX} "
          "--with-cluster-support "
          "--with-profiling-data "
          "--with-prometheus-exporter"),
-            ("samba-make", "make"),
+            ("samba-make", "make -j"),
             ("samba-check", "./bin/smbd --configfile=/dev/null -b | grep CLUSTER_SUPPORT"),
             ("ctdb-check", "test -e ./bin/ctdbd"),
-
-            ("test", make_test(
-                cmd='make test',
-                include_envs=["clusteredmember"])
-            ),
-
-        # clean up:
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
-            ("clean", "make clean"),
-            ("ctdb-clean", "cd ./ctdb && make clean"),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
+    "samba-ctdb": {
+        "dependency": "samba-ctdb-build",
+        "sequence": [
+            ("random-sleep", random_sleep(900, 1500)),
+            ("test", make_test(include_envs=["clusteredmember"])),
         ],
     },
 
@@ -1253,6 +1252,7 @@ defaulttasks.remove("fail")
 
 # The build tasks will be brought in by the test tasks as needed
 defaulttasks.remove("samba-def-build")
+defaulttasks.remove("samba-ctdb-build")
 defaulttasks.remove("samba-nt4-build")
 defaulttasks.remove("samba-mit-build")
 defaulttasks.remove("samba-h5l-build")

@@ -229,9 +229,11 @@ src="ctdb/config/events/legacy/46.update-keytabs.script"
 for n in 0 1 2; do
 	node_dir="${PREFIX}/clusteredmember/node.${n}"
 	event_script_dir="${node_dir}/events/legacy"
-	install "$src" "${event_script_dir}/"
+	# The copied directory may inherit a read-only source tree's mode.
+	chmod u+w "$event_script_dir" || exit 1
+	install "$src" "${event_script_dir}/" || exit 1
 	conf="CTDB_UPDATE_KEYTABS_SMB_CONF=\"${node_dir}/lib/server.conf\""
-	echo "$conf" >"${event_script_dir}/46.update-keytabs.options"
+	echo "$conf" >"${event_script_dir}/46.update-keytabs.options" || exit 1
 done
 
 testit "net_ads_testjoin_initial" check_net_ads_testjoin || failed=$((failed + 1))
