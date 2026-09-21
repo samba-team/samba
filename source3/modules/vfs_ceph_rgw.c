@@ -1029,6 +1029,12 @@ static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
 			   RGW_GETXATTR_FLAG_NONE);
 
 	if (rc < 0 || cb_arg.rc < 0) {
+		if (rc == -ENOENT) {
+			/* Treat request for non-existing entries as ENOATTR */
+			DBG_DEBUG("[CEPH_RGW] Ignoring non-existing object\n");
+			rc = -ENOATTR;
+			goto out;
+		}
 		DBG_ERR("[CEPH_RGW] Error getting xattr. "
 			"rc = %d cbErr = %d\n",
 			rc,
@@ -1105,6 +1111,12 @@ static int vfs_ceph_rgw_fsetxattr(struct vfs_handle_struct *handle,
 			   &attr_list,
 			   RGW_SETXATTR_FLAG_NONE);
 	if (rc < 0) {
+		if (rc == -ENOENT) {
+			/* Treat request for non-existing entries as ENOATTR */
+			DBG_DEBUG("[CEPH_RGW] Ignoring non-existing object\n");
+			rc = -ENOATTR;
+			goto out;
+		}
 		DBG_ERR("[CEPH_RGW] Unable to set x attributes\n");
 		goto out;
 	}
@@ -2132,6 +2144,12 @@ static int vfs_ceph_rgw_fremovexattr(struct vfs_handle_struct *handle,
 			  &attr_list,
 			  RGW_RMXATTR_FLAG_NONE);
 	if (rc < 0) {
+		if (rc == -ENOENT) {
+			/* Treat request for non-existing entries as ENOATTR */
+			DBG_DEBUG("[CEPH_RGW] Ignoring non-existing object\n");
+			rc = -ENOATTR;
+			goto out;
+		}
 		DBG_ERR("[CEPH_RGW] Unable to remove xattr\n");
 		goto out;
 	}
@@ -2277,6 +2295,12 @@ static ssize_t vfs_ceph_rgw_flistxattr(vfs_handle_struct *handle,
 			   &cb_arg,
 			   RGW_LSXATTR_FLAG_NONE);
 	if (ret < 0 || cb_arg.rc < 0) {
+		if (ret == -ENOENT) {
+			/* Ignore request for non-existing file/dir */
+			DBG_DEBUG("[CEPH_RGW] Ignoring non-existing object\n");
+			ret = 0;
+			goto out;
+		}
 		DBG_ERR("[CEPH_RGW] Unable to list xattrs. rc=%zd cb_rc=%d\n",
 			ret,
 			cb_arg.rc);
