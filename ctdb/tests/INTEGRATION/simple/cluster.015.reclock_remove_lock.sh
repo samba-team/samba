@@ -40,7 +40,7 @@ echo
 
 leader_get "$test_node"
 
-generation_get
+generation_get "$test_node"
 
 echo "Remove recovery lock"
 rm "$reclock"
