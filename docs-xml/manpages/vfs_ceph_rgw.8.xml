@@ -44,7 +44,14 @@
 	</para>
 
 	<para>
-		This module can not be combined with other modules.
+		This module can be combined with the "acl_xattr" VFS module.
+		Other combinations have not been tested and are outside the
+		current scope. POSIX ACLs are unsupported, so
+		"acl_xattr:ignore system acls = yes" must be set when stacking
+		"acl_xattr".
+
+		librgw rejects xattr operations on the bucket root, so ACL
+		storage on the share root remains unsupported.
 
 		librgw does not support renaming directories. Therefore the module
 		internally ensures:
