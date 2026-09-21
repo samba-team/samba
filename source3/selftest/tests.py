@@ -94,6 +94,7 @@ have_ldwrap = ("HAVE_LDWRAP" in config_hash)
 with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
 
 have_cluster_support = "CLUSTER_SUPPORT" in config_hash
+have_jansson = "HAVE_JANSSON" in config_hash
 
 quic_ko_wrapper = ("QUIC_KO_WRAPPER" in config_hash)
 ngtcp2_environ = {'SOCKET_WRAPPER_ALLOW_DGRAM_SEQPACKET_FALLBACK': '1'}
@@ -1807,6 +1808,11 @@ if have_cluster_support:
                    configuration,
                    '$CTDB_IFACE_IP',
                    "tmp"])
+    if have_jansson:
+        plantestsuite("samba3.blackbox.clusterlevel_json", "clusteredmember:local",
+                      [os.path.join(samba3srcdir,
+                                    "script/tests/test_clusterlevel_json.sh"),
+                       net, configuration])
     plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
                   [os.path.join(samba3srcdir,
                                 "script/tests/test_registry_share.sh"),
