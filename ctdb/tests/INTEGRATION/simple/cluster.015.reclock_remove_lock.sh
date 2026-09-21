@@ -13,22 +13,6 @@ ctdb_test_init -n
 echo "Starting CTDB with cluster lock recheck interval set to 5s..."
 ctdb_nodes_start_custom -r 5
 
-generation_has_changed ()
-{
-	local node="$1"
-	local generation_init="$2"
-
-	# Leak this so it can be printed by test
-	generation_new=""
-
-	ctdb_onnode "$node" status
-	# shellcheck disable=SC2154
-	# $outfile set by ctdb_onnode() above
-	generation_new=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")
-
-	[ "$generation_new" != "$generation_init" ]
-}
-
 select_test_node
 
 echo "Get recovery lock setting"
