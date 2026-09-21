@@ -160,6 +160,47 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>ceph_rgw:rgw_thread_pool_size = number</term>
+		<listitem>
+		<para>
+			Controls the size of the request-handling thread pool created
+			by each librgw instance. Increasing this value may increase
+			parallelism but also increases system resource consumption.
+			Default: 4
+		</para>
+		<para>
+			Set this parameter to 0 to leave the corresponding Ceph
+			configuration unchanged. If omitted, Samba overrides the Ceph
+			configuration with the default shown above.
+		</para>
+		<para>
+			Example: ceph_rgw:rgw_thread_pool_size = 8
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph_rgw:rgw_num_async_rados_threads = number</term>
+		<listitem>
+		<para>
+			Controls the size of the RGW async RADOS processor thread pool
+			created by each librgw instance. Increasing this value may
+			increase parallelism but also increases system resource
+			consumption. This does not limit all librados threads.
+			Default: 8
+		</para>
+		<para>
+			Set this parameter to 0 to leave the corresponding Ceph
+			configuration unchanged. If omitted, Samba overrides the Ceph
+			configuration with the default shown above.
+		</para>
+		<para>
+			Example: ceph_rgw:rgw_num_async_rados_threads = 16
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 
 </refsect1>

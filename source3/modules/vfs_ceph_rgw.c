@@ -2446,6 +2446,8 @@ static bool vfs_ceph_rgw_lib_init(void)
 	const char *id = NULL;
 	const char *config_file = NULL;
 	const char *keyring_file = NULL;
+	unsigned long rgw_thread_pool_size;
+	unsigned long rgw_num_async_rados_threads;
 	bool debug;
 	char **librgw_params = talloc_zero_array(talloc_tos(), char *, 2);
 
@@ -2474,6 +2476,14 @@ static bool vfs_ceph_rgw_lib_init(void)
 
 	debug = lp_parm_bool(-1, "ceph_rgw", "debug", false);
 
+	rgw_thread_pool_size = lp_parm_ulong(-1,
+					     "ceph_rgw",
+					     "rgw_thread_pool_size",
+					     4);
+
+	rgw_num_async_rados_threads = lp_parm_ulong(
+		-1, "ceph_rgw", "rgw_num_async_rados_threads", 8);
+
 	/* Prepare parameters */
 	librgw_params[0] = talloc_strdup(librgw_params, "vfs_ceph_rgw");
 	if (librgw_params[0] == NULL) {
@@ -2491,6 +2501,18 @@ static bool vfs_ceph_rgw_lib_init(void)
 		DBG_ERR("[CEPH_RGW] Not enough memory for librgw params\n");
 		errno = ENOMEM;
 		goto out;
+	}
+
+	if (rgw_thread_pool_size > 0) {
+		talloc_asprintf_addbuf(librgw_params + 1,
+				       " --rgw-thread-pool-size=%lu",
+				       rgw_thread_pool_size);
+	}
+
+	if (rgw_num_async_rados_threads > 0) {
+		talloc_asprintf_addbuf(librgw_params + 1,
+				       " --rgw-num-async-rados-threads=%lu",
+				       rgw_num_async_rados_threads);
 	}
 
 	if (debug) {
