@@ -39,6 +39,19 @@ in case people have stumbled across and come to rely on the feature.
 Otherwise please ignore this news.
 
 
+Administratively forced AD site for winbind
+---------------------------------------------
+
+The new "winbind ad site : DOMAIN" parametric option lets an administrator
+force winbindd to use a specific Active Directory site for a domain,
+instead of relying on CLDAP-based site auto-discovery. This is useful
+when firewall rules restrict which Domain Controllers a client may reach,
+and that set of Domain Controllers does not match what Active Directory's
+own subnet-to-site mapping would otherwise select. Once forced, winbind no
+longer overrides the chosen site with a Domain Controller's own opinion of
+the client's closest site.
+
+
 REMOVED FEATURES
 ================
 
@@ -48,6 +61,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  winbind ad site                         New             ""
 
 
 KNOWN ISSUES
