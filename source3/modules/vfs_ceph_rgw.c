@@ -84,6 +84,7 @@ struct vfs_ceph_rgw_fh {
 	struct rgw_file_handle *rgw_fh;
 	int fd;
 	int o_flags;
+	bool is_writable;
 };
 
 struct vfs_ceph_rgw_getxattr_arg {
@@ -374,10 +375,13 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH_RGW]: name = %s mode = %u\n", open_name, st.st_mode);
 
 	/* librgw has no support to open directory.
-	 * Thus we call open only for files
+	 * Thus we call open only for files opened with write mode
 	 * and perform lookup for directories.
 	 */
-	if (S_ISREG(st.st_mode)) {
+	if (S_ISREG(st.st_mode) && (how->flags & O_ACCMODE) != O_RDONLY &&
+	    !fsp->fsp_flags.is_pathref)
+	{
+		newfh->is_writable = true;
 		rc = rgw_open(config->rgw_root_fs,
 			      rgw_fh,
 			      flags,
@@ -410,6 +414,7 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 			  open_name,
 			  rgw_fh);
 	}
+
 	newfh->rgw_fh = rgw_fh;
 	rc = newfh->fd;
 	newfh->o_flags = flags;
@@ -458,14 +463,20 @@ static int vfs_ceph_rgw_close(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	rc = rgw_close(config->rgw_root_fs,
-		       openfh->rgw_fh,
-		       RGW_CLOSE_FLAG_RELE);
-	if (rc < 0) {
-		DBG_ERR("[CEPH_RGW] Unable to close [%s]. rc = %d\n",
-			fname,
-			rc);
-		goto err_out;
+	if (openfh->is_writable) {
+		rc = rgw_close(config->rgw_root_fs,
+			       openfh->rgw_fh,
+			       RGW_CLOSE_FLAG_RELE);
+		if (rc < 0) {
+			DBG_ERR("[CEPH_RGW] Unable to close [%s]. rc = %d\n",
+				fname,
+				rc);
+			goto err_out;
+		}
+	} else {
+		(void)rgw_fh_rele(config->rgw_root_fs,
+				  openfh->rgw_fh,
+				  RGW_FH_RELE_FLAG_NONE);
 	}
 
 	DBG_DEBUG("[CEPH_RGW] close: [%s] success\n", fname);
