@@ -1249,6 +1249,8 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		return NT_STATUS_INVALID_PARAMETER_5;
 	}
 
+	frame = talloc_stackframe();
+
 	if ((type == G_LOCK_READ) || (type == G_LOCK_WRITE)) {
 		/*
 		 * This is an abstraction violation: Normally we do
@@ -1271,7 +1273,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("dbwrap_do_locked() failed: %s\n",
 				  nt_errstr(status));
-			return status;
+			goto done;
 		}
 
 		DBG_DEBUG("status=%s, state.status=%s\n",
@@ -1283,19 +1285,23 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 				const char *name = dbwrap_name(ctx->db);
 				dbwrap_lock_order_lock(name, ctx->lock_order);
 			}
-			return NT_STATUS_OK;
+			status = NT_STATUS_OK;
+			goto done;
 		}
 		if (NT_STATUS_EQUAL(state.status, NT_STATUS_WAS_UNLOCKED)) {
 			/* without dbwrap_lock_order_lock() */
-			return NT_STATUS_OK;
+			status = NT_STATUS_OK;
+			goto done;
 		}
 		if (!NT_STATUS_EQUAL(
 			    state.status, NT_STATUS_LOCK_NOT_GRANTED)) {
-			return state.status;
+			status = state.status;
+			goto done;
 		}
 
 		if (timeval_is_zero(&timeout)) {
-			return NT_STATUS_LOCK_NOT_GRANTED;
+			status = NT_STATUS_LOCK_NOT_GRANTED;
+			goto done;
 		}
 
 		/*
@@ -1305,26 +1311,25 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		 */
 	}
 
-	frame = talloc_stackframe();
 	status = NT_STATUS_NO_MEMORY;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		goto fail;
+		goto done;
 	}
 	req = g_lock_lock_send(frame, ev, ctx, key, type, cb_fn, cb_private);
 	if (req == NULL) {
-		goto fail;
+		goto done;
 	}
 	end = timeval_current_ofs(timeout.tv_sec, timeout.tv_usec);
 	if (!tevent_req_set_endtime(req, ev, end)) {
-		goto fail;
+		goto done;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
+		goto done;
 	}
 	status = g_lock_lock_recv(req);
- fail:
+done:
 	TALLOC_FREE(frame);
 	return status;
 }
