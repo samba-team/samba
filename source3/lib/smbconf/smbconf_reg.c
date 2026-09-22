@@ -861,11 +861,13 @@ static sbcErr smbconf_reg_create_share(struct smbconf_ctx *ctx,
 {
 	sbcErr err;
 	struct registry_key *key = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	if (servicename == NULL) {
 		return SBC_ERR_OK;
 	}
+
+	tmp_ctx = talloc_stackframe();
 
 	err = smbconf_reg_create_service_key(tmp_ctx, ctx,
 					     servicename, &key);
