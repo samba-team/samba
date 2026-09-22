@@ -156,6 +156,11 @@ bld.SAMBA_LIBRARY('stable_sort',
                   local_include=False,
                   private_library=True)
 
+bld.SAMBA_SUBSYSTEM('tjson',
+                    source='tjson.c',
+                    deps='talloc jansson time-basic',
+                    local_include=False)
+
 if bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.SAMBA_LIBRARY('tevent-util',
