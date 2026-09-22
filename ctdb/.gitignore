@@ -5,7 +5,6 @@ config.status
 configure
 ctdb.pc
 publish*.sh
-push*.sh
 web/packages
 TAGS
 tags
