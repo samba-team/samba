@@ -2652,8 +2652,7 @@ int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 			  struct ctdb_client_context *client,
 			  struct timeval timeout,
 			  struct ctdb_record_handle *h,
-			  TDB_DATA data,
-			  int *status)
+			  TDB_DATA data)
 {
 	struct ctdb_req_control request;
 	struct ctdb_reply_control *reply = NULL;
