@@ -113,6 +113,7 @@ static void fsp_set_gen_id(files_struct *fsp)
 NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
 {
 	struct smbXsrv_open *op = NULL;
+	const struct GUID *create_guid = NULL;
 	NTTIME now;
 	NTSTATUS status;
 
@@ -124,11 +125,16 @@ NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
 
 	now = timeval_to_nttime(&fsp->open_time);
 
+	if (req->smb2req != NULL) {
+		create_guid = req->smb2req->create_guid;
+	}
+
 	status = smbXsrv_open_create(req->xconn,
 				     req->session,
 				     fsp->conn->tcon,
 				     &fsp->file_id,
 				     fsp->name_hash,
+				     create_guid,
 				     now,
 				     &op);
 	if (!NT_STATUS_IS_OK(status)) {

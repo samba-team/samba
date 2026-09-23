@@ -39,6 +39,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     struct smbXsrv_tcon *tcon,
 			     struct file_id *file_id,
 			     uint32_t name_hash,
+			     const struct GUID *create_guid,
 			     NTTIME now,
 			     struct smbXsrv_open **_open);
 NTSTATUS smbXsrv_open_update(struct smbXsrv_open *_open);

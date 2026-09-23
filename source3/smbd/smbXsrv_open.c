@@ -581,6 +581,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     struct smbXsrv_tcon *tcon,
 			     struct file_id *file_id,
 			     uint32_t name_hash,
+			     const struct GUID *create_guid,
 			     NTTIME now,
 			     struct smbXsrv_open **_open)
 {
@@ -655,6 +656,9 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	global->tcon_global_id = tcon->global->tcon_global_id;
 	if (conn->protocol >= PROTOCOL_SMB2_10) {
 		global->client_guid = conn->smb2.client.guid;
+	}
+	if (create_guid != NULL) {
+		global->create_guid = *create_guid;
 	}
 
 	status = smbXsrv_open_global_allocate(table->global.db_ctx,

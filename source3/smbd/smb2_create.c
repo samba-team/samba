@@ -928,6 +928,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		.in_create_options = _in_create_options,
 	};
 
+	/*
+	 * smb2req is shared by all creates of a compound request, don't let
+	 * this create pick up the create GUID of a previous one.
+	 * smbd_smb2_cc_before_exec_dhc2q() sets it again.
+	 */
+	smb2req->create_guid = NULL;
+
 	smb1req = smbd_smb2_fake_smb_request(smb2req, NULL);
 	if (tevent_req_nomem(smb1req, req)) {
 		return tevent_req_post(req, state->ev);
@@ -1934,7 +1941,6 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	}
 
 	if (state->update_open) {
-		state->op->global->create_guid = state->_create_guid;
 		if (state->need_replay_cache) {
 			state->op->flags |= SMBXSRV_OPEN_NEED_REPLAY_CACHE;
 		}
