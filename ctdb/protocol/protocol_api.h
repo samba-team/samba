@@ -625,6 +625,7 @@ int ctdb_reply_control_start_ipreallocate(struct ctdb_reply_control *reply);
 void ctdb_req_control_push_record(
 	struct ctdb_req_control *request,
 	struct ctdb_push_record_data *push_record_data);
+int ctdb_reply_control_push_record(struct ctdb_reply_control *reply);
 
 /* From protocol/protocol_debug.c */
 

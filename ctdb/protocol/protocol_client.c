@@ -2377,8 +2377,13 @@ void ctdb_req_control_push_record(struct ctdb_req_control *request,
 	request->pad = 0;
 	request->srvid = 0;
 	request->client_id = 0;
-	request->flags = CTDB_CTRL_FLAG_NOREPLY;
+	request->flags = 0;
 
 	request->rdata.opcode = CTDB_CONTROL_PUSH_RECORD;
 	request->rdata.data.push_record = push_record_data;
+}
+
+int ctdb_reply_control_push_record(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_PUSH_RECORD);
 }
