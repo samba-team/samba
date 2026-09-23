@@ -7182,6 +7182,7 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 			argv[1]);
 	}
 
+	prd.hdr.rsn--;
 	ret = ctdb_ctrl_push_record(mem_ctx,
 				    ctdb->ev,
 				    ctdb->client,
