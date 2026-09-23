@@ -87,7 +87,7 @@ vacuum_test()
 	ctdb_onnode "$dnode" "deletekey ${db} ${key}"
 
 	echo
-	vacuum_confirm_key_empty_dmaster "$dnode" "$db" "$key"
+	db_confirm_key_empty_dmaster "$dnode" "$db" "$key"
 
 	echo
 	echo "Confirm all records still exist on all nodes"
@@ -100,7 +100,7 @@ vacuum_test()
 		testprog_onnode "$dnode" "ctdb-db-test vacuum ${db}"
 
 		echo
-		vacuum_confirm_key_empty_dmaster "$dnode" "$db" "$key"
+		db_confirm_key_empty_dmaster "$dnode" "$db" "$key"
 
 		# Fetch the record and put it in the delete queue in
 		# the main daemon for processing in next vacuuming run
@@ -114,7 +114,7 @@ vacuum_test()
 		check_cattdb_num_records "$db" "$num_records" "$all_pnns"
 
 		echo
-		vacuum_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
+		db_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
 	fi
 
 	echo

@@ -93,14 +93,14 @@ if [ $status -ne 110 ]; then
 fi
 
 echo "Confirm record key=\"${key}\" has dmaster=${non_lmaster}"
-vacuum_test_key_dmaster "$lmaster" "$db" "$key" "$non_lmaster"
+db_test_key_dmaster "$lmaster" "$db" "$key" "$non_lmaster"
 
 echo "Kill lock process ${pid} on node ${non_lmaster}"
 try_command_on_node "$non_lmaster" "kill ${pid}"
 ctdb_test_cleanup_pid_clear
 
 echo "Wait until record is migrated to lmaster node ${lmaster}"
-vacuum_test_wait_key_dmaster "$lmaster" "$db" "$key"
+db_test_wait_key_dmaster "$lmaster" "$db" "$key"
 
 echo
 echo "Confirm that all nodes still have the record"

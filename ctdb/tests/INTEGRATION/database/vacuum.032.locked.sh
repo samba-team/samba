@@ -99,4 +99,4 @@ echo "Confirm the record still exists on all nodes"
 check_cattdb_num_records "$db" 1 "$all_pnns"
 
 echo
-vacuum_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
+db_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
