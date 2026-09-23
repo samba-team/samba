@@ -43,6 +43,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     NTTIME now,
 			     struct smbXsrv_open **_open);
 NTSTATUS smbXsrv_open_update(struct smbXsrv_open *_open);
+NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op);
 NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now);
 NTSTATUS smb1srv_open_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_open_lookup(struct smbXsrv_connection *conn,

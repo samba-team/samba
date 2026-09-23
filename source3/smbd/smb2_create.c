@@ -1954,6 +1954,17 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		}
 
 		/*
+		 * The open record is stored, so the replay cache may now
+		 * point at it instead of holding the in-progress marker.
+		 */
+		status = smbXsrv_open_set_replay_cache(state->op);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("smbXsrv_open_set_replay_cache failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+
+		/*
 		 * We should not purge the replay cache anymore
 		 * as it's attached to the smbXsrv_open record now.
 		 */

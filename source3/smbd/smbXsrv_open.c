@@ -728,7 +728,7 @@ static TDB_DATA smbXsrv_open_replay_cache_key(
 	return make_tdb_data(blob.data, blob.length);
 }
 
-static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
+NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 {
 	struct GUID_txt_buf buf;
 	struct db_context *db = op->table->global.db_ctx;
@@ -864,13 +864,6 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 			    op->global->open_global_id,
 			    nt_errstr(state.status));
 		return state.status;
-	}
-
-	status = smbXsrv_open_set_replay_cache(op);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("smbXsrv_open_set_replay_cache failed: %s\n",
-			nt_errstr(status));
-		return status;
 	}
 
 	if (CHECK_DEBUGLVL(10)) {
@@ -1131,8 +1124,9 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
  * With STATUS_FWP_RESERVED the caller should continue the normal
  * open processing:
  * - On success:
- *   - smbXsrv_open_update()/smbXsrv_open_set_replay_cache()
- *     will update the record with a valid open_persistent_id.
+ *   - smbXsrv_open_set_replay_cache(), called by
+ *     smbd_smb2_create_after_exec(), will update the record with a
+ *     valid open_persistent_id.
  * - On failure:
  *   - smbXsrv_open_purge_replay_cache() should cleanup
  *     the reservation.
