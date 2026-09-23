@@ -55,7 +55,7 @@ _key_dmaster_fail()
 	ctdb_test_fail
 }
 
-vacuum_test_key_dmaster()
+db_test_key_dmaster()
 {
 	local node="$1"
 	local db="$2"
@@ -67,7 +67,7 @@ vacuum_test_key_dmaster()
 	fi
 }
 
-vacuum_test_wait_key_dmaster()
+db_test_wait_key_dmaster()
 {
 	local node="$1"
 	local db="$2"
@@ -80,7 +80,7 @@ vacuum_test_wait_key_dmaster()
 	fi
 }
 
-vacuum_confirm_key_empty_dmaster()
+db_confirm_key_empty_dmaster()
 {
 	local node="$1"
 	local db="$2"
@@ -89,7 +89,7 @@ vacuum_confirm_key_empty_dmaster()
 
 	echo "Confirm record key=\"${key}\" is empty and dmaster=${dmaster}"
 
-	vacuum_test_key_dmaster "$node" "$db" "$key" "$dmaster"
+	db_test_key_dmaster "$node" "$db" "$key" "$dmaster"
 
 	if ! grep -Fqx 'data(0) = ""' "$outfile"; then
 		echo "BAD: record not empty"

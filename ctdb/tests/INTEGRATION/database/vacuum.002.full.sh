@@ -67,7 +67,7 @@ for i in $(seq 1 10); do
 	testprog_onnode "$lmaster" \
 		"ctdb-db-test fetch-local-delete $db ${key}"
 
-	vacuum_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
+	db_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
 done
 
 echo "Do fast vacuuming run on all nodes"

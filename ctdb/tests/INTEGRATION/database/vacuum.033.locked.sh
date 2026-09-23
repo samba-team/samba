@@ -102,7 +102,7 @@ echo
 echo "Confirm that nodes ${lmaster} and ${non_lmaster} still have the record"
 check_cattdb_num_records "$db" 1 "${lmaster} ${non_lmaster}"
 
-vacuum_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
+db_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
 
 echo
 
@@ -114,4 +114,4 @@ echo
 echo "Confirm that nodes ${lmaster} and ${non_lmaster} still have the record"
 check_cattdb_num_records "$db" 1 "${lmaster} ${non_lmaster}"
 
-vacuum_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
+db_confirm_key_empty_dmaster "$lmaster" "$db" "$key"
