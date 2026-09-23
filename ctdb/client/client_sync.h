@@ -21,6 +21,7 @@
 #define __CTDB_CLIENT_SYNC_H__
 
 #include <talloc.h>
+#include <tdb.h>
 #include <tevent.h>
 
 /* from client/client_control_sync.c */
@@ -479,6 +480,7 @@ int ctdb_ctrl_enable_node(TALLOC_CTX *mem_ctx,
 			  struct ctdb_client_context *client,
 			  int destnode,
 			  struct timeval timeout);
+
 int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 			  struct tevent_context *ev,
 			  struct ctdb_client_context *client,

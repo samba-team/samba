@@ -2678,8 +2678,13 @@ int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 
 	ctdb_req_control_push_record(&request, &push_record);
 
-	ret = ctdb_client_control(mem_ctx, ev, client, CTDB_BROADCAST_ACTIVE,
-				  timeout, &request, &reply);
+	ret = ctdb_client_control(mem_ctx,
+				  ev,
+				  client,
+				  CTDB_BROADCAST_ACTIVE,
+				  timeout,
+				  &request,
+				  &reply);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Control PUSH_RECORD failed, ret=%d\n", ret));

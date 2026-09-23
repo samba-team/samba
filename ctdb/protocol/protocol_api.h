@@ -621,8 +621,10 @@ int ctdb_reply_control_enable_node(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_start_ipreallocate(struct ctdb_req_control *request);
 int ctdb_reply_control_start_ipreallocate(struct ctdb_reply_control *reply);
-void ctdb_req_control_push_record(struct ctdb_req_control *request,
-				  struct ctdb_push_record_data *push_record_data);
+
+void ctdb_req_control_push_record(
+	struct ctdb_req_control *request,
+	struct ctdb_push_record_data *push_record_data);
 
 /* From protocol/protocol_debug.c */
 
