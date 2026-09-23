@@ -30,29 +30,45 @@ check_cattdb_num_records()
 	return $ret
 }
 
-_key_dmaster_check()
+_key_attr_check()
 {
 	local node="$1"
 	local db="$2"
 	local key="$3"
-	local dmaster="${4:-${node}}"
+	local attr="$4"
+	local val="${5:-${node}}"
 
 	testprog_onnode "$node" "ctdb-db-test local-read ${db} ${key}"
 
 	# shellcheck disable=SC2154
 	# $outfile is set above by try_command_on_node()
-	grep -Fqx "dmaster: ${dmaster}" "$outfile"
+	grep -Fqx "${attr}: ${val}" "$outfile"
 }
 
-_key_dmaster_fail()
+_key_attr_fail()
 {
-	local dmaster="$1"
+	local node="$1"
+	local attr="$2"
+	local val="$3"
 
-	echo "BAD: node ${dmaster} is not dmaster"
+	echo "BAD: node ${node} has ${attr} != ${val}"
 	# shellcheck disable=SC2154
 	# $outfile is set by the caller via _key_dmaster_check()
 	cat "$outfile"
 	ctdb_test_fail
+}
+
+db_test_key_attr()
+{
+	local node="$1"
+	local db="$2"
+	local key="$3"
+	local attr="$4"
+	local val="${5:-${node}}"
+
+	if ! _key_attr_check "$node" "$db" "$key" "$attr" "$val"; then
+		_key_attr_fail "$node" "$attr" "$val"
+	fi
 }
 
 db_test_key_dmaster()
@@ -62,9 +78,7 @@ db_test_key_dmaster()
 	local key="$3"
 	local dmaster="${4:-${node}}"
 
-	if ! _key_dmaster_check "$node" "$db" "$key" "$dmaster"; then
-		_key_dmaster_fail "$dmaster"
-	fi
+	db_test_key_attr "$node" "$db" "$key" "dmaster" "$dmaster"
 }
 
 db_test_wait_key_dmaster()
@@ -75,8 +89,8 @@ db_test_wait_key_dmaster()
 	local dmaster="${4:-${node}}"
 
 	if ! wait_until 30 \
-		_key_dmaster_check "$node" "$db" "$key" "$dmaster"; then
-		_key_dmaster_fail "$dmaster"
+		_key_attr_check "$node" "$db" "$key" "dmaster" "$dmaster"; then
+		_key_attr_fail "$node" "dmaster" "$dmaster"
 	fi
 }
 
