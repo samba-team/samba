@@ -937,15 +937,16 @@ sub ParseInterface($)
 		}
 	}
 
-	$version = "0.0";
-
 	if(defined $idl->{PROPERTIES}->{version}) {
-		my @if_version = split(/\./, $idl->{PROPERTIES}->{version});
-		if ($if_version[0] == $idl->{PROPERTIES}->{version}) {
-				$version = $idl->{PROPERTIES}->{version};
-		} else {
-				$version = $if_version[1] << 16 | $if_version[0];
-		}
+		my ($major, $minor);
+		$idl->{PROPERTIES}->{version} =~ m/(\d+)(?:\.(\d+))?/;
+		$major = $1;
+		$minor = $2 // 0;
+		# yes, this weird backward order is intentional
+		$version = $minor << 16 | $major;
+		$version = sprintf "0x%x /* %d.%d */", $version, $major, $minor;
+	} else {
+		$version = "0 /* not defined */";
 	}
 
 	# If no endpoint is set, default to the interface name as a named pipe
