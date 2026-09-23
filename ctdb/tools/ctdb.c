@@ -6963,7 +6963,7 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 	struct ctdb_ltdb_header header;
 	uint8_t db_flags;
 	TDB_DATA key, data;
-	int ret, status;
+	int ret = 0;
 
 	if (argc != 3) {
 		usage("pushrecord");
@@ -7054,15 +7054,14 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 				    ctdb->client,
 				    TIMEOUT(),
 				    h,
-				    data,
-				    &status);
+				    data);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to push record for key %s\n",
 			argv[1]);
 		return ret;
 	}
 
-	return status;
+	return ret;
 }
 
 static const struct ctdb_cmd {
