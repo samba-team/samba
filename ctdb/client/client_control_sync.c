@@ -2690,5 +2690,11 @@ int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	ret = ctdb_reply_control_push_record(reply);
+	if (ret != 0) {
+		D_ERR("Control PUSH_RECORD failed, ret=%d\n", ret);
+		return ret;
+	}
+
 	return 0;
 }
