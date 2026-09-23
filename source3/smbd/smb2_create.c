@@ -696,8 +696,7 @@ struct smbd_smb2_create_state {
 	uint64_t allocation_size;
 	struct GUID _create_guid;
 	struct GUID *create_guid;
-	struct GUID _purge_create_guid;
-	struct GUID *purge_create_guid;
+	bool purge_replay_cache;
 	bool update_open;
 	bool durable_requested;
 	uint32_t durable_timeout_msec;
@@ -956,9 +955,15 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->request_time = old_state->request_time;
 		state->open_rec = talloc_move(state, &old_state->open_rec);
 		state->open_was_deferred = old_state->open_was_deferred;
-		state->_purge_create_guid = old_state->_purge_create_guid;
-		state->purge_create_guid = old_state->purge_create_guid;
-		old_state->purge_create_guid = NULL;
+		/*
+		 * This is the same request, so it carries the same create
+		 * GUID. Take it over right away: purge_replay_cache refers
+		 * to it, and it is needed before the create context is
+		 * parsed again in smbd_smb2_cc_before_exec_dhc2q().
+		 */
+		state->_create_guid = old_state->_create_guid;
+		state->purge_replay_cache = old_state->purge_replay_cache;
+		old_state->purge_replay_cache = false;
 	}
 
 	TALLOC_FREE(smb2req->subreq);
@@ -1407,22 +1412,22 @@ static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
 		req, struct smbd_smb2_create_state);
 	NTSTATUS status;
 
-	if (state->purge_create_guid == NULL) {
+	if (!state->purge_replay_cache) {
 		return;
 	}
 
 	status = smbXsrv_open_purge_replay_cache(state->smb2req->xconn->client,
-						 state->purge_create_guid);
+						 &state->_create_guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		struct GUID_txt_buf buf;
 
 		D_ERR("%s: smbXsrv_open_purge_replay_cache(%s) %s\n",
 		      caller_func,
-		      GUID_buf_string(state->purge_create_guid, &buf),
+		      GUID_buf_string(&state->_create_guid, &buf),
 		      nt_errstr(status));
 	}
 
-	state->purge_create_guid = NULL;
+	state->purge_replay_cache = false;
 }
 
 static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
@@ -1558,8 +1563,7 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 		 * in order to cleanup.
 		 */
 		SMB_ASSERT(state->op == NULL);
-		state->_purge_create_guid = state->_create_guid;
-		state->purge_create_guid = &state->_purge_create_guid;
+		state->purge_replay_cache = true;
 		state->replay_operation = false;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_NOT_AVAILABLE)) {
 		tevent_req_nterror(req, status);
@@ -1971,7 +1975,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		 * We should not purge the replay cache anymore
 		 * as it's attached to the smbXsrv_open record now.
 		 */
-		state->purge_create_guid = NULL;
+		state->purge_replay_cache = false;
 	}
 
 	if (state->dhnq != NULL && state->op->global->durable) {
