@@ -486,8 +486,7 @@ int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 			  struct ctdb_client_context *client,
 			  uint32_t destnode,
 			  struct timeval timeout,
-			  struct ctdb_record_handle *h,
-			  TDB_DATA data);
+			  struct ctdb_push_record_data *push_record);
 
 /* from client/client_message_sync.c */
 

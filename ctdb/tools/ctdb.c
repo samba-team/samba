@@ -6960,9 +6960,8 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 	const char *db_name = NULL;
 	struct ctdb_db_context *db = NULL;
 	struct ctdb_record_handle *h = NULL;
-	struct ctdb_ltdb_header header;
 	uint8_t db_flags;
-	TDB_DATA key, data;
+	struct ctdb_push_record_data prd = {};
 	int ret = 0;
 
 	if (argc != 3) {
@@ -6991,13 +6990,15 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	ret = str_to_data(argv[1], strlen(argv[1]), mem_ctx, &key);
+	prd.db_id = ctdb_db_id(db);
+
+	ret = str_to_data(argv[1], strlen(argv[1]), mem_ctx, &prd.key);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse key %s\n", argv[1]);
 		return ret;
 	}
 
-	ret = str_to_data(argv[2], strlen(argv[2]), mem_ctx, &data);
+	ret = str_to_data(argv[2], strlen(argv[2]), mem_ctx, &prd.value);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse value %s\n", argv[2]);
 		return ret;
@@ -7007,10 +7008,10 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 			      ctdb->ev,
 			      ctdb->client,
 			      db,
-			      key,
+			      prd.key,
 			      false,
 			      &h,
-			      &header,
+			      &prd.hdr,
 			      NULL);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to fetch record for key %s\n",
@@ -7039,11 +7040,11 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 	 * done here.
 	 */
 
-	header.rsn++;
-	header.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
-	ctdb_record_set_header(h, &header);
+	prd.hdr.rsn++;
+	prd.hdr.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
+	ctdb_record_set_header(h, &prd.hdr);
 
-	ret = ctdb_store_record(h, data);
+	ret = ctdb_store_record(h, prd.value);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to store record for key %s\n",
 			argv[1]);
@@ -7054,8 +7055,7 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 				    ctdb->client,
 				    ctdb->cmd_pnn,
 				    TIMEOUT(),
-				    h,
-				    data);
+				    &prd);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to push record for key %s\n",
 			argv[1]);

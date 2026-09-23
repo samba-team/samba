@@ -2652,31 +2652,13 @@ int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 			  struct ctdb_client_context *client,
 			  uint32_t destnode,
 			  struct timeval timeout,
-			  struct ctdb_record_handle *h,
-			  TDB_DATA data)
+			  struct ctdb_push_record_data *push_record)
 {
 	struct ctdb_req_control request;
 	struct ctdb_reply_control *reply = NULL;
-	struct ctdb_push_record_data push_record;
 	int ret;
 
-	free(h->data.dptr);
-
-	h->data.dsize = data.dsize;
-	h->data.dptr = malloc(data.dsize);
-	if (h->data.dptr == NULL) {
-		return ENOMEM;
-	}
-	memcpy(h->data.dptr, data.dptr, data.dsize);
-
-	push_record = (struct ctdb_push_record_data) {
-		.db_id = h->db->db_id,
-		.hdr = h->header,
-		.key = h->key,
-		.value = h->data,
-	};
-
-	ctdb_req_control_push_record(&request, &push_record);
+	ctdb_req_control_push_record(&request, push_record);
 
 	ret = ctdb_client_control(mem_ctx,
 				  ev,
