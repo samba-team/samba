@@ -7107,8 +7107,12 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_flags, &db);
+	ret = ctdb_attach(ctdb->ev,
+			  ctdb->client,
+			  TIMEOUT(),
+			  db_name,
+			  db_flags,
+			  &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		return ret;
@@ -7126,8 +7130,15 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	ret = ctdb_fetch_lock(mem_ctx, ctdb->ev, ctdb->client,
-			      db, key, false, &h, &header, NULL);
+	ret = ctdb_fetch_lock(mem_ctx,
+			      ctdb->ev,
+			      ctdb->client,
+			      db,
+			      key,
+			      false,
+			      &h,
+			      &header,
+			      NULL);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to fetch record for key %s\n",
 			argv[1]);
@@ -7165,8 +7176,13 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 			argv[1]);
 	}
 
-	ret = ctdb_ctrl_push_record(mem_ctx, ctdb->ev, ctdb->client,
-				    TIMEOUT(), h, data, &status);
+	ret = ctdb_ctrl_push_record(mem_ctx,
+				    ctdb->ev,
+				    ctdb->client,
+				    TIMEOUT(),
+				    h,
+				    data,
+				    &status);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to push record for key %s\n",
 			argv[1]);
