@@ -56,9 +56,6 @@ krb5_boolean ks_is_kadmin(krb5_context context,
 krb5_boolean ks_is_kadmin_history(krb5_context context,
 				  krb5_const_principal princ);
 
-krb5_boolean ks_is_kadmin_changepw(krb5_context context,
-				   krb5_const_principal princ);
-
 krb5_boolean ks_is_kadmin_admin(krb5_context context,
 				krb5_const_principal princ);
 

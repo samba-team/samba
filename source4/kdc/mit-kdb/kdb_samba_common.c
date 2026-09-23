@@ -86,14 +86,6 @@ krb5_boolean ks_is_kadmin_history(krb5_context context,
 	       ks_data_eq_string(princ->data[1], "history");
 }
 
-krb5_boolean ks_is_kadmin_changepw(krb5_context context,
-				   krb5_const_principal princ)
-{
-	return krb5_princ_size(context, princ) == 2 &&
-	       ks_data_eq_string(princ->data[0], "kadmin") &&
-	       ks_data_eq_string(princ->data[1], "changepw");
-}
-
 krb5_boolean ks_is_kadmin_admin(krb5_context context,
 				krb5_const_principal princ)
 {

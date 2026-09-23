@@ -646,6 +646,32 @@ class KpasswdTests(KDCBaseTest):
         lifetime = self.get_ticket_lifetime(ticket)
         self.assertEqual(2 * 60, lifetime)
 
+    # A Windows-style short-realm request must receive the same restricted
+    # password-change credential as a request using the DNS realm.
+    def test_kpasswd_ticket_short_realm_restrictions(self):
+        creds = self.get_client_creds()
+        expected_srealm = (creds.get_domain() if self.kadmin_is_tgs
+                           else creds.get_realm()).upper()
+        ticket = self.get_tgt(
+            creds,
+            sname=self.get_kpasswd_sname(),
+            realm=creds.get_domain(),
+            expected_crealm=creds.get_realm().upper(),
+            expected_srealm=expected_srealm,
+            kdc_options='forwardable,renewable,canonicalize,renewable-ok')
+
+        self.assertEqual(2 * 60, self.get_ticket_lifetime(ticket))
+
+        # A password-change ticket cannot be repurposed as a TGT.
+        realm = creds.get_realm()
+        krbtgt_sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                                 names=['krbtgt', realm])
+        ticket.set_sname(krbtgt_sname)
+        service_creds = self.get_service_creds()
+        self._make_tgs_request(creds, service_creds, ticket,
+                               expect_error=(KDC_ERR_TGT_REVOKED,
+                                             KDC_ERR_TKT_EXPIRED))
+
     # Ensure we cannot perform a TGS-REQ with a kpasswd ticket.
     def test_kpasswd_ticket_tgs(self):
         creds = self.get_client_creds()

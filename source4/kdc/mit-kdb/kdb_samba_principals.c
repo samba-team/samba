@@ -306,7 +306,6 @@ krb5_error_code kdb_samba_db_get_principal(krb5_context context,
 					   krb5_db_entry **kentry)
 {
 	struct mit_samba_context *mit_ctx;
-	krb5_error_code code;
 
 	mit_ctx = ks_get_context(context);
 	if (mit_ctx == NULL) {
@@ -326,21 +325,7 @@ krb5_error_code kdb_samba_db_get_principal(krb5_context context,
 		return ks_get_admin_principal(context, princ, kentry);
 	}
 
-	code = ks_get_principal(context, princ, kflags, kentry);
-
-	/*
-	 * This restricts the changepw account so it isn't able to request a
-	 * service ticket. It also marks the principal as the changepw service.
-	 */
-	if (ks_is_kadmin_changepw(context, princ)) {
-		/* FIXME: shouldn't we also set KRB5_KDB_DISALLOW_TGT_BASED ?
-		 * testing showed that setpw kpasswd command fails then on the
-		 * server though... */
-		(*kentry)->attributes |= KRB5_KDB_PWCHANGE_SERVICE;
-		(*kentry)->max_life = CHANGEPW_LIFETIME;
-	}
-
-	return code;
+	return ks_get_principal(context, princ, kflags, kentry);
 }
 
 krb5_error_code kdb_samba_db_put_principal(krb5_context context,
