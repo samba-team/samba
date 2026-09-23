@@ -484,6 +484,7 @@ int ctdb_ctrl_enable_node(TALLOC_CTX *mem_ctx,
 int ctdb_ctrl_push_record(TALLOC_CTX *mem_ctx,
 			  struct tevent_context *ev,
 			  struct ctdb_client_context *client,
+			  uint32_t destnode,
 			  struct timeval timeout,
 			  struct ctdb_record_handle *h,
 			  TDB_DATA data);

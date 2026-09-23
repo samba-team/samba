@@ -7052,6 +7052,7 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 	ret = ctdb_ctrl_push_record(mem_ctx,
 				    ctdb->ev,
 				    ctdb->client,
+				    ctdb->cmd_pnn,
 				    TIMEOUT(),
 				    h,
 				    data);
