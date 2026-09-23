@@ -274,7 +274,7 @@ bld.SAMBA3_BINARY('net',
                  printing_migrate
                  IDMAP_AUTORID_TDB
                  CONN_TDB
-                 jansson
+                 tjson
                  common_auth
                  ADOUBLE
                  DNS_UTIL

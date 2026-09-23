@@ -46,8 +46,7 @@
 
 #ifdef HAVE_JANSSON
 #include <jansson.h>
-#include "audit_logging.h" /* various JSON helpers */
-#include "auth/common_auth.h"
+#include "lib/util/tjson.h"
 #endif /* [HAVE_JANSSON] */
 
 #ifdef HAVE_ADS
@@ -71,29 +70,23 @@ static const char *assume_own_realm(struct net_context *c)
  * output irrespective of the locale.
  */
 
-static int output_json(const struct json_object *jsobj)
+static int output_json(struct tjson *jsobj)
 {
-	TALLOC_CTX *ctx = NULL;
 	char *json = NULL;
 
-	if (json_is_invalid(jsobj)) {
+	if (tjson_has_error(jsobj)) {
 		return -1;
 	}
 
-	ctx = talloc_new(NULL);
-	if (ctx == NULL) {
-		d_fprintf(stderr, _("Out of memory\n"));
-		return -1;
-	}
-
-	json = json_to_string(ctx, jsobj);
-	if (!json) {
+	json = tjson_to_string(talloc_tos(), jsobj);
+	if (json == NULL) {
 		d_fprintf(stderr, _("error encoding to JSON\n"));
 		return -1;
 	}
 
 	d_printf("%s\n", json);
-	TALLOC_FREE(ctx);
+
+	TALLOC_FREE(json);
 
 	return 0;
 }
@@ -103,16 +96,15 @@ static int net_ads_cldap_netlogon_json
 	 const char *addr,
 	 const struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply)
 {
-	struct json_object jsobj = json_new_object();
-	struct json_object flagsobj = json_new_object();
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tjson *jsobj = NULL;
+	struct tjson *flagsobj = NULL;
 	char response_type [32] = { '\0' };
-	int ret = 0;
+	struct GUID_txt_buf guid_buf;
+	int ret;
 
-	if (json_is_invalid(&jsobj) || json_is_invalid(&flagsobj)) {
-		d_fprintf(stderr, _("error setting up JSON value\n"));
-
-		goto failure;
-	}
+	jsobj = tjson_new_object(frame);
+	flagsobj = tjson_new_object(frame);
 
 	switch (reply->command) {
 		case LOGON_SAM_LOGON_USER_UNKNOWN_EX:
@@ -133,210 +125,91 @@ static int net_ads_cldap_netlogon_json
 			break;
 	}
 
-	ret = json_add_string(&jsobj, "Information for Domain Controller",
-			      addr);
-	if (ret != 0) {
-		goto failure;
-	}
+	tjson_add_string(jsobj, "Information for Domain Controller", addr);
+	tjson_add_string(jsobj, "Response Type", response_type);
+	tjson_add_string(jsobj,
+			 "GUID",
+			 GUID_buf_string(&reply->domain_uuid, &guid_buf));
 
-	ret = json_add_string(&jsobj, "Response Type", response_type);
-	if (ret != 0) {
-		goto failure;
-	}
+	tjson_add_bool(flagsobj,
+		       "Is a PDC",
+		       reply->server_type & NBT_SERVER_PDC);
+	tjson_add_bool(flagsobj,
+		       "Is a GC of the forest",
+		       reply->server_type & NBT_SERVER_GC);
+	tjson_add_bool(flagsobj,
+		       "Is an LDAP server",
+		       reply->server_type & NBT_SERVER_LDAP);
+	tjson_add_bool(flagsobj,
+		       "Supports DS",
+		       reply->server_type & NBT_SERVER_DS);
+	tjson_add_bool(flagsobj,
+		       "Is running a KDC",
+		       reply->server_type & NBT_SERVER_KDC);
+	tjson_add_bool(flagsobj,
+		       "Is running time services",
+		       reply->server_type & NBT_SERVER_TIMESERV);
+	tjson_add_bool(flagsobj,
+		       "Is the closest DC",
+		       reply->server_type & NBT_SERVER_CLOSEST);
+	tjson_add_bool(flagsobj,
+		       "Is writable",
+		       reply->server_type & NBT_SERVER_WRITABLE);
+	tjson_add_bool(flagsobj,
+		       "Has a hardware clock",
+		       reply->server_type & NBT_SERVER_GOOD_TIMESERV);
+	tjson_add_bool(flagsobj,
+		       "Is a non-domain NC serviced by LDAP server",
+		       reply->server_type & NBT_SERVER_NDNC);
+	tjson_add_bool(flagsobj,
+		       "Is NT6 DC that has some secrets",
+		       reply->server_type & NBT_SERVER_SELECT_SECRET_DOMAIN_6);
+	tjson_add_bool(flagsobj,
+		       "Is NT6 DC that has all secrets",
+		       reply->server_type & NBT_SERVER_FULL_SECRET_DOMAIN_6);
+	tjson_add_bool(flagsobj,
+		       "Runs Active Directory Web Services",
+		       reply->server_type & NBT_SERVER_ADS_WEB_SERVICE);
+	tjson_add_bool(flagsobj,
+		       "Runs on Windows 2012 or later",
+		       reply->server_type & NBT_SERVER_DS_8);
+	tjson_add_bool(flagsobj,
+		       "Runs on Windows 2012R2 or later",
+		       reply->server_type & NBT_SERVER_DS_9);
+	tjson_add_bool(flagsobj,
+		       "Runs on Windows 2016 or later",
+		       reply->server_type & NBT_SERVER_DS_10);
+	tjson_add_bool(flagsobj,
+		       "Has a DNS name",
+		       reply->server_type & NBT_SERVER_HAS_DNS_NAME);
+	tjson_add_bool(flagsobj,
+		       "Is a default NC",
+		       reply->server_type & NBT_SERVER_IS_DEFAULT_NC);
+	tjson_add_bool(flagsobj,
+		       "Is the forest root",
+		       reply->server_type & NBT_SERVER_FOREST_ROOT);
 
-	ret = json_add_guid(&jsobj, "GUID", &reply->domain_uuid);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is a PDC",
-			    reply->server_type & NBT_SERVER_PDC);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is a GC of the forest",
-			    reply->server_type & NBT_SERVER_GC);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is an LDAP server",
-			    reply->server_type & NBT_SERVER_LDAP);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Supports DS",
-			    reply->server_type & NBT_SERVER_DS);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is running a KDC",
-			    reply->server_type & NBT_SERVER_KDC);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is running time services",
-			    reply->server_type & NBT_SERVER_TIMESERV);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is the closest DC",
-			    reply->server_type & NBT_SERVER_CLOSEST);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is writable",
-			    reply->server_type & NBT_SERVER_WRITABLE);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Has a hardware clock",
-			    reply->server_type & NBT_SERVER_GOOD_TIMESERV);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj,
-			    "Is a non-domain NC serviced by LDAP server",
-			    reply->server_type & NBT_SERVER_NDNC);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool
-		(&flagsobj, "Is NT6 DC that has some secrets",
-		 reply->server_type & NBT_SERVER_SELECT_SECRET_DOMAIN_6);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool
-		(&flagsobj, "Is NT6 DC that has all secrets",
-		 reply->server_type & NBT_SERVER_FULL_SECRET_DOMAIN_6);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Runs Active Directory Web Services",
-			    reply->server_type & NBT_SERVER_ADS_WEB_SERVICE);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Runs on Windows 2012 or later",
-			    reply->server_type & NBT_SERVER_DS_8);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Runs on Windows 2012R2 or later",
-			    reply->server_type & NBT_SERVER_DS_9);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Runs on Windows 2016 or later",
-			    reply->server_type & NBT_SERVER_DS_10);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Has a DNS name",
-			    reply->server_type & NBT_SERVER_HAS_DNS_NAME);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is a default NC",
-			    reply->server_type & NBT_SERVER_IS_DEFAULT_NC);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_bool(&flagsobj, "Is the forest root",
-			    reply->server_type & NBT_SERVER_FOREST_ROOT);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string(&jsobj, "Forest", reply->forest);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string(&jsobj, "Domain", reply->dns_domain);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string(&jsobj, "Domain Controller", reply->pdc_dns_name);
-	if (ret != 0) {
-		goto failure;
-	}
-
-
-	ret = json_add_string(&jsobj, "Pre-Win2k Domain", reply->domain_name);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string(&jsobj, "Pre-Win2k Hostname", reply->pdc_name);
-	if (ret != 0) {
-		goto failure;
-	}
+	tjson_add_string(jsobj, "Forest", reply->forest);
+	tjson_add_string(jsobj, "Domain", reply->dns_domain);
+	tjson_add_string(jsobj, "Domain Controller", reply->pdc_dns_name);
+	tjson_add_string(jsobj, "Pre-Win2k Domain", reply->domain_name);
+	tjson_add_string(jsobj, "Pre-Win2k Hostname", reply->pdc_name);
 
 	if (*reply->user_name) {
-		ret = json_add_string(&jsobj, "User name", reply->user_name);
-		if (ret != 0) {
-			goto failure;
-		}
+		tjson_add_string(jsobj, "User name", reply->user_name);
 	}
 
-	ret = json_add_string(&jsobj, "Server Site Name", reply->server_site);
-	if (ret != 0) {
-		goto failure;
-	}
+	tjson_add_string(jsobj, "Server Site Name", reply->server_site);
+	tjson_add_string(jsobj, "Client Site Name", reply->client_site);
+	tjson_add_int(jsobj, "NT Version", reply->nt_version);
+	tjson_add_int(jsobj, "LMNT Token", reply->lmnt_token);
+	tjson_add_int(jsobj, "LM20 Token", reply->lm20_token);
 
-	ret = json_add_string(&jsobj, "Client Site Name", reply->client_site);
-	if (ret != 0) {
-		goto failure;
-	}
+	tjson_add_object(jsobj, "Flags", &flagsobj);
 
-	ret = json_add_int(&jsobj, "NT Version", reply->nt_version);
-	if (ret != 0) {
-		goto failure;
-	}
+	ret = output_json(jsobj);
 
-	ret = json_add_int(&jsobj, "LMNT Token", reply->lmnt_token);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_int(&jsobj, "LM20 Token", reply->lm20_token);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_object(&jsobj, "Flags", &flagsobj);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = output_json(&jsobj);
-	json_free(&jsobj); /* frees flagsobj recursively */
-
-	return ret;
-
-failure:
-	json_free(&flagsobj);
-	json_free(&jsobj);
+	TALLOC_FREE(frame);
 
 	return ret;
 }
@@ -502,77 +375,36 @@ out:
 
 static int net_ads_info_json(ADS_STRUCT *ads)
 {
-	int ret = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tjson *jsobj = NULL;
 	char addr[INET6_ADDRSTRLEN];
 	time_t pass_time;
-	struct json_object jsobj = json_new_object();
+	int ret;
 
-	if (json_is_invalid(&jsobj)) {
-		d_fprintf(stderr, _("error setting up JSON value\n"));
-
-		goto failure;
-	}
+	jsobj = tjson_new_object(frame);
 
 	pass_time = secrets_fetch_pass_last_set_time(ads->server.workgroup);
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 
-	ret = json_add_string (&jsobj, "LDAP server", addr);
-	if (ret != 0) {
-		goto failure;
-	}
+	tjson_add_string(jsobj, "LDAP server", addr);
+	tjson_add_string(jsobj,
+			 "LDAP server name",
+			 ads->config.ldap_server_name);
+	tjson_add_string(jsobj, "Workgroup", ads->config.workgroup);
+	tjson_add_string(jsobj, "Realm", ads->config.realm);
+	tjson_add_string(jsobj, "Bind Path", ads->config.bind_path);
+	tjson_add_int(jsobj, "LDAP port", ads->ldap.port);
+	tjson_add_int(jsobj, "Server time", ads->config.current_time);
+	tjson_add_string(jsobj, "KDC server", ads->auth.kdc_server);
+	tjson_add_int(jsobj, "Server time offset", ads->config.time_offset);
+	tjson_add_int(jsobj,
+		      "Last machine account password change",
+		      pass_time);
 
-	ret = json_add_string (&jsobj, "LDAP server name",
-			       ads->config.ldap_server_name);
-	if (ret != 0) {
-		goto failure;
-	}
+	ret = output_json(jsobj);
 
-	ret = json_add_string (&jsobj, "Workgroup", ads->config.workgroup);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string (&jsobj, "Realm", ads->config.realm);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string (&jsobj, "Bind Path", ads->config.bind_path);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_int (&jsobj, "LDAP port", ads->ldap.port);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_int (&jsobj, "Server time", ads->config.current_time);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_string (&jsobj, "KDC server", ads->auth.kdc_server);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_int (&jsobj, "Server time offset",
-			    ads->config.time_offset);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = json_add_int (&jsobj, "Last machine account password change",
-			    pass_time);
-	if (ret != 0) {
-		goto failure;
-	}
-
-	ret = output_json(&jsobj);
-failure:
-	json_free(&jsobj);
+	TALLOC_FREE(frame);
 
 	return ret;
 }
