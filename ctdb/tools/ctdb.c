@@ -6990,6 +6990,11 @@ static int control_push_record(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	ret = get_generation(mem_ctx, ctdb, &prd.generation);
+	if (ret != 0) {
+		return ret;
+	}
+
 	prd.db_id = ctdb_db_id(db);
 
 	ret = str_to_data(argv[1], strlen(argv[1]), mem_ctx, &prd.key);
