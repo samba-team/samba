@@ -5277,12 +5277,115 @@ done:
        return ret;
 }
 
+/*
+ * Reconnecting a durable v2 handle with a v1 request is valid. A v1 request
+ * carries no create GUID, so the one stored with the open record has to
+ * survive the reconnect.
+ *
+ * Do a second reconnect as v2 to further verify the earlier v1 reconnect
+ * maintained the original create GUID.
+ */
+static bool test_durable_v2_open_replay_cache_reconnect_v1(
+	struct torture_context *tctx,
+	struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	NTSTATUS status;
+	bool ret = true;
+
+	snprintf(fname, sizeof(fname), "replay_cache_reconnect_v1_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_VAL(io.out.durable_open_v2, true);
+
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	/* the path name is ignored by the server */
+	io.in.fname = fname;
+	io.in.durable_handle = h; /* durable v1 reconnect request */
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	/* disconnect once more, still leaving the durable open */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * The create GUID of the original create still has to match, so this
+	 * fails with NT_STATUS_OBJECT_NAME_NOT_FOUND if the v1 reconnect above
+	 * overwrote it.
+	 */
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+
+	status = smb2_util_close(tree, *h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = NULL;
+
+done:
+	if (tree != NULL) {
+		if (h != NULL) {
+			smb2_util_close(tree, *h);
+		}
+		smb2_util_unlink(tree, fname);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
 	    torture_suite_create(ctx, "durable-v2-open");
 
 	torture_suite_add_1smb2_test(suite, "create-blob", test_durable_v2_open_create_blob);
+	torture_suite_add_1smb2_test(suite, "replay-cache-reconnect-v1", test_durable_v2_open_replay_cache_reconnect_v1);
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
