@@ -562,9 +562,10 @@ static NTSTATUS smbXsrv_open_global_allocate(
 
 static int smbXsrv_open_destructor(struct smbXsrv_open *op)
 {
+	struct timeval now = timeval_current();
 	NTSTATUS status;
 
-	status = smbXsrv_open_close(op, 0);
+	status = smbXsrv_open_close(op, timeval_to_nttime(&now));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smbXsrv_open_destructor: "
 			  "smbXsrv_open_close() failed - %s\n",

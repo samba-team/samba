@@ -24,6 +24,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "smbd/smbXsrv_open.h"
+#include "smbd/scavenger.h"
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/ndr_smb2_lease_struct.h"
@@ -742,6 +743,7 @@ struct smbd_smb2_create_state {
 
 static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
 						const char *caller_func);
+static void smbd_smb2_create_release_recreated(struct tevent_req *req);
 
 static void smbd_smb2_create_cleanup(struct tevent_req *req,
 				     enum tevent_req_state req_state)
@@ -1160,6 +1162,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		    state->op->global->persistent &&
 		    !state->persistent_requested)
 		{
+			smbd_smb2_create_release_recreated(req);
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, state->ev);
 		}
@@ -1167,6 +1170,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (state->op->global->persistent &&
 		    !state->persistent_requested)
 		{
+			smbd_smb2_create_release_recreated(req);
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return tevent_req_post(req, state->ev);
 		}
@@ -1174,6 +1178,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (!state->op->global->persistent &&
 		    state->persistent_requested)
 		{
+			smbd_smb2_create_release_recreated(req);
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, state->ev);
 		}
@@ -1195,7 +1200,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				   nt_errstr(status),
 				   nt_errstr(return_status));
 
-			TALLOC_FREE(state->op);
+			smbd_smb2_create_release_recreated(req);
 			tevent_req_nterror(req, return_status);
 			return tevent_req_post(req, state->ev);
 		}
@@ -1403,6 +1408,35 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	smbd_smb2_create_finish(req);
 	return req;
+}
+
+/*
+ * Give back an open that smb2srv_open_recreate() handed us but that we are not
+ * going to use after all.
+ *
+ * Freeing it runs smbXsrv_open_destructor(), which stores the open record as
+ * disconnected again, so the handle stays reconnectable and the open slot is
+ * given back to the table. Ask the scavenger to clean it up once the durable
+ * timeout expires, as nothing else would.
+ */
+static void smbd_smb2_create_release_recreated(struct tevent_req *req)
+{
+	struct smbd_smb2_create_state *state = tevent_req_data(
+		req, struct smbd_smb2_create_state);
+	uint64_t open_persistent_id;
+	struct file_id file_id = {};
+	uint32_t name_hash;
+
+	open_persistent_id = state->op->global->open_persistent_id;
+	file_id = state->op->global->file_id;
+	name_hash = state->op->global->name_hash;
+
+	TALLOC_FREE(state->op);
+
+	scavenger_schedule_disconnected(state->smb1req->conn->sconn->msg_ctx,
+					open_persistent_id,
+					&file_id,
+					name_hash);
 }
 
 static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
