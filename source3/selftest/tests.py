@@ -1756,6 +1756,10 @@ plantestsuite("samba3.blackbox.winbind_ignore_domain", "ad_member_idmap_ad:local
 plantestsuite("samba3.blackbox.durable_v2_delay", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_durable_handle_reconnect.sh")])
 
+plantestsuite("samba3.blackbox.replay_cache_records", "nt4_dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_replay_cache_records.sh"),
+               '$SERVER_IP', 'durable', '$USERNAME', '$PASSWORD', '$LOCK_DIR'])
+
 plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
                '$SERVER', 'tmp', '$DC_USERNAME', '$DC_PASSWORD'])
