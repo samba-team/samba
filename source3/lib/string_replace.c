@@ -35,6 +35,18 @@ struct char_mappings {
 	smb_ucs2_t entry[MAP_SIZE][2];
 };
 
+/*
+ * "catia:mappings" magic value: vfs_fruit.c sets this as the fixed
+ * mapping used for macOS native character encoding (see
+ * macos_string_replace_map below). string_replace_init_map()
+ * recognizes it and hands back &macos_cmaps_magic_dummy instead of a
+ * real table. string_replace_allocate() special-cases on
+ * &macos_cmaps_magic_dummy for macOS-special treatment.
+ */
+
+const char macos_string_replace_map[] = "macos-builtin-mappings";
+static struct char_mappings *macos_cmaps_magic_dummy = NULL;
+
 static bool build_table(struct char_mappings **cmaps, int value)
 {
 	int i;
@@ -101,6 +113,12 @@ struct char_mappings **string_replace_init_map(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (strcsequal(mappings[0], macos_string_replace_map) &&
+	    (mappings[1] == NULL))
+	{
+		return &macos_cmaps_magic_dummy;
+	}
+
 	cmaps = talloc_zero_array(mem_ctx, struct char_mappings *, MAP_NUM);
 	if (cmaps == NULL) {
 		return NULL;
@@ -135,6 +153,46 @@ struct char_mappings **string_replace_init_map(TALLOC_CTX *mem_ctx,
 	return cmaps;
 }
 
+static inline smb_ucs2_t macos_unix_to_ucs2(smb_ucs2_t c)
+{
+	if (c >= 0x01 && c <= 0x1f) {
+		return 0xf000 + c;
+	}
+
+	switch (c) {
+	case '"': return 0xf020;
+	case '*': return 0xf021;
+	case ':': return 0xf022;
+	case '<': return 0xf023;
+	case '>': return 0xf024;
+	case '?': return 0xf025;
+	case '\\': return 0xf026;
+	case '|': return 0xf027;
+	}
+
+	return c;
+}
+
+static inline smb_ucs2_t macos_ucs2_to_unix(smb_ucs2_t c)
+{
+	if (c >= 0xf001 && c <= 0xf01f) {
+		return c - 0xf000;
+	}
+
+	switch (c) {
+	case 0xf020: return '"';
+	case 0xf021: return '*';
+	case 0xf022: return ':';
+	case 0xf023: return '<';
+	case 0xf024: return '>';
+	case 0xf025: return '?';
+	case 0xf026: return '\\';
+	case 0xf027: return '|';
+	}
+
+	return c;
+}
+
 int string_replace_allocate(connection_struct *conn,
 			    const char *name_in,
 			    struct char_mappings **cmaps,
@@ -154,20 +212,23 @@ int string_replace_allocate(connection_struct *conn,
 		return errno;
 	}
 
-	for (ptr = tmpbuf; *ptr; ptr++) {
-		if (*ptr == 0) {
-			break;
+	if (cmaps == &macos_cmaps_magic_dummy) {
+		if (direction == vfs_translate_to_windows) {
+			for (ptr = tmpbuf; ptr[0] != '\0'; ptr++) {
+				ptr[0] = macos_unix_to_ucs2(ptr[0]);
+			}
+		} else {
+			for (ptr = tmpbuf; ptr[0] != '\0'; ptr++) {
+				ptr[0] = macos_ucs2_to_unix(ptr[0]);
+			}
 		}
-		if (cmaps == NULL) {
-			continue;
+	} else if (cmaps != NULL) {
+		for (ptr = tmpbuf; ptr[0] != '\0'; ptr++) {
+			map = cmaps[T_PICK(ptr[0])];
+			if (map != NULL) {
+				*ptr = map->entry[T_OFFSET((*ptr))][direction];
+			}
 		}
-		map = cmaps[T_PICK((*ptr))];
-		if (map == NULL) {
-			/* nothing to do */
-			continue;
-		}
-
-		*ptr = map->entry[T_OFFSET((*ptr))][direction];
 	}
 
 	ok = pull_ucs2_talloc(mem_ctx, mapped_name, tmpbuf,
@@ -182,15 +243,3 @@ int string_replace_allocate(connection_struct *conn,
 	}
 	return 0;
 }
-
-const char macos_string_replace_map[] =
-	"0x01:0xf001,0x02:0xf002,0x03:0xf003,0x04:0xf004,"
-	"0x05:0xf005,0x06:0xf006,0x07:0xf007,0x08:0xf008,"
-	"0x09:0xf009,0x0a:0xf00a,0x0b:0xf00b,0x0c:0xf00c,"
-	"0x0d:0xf00d,0x0e:0xf00e,0x0f:0xf00f,0x10:0xf010,"
-	"0x11:0xf011,0x12:0xf012,0x13:0xf013,0x14:0xf014,"
-	"0x15:0xf015,0x16:0xf016,0x17:0xf017,0x18:0xf018,"
-	"0x19:0xf019,0x1a:0xf01a,0x1b:0xf01b,0x1c:0xf01c,"
-	"0x1d:0xf01d,0x1e:0xf01e,0x1f:0xf01f,"
-	"0x22:0xf020,0x2a:0xf021,0x3a:0xf022,0x3c:0xf023,"
-	"0x3e:0xf024,0x3f:0xf025,0x5c:0xf026,0x7c:0xf027";
