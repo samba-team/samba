@@ -1,0 +1,2 @@
+^samba.tests.libsmb-basic.samba.tests.libsmb-basic.LibsmbTestCase.test_fruit_trailing_dot_space_create\(fileserver_smb1\)
+^samba.tests.libsmb-basic.samba.tests.libsmb-basic.LibsmbTestCase.test_fruit_trailing_dot_space_list\(fileserver_smb1\)

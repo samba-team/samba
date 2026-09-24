@@ -25,6 +25,7 @@ from samba.credentials import SMB_ENCRYPTION_REQUIRED
 import samba.tests.libsmb
 import threading
 import sys
+import os
 import random
 
 
@@ -372,6 +373,95 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         finally:
             self.clean_file(c, srcname)
             self.clean_file(c, dstname)
+
+    def fruit_trailing_setup(self):
+        c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
+        testdir = "test_fruit_trailing_dot_space"
+
+        try:
+            c.deltree(testdir)
+        except NTSTATUSError:
+            pass
+        c.mkdir(testdir)
+        self.addCleanup(c.deltree, testdir)
+
+        localdir = os.path.join(
+            samba.tests.env_get_var_value("LOCAL_PATH"), testdir)
+        return (c, testdir, localdir)
+
+    def test_fruit_trailing_dot_space_create(self):
+        """
+        With fruit:encoding = native, a trailing dot or space is
+        sent over SMB as U+F029 or U+F028, and must end up as a
+        real "." or " " on disk. Only the last character gets this
+        treatment.
+        """
+        (c, testdir, localdir) = self.fruit_trailing_setup()
+
+        cases = [
+            ("dot\uf029", "dot."),
+            ("space\uf028", "space "),
+            ("a\uf022b\uf029", "a:b."),
+            ("mid\uf029dle", "mid\uf029dle"),
+            ("mid\uf028dle", "mid\uf028dle"),
+        ]
+
+        for (wire, local) in cases:
+            fnum = c.create(testdir + "\\" + wire,
+                            DesiredAccess=security.SEC_FILE_ALL,
+                            CreateDisposition=libsmb.FILE_CREATE)
+            c.close(fnum)
+
+        ondisk = os.listdir(localdir)
+        for (wire, local) in cases:
+            self.assertIn(local, ondisk)
+        self.assertNotIn("mid.dle", ondisk)
+        self.assertNotIn("mid dle", ondisk)
+
+        ls = [f['name'] for f in c.list(testdir)]
+        for (wire, local) in cases:
+            self.assertIn(wire, ls)
+
+        # Every path component gets its trailing character mapped
+        c.mkdir(testdir + "\\dir\uf029")
+        fnum = c.create(testdir + "\\dir\uf029\\file\uf028",
+                        DesiredAccess=security.SEC_FILE_ALL,
+                        CreateDisposition=libsmb.FILE_CREATE)
+        c.close(fnum)
+        self.assertTrue(
+            os.path.isfile(os.path.join(localdir, "dir.", "file ")))
+
+    def test_fruit_trailing_dot_space_list(self):
+        """
+        Files created locally with a trailing dot or space must be
+        listed over SMB with U+F029 or U+F028 as last character, and
+        be accessible under that name.
+        """
+        (c, testdir, localdir) = self.fruit_trailing_setup()
+
+        cases = [
+            ("dot.", "dot\uf029"),
+            ("space ", "space\uf028"),
+            ("dots..", "dots.\uf029"),
+            ("a b.c", "a b.c"),
+        ]
+
+        for (local, wire) in cases:
+            with open(os.path.join(localdir, local), "wb") as f:
+                f.write(b"x")
+
+        ls = [f['name'] for f in c.list(testdir)]
+        for (local, wire) in cases:
+            self.assertIn(wire, ls)
+            self.assertEqual(c.loadfile(testdir + "\\" + wire), b"x")
+
+        os.mkdir(os.path.join(localdir, "dir "))
+        with open(os.path.join(localdir, "dir ", "file."), "wb") as f:
+            f.write(b"y")
+        ls = [f['name'] for f in c.list(testdir + "\\dir\uf028")]
+        self.assertIn("file\uf029", ls)
+        self.assertEqual(
+            c.loadfile(testdir + "\\dir\uf028\\file\uf029"), b"y")
 
 if __name__ == "__main__":
     import unittest
