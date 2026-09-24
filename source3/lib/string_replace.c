@@ -193,6 +193,54 @@ static inline smb_ucs2_t macos_ucs2_to_unix(smb_ucs2_t c)
 	return c;
 }
 
+/*
+ * macOS encodes a trailing dot or space of a name as U+F029 or
+ * U+F028. Map the last character of the path component [start, end).
+ */
+static void macos_trailing_to_windows(const smb_ucs2_t *start, smb_ucs2_t *end)
+{
+	smb_ucs2_t *last = NULL;
+	size_t len = end - start;
+
+	if (len == 0) {
+		return;
+	}
+	last = end - 1;
+
+	if (last[0] == ' ') {
+		last[0] = 0xf028;
+	} else if (last[0] == '.') {
+		/*
+		 * "." and ".." end in ".", we have to skip them. We can't
+		 * use ISDOT() and ISDOTDOT(): The component is not
+		 * 0-terminated.
+		 */
+		bool is_dot = (len == 1) && (start[0] == '.');
+		bool is_dotdot = (len == 2) && (start[0] == '.') &&
+				 (start[1] == '.');
+
+		if (!is_dot && !is_dotdot) {
+			last[0] = 0xf029;
+		}
+	}
+}
+
+static void macos_trailing_to_unix(const smb_ucs2_t *start, smb_ucs2_t *end)
+{
+	smb_ucs2_t *last = NULL;
+
+	if (end == start) {
+		return;
+	}
+	last = end - 1;
+
+	if (last[0] == 0xf028) {
+		last[0] = ' ';
+	} else if (last[0] == 0xf029) {
+		last[0] = '.';
+	}
+}
+
 int string_replace_allocate(connection_struct *conn,
 			    const char *name_in,
 			    struct char_mappings **cmaps,
@@ -213,14 +261,29 @@ int string_replace_allocate(connection_struct *conn,
 	}
 
 	if (cmaps == &macos_cmaps_magic_dummy) {
+		/*
+		 * Track the start of a path component
+		 */
+		smb_ucs2_t *start = tmpbuf;
+
 		if (direction == vfs_translate_to_windows) {
 			for (ptr = tmpbuf; ptr[0] != '\0'; ptr++) {
+				if (ptr[0] == '/') {
+					macos_trailing_to_windows(start, ptr);
+					start = ptr + 1;
+				}
 				ptr[0] = macos_unix_to_ucs2(ptr[0]);
 			}
+			macos_trailing_to_windows(start, ptr);
 		} else {
 			for (ptr = tmpbuf; ptr[0] != '\0'; ptr++) {
+				if (ptr[0] == '/') {
+					macos_trailing_to_unix(start, ptr);
+					start = ptr + 1;
+				}
 				ptr[0] = macos_ucs2_to_unix(ptr[0]);
 			}
+			macos_trailing_to_unix(start, ptr);
 		}
 	} else if (cmaps != NULL) {
 		for (ptr = tmpbuf; ptr[0] != '\0'; ptr++) {
