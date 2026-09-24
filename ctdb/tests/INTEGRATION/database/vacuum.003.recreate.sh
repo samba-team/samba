@@ -49,29 +49,29 @@ echo "lmaster=${lmaster}"
 
 non_lmaster=""
 # Find a non-lmaster node
-for i in $all_pnns ; do
-	if [ "$i" != "$lmaster" ] ; then
+for i in $all_pnns; do
+	if [ "$i" != "$lmaster" ]; then
 		non_lmaster="$i"
 		break
 	fi
 done
-if [ -z "$non_lmaster" ] ; then
+if [ -z "$non_lmaster" ]; then
 	ctdb_test_fail "Could not find non-lmaster node for key"
 fi
 
 another_non_lmaster=""
 # Find another non-lmaster node
-for i in $all_pnns ; do
-	if [ "$i" != "$lmaster" ] && [ "$i" != "$non_lmaster" ] ; then
+for i in $all_pnns; do
+	if [ "$i" != "$lmaster" ] && [ "$i" != "$non_lmaster" ]; then
 		another_non_lmaster="$i"
 		break
 	fi
 done
-if [ -z "$another_non_lmaster" ] ; then
+if [ -z "$another_non_lmaster" ]; then
 	ctdb_test_fail "Could not find another non-lmaster node for key"
 fi
 
-vacuum_test ()
+vacuum_test()
 {
 	local db="$1"
 	local key="$2"
@@ -84,14 +84,14 @@ vacuum_test ()
 	echo '............................................................'
 	printf 'Delete key %s on node %d\n' "$key" "$dnode"
 	printf 'Recreate on node %d after %d vacuuming run(s)\n' \
-	       "$rnode" "$rrun"
+		"$rnode" "$rrun"
 	echo '............................................................'
 
 	echo
 	echo "Delete key \"${key}\" from node ${dnode}"
 	ctdb_onnode "$dnode" "deletekey ${db} ${key}"
 
-	if [ "$rrun" -eq 0 ] ; then
+	if [ "$rrun" -eq 0 ]; then
 		echo "Recreate record on node ${rnode}"
 		ctdb_onnode "$rnode" "writekey ${db} ${key} ${val}"
 	fi
@@ -99,7 +99,7 @@ vacuum_test ()
 	echo "Do a fast vacuuming run on node ${dnode}"
 	testprog_onnode "$dnode" "ctdb-db-test vacuum ${db}"
 
-	if [ "$rrun" -eq 1 ] ; then
+	if [ "$rrun" -eq 1 ]; then
 		echo "Recreate record on node ${rnode}"
 		ctdb_onnode "$rnode" "writekey ${db} ${key} ${val}"
 	fi
@@ -107,7 +107,7 @@ vacuum_test ()
 	echo "Do a fast vacuuming run on lmaster node ${lmaster}"
 	testprog_onnode "$lmaster" "ctdb-db-test vacuum ${db}"
 
-	if [ "$rrun" -eq 2 ] ; then
+	if [ "$rrun" -eq 2 ]; then
 		echo "Recreate record on node ${rnode}"
 		ctdb_onnode "$rnode" "writekey ${db} ${key} ${val}"
 	fi

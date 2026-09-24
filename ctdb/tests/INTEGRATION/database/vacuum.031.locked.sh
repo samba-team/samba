@@ -34,13 +34,13 @@ echo "lmaster=${lmaster}"
 
 non_lmaster=""
 # Find a non-lmaster node
-for i in $all_pnns ; do
-	if [ "$i" != "$lmaster" ] ; then
+for i in $all_pnns; do
+	if [ "$i" != "$lmaster" ]; then
 		non_lmaster="$i"
 		break
 	fi
 done
-if [ -z "$non_lmaster" ] ; then
+if [ -z "$non_lmaster" ]; then
 	ctdb_test_fail "Could not find non-lmaster node for key"
 fi
 
@@ -88,7 +88,7 @@ echo "Do a fast vacuuming run on lmaster node ${lmaster} - THIS WILL FAIL"
 status=0
 testprog_onnode "$lmaster" "ctdb-db-test -t 10 vacuum ${db}" || status=$?
 
-if [ $status -ne 110 ] ; then
+if [ $status -ne 110 ]; then
 	ctdb_test_fail "$out"
 fi
 
