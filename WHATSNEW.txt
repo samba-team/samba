@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the second release candidate of Samba 4.25.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.25 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.25.0
+                         September 24, 2026
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.25 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -230,6 +225,31 @@ smb.conf changes
   persistent handles                      New             no
   persistent handles durability           New             full_outage
   continuous availability                 New             no
+
+
+Changes since 4.25.0rc2
+=======================
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 16234: persistent handles options in WHATSNEW need fixups
+   * BUG 16237: Bugs in Persistent Handles database layer code
+   * BUG 16253: smbstatus byte-range locks broken by Persistent Handle changes
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16233: "getwd cache" removal needs more work
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15962: SMB3 SESSION SETUP responses must always be signed
+   * BUG 16081: winbindd_child_msg_filter: talloc_get_type_abort crashes when
+     winbind max domain connections > 1
+
+o  Kopylov Pavel <pkopylov@cloudlinux.com>
+   * BUG 16239: Fix parsing of uppercase "0X" hex values in the "kdc default
+     domain      supported enctypes" smb.conf parameter.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 16240: smbd temporary mkdir name can exceed NAME_MAX for otherwise
+     valid client names
 
 CHANGES SINCE 4.25.0rc1
 =======================
