@@ -1,6 +1,6 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-check_cattdb_num_records ()
+check_cattdb_num_records()
 {
 	local db="$1"
 	local num="$2"
@@ -13,16 +13,16 @@ check_cattdb_num_records ()
 
 	local ret=0
 	local node
-	for node in $nodes ; do
+	for node in $nodes; do
 		local num_found
 
 		num_found=$(db_ctdb_cattdb_count_records "$node" "$db")
-		if [ "$num_found" = "$num" ] ; then
+		if [ "$num_found" = "$num" ]; then
 			continue
 		fi
 
 		printf 'BAD: %s on node %d has %d record(s), expected %d\n' \
-		       "$db" "$node" "$num_found" "$num"
+			"$db" "$node" "$num_found" "$num"
 		ctdb_onnode -v "$node" "cattdb $db"
 		ret=1
 	done
@@ -30,7 +30,7 @@ check_cattdb_num_records ()
 	return $ret
 }
 
-_key_dmaster_check ()
+_key_dmaster_check()
 {
 	local node="$1"
 	local db="$2"
@@ -44,7 +44,7 @@ _key_dmaster_check ()
 	grep -Fqx "dmaster: ${dmaster}" "$outfile"
 }
 
-_key_dmaster_fail ()
+_key_dmaster_fail()
 {
 	local dmaster="$1"
 
@@ -55,19 +55,19 @@ _key_dmaster_fail ()
 	ctdb_test_fail
 }
 
-vacuum_test_key_dmaster ()
+vacuum_test_key_dmaster()
 {
 	local node="$1"
 	local db="$2"
 	local key="$3"
 	local dmaster="${4:-${node}}"
 
-	if ! _key_dmaster_check "$node" "$db" "$key" "$dmaster" ; then
+	if ! _key_dmaster_check "$node" "$db" "$key" "$dmaster"; then
 		_key_dmaster_fail "$dmaster"
 	fi
 }
 
-vacuum_test_wait_key_dmaster ()
+vacuum_test_wait_key_dmaster()
 {
 	local node="$1"
 	local db="$2"
@@ -75,12 +75,12 @@ vacuum_test_wait_key_dmaster ()
 	local dmaster="${4:-${node}}"
 
 	if ! wait_until 30 \
-	     _key_dmaster_check "$node" "$db" "$key" "$dmaster" ; then
+		_key_dmaster_check "$node" "$db" "$key" "$dmaster"; then
 		_key_dmaster_fail "$dmaster"
 	fi
 }
 
-vacuum_confirm_key_empty_dmaster ()
+vacuum_confirm_key_empty_dmaster()
 {
 	local node="$1"
 	local db="$2"
@@ -91,14 +91,14 @@ vacuum_confirm_key_empty_dmaster ()
 
 	vacuum_test_key_dmaster "$node" "$db" "$key" "$dmaster"
 
-	if ! grep -Fqx 'data(0) = ""' "$outfile" ; then
+	if ! grep -Fqx 'data(0) = ""' "$outfile"; then
 		echo "BAD: record not empty"
 		cat "$outfile"
 		ctdb_test_fail
 	fi
 }
 
-db_confirm_key_has_value ()
+db_confirm_key_has_value()
 {
 	local node="$1"
 	local db="$2"
@@ -109,7 +109,7 @@ db_confirm_key_has_value ()
 
 	ctdb_onnode "$node" "readkey ${db} ${key}"
 	outv=$(echo "$out" | sed -n 's|^Data: size:.* ptr:\[\(.*\)\]$|\1|p')
-	if [ "$val" != "$outv" ] ; then
+	if [ "$val" != "$outv" ]; then
 		ctdb_test_fail \
 			"BAD: value for \"${key}\"=\"${outv}\" (not \"${val}\")"
 	fi
