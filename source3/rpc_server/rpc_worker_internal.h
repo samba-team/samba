@@ -22,6 +22,7 @@
 
 struct auth_session_info;
 struct dcerpc_binding;
+struct tjson;
 struct tstream_context;
 struct tsocket_address;
 
@@ -54,7 +55,7 @@ struct rpc_worker {
 
 	bool is_npsd;
 	struct rpc_worker_connection *conns;
-	char *(*call_stats)(TALLOC_CTX *ctx, void *private_data);
+	struct tjson *(*call_stats)(TALLOC_CTX *ctx, void *private_data);
 	/*
 	 * 1. Implementations should
 	 * allocate their own per connection
@@ -124,7 +125,7 @@ int rpc_worker_internal(
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr),
-	char *(*call_stats)(TALLOC_CTX *ctx, void *private_data),
+	struct tjson *(*call_stats)(TALLOC_CTX *ctx, void *private_data),
 	NTSTATUS (*shutdown_servers)(
 		struct rpc_worker *worker,
 		void *private_data),

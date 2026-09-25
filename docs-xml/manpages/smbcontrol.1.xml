@@ -350,13 +350,26 @@
 	Information reported includes the number of current connections,
 	time of last client connection, time of last client disconnection
 	and connection information for each active connection.</para>
+	<para>Additionally it is possible to also gather and output
+	more fine grained rpc call information stats including each
+	rpc method called, the number of times the method was called,
+	average duration of method call, slowest and fastest durations of the
+	method call. For example in order to enable gathering and
+	reporting of the call stats for rpcd_spoolss add the following to
+	the [global] section of smb.conf.
+	<programlisting>
+	<smbconfoption name="rpcd_spoolss:call_stats">true</smbconfoption>
+	</programlisting>
+	</para>
+	<para>Call statistics are maintained separately for each active
+	connection and are discarded when that connection closes.
+	Changes to the call statistics setting take effect only for
+	new connections.</para>
 	<para><emphasis>Note:</emphasis> If samba is not built with JSON
 	support then no information is output. Additionally tools like
 	<constant>jq</constant> can be used to transform the JSON in
 	various ways to customise the output</para></listitem>
 	</varlistentry>
-
-
 </variablelist>
 </refsect1>
 

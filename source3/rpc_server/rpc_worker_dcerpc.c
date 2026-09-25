@@ -705,15 +705,14 @@ static NTSTATUS rpc_worker_dcerpc_shutdown_servers(struct rpc_worker *worker,
 	return NT_STATUS_OK;
 }
 
-static char *get_stats(TALLOC_CTX *mem_ctx, void *priv)
+static struct tjson *get_stats(TALLOC_CTX *mem_ctx, void *priv)
 {
-	char *result = NULL;
+	struct tjson *calls = NULL;
 #if defined(HAVE_JSON_OBJECT)
 	struct rpc_worker_connection *worker_conn = talloc_get_type_abort(
 		priv, struct rpc_worker_connection);
 	struct interface_stats *item = NULL;
 	struct stats_info *info = NULL;
-	struct tjson *calls = NULL;
 	struct timeval_buf tvbuf = {0};
 
 	info = talloc_get_type_abort(worker_conn->private_data,
@@ -767,9 +766,8 @@ static char *get_stats(TALLOC_CTX *mem_ctx, void *priv)
 			tjson_add_object(calls, NULL, &call);
 		}
 	}
-	result = tjson_to_string_flags(mem_ctx, calls, JSON_INDENT(2));
 #endif
-	return result;
+	return calls;
 }
 /**
  * @brief Main function for RPC server implementations

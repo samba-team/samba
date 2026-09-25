@@ -476,7 +476,6 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 		struct tjson *connection = NULL;
 		struct timeval_buf tvbuf = {0};
 		struct tjson *calls = NULL;
-		json_error_t jerr = {};
 		timeval_str_buf(&conn->tv, false, true, &tvbuf);
 
 		connection = tjson_new_object(mem_ctx);
@@ -494,23 +493,7 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 				 tvbuf.buf);
 
 		if (conn->private_data && worker->call_stats) {
-			json_t *tmp = NULL;
-			char *json_string = worker->call_stats(mem_ctx, conn);
-			if (json_string != NULL && json_string[0] != '\0') {
-				tmp = json_loads(json_string, 0, &jerr);
-				if (tmp == NULL) {
-					DBG_ERR("can't create json object "
-						"from json stats string %s, "
-						"error: %s\n",
-						json_string,
-						jerr.text);
-					TALLOC_FREE(mem_ctx);
-					return;
-				}
-			}
-			calls = tjson_wrap(mem_ctx, &tmp);
-		}
-		if (calls != NULL) {
+			calls = worker->call_stats(mem_ctx, conn);
 			tjson_add_object(connection, "call_stats", &calls);
 		}
 		tjson_add_object(connections, NULL, &connection);
@@ -805,7 +788,7 @@ int rpc_worker_internal(
 		struct tstream_context **tstream,
 		struct tsocket_address **remote_client_addr,
 		struct tsocket_address **local_server_addr),
-	char *(*call_stats)(TALLOC_CTX *ctx, void *private_data),
+	struct tjson *(*call_stats)(TALLOC_CTX *ctx, void *private_data),
 	NTSTATUS (*shutdown_servers)(
 		struct rpc_worker *worker,
 		void *private_data),
