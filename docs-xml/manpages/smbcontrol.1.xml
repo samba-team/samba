@@ -346,10 +346,14 @@
 	<varlistentry>
 	<term>rpc-dump-worker-status</term>
 	<listitem><para>Requests the dcerpc endpoint server to
-	output current connection related information. Information reported
-	includes the number of current connections, time of last client
-	connection, time of last client disconnection and connection information
-	for each active connection.</para></listitem>
+	output in JSON format the current connection related information.
+	Information reported includes the number of current connections,
+	time of last client connection, time of last client disconnection
+	and connection information for each active connection.</para>
+	<para><emphasis>Note:</emphasis> If samba is not built with JSON
+	support then no information is output. Additionally tools like
+	<constant>jq</constant> can be used to transform the JSON in
+	various ways to customise the output</para></listitem>
 	</varlistentry>
 
 
