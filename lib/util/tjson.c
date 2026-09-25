@@ -264,7 +264,7 @@ char *tjson_to_string_flags(TALLOC_CTX *mem_ctx,
 			    struct tjson *object,
 			    size_t flags)
 {
-	size_t len;
+	size_t len, written;
 	char *ret = NULL;
 
 	if (tjson_has_error(object)) {
@@ -272,13 +272,21 @@ char *tjson_to_string_flags(TALLOC_CTX *mem_ctx,
 	}
 
 	len = json_dumpb(object->root, NULL, 0, flags);
+	if (len == 0) {
+		return NULL;
+	}
 
 	ret = talloc_array(mem_ctx, char, len + 1);
 	if (ret == NULL) {
 		return NULL;
 	}
 
-	json_dumpb(object->root, ret, len, flags);
+	written = json_dumpb(object->root, ret, len, flags);
+	if (written != len) {
+		TALLOC_FREE(ret);
+		return NULL;
+	}
+
 	ret[len] = '\0';
 
 	return ret;
