@@ -622,7 +622,7 @@ class RawDCERPCTest(TestCase):
         lhs2.protocol = samba.dcerpc.epmapper.EPM_PROTOCOL_UUID
         lhs2.lhs_data = data2[:18]
         rhs2 = samba.dcerpc.epmapper.epm_rhs_uuid()
-        rhs2.unknown = data1[18:]
+        rhs2.unknown = data2[18:]
         floor2 = samba.dcerpc.epmapper.epm_floor()
         floor2.lhs = lhs2
         floor2.rhs = rhs2
