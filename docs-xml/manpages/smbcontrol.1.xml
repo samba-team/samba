@@ -343,6 +343,16 @@
 	to <constant>ldap_server</constant>.</para></listitem>
 	</varlistentry>
 
+	<varlistentry>
+	<term>rpc-dump-worker-status</term>
+	<listitem><para>Requests the dcerpc endpoint server to
+	output current connection related information. Information reported
+	includes the number of current connections, time of last client
+	connection, time of last client disconnection and connection information
+	for each active connection.</para></listitem>
+	</varlistentry>
+
+
 </variablelist>
 </refsect1>
 
