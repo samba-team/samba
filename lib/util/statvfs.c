@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "libcli/smb/smb_constants.h"
 #include "statvfs.h"
+#include "lib/util/debug.h"
 
 #if defined(DARWINOS)
 #include <sys/attr.h>
@@ -79,7 +80,7 @@ static int darwin_fs_capabilities(const char * path)
 
 #if defined(BSD_STYLE_STATVFS)
 
-static void bsd_init_statvfs(const struct statvfs *src,
+static void bsd_init_statvfs(const struct statfs *src,
 			     struct vfs_statvfs_struct *dst)
 {
 	dst->OptimalTransferSize = src->f_iosize;
