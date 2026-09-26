@@ -6,7 +6,7 @@ cmd="$ONNODE ok hostname"
 
 define_test "$cmd" "2nd node disconnected"
 
-ctdb_set_output <<EOF 
+ctdb_set_output <<EOF
 |Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|
 |0|192.168.1.101|0|0|0|0|0|0|0|Y|
 |1|192.168.1.102|1|0|0|0|0|0|0|N|
