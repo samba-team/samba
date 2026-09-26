@@ -4,8 +4,17 @@
 [ -n "$CTDB_BASE" ] ||
 	CTDB_BASE=$(d="$(dirname "$0")" && cd -P "$d/../../" && pwd)
 
+. "${CTDB_BASE}/functions"
+
+load_script_options
+
+# Use shorter variable name to help fit into 80 columns
+smb_conf="$CTDB_UPDATE_KEYTABS_SMB_CONF"
+
 case "$1" in
 recovered)
-	net ads keytab create --option='sync machine password script=' --configfile="$CTDB_BASE/lib/server.conf"
+	net ads keytab create \
+		--option='sync machine password script=' \
+		${smb_conf:+--configfile="${smb_conf}"}
 	;;
 esac
