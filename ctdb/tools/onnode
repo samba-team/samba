@@ -154,14 +154,26 @@ get_pnn_ctdb_cmd()
 	return 1
 }
 
+get_leader_pnn()
+{
+	get_pnn_ctdb_cmd "leader"
+}
+
 ctdb_status_output="" # cache
 get_nodes_with_status()
 {
 	local all_nodes="$1"
 	local status="$2"
 
+	local leader
+	if ! leader=$(get_leader_pnn); then
+		echo "${prog}: unable to get leader node" >&2
+		echo "${prog}: unable to get status of CTDB nodes" >&2
+		exit 1
+	fi
+
 	if [ -z "$ctdb_status_output" ]; then
-		ctdb_status_output=$(ctdb -X status 2>&1)
+		ctdb_status_output=$($0 "$leader" ctdb -X status 2>&1)
 		# No! Checking the exit code afterwards is actually clearer...
 		# shellcheck disable=SC2181
 		if [ $? -ne 0 ]; then

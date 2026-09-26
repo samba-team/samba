@@ -2,18 +2,46 @@
 
 # Fake ctdb client for onnode tests.
 
+# This is an include file, so commands are reachable by sourcing this file
+# shellcheck disable=SC2317
+
 out="${CTDB_TEST_TMP_DIR}/ctdb.out"
-if [ -r "$out" ]; then
+if [ ! -r "$out" ]; then
+	echo "Internal error: ctdb status -X output not setup"
+	exit 1
+fi
+
+ctdb_status_X()
+{
 	cat "$out"
 
 	rc="${CTDB_TEST_TMP_DIR}/ctdb.rc"
 	if [ -r "$rc" ]; then
 		exit "$(cat "$rc")"
 	fi
+}
 
-	exit 0
-fi
+leader()
+{
+	# Get 1st active node
+	_leader=$(awk -F'|' '$10 == 0 { print $2; exit }' "$out")
+	if [ -z "$_leader" ]; then
+		_leader="UNKNOWN"
+	fi
+	echo "$_leader"
+}
 
-echo "fake ctdb: no implementation for \"$*\""
+case "$*" in
+-X\ status)
+	ctdb_status_X
+	;;
+leader)
+	leader
+	;;
+*)
+	echo "fake ctdb: no implementation for \"$*\""
+	exit 1
+	;;
+esac
 
-exit 1
+exit 0

@@ -1,2 +1,14 @@
 #!/bin/sh
-echo "$*"
+
+case "$3" in
+ctdb)
+	shift 3
+	ctdb "$@"
+	;;
+ctdb\ *)
+	eval "$3"
+	;;
+*)
+	echo "$*"
+	;;
+esac
