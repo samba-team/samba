@@ -124,10 +124,24 @@ parse_nodespec()
 		IFS=","
 		for i in $1; do
 			case "$i" in
-			*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
-			all | any | ok | healthy | con | connected) echo "$i" ;;
+			*-*)
+				if ! seq "${i%-*}" "${i#*-}" 2>/dev/null; then
+					invalid_nodespec
+				fi
+				;;
+			all | any)
+				echo "$i"
+				;;
+			ok | healthy | con | connected)
+				echo "$i"
+				;;
 			*)
-				[ "$i" -gt -1 ] 2>/dev/null || $names_ok || invalid_nodespec
+				# This catches negatives and not-a-number
+				if ! [ "$i" -gt -1 ] 2>/dev/null; then
+					if ! $names_ok; then
+						invalid_nodespec
+					fi
+				fi
 				echo "$i"
 				;;
 			esac
