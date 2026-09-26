@@ -1,0 +1,31 @@
+#!/bin/sh
+
+. "${TEST_SCRIPTS_DIR}/unit.sh"
+
+cmd="$ONNODE active hostname"
+
+define_test "$cmd" "1st node stopped"
+
+ctdb_set_output <<EOF
+|Node|IP|Disconnected|Unknown|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode|
+|0|192.168.1.101|0|0|0|0|0|1|1|0|N|
+|1|192.168.1.102|0|0|0|0|0|0|0|0|Y|
+|2|192.168.1.103|0|0|0|0|0|0|0|0|N|
+|3|192.168.1.104|0|0|0|0|0|0|0|0|N|
+EOF
+
+required_result <<EOF
+
+>> NODE: 192.168.1.102 <<
+-n 192.168.1.102 hostname
+
+>> NODE: 192.168.1.103 <<
+-n 192.168.1.103 hostname
+
+>> NODE: 192.168.1.104 <<
+-n 192.168.1.104 hostname
+EOF
+
+# Intentional word splitting
+# shellcheck disable=SC2086
+simple_test $cmd

@@ -38,7 +38,10 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -P          Push given files to nodes instead of running commands.
     -q          Do not print node addresses (overrides -v).
     -v          Print node address even for a single node.
-  <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected") ; or
+  <NODES>       "all", "any",
+                "ok" or "healthy",
+                "con" or "connected",
+                "act" or "active"; or
                 a node number (0 base); or
                 a hostname (if -n is specified); or
                 list (comma separated) of <NODES>; or
@@ -132,7 +135,7 @@ parse_nodespec()
 			all | any)
 				echo "$i"
 				;;
-			ok | healthy | con | connected)
+			ok | healthy | con | connected | act | active)
 				echo "$i"
 				;;
 			*)
@@ -225,6 +228,10 @@ get_nodes_with_status()
 				# If disconnected bit is not 0, don't match this address.
 				[ "$1" = "0" ] || continue
 				;;
+			active)
+				# If inactive bit is not 0, don't match.
+				[ "$7" = "0" ] || continue
+				;;
 			*)
 				invalid_nodespec
 				;;
@@ -286,6 +293,9 @@ get_nodes()
 			;;
 		con | connected)
 			get_nodes_with_status "$all_nodes" "connected" || exit 1
+			;;
+		act | active)
+			get_nodes_with_status "$all_nodes" "active" || exit 1
 			;;
 		[0-9] | [0-9][0-9] | [0-9][0-9][0-9])
 			# Intentional multi-word expansion
