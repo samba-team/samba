@@ -39,6 +39,7 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -q          Do not print node addresses (overrides -v).
     -v          Print node address even for a single node.
   <NODES>       "all", "any",
+                "leader",
                 "ok" or "healthy",
                 "con" or "connected",
                 "act" or "active"; or
@@ -132,7 +133,7 @@ parse_nodespec()
 					invalid_nodespec
 				fi
 				;;
-			all | any)
+			all | any | leader)
 				echo "$i"
 				;;
 			ok | healthy | con | connected | act | active)
@@ -174,6 +175,20 @@ get_pnn_ctdb_cmd()
 get_leader_pnn()
 {
 	get_pnn_ctdb_cmd "leader"
+}
+
+get_leader_node()
+{
+	local all_nodes="$1"
+
+	local pnn
+	if ! pnn=$(get_leader_pnn "$all_nodes"); then
+		return 1
+	fi
+
+	# Intentional multi-word expansion
+	# shellcheck disable=SC2086
+	echo_nth "$pnn" $all_nodes
 }
 
 ctdb_status_output="" # cache
@@ -287,6 +302,9 @@ get_nodes()
 			;;
 		any)
 			get_any_available_node "$all_nodes" || exit 1
+			;;
+		leader)
+			get_leader_node "$all_nodes" || exit 1
 			;;
 		ok | healthy)
 			get_nodes_with_status "$all_nodes" "healthy" || exit 1
