@@ -1,5 +1,56 @@
 #!/bin/sh
 
-# Always succeed for now...
+prog=$(basename "$0")
+
+usage()
+{
+	cat <<EOF
+usage: ${prog} <command>
+commands:
+    ads keytab create [--option=<option>] [--configfile=<file>]
+options:
+    sync machine password script=
+EOF
+	exit 1
+}
+
+ads_keytab_create()
+{
+	for _opt; do
+		case "$_opt" in
+		--option=*)
+			_val="${_opt#*=}"
+			case "$_val" in
+			sync\ machine\ password\ script=)
+				:
+				;;
+			*)
+				usage
+				;;
+			esac
+			;;
+		--configfile=*)
+			_val="${_opt#*=}"
+			if [ ! -r "$_val" ]; then
+				echo "${prog}: error reading ${_val}"
+				exit 1
+			fi
+			;;
+		*)
+			usage
+			;;
+		esac
+	done
+}
+
+case "$*" in
+ads\ keytab\ create\ *)
+	shift 3
+	ads_keytab_create "$@"
+	;;
+*)
+	usage
+	;;
+esac
 
 exit 0
