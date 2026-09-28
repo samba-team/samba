@@ -1665,7 +1665,7 @@ env = 'ad_dc_default'
 # Test with TDB (NTLMSSP bind)
 plantestsuite_loadlist("samba4.ldap.large_ldap.ntlmssp.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "large_ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--kerberos=no', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
-env = 'ad_dc_ntvfs'
+env = 'ad_dc'
 # Test with ldaps://
 plantestsuite_loadlist("samba4.ldap.large_ldap.ldaps.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "large_ldap.py"), 'ldaps://$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
