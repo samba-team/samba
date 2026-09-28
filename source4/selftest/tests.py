@@ -1514,19 +1514,19 @@ for env in ["ad_dc_ntvfs", "vampire_dc", "promoted_dc"]:
     planoldpythontestsuite(env,
                            "samba.tests.py_credentials",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.emulate.traffic",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.emulate.traffic_packet",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.blackbox.traffic_replay",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.blackbox.traffic_learner",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.blackbox.traffic_summary",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("none", "samba.tests.loadparm")
