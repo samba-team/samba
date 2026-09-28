@@ -1,3 +1,2 @@
-^samba3.blackbox.replay_cache_records.abandon\(nt4_dc:local\)
 ^samba3.blackbox.replay_cache_records.reconnect_v1\(nt4_dc:local\)
 ^samba3.blackbox.replay_cache_records.reconnect_v2\(nt4_dc:local\)

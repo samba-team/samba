@@ -794,11 +794,7 @@ static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
 	struct db_context *db;
 	NTSTATUS status;
 
-	if (op->table == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	db = op->table->global.db_ctx;
+	db = smbXsrv_open_global_db_ctx;
 
 	if (!(op->flags & SMBXSRV_OPEN_HAVE_REPLAY_CACHE)) {
 		return NT_STATUS_OK;
