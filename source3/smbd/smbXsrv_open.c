@@ -742,6 +742,14 @@ NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * An all-zero create GUID can't be told apart from none, so such an
+	 * open gets no replay-cache record.
+	 */
+	if (GUID_all_zero(&op->global->create_guid)) {
+		return NT_STATUS_OK;
+	}
+
 	if (op->flags & SMBXSRV_OPEN_HAVE_REPLAY_CACHE) {
 		return NT_STATUS_OK;
 	}

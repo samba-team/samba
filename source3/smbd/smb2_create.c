@@ -1536,6 +1536,15 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 		return;
 	}
 
+	if (GUID_all_zero(state->create_guid)) {
+		/*
+		 * An open without a create GUID gets no replay-cache record,
+		 * see smbXsrv_open_set_replay_cache(), so don't reserve one.
+		 */
+		state->replay_operation = false;
+		return;
+	}
+
 	status = smb2srv_open_lookup_replay_cache(smb2req->xconn,
 						  smb2req->session,
 						  *state->create_guid,
