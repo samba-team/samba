@@ -421,7 +421,6 @@ interface smbXsrv
 	/* open files */
 
 	typedef [public,bitmap8bit] bitmap {
-		SMBXSRV_OPEN_NEED_REPLAY_CACHE		= 0x01,
 		SMBXSRV_OPEN_HAVE_REPLAY_CACHE		= 0x02
 	} smbXsrv_open_flags;
 

@@ -707,7 +707,6 @@ struct smbd_smb2_create_state {
 	struct smb2_lease lease;
 	struct smb2_lease *lease_ptr;
 	ssize_t lease_len;
-	bool need_replay_cache;
 	struct smbXsrv_open *op;
 	NTTIME twrp_time;
 
@@ -1476,12 +1475,6 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 	state->update_open = true;
 
 	/*
-	 * And we need to create a cache for replaying the
-	 * create.
-	 */
-	state->need_replay_cache = true;
-
-	/*
 	 * durable handle v2 request processed below
 	 */
 	state->durable_requested = true;
@@ -1950,10 +1943,6 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	}
 
 	if (state->update_open) {
-		if (state->need_replay_cache) {
-			state->op->flags |= SMBXSRV_OPEN_NEED_REPLAY_CACHE;
-		}
-
 		status = smbXsrv_open_update(state->op);
 		DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
 			   "returned %s\n",
@@ -1964,13 +1953,18 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 		/*
 		 * The open record is stored, so the replay cache may now
-		 * point at it instead of holding the in-progress marker.
+		 * point at it instead of holding the in-progress marker. A
+		 * reconnect only takes note of an existing record in
+		 * smb2srv_open_recreate().
 		 */
-		status = smbXsrv_open_set_replay_cache(state->op);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("smbXsrv_open_set_replay_cache failed: %s\n",
-				nt_errstr(status));
-			goto fail;
+		if (!state->do_durable_reconnect && !state->replay_reconnect) {
+			status = smbXsrv_open_set_replay_cache(state->op);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("smbXsrv_open_set_replay_cache "
+					"failed: %s\n",
+					nt_errstr(status));
+				goto fail;
+			}
 		}
 
 		/*

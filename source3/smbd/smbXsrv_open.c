@@ -738,13 +738,9 @@ NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	TDB_DATA key;
 	TDB_DATA val;
 
-	if (!(op->flags & SMBXSRV_OPEN_NEED_REPLAY_CACHE)) {
-		return NT_STATUS_OK;
-	}
-
 	/*
-	 * An all-zero create GUID can't be told apart from none, so such an
-	 * open gets no replay-cache record.
+	 * The create GUID is the key of the replay-cache, an open that
+	 * has one needs a replay-cache entry.
 	 */
 	if (GUID_all_zero(&op->global->create_guid)) {
 		return NT_STATUS_OK;
@@ -768,7 +764,6 @@ NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 
 	if (NT_STATUS_IS_OK(status)) {
 		op->flags |= SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
-		op->flags &= ~SMBXSRV_OPEN_NEED_REPLAY_CACHE;
 	}
 
 	return status;
