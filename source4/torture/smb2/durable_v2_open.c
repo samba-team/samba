@@ -5452,6 +5452,115 @@ done:
 	return ret;
 }
 
+/*
+ * A durable v2 request without an oplock or a lease. No durable handle is
+ * granted, but a replay-cache record is stored all the same, and closing the
+ * handle has to remove it again.
+ * A replay recovers a lost create response, whether the open is durable or not.
+ *
+ * This passes on its own, samba3.blackbox.replay_cache_records compares the
+ * replay-cache records in smbXsrv_open_global.tdb before and after the test to
+ * detect stale records.
+ */
+static bool test_durable_v2_open_replay_cache_no_durable(
+	struct torture_context *tctx,
+	struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_create io;
+	NTSTATUS status;
+	bool ret = true;
+
+	snprintf(fname, sizeof(fname), "replay_cache_no_durable_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access("RWD"),
+				 smb2_util_oplock_level(""));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = GUID_random();
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Without an oplock or a lease there is nothing to base a
+	 * durable handle on.
+	 */
+	CHECK_VAL(io.out.durable_open_v2, false);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
+ * Durable v2 that is not closed: the connection is dropped and the
+ * server tears the opens down itself.
+ *
+ * When closing a handle, the close carries the file id, and looking that up
+ * already removes the replay-cache record. Abandoning the handle leaves
+ * smbXsrv_open_close() as the only thing that can remove it.
+ *
+ * This passes on its own, samba3.blackbox.replay_cache_records compares the
+ * replay-cache records in smbXsrv_open_global.tdb before and after the test to
+ * detect stale records.
+ */
+static bool test_durable_v2_open_replay_cache_abandon(
+	struct torture_context *tctx,
+	struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_create io;
+	NTSTATUS status;
+	bool ret = true;
+
+	snprintf(fname, sizeof(fname), "replay_cache_abandon_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access("RWD"),
+				 smb2_util_oplock_level(""));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = GUID_random();
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io.out.durable_open_v2, false);
+
+	/* drop the connection and let the server clean up after us */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+done:
+	if (tree != NULL) {
+		smb2_util_unlink(tree, fname);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5460,6 +5569,8 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "create-blob", test_durable_v2_open_create_blob);
 	torture_suite_add_1smb2_test(suite, "replay-cache-reconnect-v1", test_durable_v2_open_replay_cache_reconnect_v1);
 	torture_suite_add_1smb2_test(suite, "replay-cache-reconnect-v2", test_durable_v2_open_replay_cache_reconnect_v2);
+	torture_suite_add_1smb2_test(suite, "replay-cache-no-durable", test_durable_v2_open_replay_cache_no_durable);
+	torture_suite_add_1smb2_test(suite, "replay-cache-abandon", test_durable_v2_open_replay_cache_abandon);
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
