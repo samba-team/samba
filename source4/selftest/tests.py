@@ -1963,7 +1963,7 @@ for env in ['vampire_dc', 'promoted_dc']:
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
-for env in ['ad_dc_ntvfs']:
+for env in ['ad_dc']:
     planoldpythontestsuite(env, "repl_rodc",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_rodc.python(%s)" % env,
