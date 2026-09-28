@@ -774,6 +774,44 @@ NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	return status;
 }
 
+/*
+ * A reconnected open comes back without SMBXSRV_OPEN_HAVE_REPLAY_CACHE. Set it
+ * if the replay-cache record still points at the open, so the record is removed
+ * when the open is closed, and not if it holds something else, eg a replay in
+ * progress. Don't create a missing record, it is removed when the client uses
+ * the handle, which shows the client got the create response.
+ */
+static void smbXsrv_open_note_replay_cache(struct smbXsrv_open *op)
+{
+	struct db_context *db = op->table->global.db_ctx;
+	struct smbXsrv_open_replay_cache_key_buf key_buf;
+	struct smbXsrv_open_global_key_buf id_buf;
+	TDB_DATA key;
+	TDB_DATA id;
+	TDB_DATA val;
+	NTSTATUS status;
+
+	if (GUID_all_zero(&op->global->create_guid)) {
+		return;
+	}
+
+	key = smbXsrv_open_replay_cache_key(&op->global->client_guid,
+					    &op->global->create_guid,
+					    &key_buf);
+	id = smbXsrv_open_global_id_to_key(op->global->open_global_id,
+					   &id_buf);
+
+	status = dbwrap_fetch(db, talloc_tos(), key, &val);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	if (tdb_data_equal(val, id)) {
+		op->flags |= SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
+	}
+	TALLOC_FREE(val.dptr);
+}
+
 NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
 					 const struct GUID *create_guid)
 {
@@ -1460,6 +1498,8 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 
 	state.op->session = session;
 	state.op->tcon = tcon;
+
+	smbXsrv_open_note_replay_cache(state.op);
 
 	talloc_set_destructor(state.op, smbXsrv_open_destructor);
 
