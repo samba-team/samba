@@ -1677,11 +1677,11 @@ planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', '
 
 plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc)", "ad_dc:local", [python, os.path.join(DSDB_PYTEST_DIR, "linked_attributes.py"), '$PREFIX/ad_dc/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
-plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc_ntvfs)",
-                       "ad_dc_ntvfs:local",
+plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc)",
+                       "ad_dc:local",
                        [python, os.path.join(samba4srcdir,
                                              "dsdb/tests/python/subtree_rename.py"),
-                        '$PREFIX/ad_dc_ntvfs/private/sam.ldb',
+                        '$PREFIX/ad_dc/private/sam.ldb',
                         '-U"$USERNAME%$PASSWORD"',
                         '--workgroup=$DOMAIN',
                         '$LOADLIST',
