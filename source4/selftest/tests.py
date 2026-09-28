@@ -1622,7 +1622,7 @@ plantestsuite_loadlist("samba.tests.ldap_spn", "ad_dc",
                         '--workgroup=$DOMAIN',
                         '$LOADLIST', '$LISTOPT'])
 
-plantestsuite_loadlist("samba.tests.ldap_upn_sam_account", "ad_dc_ntvfs",
+plantestsuite_loadlist("samba.tests.ldap_upn_sam_account", "ad_dc",
                        [python,
                         f"{srcdir()}/python/samba/tests/ldap_upn_sam_account.py",
                         '$SERVER',
