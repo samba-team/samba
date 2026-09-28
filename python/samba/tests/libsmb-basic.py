@@ -193,6 +193,36 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         finally:
             c.deltree(testdir)
 
+    def test_rename_replace_case(self):
+        """
+        Regression test for bug 16261: Rename with ReplaceIfExists to a
+        target differing only in case must replace the existing file,
+        not create a second directory entry.
+        """
+        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        basedir = "test_rename_replace_case"
+
+        try:
+            c.deltree(basedir)
+        except NTSTATUSError:
+            pass
+        c.mkdir(basedir)
+
+        try:
+            c.savefile(basedir + "\\dzdz.lnk", b"old")
+            c.savefile(basedir + "\\tmpfile.tmp", b"new")
+
+            c.rename(basedir + "\\tmpfile.tmp",
+                     basedir + "\\DZDZ.lnk",
+                     replace=True)
+
+            names = [f['name'] for f in c.list(basedir)
+                     if f['name'] not in (".", "..")]
+            self.assertEqual(names, ["dzdz.lnk"])
+            self.assertEqual(c.loadfile(basedir + "\\dzdz.lnk"), b"new")
+        finally:
+            c.deltree(basedir)
+
     def test_libsmb_TortureDirCaseSensitive(self):
         c = libsmb.Conn(self.server_ip, "lowercase", self.lp, self.creds)
         c.mkdir("subdir")
