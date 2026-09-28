@@ -1355,6 +1355,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	struct smb_filename *smb_fname_dst_rel = NULL;
+	struct smb_filename *smb_fname_dst_ondisk_rel = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
 	int ret;
@@ -1397,16 +1398,18 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto inform_others;
 	}
 
-	status = filename_convert_dirfsp(ctx,
-					 conn,
-					 newname,
-					 fsp->fsp_flags.posix_open
-						 ? UCF_POSIX_PATHNAMES |
-							   UCF_LCOMP_LNK_OK
-						 : 0,
-					 smb_fname_src->twrp,
-					 &dst_dirfsp,
-					 &smb_fname_dst);
+	status = filename_convert_dirfsp_rel(ctx,
+					     conn,
+					     conn->cwd_fsp,
+					     newname,
+					     fsp->fsp_flags.posix_open
+						     ? UCF_POSIX_PATHNAMES |
+							       UCF_LCOMP_LNK_OK
+						     : 0,
+					     smb_fname_src->twrp,
+					     &dst_dirfsp,
+					     &smb_fname_dst,
+					     &smb_fname_dst_ondisk_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -1423,7 +1426,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		/*
 		 * Get the lcomp as the client sent it. For a pure
 		 * case change smb_fname_dst exists, but
-		 * filename_convert_dirfsp has removed the client's
+		 * filename_convert_dirfsp_rel() has removed the client's
 		 * intent by doing the case-insensitive lookup.
 		 */
 
@@ -1509,6 +1512,15 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			status = NT_STATUS_ACCESS_DENIED;
 			goto out;
 		}
+
+		/*
+		 * We need to rename to what filename_convert_dirfsp_rel
+		 * found on disk to avoid renaming onto the same name
+		 * with different capitalization, creating a
+		 * duplicate. See
+		 * https://bugzilla.samba.org/show_bug.cgi?id=16261
+		 */
+		smb_fname_dst_rel = smb_fname_dst_ondisk_rel;
 	}
 
 	status = can_rename(conn, fsp, attrs);
