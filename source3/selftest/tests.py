@@ -2056,7 +2056,7 @@ def planclusteredmembertestsuite(tname, prefix, tshare='tmp'):
     return selftesthelpers.plansmbtorture4testsuite(
         tname,
         'clusteredmember',
-        [extraargs, unclistarg, sharearg, autharg, tname],
+        [extraargs, unclistarg, sharearg, autharg],
         target='samba3',
         modname=modnamearg)
 
