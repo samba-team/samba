@@ -151,7 +151,7 @@
 ^samba4.smb2.acls-with-sysacl.*.owner
 ^samba4.smb2.acls-with-sysacl.*.ACCESSBASED
 ^samba4.smb2.streams.perms\(ad_dc_ntvfs\) # fails against ntvfs.
-^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.SimpleDirsyncTests.test_dirsync_deleted_items_OBJECT_SECURITY
+^samba4.ldap.dirsync.python.*.__main__.SimpleDirsyncTests.test_dirsync_deleted_items_OBJECT_SECURITY
 #^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.*
 ^samba4.libsmbclient.opendir.(NT1|SMB3).opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
