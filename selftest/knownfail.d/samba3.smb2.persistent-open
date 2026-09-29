@@ -1,2 +1,4 @@
 ^samba3.smb2.persistent-open.deleteonclose-expire
 ^samba3.clustered.smb2.persistent-open.deleteonclose-expire
+^samba3.smb2.persistent-open.reconnect-mismatch\(fileserver\)
+^samba3.clustered.smb2.persistent-open.reconnect-mismatch\(clusteredmember\)

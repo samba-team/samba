@@ -9892,6 +9892,120 @@ done:
 	return ret;
 }
 
+/*
+ * A persistent handle reconnected without asking for a persistent handle back.
+ * The server rejects that, but it has already claimed the open record, so it has
+ * to give it back or the handle can never be reconnected again.
+ */
+static bool test_persistent_reconnect_mismatch(struct torture_context *tctx,
+					       struct smb2_tree *_tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_tree *tree = NULL;
+	struct smbcli_options options = _tree->session->transport->options;
+	char fname[256];
+	struct smb2_handle h1 = {{0}};
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct GUID create_guid = GUID_random();
+	uint64_t lease_key;
+	uint32_t caps;
+	uint32_t tcon_caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(
+		_tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	tcon_caps = smb2cli_tcon_capabilities(_tree->smbXcli);
+	if (!(tcon_caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	snprintf(fname, sizeof(fname), "persistent_reconnect_mismatch_%s.dat",
+		 generate_random_str(tctx, 8));
+	lease_key = random();
+
+	options.client_guid = GUID_random();
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_lease_v2_create_share(&io, &ls, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease_key, NULL,
+				   smb2_util_lease_state("R"), 1);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = true;
+	io.in.create_guid = create_guid;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	torture_assert_goto(tctx, io.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+
+	/* disconnect, leaving the persistent open */
+	TALLOC_FREE(tree);
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	/*
+	 * Not asking for the persistent handle back is a mismatch and is
+	 * rejected, after the server has claimed the open record.
+	 */
+	smb2_lease_v2_create_share(&io, &ls, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease_key, NULL,
+				   smb2_util_lease_state("R"), 1);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &h1;
+	io.in.create_guid = create_guid;
+	io.in.persistent_open = false;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	/*
+	 * The handle has to still be there. Without giving the open record
+	 * back, this fails with NT_STATUS_OBJECT_NAME_NOT_FOUND as well.
+	 */
+	smb2_lease_v2_create_share(&io, &ls, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease_key, NULL,
+				   smb2_util_lease_state("R"), 1);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &h1;
+	io.in.create_guid = create_guid;
+	io.in.persistent_open = true;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+
+	status = smb2_util_close(tree, h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ZERO_STRUCT(h1);
+
+done:
+	if (tree != NULL) {
+		smb2_util_unlink(tree, fname);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -9904,6 +10018,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "leaselevels_fo_max_rwh", test_persistent_leaselevels_fo_max_rwh);
 	torture_suite_add_1smb2_test(suite, "leaselevels_so", test_persistent_leaselevels_so);
 	torture_suite_add_1smb2_test(suite, "timeout_5", test_persistent_timeout_5);
+	torture_suite_add_1smb2_test(suite, "reconnect-mismatch", test_persistent_reconnect_mismatch);
 	torture_suite_add_1smb2_test(suite, "rename-dir-open-files", test_persistent_rename_dir_open_files);
 	torture_suite_add_1smb2_test(suite, "replay-reconnect", test_persistent_replay_reconnect);
 	torture_suite_add_1smb2_test(suite, "replay-multi", test_persistent_replay_multi);
