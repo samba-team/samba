@@ -1044,6 +1044,7 @@ def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
         # resolution of symbols
         conf.env.undefined_ldflags = conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
-        if (conf.env.undefined_ignore_ldflags == [] and
+        if (sys.platform == 'darwin' and
+            conf.env.undefined_ignore_ldflags == [] and
             conf.CHECK_LDFLAGS(['-Wl,-undefined,dynamic_lookup'])):
             conf.env.undefined_ignore_ldflags = ['-Wl,-undefined,dynamic_lookup']
