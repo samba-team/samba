@@ -105,6 +105,7 @@ class AuthAdminSessionTests(samba.tests.TestCase):
     def test_user_session_principals(self):
         session = auth.system_session()
         realm = session.credentials.get_realm()
+        netbiosname = self.lp.get('netbios name')
         samdb = SamDB(lp=self.lp, session_info=session)
         samdb.newuser('$$', 'password123!')
         self.addCleanup(samdb.deleteuser, '$$')
@@ -113,7 +114,7 @@ class AuthAdminSessionTests(samba.tests.TestCase):
                 ('Administrator', ntstatus.NT_STATUS_NO_SUCH_USER, None),
                 (f'Administrator@{realm.split(".", 2)[-1]}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
                 (f'Administrator\n@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
-                (f'Administrator@localdc.{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'Administrator@{netbiosname.lower()}.{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
                 (f'Administrator@{realm.lower()}', 0, True),
                 (f'administrator @ {realm}', 0, True),
                 (f'JOE@{realm.lower()}', 0, False),
@@ -125,13 +126,13 @@ class AuthAdminSessionTests(samba.tests.TestCase):
                 (f'@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
                 (f'$$@{realm}', 0, False),
                 (f'$@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
-                (f'localdc@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
-                (f'localdc$@{realm}', 0, True),
-                (f'localdc.{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'{netbiosname.lower()}@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'{netbiosname.lower()}$@{realm}', 0, True),
+                (f'{netbiosname.lower()}.{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
                 (f'{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
-                (f'LOCALDC$@{realm}', 0, True),
+                (f'{netbiosname.upper()}$@{realm}', 0, True),
                 (f'missing$@{realm}', ntstatus.NT_STATUS_NO_SUCH_USER, None),
-                ('localdc$', ntstatus.NT_STATUS_NO_SUCH_USER, None),
+                (f'{netbiosname.lower()}$', ntstatus.NT_STATUS_NO_SUCH_USER, None),
         ]:
             with self.subTest(p=p):
                 try:
