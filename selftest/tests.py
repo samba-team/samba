@@ -170,7 +170,7 @@ plantestsuite("ldb.base", "none", "%s/tests/test-tdb-subunit.sh %s" % (ldbdir, s
 
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.registry")
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth")
+planpythontestsuite("ad_dc:local", "samba.tests.auth")
 planpythontestsuite("none", "samba.tests.get_opt")
 planpythontestsuite("none", "samba.tests.cred_opt")
 planpythontestsuite("none", "samba.tests.security")
