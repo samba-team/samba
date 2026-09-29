@@ -1782,7 +1782,7 @@ for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc", "ad_dc_no_ntlm"
                             "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM",
                             '$LOADLIST', '$LISTOPT'])
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc")
+planpythontestsuite("ad_dc:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("ad_dc:local", "samba.tests.posixacl")
 planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl")
 plantestsuite_loadlist("samba4.deletetest.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "deletetest.py"),

@@ -41,7 +41,7 @@ def dummymessage(a=None, b=None):
     pass
 
 
-smb_conf_path = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "ad_dc_ntvfs", "etc/smb.conf")
+smb_conf_path = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "ad_dc", "etc/smb.conf")
 
 
 class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
@@ -60,11 +60,11 @@ class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
         creds = Credentials()
         lp = env_loadparm()
         creds.guess(lp)
-        rootdn = "dc=samba,dc=example,dc=com"
+        rootdn = "DC=addom,DC=samba,DC=example,DC=com"
         ldbs = get_ldbs(paths, creds, system_session(), lp)
         names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
                                               paths, smb_conf_path, lp)
-        self.assertEqual(names.realm, "SAMBA.EXAMPLE.COM")
+        self.assertEqual(names.realm, "ADDOM.SAMBA.EXAMPLE.COM")
         self.assertEqual(str(names.rootdn).lower(), rootdn.lower())
         self.assertNotEqual(names.policyid_dc, None)
         self.assertNotEqual(names.ntdsguid, "")
@@ -119,7 +119,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                          140)
 
     def test_identic_rename(self):
-        rootdn = "DC=samba,DC=example,DC=com"
+        rootdn = "DC=addom,DC=samba,DC=example,DC=com"
 
         guestDN = ldb.Dn(self.ldbs.sam, "CN=Guest,CN=Users,%s" % rootdn)
         identic_rename(self.ldbs.sam, guestDN)
