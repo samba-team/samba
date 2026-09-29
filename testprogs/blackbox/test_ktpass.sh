@@ -27,12 +27,12 @@ KRB5CCNAME="$PREFIX/tmpccache"
 samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 echo "testp@ssw0Rd" >$PREFIX/tmppassfile
-testit "kinit with passwd" $samba4kinit -e arcfour-hmac-md5 --password-file=$PREFIX/tmppassfile $TESTUSER@SAMBA.EXAMPLE.COM || failed=$(expr $failed + 1)
-testit "ktpass" $samba4srcdir/scripting/bin/ktpass.sh --host LOCALDC --out $PREFIX/testuser.kt --princ $TESTUSER --pass "testp@ssw0Rd" --path-to-ldbsearch=$BINDIR/bin || failed=$(expr $failed + 1)
+testit "kinit with passwd" $samba4kinit -e arcfour-hmac-md5 --password-file=$PREFIX/tmppassfile $TESTUSER@$REALM || failed=$(expr $failed + 1)
+testit "ktpass" $samba4srcdir/scripting/bin/ktpass.sh --host $NETBIOSNAME --out $PREFIX/testuser.kt --princ $TESTUSER --pass "testp@ssw0Rd" --path-to-ldbsearch=$BINDIR/bin || failed=$(expr $failed + 1)
 
 rm -f $KRB5CCNAME
 
-testit "kinit with keytab" $samba4kinit -e arcfour-hmac-md5 --use-keytab -t $PREFIX/testuser.kt $TESTUSER@SAMBA.EXAMPLE.COM || failed=$(expr $failed + 1)
+testit "kinit with keytab" $samba4kinit -e arcfour-hmac-md5 --use-keytab -t $PREFIX/testuser.kt $TESTUSER@$REALM || failed=$(expr $failed + 1)
 
 rm -f $PREFIX/tmpccache $PREFIX/testuser.kt
 exit $failed
