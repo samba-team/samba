@@ -96,6 +96,17 @@ bld.SAMBA3_BINARY('rpcd_spoolss',
                   ''',
                   install_path='${SAMBA_LIBEXECDIR}')
 
+bld.SAMBA3_BINARY('rpcd_spoolss_notify_test',
+                  source='rpcd_spoolss_notify_test.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  NDR_SPOOLSS
+                  smbd_base
+                  ''',
+                  for_selftest=True,
+                  install_path='${SAMBA_LIBEXECDIR}')
+
 bld.SAMBA3_BINARY('rpcd_epmapper',
                   source='rpcd_epmapper.c',
                   deps='''
