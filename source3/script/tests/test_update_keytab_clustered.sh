@@ -17,13 +17,10 @@ shift 2
 
 samba_wbinfo="$BINDIR/wbinfo"
 samba_net="$BINDIR/net $CONFIGURATION"
-samba_rpcclient="$BINDIR/rpcclient $CONFIGURATION"
+# Used by test_smbclient() from common_test_fns.inc
+# shellcheck disable=SC2034
 smbclient="${BINDIR}/smbclient"
 smbcontrol="$BINDIR/smbcontrol"
-
-keytabs_sync_kvno="keytab0k keytab1k keytab2k keytab3k"
-keytabs_nosync_kvno="keytab0 keytab1 keytab2 keytab3"
-keytabs_all="$keytabs_sync_kvno $keytabs_nosync_kvno"
 
 check_net_ads_testjoin()
 {
@@ -35,9 +32,9 @@ check_net_ads_testjoin()
 get_biggest_vno()
 {
 	keytab="$1"
-	local cmd="UID_WRAPPER_ROOT=1 UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $samba_net ads keytab list $keytab"
-	eval echo "$cmd"
-	out=$(eval "$cmd")
+	net_cmd="UID_WRAPPER_ROOT=1 UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $samba_net ads keytab list $keytab"
+	eval echo "$net_cmd"
+	out=$(eval "$net_cmd")
 	ret=$?
 
 	echo "$out"
@@ -60,10 +57,8 @@ get_biggest_vno()
 
 test_pwd_change()
 {
-	testname="$1"
-	shift
 	# command to change the password
-	local cmd="$*"
+	cmd="$*"
 
 	# get biggest vno before password change
 	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
@@ -135,8 +130,8 @@ DC_DNSNAME="${DC_SERVER}.${REALM}"
 SMBCLIENT_UNC="//${DC_DNSNAME}/tmp"
 
 install source3/script/updatekeytab_test.sh "$PREFIX/clusteredmember/updatekeytab.sh"
-global_inject_conf=$(dirname $SMB_CONF_PATH)/global_inject.conf
-echo "sync machine password script = $PREFIX/clusteredmember/updatekeytab.sh" >$global_inject_conf
+global_inject_conf=$(dirname "$SMB_CONF_PATH")/global_inject.conf
+echo "sync machine password script = $PREFIX/clusteredmember/updatekeytab.sh" >"$global_inject_conf"
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
 
 testit "net_ads_testjoin_initial" check_net_ads_testjoin || failed=$((failed + 1))
@@ -156,7 +151,7 @@ testit "net_ads_keytab_sync" test_keytab_create || failed=$((failed + 1))
 testit "net_ads_testjoin_after_sync" check_net_ads_testjoin || failed=$((failed + 1))
 
 testit "wbinfo_change_secret_after_sync" \
-	test_pwd_change "wbinfo_changesecret" \
+	test_pwd_change \
 	"$samba_wbinfo --change-secret --domain=${DOMAIN}" ||
 	failed=$((failed + 1))
 
@@ -171,7 +166,7 @@ test_smbclient "Test machine login with the changed secret" \
 
 testit "net_ads_testjoin_final" check_net_ads_testjoin || failed=$((failed + 1))
 
-echo "" >$global_inject_conf
+echo "" >"$global_inject_conf"
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
 
 testok "$0" "$failed"
