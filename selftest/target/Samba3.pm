@@ -925,6 +925,9 @@ sub provision_ad_member
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{DOMSID} = $dcvars->{DOMSID};
+	if ($machine_account eq "LOCALADMEMBER") {
+		$ret->{NETBIOSALIAS} = "foo";
+	}
 
 	my $ctx;
 	$ctx = {};
