@@ -55,27 +55,57 @@ get_biggest_vno()
 	return 0
 }
 
-test_pwd_change()
+# Check that VNOs for nodes in $changed are the same and those nodes,
+# if any, in $unchanged are less by 1
+get_and_check_vnos()
 {
-	# command to change the password
+	changed="$1"
+	unchanged="$2"
+
+	if [ -z "$changed" ]; then
+		echo "ERROR: expect some changed VNOs"
+		return 1
+	fi
+
+	first_vno=""
+	first_node=""
+	for n in $changed; do
+		keytab_file="$PREFIX/clusteredmember/node.${n}/keytab0"
+		get_biggest_vno "$keytab_file"
+
+		if [ -z "$first_vno" ]; then
+			if [ ! "$vno" -gt 0 ]; then
+				echo "No key with vno in ${keytab_file}"
+				return 1
+			fi
+			first_vno="$vno"
+			first_node="$n"
+			continue
+		fi
+
+		if [ "$first_vno" -ne "$vno" ]; then
+			echo "VNOs differ between nodes ${first_node}, ${n}"
+			return 1
+		fi
+	done
+
+	for n in $unchanged; do
+		keytab_file="$PREFIX/clusteredmember/node.${n}/keytab0"
+		get_biggest_vno "$keytab_file"
+
+		if [ "$vno" -eq "$first_vno" ]; then
+			echo "VNOs same between node ${first_node}, ${n}"
+			return 1
+		fi
+	done
+
+	vno="$first_vno"
+	return 0
+}
+
+do_pwd_change_test_join()
+{
 	cmd="$*"
-
-	# get biggest vno before password change
-	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
-	old_vno_node0=$vno
-	get_biggest_vno "$PREFIX/clusteredmember/node.1/keytab0"
-	old_vno_node1=$vno
-	get_biggest_vno "$PREFIX/clusteredmember/node.2/keytab0"
-	old_vno_node2=$vno
-
-	if [ ! "$old_vno_node0" -gt 0 ]; then
-		echo "There is no key with vno in the keytab list above."
-		return 1
-	fi
-	if [ "$old_vno_node0" -ne "$old_vno_node1" ] || [ "$old_vno_node0" -ne "$old_vno_node2" ]; then
-		echo "VNOs differs on nodes!"
-		return 1
-	fi
 
 	# change the password
 	eval echo "$cmd"
@@ -100,20 +130,23 @@ test_pwd_change()
 		return 1
 	fi
 
-	# if keytab was updated the bigest vno should be incremented by one
-	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
-	new_vno_node0=$vno
-	get_biggest_vno "$PREFIX/clusteredmember/node.1/keytab0"
-	new_vno_node1=$vno
-	get_biggest_vno "$PREFIX/clusteredmember/node.2/keytab0"
-	new_vno_node2=$vno
+	return 0
+}
 
-	if [ ! "$new_vno_node0" -eq $((old_vno_node0 + 1)) ]; then
-		echo "Old vno=$old_vno_node0, new vno=$new_vno_node0. Increment by one failed."
-		return 1
-	fi
-	if [ "$new_vno_node0" -ne "$new_vno_node1" ] || [ "$new_vno_node0" -ne "$new_vno_node2" ]; then
-		echo "VNOs differs on nodes!"
+test_pwd_change()
+{
+	# command to change the password
+	cmd="$*"
+
+	get_and_check_vnos "0 1 2" "" || return 1
+	old_vno="$vno"
+
+	do_pwd_change_test_join "$cmd" || return 1
+
+	get_and_check_vnos "0 1 2" "" || return 1
+
+	if [ ! "$vno" -eq $((old_vno + 1)) ]; then
+		echo "Old vno=$old_vno, new vno=$vno. Increment by one failed."
 		return 1
 	fi
 
