@@ -42,7 +42,7 @@ struct messaging_context *cmdline_messaging_context(const char *config_file)
 	 * access to the registry and ctdb, which in turn requires
 	 * messaging access as root.
 	 */
-	if (lp_clustering() && geteuid() != 0) {
+	if (!uid_wrapper_enabled() && lp_clustering() && geteuid() != 0) {
 		fprintf(stderr, "Cluster mode requires running as root.\n");
 		exit(1);
 	}
