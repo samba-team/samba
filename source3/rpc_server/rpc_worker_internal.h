@@ -48,6 +48,8 @@ struct rpc_worker {
 	bool done;
 	struct timeval last_connect;
 	struct timeval last_disconnect;
+	struct timeval time_of_max_connections;
+	uint32_t max_connections;
 
 	bool is_npsd;
 	struct rpc_worker_connection *conns;

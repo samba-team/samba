@@ -326,6 +326,11 @@ static void rpc_worker_new_client(
 			worker->status.num_connections;
 	}
 	worker->last_connect = worker_conn->tv;
+	if (worker->status.num_connections > worker->max_connections) {
+		worker->max_connections = worker->status.num_connections;
+		worker->time_of_max_connections = worker_conn->tv;
+	}
+
 	talloc_set_destructor(worker_conn, rpc_worker_connection_destructor);
 	return;
 fail:
@@ -409,12 +414,26 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 	struct tjson *stats = NULL;
 	struct tjson *connections = NULL;
 	struct tjson *current_conn_info = NULL;
+	struct tjson *max_conn = NULL;
+
 	char *output = NULL;
 
 	if (mem_ctx == NULL) {
 		DBG_ERR("Out of memory\n");
 		return;
 	}
+
+	max_conn = tjson_new_object(mem_ctx);
+	tjson_add_int(max_conn, "num", worker->max_connections);
+	tjson_add_string(
+		max_conn,
+		"time_of_max_connection",
+		(worker->time_of_max_connections.tv_sec != 0)
+			? timeval_str_buf(&worker->time_of_max_connections,
+					  false,
+					  true,
+					  &buf_con)
+			: "N/A");
 
 	current_conn_info = tjson_new_object(mem_ctx);
 
@@ -440,8 +459,6 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 					   true,
 					   &buf_discon)
 			 : "N/A");
-
-
 	stats = tjson_new_object(mem_ctx);
 
 	tjson_add_string(stats,
@@ -450,6 +467,8 @@ static void dump_worker_client_info(TALLOC_CTX *root,
 	tjson_add_int(stats,
 		      "pid",
 		      (unsigned int)getpid());
+
+	tjson_add_object(stats, "max_connections", &max_conn);
 
 	connections = tjson_new_array(mem_ctx);
 	for (conn = worker->conns; conn != NULL; conn = conn->next) {
