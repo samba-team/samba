@@ -591,9 +591,7 @@ NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_rpc_object_uuid(suite));
 	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss(suite));
-#ifdef WITH_NTVFS_FILESERVER
 	torture_suite_add_suite(suite, torture_rpc_spoolss_notify(suite));
-#endif
 	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_driver(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_access(suite));
