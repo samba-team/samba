@@ -21,252 +21,31 @@
 */
 
 #include "includes.h"
+#include "system/dir.h"
 #include "system/filesys.h"
+#include "system/network.h"
+#include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "torture/rpc/torture_rpc.h"
-#include "rpc_server/dcerpc_server.h"
-#include "rpc_server/dcerpc_server_proto.h"
-#include "rpc_server/service_rpc.h"
-#include "samba/process_model.h"
-#include "smb_server/smb_server.h"
 #include "lib/socket/netif.h"
-#include "ntvfs/ntvfs.h"
+#include "lib/util/samba_util.h"
+#include "lib/util/util_file.h"
+#include "dynconfig.h"
+#include "auth/credentials/credentials.h"
+#include "libcli/resolve/resolve.h"
+#include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 #include "param/param.h"
 
-static struct dcesrv_context_callbacks srv_cb = {
-	.log.successful_authz = log_successful_dcesrv_authz_event,
-	.auth.gensec_prepare = dcesrv_gensec_prepare,
-	.assoc_group.find = dcesrv_assoc_group_find_s4,
-};
-
-static NTSTATUS spoolss__op_bind(struct dcesrv_connection_context *context,
-				 const struct dcesrv_interface *iface)
-{
-	return NT_STATUS_OK;
-}
-
-static void spoolss__op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
-{
-}
-
-static NTSTATUS spoolss__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
-{
-	enum ndr_err_code ndr_err;
-	uint16_t opnum = dce_call->pkt.u.request.opnum;
-
-	dce_call->fault_code = 0;
-
-	if (opnum >= ndr_table_spoolss.num_calls) {
-		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
-
-	*r = talloc_size(mem_ctx, ndr_table_spoolss.calls[opnum].struct_size);
-	NT_STATUS_HAVE_NO_MEMORY(*r);
-
-        /* unravel the NDR for the packet */
-	ndr_err = ndr_table_spoolss.calls[opnum].ndr_pull(pull, NDR_IN, *r);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		dce_call->fault_code = DCERPC_FAULT_NDR;
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/* Note that received_packets are allocated on the NULL context
- * because no other context appears to stay around long enough. */
-static struct received_packet {
-	uint16_t opnum;
-	void *r;
-	struct received_packet *prev, *next;
-} *received_packets = NULL;
-
-static void free_received_packets(void)
-{
-	struct received_packet *rp;
-	struct received_packet *rp_next;
-
-	for (rp = received_packets; rp; rp = rp_next) {
-		rp_next = rp->next;
-		DLIST_REMOVE(received_packets, rp);
-		talloc_unlink(rp, rp->r);
-		talloc_free(rp);
-	}
-	received_packets = NULL;
-}
-
-static WERROR _spoolss_ReplyOpenPrinter(struct dcesrv_call_state *dce_call,
-					TALLOC_CTX *mem_ctx,
-					struct spoolss_ReplyOpenPrinter *r)
-{
-	DEBUG(1,("_spoolss_ReplyOpenPrinter\n"));
-
-	NDR_PRINT_IN_DEBUG(spoolss_ReplyOpenPrinter, r);
-
-	r->out.handle = talloc(r, struct policy_handle);
-	r->out.handle->handle_type = 42;
-	r->out.handle->uuid = GUID_random();
-	r->out.result = WERR_OK;
-
-	NDR_PRINT_OUT_DEBUG(spoolss_ReplyOpenPrinter, r);
-
-	return WERR_OK;
-}
-
-static WERROR _spoolss_ReplyClosePrinter(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx,
-					 struct spoolss_ReplyClosePrinter *r)
-{
-	DEBUG(1,("_spoolss_ReplyClosePrinter\n"));
-
-	NDR_PRINT_IN_DEBUG(spoolss_ReplyClosePrinter, r);
-
-	ZERO_STRUCTP(r->out.handle);
-	r->out.result = WERR_OK;
-
-	NDR_PRINT_OUT_DEBUG(spoolss_ReplyClosePrinter, r);
-
-	return WERR_OK;
-}
-
-static WERROR _spoolss_RouterReplyPrinterEx(struct dcesrv_call_state *dce_call,
-					    TALLOC_CTX *mem_ctx,
-					    struct spoolss_RouterReplyPrinterEx *r)
-{
-	DEBUG(1,("_spoolss_RouterReplyPrinterEx\n"));
-
-	NDR_PRINT_IN_DEBUG(spoolss_RouterReplyPrinterEx, r);
-
-	r->out.reply_result = talloc(r, uint32_t);
-	*r->out.reply_result = 0;
-	r->out.result = WERR_OK;
-
-	NDR_PRINT_OUT_DEBUG(spoolss_RouterReplyPrinterEx, r);
-
-	return WERR_OK;
-}
-
-static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
-{
-	uint16_t opnum = dce_call->pkt.u.request.opnum;
-	struct received_packet *rp;
-
-	rp = talloc_zero(NULL, struct received_packet);
-	rp->opnum = opnum;
-	rp->r = talloc_reference(rp, r);
-
-	DLIST_ADD_END(received_packets, rp);
-
-	switch (opnum) {
-	case 58: {
-		struct spoolss_ReplyOpenPrinter *r2 = (struct spoolss_ReplyOpenPrinter *)r;
-		r2->out.result = _spoolss_ReplyOpenPrinter(dce_call, mem_ctx, r2);
-		break;
-	}
-	case 60: {
-		struct spoolss_ReplyClosePrinter *r2 = (struct spoolss_ReplyClosePrinter *)r;
-		r2->out.result = _spoolss_ReplyClosePrinter(dce_call, mem_ctx, r2);
-		break;
-	}
-	case 66: {
-		struct spoolss_RouterReplyPrinterEx *r2 = (struct spoolss_RouterReplyPrinterEx *)r;
-		r2->out.result = _spoolss_RouterReplyPrinterEx(dce_call, mem_ctx, r2);
-		break;
-	}
-
-	default:
-		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
-		break;
-	}
-
-	if (dce_call->fault_code != 0) {
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
-	return NT_STATUS_OK;
-}
-
-
-static NTSTATUS spoolss__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
-{
-	return NT_STATUS_OK;
-}
-
-
-static NTSTATUS spoolss__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
-{
-	enum ndr_err_code ndr_err;
-	uint16_t opnum = dce_call->pkt.u.request.opnum;
-
-	ndr_err = ndr_table_spoolss.calls[opnum].ndr_push(push, NDR_OUT, r);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		dce_call->fault_code = DCERPC_FAULT_NDR;
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static const struct dcesrv_interface notify_test_spoolss_interface = {
-	.name		= "spoolss",
-	.syntax_id  = {{0x12345678,0x1234,0xabcd,{0xef,0x00},{0x01,0x23,0x45,0x67,0x89,0xab}},1.0},
-	.bind		= spoolss__op_bind,
-	.unbind		= spoolss__op_unbind,
-	.ndr_pull	= spoolss__op_ndr_pull,
-	.dispatch	= spoolss__op_dispatch,
-	.reply		= spoolss__op_reply,
-	.ndr_push	= spoolss__op_ndr_push
-};
-
-static bool spoolss__op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
-{
-	if (notify_test_spoolss_interface.syntax_id.if_version == if_version &&
-		GUID_equal(&notify_test_spoolss_interface.syntax_id.uuid, uuid)) {
-		memcpy(iface,&notify_test_spoolss_interface, sizeof(*iface));
-		return true;
-	}
-
-	return false;
-}
-
-static bool spoolss__op_interface_by_name(struct dcesrv_interface *iface, const char *name)
-{
-	if (strcmp(notify_test_spoolss_interface.name, name)==0) {
-		memcpy(iface, &notify_test_spoolss_interface, sizeof(*iface));
-		return true;
-	}
-
-	return false;
-}
-
-static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
-{
-	uint32_t i;
-
-	for (i=0;i<ndr_table_spoolss.endpoints->count;i++) {
-		NTSTATUS ret;
-		const char *name = ndr_table_spoolss.endpoints->names[i];
-
-		ret = dcesrv_interface_register(dce_ctx,
-						name,
-						NULL,
-						&notify_test_spoolss_interface,
-						NULL);
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(1,("spoolss_op_init_server: failed to register endpoint '%s'\n",name));
-			return ret;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS spoolss__op_shutdown_server(struct dcesrv_context *dce_ctx,
-				const struct dcesrv_endpoint_server *ep_server)
-{
-	return NT_STATUS_OK;
-}
+/*
+ * The print-change-notification callback the server sends back to us is
+ * captured by a separate helper process (rpcd_spoolss_notify_test, see
+ * source3/rpc_server/rpcd_spoolss_notify_test.c), reached the same way a
+ * real client would be: over SMB, via a throwaway smbd+samba-dcerpcd pair
+ * we spawn for the duration of this test. The helper logs the opnums it
+ * was called with to a file we read back below.
+ */
 
 static bool test_OpenPrinter(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
@@ -446,90 +225,484 @@ static bool test_SetPrinter(struct torture_context *tctx,
 }
 #endif
 
-static bool test_start_dcerpc_server(struct torture_context *tctx,
-				     struct tevent_context *event_ctx,
-				     struct dcesrv_context **dce_ctx_p,
-				     const char **address_p)
-{
-	struct dcesrv_endpoint_server ep_server;
-	NTSTATUS status;
-	struct dcesrv_context *dce_ctx;
-	const char *endpoints[] = { "spoolss", NULL };
-	struct dcesrv_endpoint *e;
+struct notify_test_env {
 	const char *address;
-	struct interface *ifaces;
+	const char *packet_log;
+	char *tempdir;
+	struct tevent_req *dcerpcd_req;
+	struct tevent_req *smbd_req;
+};
 
-	ntvfs_init(tctx->lp_ctx);
+/*
+ * Short tempdir for the throwaway smbd environment to store the np
+ * sockets
+ */
+static bool notify_test_short_temp_dir(struct torture_context *tctx,
+				       TALLOC_CTX *mem_ctx,
+				       char **tempdir)
+{
+	const char *base = getenv("SELFTEST_TMPDIR");
+	char *path = NULL;
 
-	/* fill in our name */
-	ep_server.name = "spoolss";
+	torture_assert(tctx,
+		       base != NULL,
+		       "SELFTEST_TMPDIR not set in the environment");
 
-	ep_server.initialized = false;
+	path = talloc_asprintf(mem_ctx, "%s/XXXXXXXX", base);
+	torture_assert(tctx, path != NULL, "out of memory");
+	torture_assert(tctx,
+		       mkdtemp(path) != NULL,
+		       "mkdtemp() failed for throwaway spoolss_notify dir");
 
-	/* fill in all the operations */
-	ep_server.init_server = spoolss__op_init_server;
-	ep_server.shutdown_server = spoolss__op_shutdown_server;
+	*tempdir = path;
+	return true;
+}
 
-	ep_server.interface_by_uuid = spoolss__op_interface_by_uuid;
-	ep_server.interface_by_name = spoolss__op_interface_by_name;
+static bool write_notify_test_smbconf(struct torture_context *tctx,
+				      const char *tempdir,
+				      const char *address,
+				      const char *packet_log,
+				      const char **conf_path)
+{
+	char *path = talloc_asprintf(tctx, "%s/smb.conf", tempdir);
+	FILE *f;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_register_ep_server(&ep_server),
-				  "unable to register spoolss server");
+	torture_assert(tctx, path != NULL, "out of memory");
 
-	lpcfg_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
+	f = fopen(path, "w");
+	torture_assert(tctx, f != NULL, "unable to create throwaway smb.conf");
 
-	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
-	address = iface_list_first_v4(ifaces);
+	fprintf(f,
+		"[global]\n"
+		"\tserver role = standalone\n"
+		"\tsecurity = user\n"
+		"\tmap to guest = bad user\n"
+		"\tload printers = no\n"
+		"\tinterfaces = %s/24\n"
+		"\tbind interfaces only = yes\n"
+		"\tprivate dir = %s/private\n"
+		"\tlock directory = %s/lock\n"
+		"\tstate directory = %s/lock\n"
+		"\tcache directory = %s/lock\n"
+		"\tpid directory = %s/pid\n"
+		"\tncalrpc dir = %s/n\n" /* no "ncalrpc" for brevity */
+		"\tlog file = %s/log.%%m\n"
+		"\tlog level = 3\n"
+		"\trpc start on demand helpers = no\n"
+		"\tspoolss_notify_test:packet_log = %s\n",
+		address,
+		tempdir,
+		tempdir,
+		tempdir,
+		tempdir,
+		tempdir,
+		tempdir,
+		tempdir,
+		packet_log);
+	fclose(f);
 
-	torture_comment(tctx, "Listening for callbacks on %s\n", address);
+	*conf_path = path;
+	return true;
+}
 
-	status = process_model_init(tctx->lp_ctx);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "unable to initialize process models");
+static void notify_test_timer_done(struct tevent_context *ev,
+				   struct tevent_timer *te,
+				   struct timeval current_time,
+				   void *private_data)
+{
+	bool *fired = (bool *)private_data;
+	*fired = true;
+}
 
-	status = smbsrv_add_socket(tctx, event_ctx, tctx->lp_ctx,
-				   process_model_startup("single"),
-				   address, NULL);
-	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
+/*
+ * samba_runcmd_send() is tevent-based. Wait for the subprocess to
+ * settle while at the same time allow tevent_loop_once to catch
+ * stdout/stderr from it.
+ */
+static void notify_test_wait(struct tevent_context *ev, unsigned seconds)
+{
+	bool fired = false;
+	struct tevent_timer *te = NULL;
 
-	status = dcesrv_init_context(tctx, tctx->lp_ctx, &srv_cb, &dce_ctx);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "unable to initialize DCE/RPC server");
-
-	status = dcesrv_init_ep_servers(dce_ctx, endpoints);
-	torture_assert_ntstatus_ok(tctx,
-				   status,
-				   "unable to initialize DCE/RPC ep servers");
-
-	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		status = dcesrv_add_ep(dce_ctx, tctx->lp_ctx,
-				       e, tctx->ev,
-				       process_model_startup("single"), NULL);
-		torture_assert_ntstatus_ok(tctx, status,
-				"unable listen on dcerpc endpoint server");
+	te = tevent_add_timer(ev,
+			      ev,
+			      timeval_current_ofs(seconds, 0),
+			      notify_test_timer_done,
+			      &fired);
+	if (te == NULL) {
+		sleep(seconds);
+		return;
 	}
 
-	*dce_ctx_p = dce_ctx;
-	*address_p = address;
+	while (!fired) {
+		if (tevent_loop_once(ev) != 0) {
+			break;
+		}
+	}
+}
+
+/*
+ * Log when the throwaway smbd/samba-dcerpcd children exit before we
+ * expect them to - without this, an early crash or exec failure is
+ * silently invisible until (and unless) a later torture_assert() names
+ * a symptom several steps downstream of the real cause.
+ */
+struct notify_test_child_state {
+	struct torture_context *tctx;
+	const char *label;
+};
+
+static void notify_test_child_exited(struct tevent_req *req)
+{
+	struct notify_test_child_state *state = tevent_req_callback_data(
+		req, struct notify_test_child_state);
+	int ret, sys_errno = 0;
+
+	ret = samba_runcmd_recv(req, &sys_errno);
+	torture_comment(state->tctx,
+			"%s exited unexpectedly (ret=%d, errno=%d: %s)\n",
+			state->label,
+			ret,
+			sys_errno,
+			strerror(sys_errno));
+}
+
+static void notify_test_watch_child(struct torture_context *tctx,
+				    struct tevent_req *req,
+				    const char *label)
+{
+	struct notify_test_child_state *state = NULL;
+
+	state = talloc(req, struct notify_test_child_state);
+	if (state == NULL) {
+		return;
+	}
+	state->tctx = tctx;
+	state->label = label;
+
+	tevent_req_set_callback(req, notify_test_child_exited, state);
+}
+
+/*
+ * Dump one of the throwaway daemons' own debug logs (as opposed to what
+ * they printed to stdout/stderr, which samba_runcmd_send() already
+ * echoes into our own output) so a failure here doesn't require pulling
+ * a separate log archive to see why.
+ */
+static void dump_notify_test_log(struct torture_context *tctx,
+				 const char *tempdir,
+				 const char *name)
+{
+	char *path = talloc_asprintf(tctx, "%s/%s", tempdir, name);
+	char *contents = NULL;
+	size_t size = 0;
+
+	if (path == NULL) {
+		return;
+	}
+
+	contents = file_load(path, &size, 0, tctx);
+	if (contents == NULL) {
+		torture_comment(tctx, "---- %s: not present ----\n", path);
+		return;
+	}
+
+	torture_comment(tctx,
+			"---- %s (%zu bytes) ----\n%s---- end %s ----\n",
+			path,
+			size,
+			contents,
+			path);
+}
+
+static void dump_notify_test_dir(struct torture_context *tctx,
+				 const char *path)
+{
+	DIR *d = NULL;
+	struct dirent *de = NULL;
+
+	d = opendir(path);
+	if (d == NULL) {
+		torture_comment(tctx,
+				"opendir(%s) failed: %s\n",
+				path,
+				strerror(errno));
+		return;
+	}
+
+	torture_comment(tctx, "contents of %s:\n", path);
+	while ((de = readdir(d)) != NULL) {
+		torture_comment(tctx, "  %s\n", de->d_name);
+	}
+	closedir(d);
+}
+
+static void dump_notify_test_diagnostics(struct torture_context *tctx,
+					 const char *tempdir)
+{
+	torture_comment(tctx,
+			"dumping notify test diagnostics from %s\n",
+			tempdir);
+
+	dump_notify_test_dir(tctx, talloc_asprintf(tctx, "%s/n", tempdir));
+	dump_notify_test_dir(tctx, talloc_asprintf(tctx, "%s/n/np", tempdir));
+	dump_notify_test_log(tctx, tempdir, "log.samba-dcerpcd");
+	dump_notify_test_log(tctx, tempdir, "log.rpcd_spoolss_notify_test");
+	dump_notify_test_log(tctx, tempdir, "log.smbd");
+}
+
+static bool wait_for_unix_socket(struct torture_context *tctx,
+				 const char *path)
+{
+	unsigned i;
+
+	for (i = 0; i < 30; i++) {
+		struct sockaddr_un sun = {.sun_family = AF_UNIX};
+		int fd, ret;
+
+		strncpy(sun.sun_path, path, sizeof(sun.sun_path) - 1);
+
+		fd = socket(AF_UNIX, SOCK_STREAM, 0);
+		torture_assert(tctx, fd != -1, "socket() failed");
+
+		ret = connect(fd, (struct sockaddr *)&sun, sizeof(sun));
+		close(fd);
+		if (ret == 0) {
+			torture_comment(tctx,
+					"wait_for_unix_socket(%s): "
+					"connected after %u attempt(s)\n",
+					path,
+					i + 1);
+			return true;
+		}
+
+		torture_comment(tctx,
+				"wait_for_unix_socket(%s): attempt %u: "
+				"connect failed: %s\n",
+				path,
+				i + 1,
+				strerror(errno));
+
+		notify_test_wait(tctx->ev, 1);
+	}
+
+	return false;
+}
+
+static bool wait_for_smb_ready(struct torture_context *tctx,
+			       const char *address)
+{
+	unsigned i;
+
+	for (i = 0; i < 30; i++) {
+		TALLOC_CTX *tmp_ctx = talloc_new(tctx);
+		struct cli_credentials *anon_creds = NULL;
+		struct smbcli_options options;
+		struct smb2_tree *tree = NULL;
+		struct dcerpc_pipe *p = NULL;
+		NTSTATUS status;
+
+		torture_assert(tctx, tmp_ctx != NULL, "out of memory");
+
+		anon_creds = cli_credentials_init_anon(tmp_ctx);
+		torture_assert(tctx,
+			       anon_creds != NULL,
+			       "cli_credentials_init_anon failed");
+
+		lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+		status = smb2_connect(tmp_ctx,
+				      address,
+				      "IPC$",
+				      tctx->lp_ctx,
+				      lpcfg_resolve_context(tctx->lp_ctx,
+							    tctx),
+				      anon_creds,
+				      &tree,
+				      tctx->ev,
+				      &options,
+				      lpcfg_socket_options(tctx->lp_ctx),
+				      lpcfg_gensec_settings(tctx,
+							    tctx->lp_ctx));
+		if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * The IPC$ session is up - now make sure the RPC
+			 * daemon behind \PIPE\spoolss is actually reachable
+			 * (samba-dcerpcd may still be registering its
+			 * endpoints at this point).
+			 */
+			p = dcerpc_pipe_init(tmp_ctx, tctx->ev);
+			if (p == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+			} else {
+				status = dcerpc_pipe_open_smb2(p,
+							       tree,
+							       "spoolss");
+			}
+		}
+		TALLOC_FREE(tmp_ctx);
+		if (NT_STATUS_IS_OK(status)) {
+			torture_comment(tctx,
+					"wait_for_smb_ready(%s): ready after "
+					"%u attempt(s)\n",
+					address,
+					i + 1);
+			return true;
+		}
+
+		torture_comment(tctx,
+				"wait_for_smb_ready(%s): attempt %u: %s\n",
+				address,
+				i + 1,
+				nt_errstr(status));
+
+		notify_test_wait(tctx->ev, 1);
+	}
+
+	return false;
+}
+
+/*
+ * Spin up a throwaway smbd + samba-dcerpcd pair that plays the role of the
+ * "client machine" a real spoolss server calls back to (over SMB, via
+ * \PIPE\spoolss) after RemoteFindFirstPrinterChangeNotifyEx. The callback
+ * itself is handled by the rpcd_spoolss_notify_test helper (source3), which
+ * logs the opnums it receives to env->packet_log.
+ */
+static bool test_start_dcerpc_server(struct torture_context *tctx,
+				     struct tevent_context *event_ctx,
+				     struct notify_test_env *env)
+{
+	char *tempdir = NULL;
+	const char *conf_path = NULL;
+	const char *ncalrpc_np;
+	struct interface *ifaces;
+	const char *dcerpcd_path, *smbd_path;
+
+	torture_assert(tctx,
+		       notify_test_short_temp_dir(tctx, env, &tempdir),
+		       "");
+	env->tempdir = tempdir;
+
+	torture_assert(tctx,
+		       mkdir(talloc_asprintf(tctx, "%s/private", tempdir),
+			     0700) == 0,
+		       "mkdir private failed");
+	torture_assert(tctx,
+		       mkdir(talloc_asprintf(tctx, "%s/lock", tempdir),
+			     0700) == 0,
+		       "mkdir lock failed");
+	torture_assert(tctx,
+		       mkdir(talloc_asprintf(tctx, "%s/pid", tempdir), 0700) ==
+			       0,
+		       "mkdir pid failed");
+
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
+	env->address = iface_list_first_v4(ifaces);
+	torture_comment(tctx, "Listening for callbacks on %s\n", env->address);
+
+	env->packet_log = talloc_asprintf(tctx, "%s/packets.log", tempdir);
+	torture_assert(tctx, env->packet_log != NULL, "out of memory");
+
+	torture_assert(tctx,
+		       write_notify_test_smbconf(tctx,
+						 tempdir,
+						 env->address,
+						 env->packet_log,
+						 &conf_path),
+		       "unable to write throwaway smb.conf");
+
+	/*
+	 * rpcd_spoolss_notify_test listens on \spoolss, so we have to
+	 * start samba-dcerpcd manually without --libexec-rpcds. This
+	 * would race with rpcd_spoolss.
+	 */
+	dcerpcd_path = talloc_asprintf(tctx,
+				       "%s/samba-dcerpcd",
+				       dyn_SAMBA_LIBEXECDIR);
+	torture_assert(tctx, dcerpcd_path != NULL, "out of memory");
+
+	env->dcerpcd_req = samba_runcmd_send(
+		env,
+		event_ctx,
+		timeval_zero(),
+		0,
+		0,
+		(const char *const[]){dcerpcd_path, NULL},
+		talloc_asprintf(tctx, "--configfile=%s", conf_path),
+		"--foreground",
+		talloc_asprintf(tctx,
+				"%s/rpcd_spoolss_notify_test",
+				dyn_SAMBA_LIBEXECDIR),
+		NULL);
+	torture_assert(tctx,
+		       env->dcerpcd_req != NULL,
+		       "unable to start samba-dcerpcd");
+	notify_test_watch_child(tctx, env->dcerpcd_req, "samba-dcerpcd");
+
+	ncalrpc_np = talloc_asprintf(tctx, "%s/n/np/spoolss", tempdir);
+	if (!wait_for_unix_socket(tctx, ncalrpc_np)) {
+		dump_notify_test_diagnostics(tctx, tempdir);
+		torture_fail(tctx,
+			     "samba-dcerpcd never registered a spoolss "
+			     "listener");
+	}
+
+	smbd_path = talloc_asprintf(tctx, "%s/smbd", dyn_SBINDIR);
+	torture_assert(tctx, smbd_path != NULL, "out of memory");
+
+	env->smbd_req = samba_runcmd_send(
+		env,
+		event_ctx,
+		timeval_zero(),
+		0,
+		0,
+		(const char *const[]){smbd_path, NULL},
+		talloc_asprintf(tctx, "--configfile=%s", conf_path),
+		"--foreground",
+		"--option=server role check:inhibit=yes",
+		NULL);
+	torture_assert(tctx, env->smbd_req != NULL, "unable to start smbd");
+	notify_test_watch_child(tctx, env->smbd_req, "smbd");
+
+	if (!wait_for_smb_ready(tctx, env->address)) {
+		dump_notify_test_diagnostics(tctx, tempdir);
+		torture_fail(tctx,
+			     "throwaway smbd never became ready to service "
+			     "an anonymous IPC$ connection");
+	}
 
 	return true;
 }
 
-static struct received_packet *last_packet(struct received_packet *p)
+static bool read_notify_test_opnums(struct torture_context *tctx,
+				    const char *packet_log,
+				    uint16_t *first,
+				    uint16_t *last)
 {
-	struct received_packet *tmp;
-	for (tmp = p; tmp->next; tmp = tmp->next) {
+	char **lines;
+	int numlines;
+
+	lines = file_lines_load(packet_log, &numlines, 0, tctx);
+	if (lines == NULL || numlines == 0) {
+		talloc_free(lines);
+		return false;
 	}
-	return tmp;
+
+	*first = (uint16_t)strtoul(lines[0], NULL, 10);
+	*last = (uint16_t)strtoul(lines[numlines - 1], NULL, 10);
+	talloc_free(lines);
+
+	return true;
 }
 
 static bool test_RFFPCNEx(struct torture_context *tctx,
 			  struct dcerpc_pipe *p)
 {
-	struct dcesrv_context *dce_ctx;
+	struct notify_test_env *env = talloc_zero(tctx,
+						  struct notify_test_env);
 	struct policy_handle handle;
-	const char *address;
-	struct received_packet *tmp;
+	uint16_t first_opnum, last_opnum;
 	struct spoolss_NotifyOption *server_option = setup_printserver_NotifyOption(tctx);
 #if 0
 	struct spoolss_NotifyOption *printer_option = setup_printer_NotifyOption(tctx);
@@ -538,23 +711,44 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	const char *printername = NULL;
 	struct spoolss_NotifyInfo *info = NULL;
 
-	free_received_packets();
+	torture_assert(tctx, env != NULL, "out of memory");
 
-	/* Start DCE/RPC server */
-	torture_assert(tctx, test_start_dcerpc_server(tctx, tctx->ev, &dce_ctx, &address), "");
+	/* Start the fake "client machine" smbd/samba-dcerpcd pair */
+	torture_assert(tctx,
+		       test_start_dcerpc_server(tctx, tctx->ev, env),
+		       "");
 
 	printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle, printername), "");
-	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, b, &handle, address, server_option), "");
-	torture_assert(tctx, received_packets, "no packets received");
-	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
-		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
+	torture_assert(tctx,
+		       test_RemoteFindFirstPrinterChangeNotifyEx(
+			       tctx, b, &handle, env->address, server_option),
+		       "");
+	torture_assert(tctx,
+		       read_notify_test_opnums(tctx,
+					       env->packet_log,
+					       &first_opnum,
+					       &last_opnum),
+		       "no packets received");
+	torture_assert_int_equal(tctx,
+				 first_opnum,
+				 NDR_SPOOLSS_REPLYOPENPRINTER,
+				 "no ReplyOpenPrinter packet after "
+				 "RemoteFindFirstPrinterChangeNotifyEx");
 	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, NULL, &info), "");
 	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, server_option, &info), "");
 	torture_assert(tctx, test_ClosePrinter(tctx, b, &handle), "");
-	tmp = last_packet(received_packets);
-	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
+	torture_assert(tctx,
+		       read_notify_test_opnums(tctx,
+					       env->packet_log,
+					       &first_opnum,
+					       &last_opnum),
+		       "no packets received");
+	torture_assert_int_equal(
+		tctx,
+		last_opnum,
+		NDR_SPOOLSS_REPLYCLOSEPRINTER,
 		"no ReplyClosePrinter packet after ClosePrinter");
 #if 0
 	printername	= talloc_asprintf(tctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
@@ -575,9 +769,13 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
 		"no ReplyClosePrinter packet after ClosePrinter");
 #endif
-	/* Shut down DCE/RPC server */
-	talloc_free(dce_ctx);
-	free_received_packets();
+	{
+		char *tempdir = talloc_move(tctx, &env->tempdir);
+
+		TALLOC_FREE(env); /* shut down throwaway smbd/samba-dcerpcd */
+		torture_local_deltree(tempdir);
+		TALLOC_FREE(tempdir);
+	}
 
 	return true;
 }

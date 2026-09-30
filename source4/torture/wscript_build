@@ -37,14 +37,6 @@ bld.RECURSE('libnetapi')
 bld.RECURSE('libsmbclient')
 bld.RECURSE('gpo')
 
-ntvfs_specific = dict(source='', deps='')
-
-# Yes, the spoolss_notify test uses the NTVFS file server to run the SMB server expected
-# to handle the RPC callback!
-if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
-	ntvfs_specific['source'] += ' rpc/spoolss_notify.c'
-	ntvfs_specific['deps'] += ' SMB_SERVER dcerpc_server ntvfs'
-
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
         source='''ndr/ndr.c
                   ndr/dcerpc.c
@@ -142,7 +134,8 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/iremotewinspool.c
                         rpc/iremotewinspool_driver.c
                         rpc/mdssvc.c
-                        rpc/backupkey.c''' + ntvfs_specific['source'],
+                        rpc/backupkey.c
+                        rpc/spoolss_notify.c''',
                  autoproto='rpc/proto.h',
                  subsystem='smbtorture',
                  init_function='torture_rpc_init',
@@ -189,7 +182,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       printer_driver
                       RPC_NDR_MDSSVC
                       mdssvc
-                      ''' % samba_net_join + ntvfs_specific['deps'],
+                      ''' % samba_net_join,
                  internal_module=True,
                  enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
