@@ -133,7 +133,7 @@ do_pwd_change_test_join()
 	return 0
 }
 
-test_pwd_change()
+test_pwd_change_all_active()
 {
 	# command to change the password
 	cmd="$*"
@@ -153,6 +153,65 @@ test_pwd_change()
 	return 0
 }
 
+ctdb_onnode()
+{
+	pnn="$1"
+	ctdb_cmd="$2"
+	(
+		# The testenv has CTDB_SOCKET pointing to the first
+		# node as a default, which isn't wanted here.  Note
+		# that the unset is contained within the surrounding
+		# sub-shell.
+		unset CTDB_SOCKET
+		./ctdb/tests/local_daemons.sh "$PREFIX/clusteredmember" \
+			onnode "$pnn" "ctdb ${ctdb_cmd}"
+	)
+}
+
+test_pwd_change_one_stopped()
+{
+	# command to change the password
+	cmd="$*"
+
+	get_and_check_vnos "0 1 2" "" || return 1
+	old_vno="$vno"
+
+	if ! ctdb_onnode 1 stop; then
+		echo "Failed to stop node 1"
+		return 1
+	fi
+
+	do_pwd_change_test_join "$cmd" || return 1
+
+	# Node 1 is inactive so we don't expect the keytab to have
+	# been regenerated there
+	get_and_check_vnos "0 2" "1" || return 1
+
+	if [ ! "$vno" -eq $((old_vno + 1)) ]; then
+		echo "Old vno=$old_vno, new vno=$vno. Increment by one failed."
+		return 1
+	fi
+
+	current_vno="$vno"
+
+	# Recovery should cause the keytab on node 1 (and others) to
+	# be regenerated.  However, no machine password change, so no
+	# vno change.
+	if ! ctdb_onnode 1 continue; then
+		echo "Failed to continue node 1"
+		return 1
+	fi
+
+	get_and_check_vnos "0 1 2" "" || return 1
+
+	if [ ! "$vno" -eq "$current_vno" ]; then
+		echo "vno changed from $current_vno to $vno"
+		return 1
+	fi
+
+	return 0
+}
+
 test_keytab_create()
 {
 	UID_WRAPPER_INITIAL_EUID=0 UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_ROOT=1 $samba_net ads keytab create || return 1
@@ -166,6 +225,14 @@ install source3/script/updatekeytab_test.sh "$PREFIX/clusteredmember/updatekeyta
 global_inject_conf=$(dirname "$SMB_CONF_PATH")/global_inject.conf
 echo "sync machine password script = $PREFIX/clusteredmember/updatekeytab.sh" >"$global_inject_conf"
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
+src="ctdb/config/events/legacy/46.update-keytabs.script"
+for n in 0 1 2; do
+	node_dir="${PREFIX}/clusteredmember/node.${n}"
+	event_script_dir="${node_dir}/events/legacy"
+	install "$src" "${event_script_dir}/"
+	conf="CTDB_UPDATE_KEYTABS_SMB_CONF=\"${node_dir}/lib/server.conf\""
+	echo "$conf" >"${event_script_dir}/46.update-keytabs.options"
+done
 
 testit "net_ads_testjoin_initial" check_net_ads_testjoin || failed=$((failed + 1))
 
@@ -184,7 +251,7 @@ testit "net_ads_keytab_sync" test_keytab_create || failed=$((failed + 1))
 testit "net_ads_testjoin_after_sync" check_net_ads_testjoin || failed=$((failed + 1))
 
 testit "wbinfo_change_secret_after_sync" \
-	test_pwd_change \
+	test_pwd_change_all_active \
 	"$samba_wbinfo --change-secret --domain=${DOMAIN}" ||
 	failed=$((failed + 1))
 
@@ -197,9 +264,29 @@ test_smbclient "Test machine login with the changed secret" \
 	--machine-pass ||
 	failed=$((failed + 1))
 
+testit "wbinfo_change_secret_one_stopped" \
+	test_pwd_change_one_stopped \
+	"$samba_wbinfo --change-secret --domain=${DOMAIN}" ||
+	failed=$((failed + 1))
+
+testit "wbinfo_check_secret_after_one_stopped" \
+	"$samba_wbinfo" --check-secret --domain="${DOMAIN}" ||
+	failed=$((failed + 1))
+
+test_smbclient "Test machine login with the changed secret after one stopped" \
+	"ls" "${SMBCLIENT_UNC}" \
+	--machine-pass ||
+	failed=$((failed + 1))
+
 testit "net_ads_testjoin_final" check_net_ads_testjoin || failed=$((failed + 1))
 
 echo "" >"$global_inject_conf"
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
+for n in 0 1 2; do
+	node_dir="${PREFIX}/clusteredmember/node.${n}"
+	event_script_dir="${node_dir}/events/legacy"
+	rm -f "${event_script_dir}/46.update-keytabs.script"
+	rm -f "${event_script_dir}/46.update-keytabs.options"
+done
 
 testok "$0" "$failed"
