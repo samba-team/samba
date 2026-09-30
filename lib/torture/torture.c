@@ -133,52 +133,83 @@ _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ int torture_local_deltree(const char *path)
+/*
+ * "full_path" is only used for error messages, so debug output and
+ * diagnostics show where in the tree a failure happened.
+ */
+static int torture_local_deltree_at(int parent_fd,
+				    const char *name,
+				    const char *full_path)
 {
 	int ret = 0;
-	struct dirent *dirent;
-	DIR *dir = opendir(path);
-	if (!dir) {
-		char *error = talloc_asprintf(NULL, "Could not open directory %s", path);
+	int fd = -1;
+	DIR *dir = NULL;
+	struct dirent *dirent = NULL;
+
+	fd = openat(parent_fd, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
+	if (fd == -1) {
+		char *error = NULL;
+
+		if ((errno == ENOTDIR) || (errno == ELOOP)) {
+			return unlinkat(parent_fd, name, 0);
+		}
+
+		error = talloc_asprintf(NULL,
+					"Could not open directory %s",
+					full_path);
 		perror(error);
 		talloc_free(error);
 		return -1;
 	}
-	while ((dirent = readdir(dir))) {
-		char *name;
-		if ((strcmp(dirent->d_name, ".") == 0) || (strcmp(dirent->d_name, "..") == 0)) {
-			continue;
-		}
-		name = talloc_asprintf(NULL, "%s/%s", path,
-				       dirent->d_name);
-		if (name == NULL) {
-			closedir(dir);
-			return -1;
-		}
-		DEBUG(0, ("About to remove %s\n", name));
-		ret = remove(name);
-		if (ret == 0) {
-			talloc_free(name);
+
+	dir = fdopendir(fd);
+	if (dir == NULL) {
+		close(fd);
+		return -1;
+	}
+
+	while ((dirent = readdir(dir)) != NULL) {
+		char *child_path = NULL;
+
+		if (ISDOT(dirent->d_name) || ISDOTDOT(dirent->d_name)) {
 			continue;
 		}
 
-		if (errno == ENOTEMPTY) {
-			ret = torture_local_deltree(name);
-			if (ret == 0) {
-				ret = remove(name);
-			}
-		}
-		talloc_free(name);
-		if (ret != 0) {
-			char *error = talloc_asprintf(NULL, "Could not remove %s", path);
-			perror(error);
-			talloc_free(error);
+		child_path = talloc_asprintf(NULL,
+					     "%s/%s",
+					     full_path,
+					     dirent->d_name);
+		if (child_path == NULL) {
+			ret = -1;
 			break;
 		}
+
+		DEBUG(0, ("About to remove %s\n", child_path));
+		ret = torture_local_deltree_at(fd, dirent->d_name, child_path);
+		if (ret != 0) {
+			char *error = talloc_asprintf(NULL,
+						      "Could not remove %s",
+						      child_path);
+			perror(error);
+			talloc_free(error);
+			talloc_free(child_path);
+			break;
+		}
+		talloc_free(child_path);
 	}
+
 	closedir(dir);
-	rmdir(path);
-	return ret;
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	return unlinkat(parent_fd, name, AT_REMOVEDIR);
+}
+
+_PUBLIC_ int torture_local_deltree(const char *path)
+{
+	return torture_local_deltree_at(AT_FDCWD, path, path);
 }
 
 _PUBLIC_ NTSTATUS torture_deltree_outputdir(struct torture_context *tctx)
