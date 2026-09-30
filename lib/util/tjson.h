@@ -37,6 +37,7 @@ _WARN_UNUSED_RESULT_ json_t *tjson_unwrap(struct tjson **pobject);
 _WARN_UNUSED_RESULT_ bool tjson_has_error(struct tjson *object);
 
 void tjson_add_int(struct tjson *object, const char *name, json_int_t value);
+void tjson_add_real(struct tjson *object, const char *name, double value);
 void tjson_add_bool(struct tjson *object, const char *name, bool value);
 void tjson_add_string(struct tjson *object,
 		      const char *name,

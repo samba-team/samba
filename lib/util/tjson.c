@@ -157,6 +157,11 @@ void tjson_add_int(struct tjson *object, const char *name, json_int_t value)
 	tjson_add_json(object, name, json_integer(value));
 }
 
+void tjson_add_real(struct tjson *object, const char *name, double value)
+{
+	tjson_add_json(object, name, json_real(value));
+}
+
 void tjson_add_bool(struct tjson *object, const char *name, bool value)
 {
 	tjson_add_json(object, name, json_boolean(value));
