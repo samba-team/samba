@@ -133,7 +133,7 @@ _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 	return NT_STATUS_OK;
 }
 
-static int local_deltree(const char *path)
+_PUBLIC_ int torture_local_deltree(const char *path)
 {
 	int ret = 0;
 	struct dirent *dirent;
@@ -163,7 +163,7 @@ static int local_deltree(const char *path)
 		}
 
 		if (errno == ENOTEMPTY) {
-			ret = local_deltree(name);
+			ret = torture_local_deltree(name);
 			if (ret == 0) {
 				ret = remove(name);
 			}
@@ -191,7 +191,7 @@ _PUBLIC_ NTSTATUS torture_deltree_outputdir(struct torture_context *tctx)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (local_deltree(tctx->outputdir) == -1) {
+	if (torture_local_deltree(tctx->outputdir) == -1) {
 		if (errno != 0) {
 			return map_nt_error_from_unix_common(errno);
 		}

@@ -897,6 +897,7 @@ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 				   const char *prefix,
 				   char **tempdir);
 NTSTATUS torture_deltree_outputdir(struct torture_context *tctx);
+int torture_local_deltree(const char *path);
 
 struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 		const char *name,
