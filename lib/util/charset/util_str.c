@@ -28,72 +28,10 @@
 #include "lib/util/fault.h"
 #include "lib/util/tsort.h"
 
-#ifdef strcasecmp
-#undef strcasecmp
-#endif
 #ifdef strncasecmp
 #undef strncasecmp
 #endif
 
-
-/**
- Case insensitive string comparison, handle specified for testing
-**/
-_PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
-				 const char *s1, const char *s2)
-{
-	codepoint_t c1=0, c2=0;
-	codepoint_t u1=0, u2=0;
-	codepoint_t l1=0, l2=0;
-	size_t size1, size2;
-
-	/* handle null ptr comparisons to simplify the use in qsort */
-	if (s1 == s2) return 0;
-	if (s1 == NULL) return -1;
-	if (s2 == NULL) return 1;
-
-	while (*s1 && *s2) {
-		c1 = next_codepoint_handle(iconv_handle, s1, &size1);
-		c2 = next_codepoint_handle(iconv_handle, s2, &size2);
-
-		if (c1 == INVALID_CODEPOINT ||
-		    c2 == INVALID_CODEPOINT) {
-			return strcasecmp(s1, s2);
-		}
-
-		s1 += size1;
-		s2 += size2;
-
-		if (c1 == c2) {
-			continue;
-		}
-
-		u1 = toupper_m(c1);
-		u2 = toupper_m(c2);
-		if (u1 == u2) {
-			continue;
-		}
-
-		l1 = tolower_m(c1);
-		l2 = tolower_m(c2);
-		if (l1 == l2) {
-			continue;
-		}
-
-		return NUMERIC_CMP(l1, l2);
-	}
-
-	return NUMERIC_CMP(*s1, *s2);
-}
-
-/**
- Case insensitive string comparison
-**/
-_PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
-{
-	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
-	return strcasecmp_m_handle(iconv_handle, s1, s2);
-}
 
 /*
  * Case insensitive string comparison, looking at no more than "max_cp"
@@ -188,6 +126,26 @@ static int strncasecmp_m_internal(struct smb_iconv_handle *iconv_handle,
 	}
 
 	return NUMERIC_CMP(*s1, *s2);
+}
+
+/**
+ Case insensitive string comparison, handle specified for testing
+**/
+_PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
+				 const char *s1,
+				 const char *s2)
+{
+	return strncasecmp_m_internal(
+		iconv_handle, s1, s2, SIZE_MAX, SIZE_MAX);
+}
+
+/**
+ Case insensitive string comparison
+**/
+_PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
+{
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
+	return strcasecmp_m_handle(iconv_handle, s1, s2);
 }
 
 /**
