@@ -157,6 +157,7 @@ char *talloc_alpha_strcpy(TALLOC_CTX *mem_ctx,
 void string_replace_m(char *s, char oldc, char newc);
 bool strcsequal(const char *s1,const char *s2);
 bool strequal_m(const char *s1, const char *s2);
+bool strnequal_bytes(const char *s1, const char *s2, size_t n);
 int strncasecmp_ldb(const char *s1,
 		    size_t len1,
 		    const char *s2,

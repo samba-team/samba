@@ -95,49 +95,72 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 	return strcasecmp_m_handle(iconv_handle, s1, s2);
 }
 
-/**
- Case insensitive string comparison, length limited, handle specified for
- testing
-**/
-_PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
-				  const char *s1, const char *s2, size_t n)
+/*
+ * Case insensitive string comparison, looking at no more than "max_cp"
+ * codepoints and no more than "max_bytes" bytes. A limit of SIZE_MAX
+ * does not apply: No string is long enough to reach it. With a byte
+ * limit, only codepoints with the same encoded length can compare
+ * equal.
+ */
+static int strncasecmp_m_internal(struct smb_iconv_handle *iconv_handle,
+				  const char *s1,
+				  const char *s2,
+				  size_t max_cp,
+				  size_t max_bytes)
 {
 	codepoint_t c1=0, c2=0;
 	codepoint_t u1=0, u2=0;
 	codepoint_t l1=0, l2=0;
 	size_t size1, size2;
+	size_t num_cp = 0;
+	size_t num_bytes = 0;
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
 	if (s1 == NULL) return -1;
 	if (s2 == NULL) return 1;
 
-	while (*s1 && *s2 && n) {
-		n--;
+	while (*s1 && *s2 && (num_cp < max_cp) && (num_bytes < max_bytes)) {
+		size_t cp_left = max_cp - num_cp;
+		size_t bytes_left = max_bytes - num_bytes;
 
-		c1 = next_codepoint_handle(iconv_handle, s1, &size1);
-		c2 = next_codepoint_handle(iconv_handle, s2, &size2);
+		/*
+		 * We assume that no multi-byte character can take
+		 * more than 5 bytes, see next_codepoint_handle().
+		 */
+		size_t len = MIN(bytes_left, 5);
 
-		if (c1 == INVALID_CODEPOINT ||
-		    c2 == INVALID_CODEPOINT) {
+		c1 = next_codepoint_handle_ext(
+			iconv_handle, s1, strnlen(s1, len), CH_UNIX, &size1);
+		c2 = next_codepoint_handle_ext(
+			iconv_handle, s2, strnlen(s2, len), CH_UNIX, &size2);
+
+		if (c1 == INVALID_CODEPOINT || c2 == INVALID_CODEPOINT) {
 			/*
-			 * n was specified in characters,
-			 * now we must convert it to bytes.
-			 * As bytes are the smallest
-			 * character unit, the following
-			 * increment and strncasecmp is always
-			 * safe.
+			 * Compare the rest byte-wise. max_cp counts
+			 * codepoints, now we must convert it to
+			 * bytes. As bytes are the smallest character
+			 * unit, looking at size1 bytes plus one byte
+			 * per remaining codepoint never compares more
+			 * than cp_left codepoints. strncasecmp() stops
+			 * at the terminating NUL, so this never reads
+			 * beyond the strings.
 			 *
-			 * The source string was already known
-			 * to be n characters long, so we are
-			 * guaranteed to be able to look at the
-			 * (n remaining + size1) bytes from the
-			 * s1 position).
+			 * The subtractions can't wrap: cp_left >= 1
+			 * by the loop condition, and
+			 * next_codepoint_handle_ext() consumed at
+			 * most len <= bytes_left bytes.
 			 */
-			n += size1;
-			return strncasecmp(s1, s2, n);
+			size_t n = MIN(bytes_left - size1, cp_left - 1);
+			return strncasecmp(s1, s2, size1 + n);
 		}
 
+		if ((max_bytes != SIZE_MAX) && (size1 != size2)) {
+			return NUMERIC_CMP(size1, size2);
+		}
+
+		num_cp += 1;
+		num_bytes += size1;
 		s1 += size1;
 		s2 += size2;
 
@@ -160,11 +183,23 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 		return NUMERIC_CMP(l1, l2);
 	}
 
-	if (n == 0) {
+	if ((num_cp == max_cp) || (num_bytes == max_bytes)) {
 		return 0;
 	}
 
 	return NUMERIC_CMP(*s1, *s2);
+}
+
+/**
+ Case insensitive string comparison, length limited, handle specified for
+ testing
+**/
+_PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
+				  const char *s1,
+				  const char *s2,
+				  size_t n)
+{
+	return strncasecmp_m_internal(iconv_handle, s1, s2, n, SIZE_MAX);
 }
 
 /**
@@ -184,6 +219,24 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 _PUBLIC_ bool strequal_m(const char *s1, const char *s2)
 {
 	return strcasecmp_m(s1,s2) == 0;
+}
+
+/**
+ * Case insensitive comparison of no more than "n" bytes. Unlike
+ * strncasecmp_m() and strnequal(), "n" counts bytes, not
+ * characters. Characters only compare equal if they have the same
+ * encoded length. From an invalid character or a character cut off
+ * by "n" on, the rest is compared with strncasecmp(), which only
+ * ignores ASCII case. Unlike strnequal(), n == 0 returns true. Two
+ * NULL pointers are equal, NULL never equals a non-NULL string.
+ **/
+_PUBLIC_ bool strnequal_bytes(const char *s1, const char *s2, size_t n)
+{
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
+	int cmp;
+
+	cmp = strncasecmp_m_internal(iconv_handle, s1, s2, SIZE_MAX, n);
+	return (cmp == 0);
 }
 
 /**
