@@ -28,7 +28,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include <tdb.h>
 #include "lib/tdb_wrap/tdb_wrap.h"
-#include "ntvfs/posix/posix_eadb.h"
+#include "source4/lib/posix_xattr/posix_eadb.h"
 #include "param/param.h"
 #include "lib/param/loadparm.h"
 

@@ -24,7 +24,7 @@
 #include "../lib/util/unix_privs.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "param/param.h"
-#include "ntvfs/posix/posix_eadb_proto.h"
+#include "source4/lib/posix_xattr/posix_eadb.h"
 
 /*
   pull a xattr as a blob

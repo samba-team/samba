@@ -34,12 +34,6 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
     )
 
 
-bld.SAMBA_LIBRARY('posix_eadb',
-                  source='posix_eadb.c',
-                  deps='tdb tdb-wrap samba-util',
-                  autoproto='posix_eadb_proto.h',
-                  private_library=True)
-
 pyparam_util = bld.pyembed_libname('pyparam_util')
 
 bld.SAMBA_PYTHON('python_xattr_native',

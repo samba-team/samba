@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('posix_eadb',
+                  source='posix_eadb.c',
+                  deps='tdb tdb-wrap samba-util',
+                  private_library=True)
