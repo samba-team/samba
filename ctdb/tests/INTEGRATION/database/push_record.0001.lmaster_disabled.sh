@@ -67,9 +67,20 @@ for n in $all_pnns; do
 done
 
 echo
+echo "Checking if node ${test_node} is the lmaster for the key ${key}"
+lmaster=$(onnode "$test_node" ctdb-db-test get-lmaster "$key")
+if [ "$lmaster" = "$test_node" ]; then
+	echo "Yes, RSN on node ${test_node} will be 3, elsewhere 2"
+	base_rsn=2
+else
+	echo "No, RSN on node ${test_node} will be 4, elsewhere 3"
+	base_rsn=3
+fi
+
+echo
 echo "Checking RSN value in record on nodes: ${nodes}"
 for n in $all_pnns; do
-	rsn=3
+	rsn=$base_rsn
 	if [ "$n" = "$test_node" ]; then
 		rsn=$((rsn + 1))
 	fi
