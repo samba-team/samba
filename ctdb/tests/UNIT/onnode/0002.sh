@@ -13,4 +13,6 @@ required_result <<EOF
 -n 192.168.1.104 hostname
 EOF
 
+# Intentional word splitting
+# shellcheck disable=SC2086
 simple_test $cmd

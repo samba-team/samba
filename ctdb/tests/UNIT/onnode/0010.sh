@@ -10,4 +10,6 @@ required_result 1 <<EOF
 onnode: "node 4" does not exist
 EOF
 
+# Intentional word splitting
+# shellcheck disable=SC2086
 simple_test $cmd

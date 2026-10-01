@@ -8,7 +8,7 @@ if [ -r "$out" ]; then
 
 	rc="${CTDB_TEST_TMP_DIR}/ctdb.rc"
 	if [ -r "$rc" ]; then
-		exit $(cat "$rc")
+		exit "$(cat "$rc")"
 	fi
 
 	exit 0

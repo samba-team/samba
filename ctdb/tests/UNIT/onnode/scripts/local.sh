@@ -1,7 +1,7 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
 # Default to just "onnode".
-: ${ONNODE:=onnode}
+: "${ONNODE:=onnode}"
 
 # Augment PATH with relevant stubs/ directory
 stubs_dir="${CTDB_TEST_SUITE_DIR}/stubs"

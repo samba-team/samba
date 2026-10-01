@@ -35,5 +35,11 @@ shellcheck_test -s sh \
 	"${CTDB_TEST_DIR}/UNIT/eventd/scripts/"* \
 	"${CTDB_TEST_DIR}/UNIT/eventscripts/scripts/"* \
 	"${CTDB_TEST_DIR}/UNIT/eventscripts/stubs/"* \
+	"${CTDB_TEST_DIR}/UNIT/onnode/scripts/"* \
+	"${CTDB_TEST_DIR}/UNIT/onnode/stubs/"* \
 	"${CTDB_TEST_DIR}/UNIT/takeover_helper/scripts/"* \
 	"${CTDB_TEST_DIR}/UNIT/tool/scripts/"*
+
+# Tests
+shellcheck_test -s sh \
+	"${CTDB_TEST_DIR}/UNIT/onnode/"*.sh
