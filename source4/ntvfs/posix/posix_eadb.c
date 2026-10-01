@@ -21,9 +21,6 @@
 
 #include "includes.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
-#ifdef WITH_NTVFS_FILESERVER
-#include "vfs_posix.h"
-#endif
 #include "posix_eadb.h"
 
 #define XATTR_LIST_ATTR ".xattr_list"
@@ -255,44 +252,3 @@ NTSTATUS list_posix_eadb_raw(struct tdb_wrap *ea_tdb, TALLOC_CTX *mem_ctx,
 	return pull_xattr_blob_tdb_raw(ea_tdb, mem_ctx, XATTR_LIST_ATTR,
 				     fname, fd, 100, list);
 }
-
-#ifdef WITH_NTVFS_FILESERVER
-NTSTATUS pull_xattr_blob_tdb(struct pvfs_state *pvfs_state,
-			     TALLOC_CTX *mem_ctx,
-			     const char *attr_name,
-			     const char *fname,
-			     int fd,
-			     size_t estimated_size,
-			     DATA_BLOB *blob)
-{
-	return pull_xattr_blob_tdb_raw(pvfs_state->ea_db,mem_ctx,attr_name,fname,fd,estimated_size,blob);
-}
-
-NTSTATUS push_xattr_blob_tdb(struct pvfs_state *pvfs_state,
-			     const char *attr_name,
-			     const char *fname,
-			     int fd,
-			     const DATA_BLOB *blob)
-{
-	return push_xattr_blob_tdb_raw(pvfs_state->ea_db, attr_name, fname, fd, blob);
-}
-
-/*
-  delete a xattr
-*/
-NTSTATUS delete_posix_eadb(struct pvfs_state *pvfs_state, const char *attr_name,
-			  const char *fname, int fd)
-{
-	return delete_posix_eadb_raw(pvfs_state->ea_db,
-				    attr_name, fname, fd);
-}
-
-/*
-  delete all xattrs for a file
-*/
-NTSTATUS unlink_posix_eadb(struct pvfs_state *pvfs_state, const char *fname)
-{
-	return unlink_posix_eadb_raw(pvfs_state->ea_db, fname, -1);
-}
-
-#endif

@@ -16,5 +16,4 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct pvfs_state;
 #include "source4/ntvfs/posix/posix_eadb_proto.h"

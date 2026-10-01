@@ -40,8 +40,13 @@ static NTSTATUS pull_xattr_blob(struct pvfs_state *pvfs,
 	NTSTATUS status;
 
 	if (pvfs->ea_db) {
-		return pull_xattr_blob_tdb(pvfs, mem_ctx, attr_name, fname, 
-					   fd, estimated_size, blob);
+		return pull_xattr_blob_tdb_raw(pvfs->ea_db,
+					       mem_ctx,
+					       attr_name,
+					       fname,
+					       fd,
+					       estimated_size,
+					       blob);
 	}
 
 	status = pull_xattr_blob_system(pvfs, mem_ctx, attr_name, fname, 
@@ -69,7 +74,8 @@ static NTSTATUS push_xattr_blob(struct pvfs_state *pvfs,
 				const DATA_BLOB *blob)
 {
 	if (pvfs->ea_db) {
-		return push_xattr_blob_tdb(pvfs, attr_name, fname, fd, blob);
+		return push_xattr_blob_tdb_raw(
+			pvfs->ea_db, attr_name, fname, fd, blob);
 	}
 	return push_xattr_blob_system(pvfs, attr_name, fname, fd, blob);
 }
@@ -82,7 +88,10 @@ static NTSTATUS delete_xattr(struct pvfs_state *pvfs, const char *attr_name,
 			     const char *fname, int fd)
 {
 	if (pvfs->ea_db) {
-		return delete_posix_eadb(pvfs, attr_name, fname, fd);
+		return delete_posix_eadb_raw(pvfs->ea_db,
+					     attr_name,
+					     fname,
+					     fd);
 	}
 	return delete_xattr_system(pvfs, attr_name, fname, fd);
 }
@@ -93,7 +102,7 @@ static NTSTATUS delete_xattr(struct pvfs_state *pvfs, const char *attr_name,
 NTSTATUS pvfs_xattr_unlink_hook(struct pvfs_state *pvfs, const char *fname)
 {
 	if (pvfs->ea_db) {
-		return unlink_posix_eadb(pvfs, fname);
+		return unlink_posix_eadb_raw(pvfs->ea_db, fname, -1);
 	}
 	return unlink_xattr_system(pvfs, fname);
 }
