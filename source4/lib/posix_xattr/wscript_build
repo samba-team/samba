@@ -4,3 +4,10 @@ bld.SAMBA_LIBRARY('posix_eadb',
                   source='posix_eadb.c',
                   deps='tdb tdb-wrap samba-util',
                   private_library=True)
+
+pyparam_util = bld.pyembed_libname('pyparam_util')
+
+bld.SAMBA_PYTHON('python_xattr_native',
+                 source='pyxattr_native.c',
+                 deps='ndr ldb samdb samba-credentials %s attr' % pyparam_util,
+                 realname='samba/xattr_native.so')
