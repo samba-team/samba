@@ -11,3 +11,8 @@ bld.SAMBA_PYTHON('python_xattr_native',
                  source='pyxattr_native.c',
                  deps='ndr ldb samdb samba-credentials %s attr' % pyparam_util,
                  realname='samba/xattr_native.so')
+
+bld.SAMBA_PYTHON('python_posix_eadb',
+                 source='pyposix_eadb.c',
+                 deps='%s posix_eadb tdb' % pyparam_util,
+                 realname='samba/posix_eadb.so')
