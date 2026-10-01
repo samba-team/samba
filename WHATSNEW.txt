@@ -1,4 +1,62 @@
                    ===============================
+                   Release Notes for Samba 4.23.13
+                          October 01, 2026
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.23 release series.
+
+
+Changes since 4.23.12
+---------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 16097: POSIX ACL backend silently discards errors when processing NT
+     ACLs with non-canonical ordering
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15962: SMB3 SESSION SETUP responses must always be signed
+   * BUG 16081: winbindd_child_msg_filter: talloc_get_type_abort crashes when
+     winbind max domain connections > 1
+
+o  Kopylov Pavel <pkopylov@cloudlinux.com>
+   * BUG 16239: Fix parsing of uppercase "0X" hex values in the "kdc default
+     domain      supported enctypes" smb.conf parameter.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 16240: smbd temporary mkdir name can exceed NAME_MAX for otherwise
+     valid client names
+   * BUG 16258: Python smbconf transaction_start() lacks a talloc stack frame
+     with CTDB
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 16254: CTDB database operations can be run against incorrect nodes
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ===============================
                    Release Notes for Samba 4.23.12
                          September 01, 2026
                    ===============================
@@ -84,8 +142,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ===============================
                    Release Notes for Samba 4.23.11
                            August 03, 2026
