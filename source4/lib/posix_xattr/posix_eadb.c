@@ -43,8 +43,8 @@ static NTSTATUS posix_eadb_add_list(struct tdb_wrap *ea_tdb, TALLOC_CTX *ctx, co
 
 	mem_ctx = talloc_new(ctx);
 
-	status = pull_xattr_blob_tdb_raw(ea_tdb, mem_ctx, XATTR_LIST_ATTR,
-				     fname, fd, 100, &blob);
+	status = pull_xattr_blob_tdb(
+		ea_tdb, mem_ctx, XATTR_LIST_ATTR, fname, fd, 100, &blob);
 	if (NT_STATUS_IS_OK(status)) {
 		const char *s;
 
@@ -71,7 +71,8 @@ static NTSTATUS posix_eadb_add_list(struct tdb_wrap *ea_tdb, TALLOC_CTX *ctx, co
 	memcpy(blob.data + blob.length, attr_name, len);
 	blob.length += len;
 
-	status = push_xattr_blob_tdb_raw(ea_tdb, XATTR_LIST_ATTR, fname, fd, &blob);
+	status = push_xattr_blob_tdb(
+		ea_tdb, XATTR_LIST_ATTR, fname, fd, &blob);
 	talloc_free(mem_ctx);
 
 	return status;
@@ -116,7 +117,7 @@ static NTSTATUS get_ea_tdb_key(TALLOC_CTX *mem_ctx,
 /*
   pull a xattr as a blob, using the ea_tdb_context tdb
 */
-NTSTATUS pull_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
+NTSTATUS pull_xattr_blob_tdb(struct tdb_wrap *ea_tdb,
 			     TALLOC_CTX *mem_ctx,
 			     const char *attr_name,
 			     const char *fname,
@@ -149,7 +150,7 @@ NTSTATUS pull_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
 /*
   push a xattr as a blob, using ea_tdb
 */
-NTSTATUS push_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
+NTSTATUS push_xattr_blob_tdb(struct tdb_wrap *ea_tdb,
 			     const char *attr_name,
 			     const char *fname,
 			     int fd,
@@ -195,8 +196,10 @@ done:
 /*
   delete a xattr
 */
-NTSTATUS delete_posix_eadb_raw(struct tdb_wrap *ea_tdb, const char *attr_name,
-			  const char *fname, int fd)
+NTSTATUS delete_posix_eadb(struct tdb_wrap *ea_tdb,
+			   const char *attr_name,
+			   const char *fname,
+			   int fd)
 {
 	TDB_DATA tkey;
 	NTSTATUS status;
@@ -219,25 +222,25 @@ NTSTATUS delete_posix_eadb_raw(struct tdb_wrap *ea_tdb, const char *attr_name,
 /*
   delete all xattrs for a file
 */
-NTSTATUS unlink_posix_eadb_raw(struct tdb_wrap *ea_tdb, const char *fname, int fd)
+NTSTATUS unlink_posix_eadb(struct tdb_wrap *ea_tdb, const char *fname, int fd)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(ea_tdb);
 	DATA_BLOB blob;
 	const char *s;
 	NTSTATUS status;
 
-	status = pull_xattr_blob_tdb_raw(ea_tdb, mem_ctx, XATTR_LIST_ATTR,
-				     fname, fd, 100, &blob);
+	status = pull_xattr_blob_tdb(
+		ea_tdb, mem_ctx, XATTR_LIST_ATTR, fname, fd, 100, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_OK;
 	}
 
 	for (s=(const char *)blob.data; s < (const char *)(blob.data+blob.length); s += strlen(s) + 1) {
-		delete_posix_eadb_raw(ea_tdb, s, fname, -1);
+		delete_posix_eadb(ea_tdb, s, fname, -1);
 	}
 
-	status = delete_posix_eadb_raw(ea_tdb, XATTR_LIST_ATTR, fname, fd);
+	status = delete_posix_eadb(ea_tdb, XATTR_LIST_ATTR, fname, fd);
 	talloc_free(mem_ctx);
 	return status;
 }
@@ -245,10 +248,12 @@ NTSTATUS unlink_posix_eadb_raw(struct tdb_wrap *ea_tdb, const char *fname, int f
 /*
   list all xattrs for a file
 */
-NTSTATUS list_posix_eadb_raw(struct tdb_wrap *ea_tdb, TALLOC_CTX *mem_ctx,
-			    const char *fname, int fd,
-			    DATA_BLOB *list)
+NTSTATUS list_posix_eadb(struct tdb_wrap *ea_tdb,
+			 TALLOC_CTX *mem_ctx,
+			 const char *fname,
+			 int fd,
+			 DATA_BLOB *list)
 {
-	return pull_xattr_blob_tdb_raw(ea_tdb, mem_ctx, XATTR_LIST_ATTR,
-				     fname, fd, 100, list);
+	return pull_xattr_blob_tdb(
+		ea_tdb, mem_ctx, XATTR_LIST_ATTR, fname, fd, 100, list);
 }

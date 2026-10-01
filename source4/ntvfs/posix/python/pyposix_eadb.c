@@ -61,8 +61,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	status = push_xattr_blob_tdb_raw(eadb, attribute, filename, -1,
-					 &blob);
+	status = push_xattr_blob_tdb(eadb, attribute, filename, -1, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);
@@ -95,8 +94,8 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	status = pull_xattr_blob_tdb_raw(eadb, mem_ctx, attribute, filename,
-									 -1, 100, &blob);
+	status = pull_xattr_blob_tdb(
+		eadb, mem_ctx, attribute, filename, -1, 100, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);

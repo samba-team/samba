@@ -28,29 +28,27 @@
 
 struct tdb_wrap;
 
-NTSTATUS pull_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
-				 TALLOC_CTX *mem_ctx,
-				 const char *attr_name,
-				 const char *fname,
-				 int fd,
-				 size_t estimated_size,
-				 DATA_BLOB *blob);
-NTSTATUS push_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
-				 const char *attr_name,
-				 const char *fname,
-				 int fd,
-				 const DATA_BLOB *blob);
-NTSTATUS delete_posix_eadb_raw(struct tdb_wrap *ea_tdb,
-			       const char *attr_name,
-			       const char *fname,
-			       int fd);
-NTSTATUS unlink_posix_eadb_raw(struct tdb_wrap *ea_tdb,
-			       const char *fname,
-			       int fd);
-NTSTATUS list_posix_eadb_raw(struct tdb_wrap *ea_tdb,
+NTSTATUS pull_xattr_blob_tdb(struct tdb_wrap *ea_tdb,
 			     TALLOC_CTX *mem_ctx,
+			     const char *attr_name,
 			     const char *fname,
 			     int fd,
-			     DATA_BLOB *list);
+			     size_t estimated_size,
+			     DATA_BLOB *blob);
+NTSTATUS push_xattr_blob_tdb(struct tdb_wrap *ea_tdb,
+			     const char *attr_name,
+			     const char *fname,
+			     int fd,
+			     const DATA_BLOB *blob);
+NTSTATUS delete_posix_eadb(struct tdb_wrap *ea_tdb,
+			   const char *attr_name,
+			   const char *fname,
+			   int fd);
+NTSTATUS unlink_posix_eadb(struct tdb_wrap *ea_tdb, const char *fname, int fd);
+NTSTATUS list_posix_eadb(struct tdb_wrap *ea_tdb,
+			 TALLOC_CTX *mem_ctx,
+			 const char *fname,
+			 int fd,
+			 DATA_BLOB *list);
 
 #endif

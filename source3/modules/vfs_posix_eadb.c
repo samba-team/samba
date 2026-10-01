@@ -50,7 +50,8 @@ static ssize_t posix_eadb_getattr(struct tdb_wrap *db_ctx,
 	DEBUG(10, ("posix_eadb_getattr called for file %s/fd %d, name %s\n",
 		   fname, fd, name));
 
-	status = pull_xattr_blob_tdb_raw(db_ctx, talloc_tos(), name, fname, fd, size, &blob);
+	status = pull_xattr_blob_tdb(
+		db_ctx, talloc_tos(), name, fname, fd, size, &blob);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		errno = ENOATTR;
@@ -101,10 +102,10 @@ static int posix_eadb_setattr(struct tdb_wrap *db_ctx,
 	DEBUG(10, ("posix_eadb_setattr called for file %s/fd %d, name %s\n",
 		   fname, fd, name));
 
-	status = push_xattr_blob_tdb_raw(db_ctx, name, fname, fd, &data);
+	status = push_xattr_blob_tdb(db_ctx, name, fname, fd, &data);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("push_xattr_blob_tdb_raw failed: %s\n",
+		DEBUG(10, ("push_xattr_blob_tdb failed: %s\n",
 			   nt_errstr(status)));
 		return -1;
 	}
@@ -135,7 +136,7 @@ static ssize_t posix_eadb_listattr(struct tdb_wrap *db_ctx,
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	status = list_posix_eadb_raw(db_ctx, talloc_tos(), fname, fd, &blob);
+	status = list_posix_eadb(db_ctx, talloc_tos(), fname, fd, &blob);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("posix_eadb_fetch_attrs failed: %s\n",
@@ -176,10 +177,10 @@ static int posix_eadb_removeattr(struct tdb_wrap *db_ctx,
 {
 	NTSTATUS status;
 
-	status = delete_posix_eadb_raw(db_ctx, name, fname, fd);
+	status = delete_posix_eadb(db_ctx, name, fname, fd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("delete_posix_eadb_raw failed: %s\n",
+		DEBUG(10, ("delete_posix_eadb failed: %s\n",
 			   nt_errstr(status)));
 		return -1;
 	}
@@ -288,9 +289,7 @@ static int posix_eadb_unlink_internal(vfs_handle_struct *handle,
 			goto out;
 		}
 
-		status = unlink_posix_eadb_raw(ea_tdb,
-					       full_fname->base_name,
-					       -1);
+		status = unlink_posix_eadb(ea_tdb, full_fname->base_name, -1);
 		if (!NT_STATUS_IS_OK(status)) {
 			tdb_transaction_cancel(ea_tdb->tdb);
 			ret = -1;
@@ -345,7 +344,7 @@ static int posix_eadb_rmdir_internal(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = unlink_posix_eadb_raw(ea_tdb, full_fname->base_name, -1);
+	status = unlink_posix_eadb(ea_tdb, full_fname->base_name, -1);
 	TALLOC_FREE(full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		tdb_transaction_cancel(ea_tdb->tdb);
