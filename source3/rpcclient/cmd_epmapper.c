@@ -49,7 +49,8 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 			  "Usage: %s [interface_name] [transport] "
 			  "[object_uuid]\n",
 			  argv[0]);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
 	if (argc >= 2) {
