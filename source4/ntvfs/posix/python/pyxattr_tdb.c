@@ -173,4 +173,3 @@ MODULE_INIT_FUNC(xattr_tdb)
 
 	return m;
 }
-
