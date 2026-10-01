@@ -959,13 +959,21 @@ static int ceph_rgw_getxattr_cb(rgw_xattrlist *attr_list,
 	rgw_xattr *xattr = attr_list->xattrs;
 
 	cb_arg->cb_called = true;
+
+	/* This check is to support 'size = 0' feature */
+	if (cb_arg->size == 0) {
+		goto out;
+	}
+
 	if (cb_arg->size < xattr->val.len) {
 		cb_arg->rc = -ERANGE;
 		return 0;
 	}
+
 	if (cb_arg->val != NULL) {
 		memcpy(cb_arg->val, xattr->val.val, xattr->val.len);
 	}
+out:
 	cb_arg->rc = xattr->val.len;
 	return 0;
 }
@@ -992,16 +1000,6 @@ static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[CEPH_RGW] fgetxattr: [%s] %s\n", fsp_str_dbg(fsp), name);
 
-	/*
-	 * We do not support posix like handling to get current size of
-	 * extended attribute from backend in case of size is mentioned as 0.
-	 */
-	if (size == 0) {
-		DBG_DEBUG("[CEPH_RGW] No support to get size xattr\n");
-		rc = -ENOTSUP;
-		goto out;
-	}
-
 	if (is_special_name(fsp->fsp_name->base_name)) {
 		DBG_DEBUG(
 			"[CEPH_RGW] Cannot perform op on special name [%s]\n",
@@ -1018,7 +1016,7 @@ static ssize_t vfs_ceph_rgw_fgetxattr(struct vfs_handle_struct *handle,
 
 	prepare_xattr_list(&attr_list, discard_const(name), NULL, 0);
 
-	cb_arg.val = value;
+	cb_arg.val = (size != 0) ? value : NULL;
 	cb_arg.size = size;
 
 	rc = rgw_getxattrs(config->rgw_root_fs,
@@ -2220,6 +2218,12 @@ static int ceph_rgw_lsxattr_cb(rgw_xattrlist *attrs, void *arg, uint32_t flags)
 		const rgw_xattr *attr = &attrs->xattrs[i];
 		uint32_t len = attr->key.len + 1;
 
+		/* This check is to support 'size = 0' feature */
+		if (cb_arg->list == NULL) {
+			cb_arg->rem_size += len;
+			continue;
+		}
+
 		if (len > cb_arg->rem_size) {
 			DBG_DEBUG("[CEPH_RGW] Not enough space for more "
 				  "names\n");
@@ -2259,17 +2263,6 @@ static ssize_t vfs_ceph_rgw_flistxattr(vfs_handle_struct *handle,
 		  list,
 		  size);
 
-	/*
-	 * We do not support posix like handling to get buffer size
-	 * from backend in case of size is mentioned as 0.
-	 */
-	if (size == 0) {
-		DBG_DEBUG("[CEPH_RGW] No support to get size of the list of "
-			  "xattrs\n");
-		ret = -ENOTSUP;
-		goto out;
-	}
-
 	if (is_special_name(fsp->fsp_name->base_name)) {
 		DBG_DEBUG(
 			"[CEPH_RGW] Cannot perform op on special name [%s]\n",
@@ -2285,7 +2278,7 @@ static ssize_t vfs_ceph_rgw_flistxattr(vfs_handle_struct *handle,
 	}
 
 	/* prepare argument for callback */
-	cb_arg.list = list;
+	cb_arg.list = (size != 0) ? list : NULL;
 	cb_arg.rem_size = size;
 
 	ret = rgw_lsxattrs(config->rgw_root_fs,
@@ -2309,7 +2302,12 @@ static ssize_t vfs_ceph_rgw_flistxattr(vfs_handle_struct *handle,
 		}
 		goto out;
 	}
-	ret = size - cb_arg.rem_size;
+
+	if (size != 0) {
+		ret = size - cb_arg.rem_size;
+	} else {
+		ret = cb_arg.rem_size;
+	}
 out:
 	DBG_DEBUG("[CEPH_RGW] flistxattr done: ret=%zd\n", ret);
 	END_PROFILE_X(syscall_flistxattr);
