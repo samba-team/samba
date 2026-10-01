@@ -16,3 +16,8 @@ bld.SAMBA_PYTHON('python_posix_eadb',
                  source='pyposix_eadb.c',
                  deps='%s posix_eadb tdb' % pyparam_util,
                  realname='samba/posix_eadb.so')
+
+bld.SAMBA_PYTHON('python_xattr_tdb',
+                 source='pyxattr_tdb.c',
+                 deps='%s xattr_tdb' % pyparam_util,
+                 realname='samba/xattr_tdb.so')

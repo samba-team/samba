@@ -33,11 +33,3 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
 	             internal_module=True
     )
 
-
-pyparam_util = bld.pyembed_libname('pyparam_util')
-
-bld.SAMBA_PYTHON('python_xattr_tdb',
-	source='python/pyxattr_tdb.c',
-	deps='%s xattr_tdb' % pyparam_util,
-	realname='samba/xattr_tdb.so'
-	)
