@@ -79,6 +79,62 @@ sub cleanup_pcap($$$)
 	unlink($pcap_file);
 }
 
+# Look up an environment without provisioning it.
+sub cached_env($$)
+{
+	my ($self, $envname) = @_;
+	my $targetname = $ENV_TARGETS{$envname};
+	return undef unless defined($targetname);
+
+	my $target = $self->{lc($targetname)};
+	return undef unless defined($target);
+	return $target->{vars}->{$envname};
+}
+
+# Find cached environments depending on this environment or one of its aliases.
+sub cached_dependents($$)
+{
+	my ($self, $env) = @_;
+	my @dependents;
+
+	foreach my $envname (keys %ENV_DEPS) {
+		my $cached = $self->cached_env($envname);
+		next unless ref($cached) eq "HASH";
+		next if $cached == $env;
+
+		foreach my $dep (@{$ENV_DEPS{$envname}}) {
+			my $dep_env = $self->cached_env($dep);
+			next unless ref($dep_env) eq "HASH";
+			if ($dep_env == $env) {
+				push(@dependents, $envname);
+				last;
+			}
+		}
+	}
+
+	return @dependents;
+}
+
+#
+# Forget all names of a torn down environment, so that a later setup_env()
+# provisions it again instead of returning the vars it had while running.
+#
+sub forget_env($$)
+{
+	my ($self, $env) = @_;
+
+	foreach my $targetname ("samba3", "samba4") {
+		my $target = $self->{$targetname};
+		next unless defined($target);
+
+		my $vars = $target->{vars};
+		foreach my $name (keys %$vars) {
+			next unless ref($vars->{$name}) eq "HASH";
+			delete $vars->{$name} if $vars->{$name} == $env;
+		}
+	}
+}
+
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;

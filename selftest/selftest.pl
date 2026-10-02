@@ -920,11 +920,29 @@ sub check_env($)
 sub teardown_env($)
 {
 	my ($envname) = @_;
+
+	#
+	# The testsuite list carries "envname:option", the environment
+	# itself is registered under the bare name.
+	#
+	$envname =~ s/:.*//;
+
 	return if ($envname eq "none");
+	my $env = $target->cached_env($envname);
+	return unless ref($env) eq "HASH";
 	print STDERR "teardown_env($envname)\n";
-	my $env = get_running_env($envname);
+
+	foreach my $dep ($target->cached_dependents($env)) {
+		&teardown_env($dep);
+	}
+
 	$env->{target}->teardown_env($env);
-	delete $running_envs{$envname};
+	$target->forget_env($env);
+
+	foreach my $name (keys %running_envs) {
+		delete $running_envs{$name}
+			if $running_envs{$name} == $env;
+	}
 }
 
 # This 'global' file needs to be empty when we start
