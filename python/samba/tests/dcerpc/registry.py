@@ -18,14 +18,18 @@
 """Tests for samba.dcerpc.registry."""
 
 from samba.dcerpc import winreg
+import samba.tests
 from samba.tests import RpcInterfaceTestCase
 
 
 class WinregTests(RpcInterfaceTestCase):
 
+    def binding(self):
+        return "ncalrpc:"
+
     def setUp(self):
         super().setUp()
-        self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(),
+        self.conn = winreg.winreg(self.binding(), self.get_loadparm(),
                                   self.get_credentials())
 
     def get_hklm(self):
@@ -49,3 +53,10 @@ class WinregTests(RpcInterfaceTestCase):
         x = self.conn.QueryInfoKey(handle, winreg.String())
         self.assertEqual(9, len(x))  # should return a 9-tuple
         self.conn.CloseKey(handle)
+
+
+class WinregNpTests(WinregTests):
+    """The same tests via ncacn_np, also against a remote server."""
+
+    def binding(self):
+        return "ncacn_np:%s" % samba.tests.env_get_var_value('SERVER')

@@ -1395,6 +1395,9 @@ for env in ["ad_dc", smbv1_disabled_testenv]:
         extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planoldpythontestsuite(
+    "ad_dc:local", "samba.tests.dcerpc.registry.WinregNpTests",
+    extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite(
     "ad_dc_ntvfs:local", "samba.tests.dcerpc.registry",
     extra_args=['-U"$USERNAME%$PASSWORD"'])
 
