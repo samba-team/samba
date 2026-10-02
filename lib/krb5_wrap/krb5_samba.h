@@ -206,11 +206,13 @@ static inline void samba_trace_keytab_entry(krb5_context context,
 #define MAX_KEYLEN 64
 	char tmp[2 * MAX_KEYLEN + 1] = { 0, };
 	krb5_enctype enctype = 0;
-	krb5_keyblock *key = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	krb5_error_code code;
+#ifdef DEBUG_PASSWORD
+	krb5_keyblock *key = NULL;
 	const uint8_t *ptr = NULL;
 	unsigned len, i;
+#endif
 
 	code = smb_krb5_unparse_name(frame,
 				     context,
@@ -220,8 +222,8 @@ static inline void samba_trace_keytab_entry(krb5_context context,
 		goto out;
 	}
 	enctype = KRB5_KEY_TYPE(KRB5_KT_KEY(&kt_entry));
-	key = KRB5_KT_KEY(&kt_entry);
 #ifdef DEBUG_PASSWORD
+	key = KRB5_KT_KEY(&kt_entry);
 	ptr = (const uint8_t *) KRB5_KEY_DATA(key);
 	len = KRB5_KEY_LENGTH(key);
 
