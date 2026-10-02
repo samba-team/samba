@@ -507,7 +507,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 			 */
 			for (i = first; i < rcount; i++) {
 				if (recs[i].wType == DNS_TYPE_SOA) {
-					uint16_t n, o;
+					uint32_t n, o;
 
 					n = update->rdata.soa_record.serial;
 					o = recs[i].data.soa.serial;
