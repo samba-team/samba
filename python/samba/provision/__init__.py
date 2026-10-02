@@ -2233,7 +2233,7 @@ def provision(logger, session_info, smbconf=None,
     if use_ntvfs:
         server_services.append("+smb")
         server_services.append("-s3fs")
-        global_param["dcerpc endpoint servers"] = ["+winreg", "+srvsvc"]
+        global_param["dcerpc endpoint servers"] = ["+srvsvc"]
 
     if len(server_services) > 0:
         global_param["server services"] = server_services

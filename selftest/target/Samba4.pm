@@ -794,7 +794,7 @@ sub provision_raw_step1($$)
 	wins support = yes
 	server role = $ctx->{server_role}
 	server services = +echo $services
-        dcerpc endpoint servers = +winreg +srvsvc +rpcecho
+        dcerpc endpoint servers = +srvsvc +rpcecho
 	notify:inotify = false
 	ldb:nosync = true
 	ldap server require strong auth = yes
@@ -2087,7 +2087,7 @@ sub provision_ad_dc()
 	dos filemode = yes
 	check parent directory delete on close = yes
 
-        dcerpc endpoint servers = +gkdi -winreg -srvsvc
+        dcerpc endpoint servers = +gkdi -srvsvc
 
 	printcap name = /dev/null
 

@@ -86,16 +86,6 @@ bld.SAMBA_MODULE('dcesrv_samr',
                  )
 
 
-bld.SAMBA_MODULE('dcerpc_winreg',
-                 source='winreg/rpc_winreg.c',
-                 subsystem='dcerpc_server',
-                 init_function='dcerpc_server_winreg_init',
-                 deps='registry ndr-standard',
-                 internal_module=True,
-                 enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
-                 )
-
-
 bld.SAMBA_MODULE('dcerpc_netlogon',
                  source='netlogon/dcerpc_netlogon.c',
                  subsystem='dcerpc_server',

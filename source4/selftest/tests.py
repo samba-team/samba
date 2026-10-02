@@ -365,7 +365,12 @@ for env in all_fl_envs:
     # Winreg tests test bulk Kerberos encryption of DCE/RPC
     # We test rpc.winreg here too, because the winreg interface if
     # handled by the source3/rpc_server code.
+    #
+    # fl2008dc is ad_dc_ntvfs: Without smbd nobody starts
+    # samba-dcerpcd, so there is no winreg server.
     for bindoptions in ["connect", "packet", "krb5", "krb5,packet", "krb5,sign", "krb5,seal", "spnego", "spnego,packet", "spnego,sign", "spnego,seal"]:
+        if env == "fl2008dc":
+            continue
         plansmbtorture4testsuite('rpc.winreg', env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.winreg on %s with %s" % (transport, bindoptions))
 
     for transport in transports:
@@ -1396,9 +1401,6 @@ for env in ["ad_dc", smbv1_disabled_testenv]:
 
 planoldpythontestsuite(
     "ad_dc:local", "samba.tests.dcerpc.registry.WinregNpTests",
-    extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite(
-    "ad_dc_ntvfs:local", "samba.tests.dcerpc.registry",
     extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
