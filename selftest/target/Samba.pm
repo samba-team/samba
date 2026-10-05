@@ -102,12 +102,12 @@ sub setup_env($$$)
 	$target->{vars}->{$envname} = "";
 
 	my @dep_vars;
-	foreach(@{$ENV_DEPS{$envname}}) {
-		my $vars = $self->setup_env($_, $path);
+	foreach my $dep (@{$ENV_DEPS{$envname}}) {
+		my $vars = $self->setup_env($dep, $path);
 		if (defined($vars)) {
 			push(@dep_vars, $vars);
 		} else {
-			warn("Failed setting up $_ as a dependency of $envname");
+			warn("Failed setting up $dep as a dependency of $envname");
 			return undef;
 		}
 	}
@@ -137,11 +137,11 @@ sub setup_env($$$)
 	$target->{vars}->{$envname} = $env;
 	$target->{vars}->{$envname}->{target} = $target;
 
-	foreach(@{$ENV_DEPS_POST{$envname}}) {
-		if (not defined $_) {
-			continue;
+	foreach my $dep (@{$ENV_DEPS_POST{$envname}}) {
+		if (not defined $dep) {
+			next;
 		}
-		my $vars = $self->setup_env($_, $path);
+		my $vars = $self->setup_env($dep, $path);
 		if (not defined($vars)) {
 			return undef;
 		}
