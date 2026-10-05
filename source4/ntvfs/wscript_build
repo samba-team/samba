@@ -8,11 +8,11 @@ bld.SAMBA_LIBRARY('ntvfs',
 	          enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
                   )
 
-bld.RECURSE('posix')
 if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
     bld.RECURSE('common')
     bld.RECURSE('unixuid')
     bld.RECURSE('sysdep')
+    bld.RECURSE('posix')
 
     bld.SAMBA_MODULE('ntvfs_cifs',
 	             source='cifs/vfs_cifs.c',
