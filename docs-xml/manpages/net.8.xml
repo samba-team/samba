@@ -3955,10 +3955,9 @@ net clusterlevel upgrade   Upgrade the cluster functional level to the highest s
 <refsect3>
 <title>clusterlevel features</title>
 <para>
-    List the compile time supported cluster features.
-</para>
-<para>
-    Note: Only supported with clustering=yes!
+    List the compile time supported cluster features, including whether
+    clustering support is available and the supported cluster functional
+    level ranges. Does not require clustering=yes or a running ctdbd.
 </para>
 
 </refsect3>
