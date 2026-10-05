@@ -2805,21 +2805,20 @@ static void rpc_host_server_setup_done(struct tevent_req *subreq)
 
 	status = rpc_server_setup_recv(subreq, host, &server);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+
+	if (NT_STATUS_IS_OK(status)) {
+		server->server_index = state->num_prepared;
+		host->servers[state->num_prepared] = server;
+		state->num_prepared += 1;
+	} else {
 		DBG_DEBUG("rpc_server_setup_recv returned %s, ignoring\n",
 			  nt_errstr(status));
-		host->servers = talloc_realloc(
-			host,
-			host->servers,
-			struct rpc_server *,
-			num_servers-1);
-		return;
+		num_servers -= 1;
+		host->servers = talloc_realloc(host,
+					       host->servers,
+					       struct rpc_server *,
+					       num_servers);
 	}
-
-	server->server_index = state->num_prepared;
-	host->servers[state->num_prepared] = server;
-
-	state->num_prepared += 1;
 
 	if (state->num_prepared < num_servers) {
 		return;
