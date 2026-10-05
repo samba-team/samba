@@ -603,11 +603,7 @@ static struct rpc_worker *rpc_worker_new(
 }
 
 struct rpc_worker_state {
-	struct tevent_context *ev;
-	struct rpc_worker *w;
-	struct tevent_req *new_client_req;
-	struct tevent_req *status_req;
-	struct tevent_req *finish_req;
+	uint8_t _dummy;
 };
 
 static void rpc_worker_done(struct tevent_req *subreq);
@@ -626,7 +622,7 @@ static struct tevent_req *rpc_worker_send(
 	int server_index,
 	int worker_index)
 {
-	struct tevent_req *req = NULL;
+	struct tevent_req *req = NULL, *subreq = NULL;
 	struct rpc_worker_state *state = NULL;
 	NTSTATUS status;
 
@@ -634,8 +630,6 @@ static struct tevent_req *rpc_worker_send(
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
-	state->w = w;
 
 	if ((server_index < 0) || ((unsigned)server_index > UINT32_MAX)) {
 		DBG_ERR("Invalid server index %d\n", server_index);
@@ -655,34 +649,34 @@ static struct tevent_req *rpc_worker_send(
 	};
 
 	/* Wait for new client messages. */
-	state->new_client_req = messaging_filtered_read_send(
+	subreq = messaging_filtered_read_send(
 		w,
 		messaging_tevent_context(w->msg_ctx),
 		w->msg_ctx,
 		rpc_worker_new_client_filter,
 		w);
-	if (tevent_req_nomem(state->new_client_req, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	state->new_client_req = messaging_filtered_read_send(
+	subreq = messaging_filtered_read_send(
 		w,
 		messaging_tevent_context(w->msg_ctx),
 		w->msg_ctx,
 		rpc_worker_client_info,
 		w);
-	if (tevent_req_nomem(state->new_client_req, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	/* Wait for report your status messages. */
-	state->status_req = messaging_filtered_read_send(
+	subreq = messaging_filtered_read_send(
 		w,
 		messaging_tevent_context(w->msg_ctx),
 		w->msg_ctx,
 		rpc_worker_status_filter,
 		w);
-	if (tevent_req_nomem(state->status_req, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -696,11 +690,11 @@ static struct tevent_req *rpc_worker_send(
 		return tevent_req_post(req, ev);
 	}
 
-	state->finish_req = wait_for_read_send(state, ev, 0, false);
-	if (tevent_req_nomem(state->finish_req, req)) {
+	subreq = wait_for_read_send(state, ev, 0, false);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(state->finish_req, rpc_worker_done, req);
+	tevent_req_set_callback(subreq, rpc_worker_done, req);
 
 	rpc_worker_report_status(w);
 
