@@ -2660,7 +2660,7 @@ static struct tevent_req *rpc_host_send(
 	NTSTATUS status;
 	int ret;
 
-	req = tevent_req_create(req, &state, struct rpc_host_state);
+	req = tevent_req_create(mem_ctx, &state, struct rpc_host_state);
 	if (req == NULL) {
 		return NULL;
 	}
