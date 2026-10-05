@@ -375,8 +375,9 @@
 
 		<varlistentry>
 		<term>--json</term>
-		<listitem><para>Report results in JSON format for
-		"net ads info" and "net ads lookup".
+		<listitem><para>Report results in JSON format. Supported by
+		"net ads info", "net ads lookup", and all "net clusterlevel"
+		subcommands (features, show, showall, upgrade).
 		</para></listitem>
 		</varlistentry>
 
@@ -3937,23 +3938,23 @@ net witness force-response   Force an AsyncNotify response based on json input (
 <para>The following CLUSTERLEVEL commands are implemented:
 <simplelist>
 <member>
-net clusterlevel features  List the supported features.
+net clusterlevel features [--json]  List the supported features.
 </member>
 <member>
-net clusterlevel show      Show the currently active cluster functional level.
+net clusterlevel show [--json]      Show the currently active cluster functional level.
 </member>
 <member>
-net clusterlevel showall   Show details about the whole cluster.
+net clusterlevel showall [--json]   Show details about the whole cluster.
 </member>
 <member>
-net clusterlevel upgrade   Upgrade the cluster functional level to the highest supported level.
+net clusterlevel upgrade [--test] [--apply] [--json]   Upgrade the cluster functional level to the highest supported level.
 </member>
 
 </simplelist>
 </para>
 
 <refsect3>
-<title>clusterlevel features</title>
+<title>clusterlevel features [--json]</title>
 <para>
     List the compile time supported cluster features, including whether
     clustering support is available and the supported cluster functional
@@ -3963,7 +3964,7 @@ net clusterlevel upgrade   Upgrade the cluster functional level to the highest s
 </refsect3>
 
 <refsect3>
-<title>clusterlevel show</title>
+<title>clusterlevel show [--json]</title>
 <para>
     Show the currently active cluster functional level.
 </para>
@@ -3974,7 +3975,7 @@ net clusterlevel upgrade   Upgrade the cluster functional level to the highest s
 </refsect3>
 
 <refsect3>
-<title>clusterlevel showall</title>
+<title>clusterlevel showall [--json]</title>
 <para>
     Show details about the whole cluster. It shows the supported
     cluster functional level ranges for each node.
@@ -3988,7 +3989,7 @@ net clusterlevel upgrade   Upgrade the cluster functional level to the highest s
 </refsect3>
 
 <refsect3>
-<title>clusterlevel upgrade [--test] [--apply]</title>
+<title>clusterlevel upgrade [--test] [--apply] [--json]</title>
 <para>
     Upgrade the cluster functional level to the highest supported level
     all nodes agree. Currently the code is very strict and allows
