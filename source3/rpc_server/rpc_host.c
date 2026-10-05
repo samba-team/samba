@@ -2169,6 +2169,12 @@ static void rpc_host_child_status_recv(
 	}
 
 	server = host->servers[status_message.server_index];
+	if (server == NULL) {
+		DBG_WARNING("Got status message for NULL server at "
+			    "index %" PRIu32 "\n",
+			    status_message.server_index);
+		return;
+	}
 
 	num_workers = talloc_array_length(server->workers);
 	if (status_message.worker_index >= num_workers) {
