@@ -1,0 +1,4 @@
+^samba.tests.libsmb_lock.samba.tests.libsmb_lock.Smb2LockTests.test_lock_stat_open
+^samba.tests.libsmb_lock.samba.tests.libsmb_lock.Smb2LockTests.test_lock_created_without_data_access
+^samba.tests.libsmb_lock.samba.tests.libsmb_lock.Smb1LockTests.test_lock_stat_open
+^samba.tests.libsmb_lock.samba.tests.libsmb_lock.Smb1LockTests.test_lock_created_without_data_access
