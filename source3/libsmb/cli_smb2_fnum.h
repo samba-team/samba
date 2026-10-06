@@ -151,6 +151,16 @@ struct tevent_req *cli_smb2_set_info_fnum_send(
 	const DATA_BLOB *in_input_buffer,
 	uint32_t in_additional_info);
 NTSTATUS cli_smb2_set_info_fnum_recv(struct tevent_req *req);
+struct smb2_lock_element;
+struct tevent_req *cli_smb2_lock_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t lock_sequence,
+	uint16_t num_locks,
+	const struct smb2_lock_element *locks);
+NTSTATUS cli_smb2_lock_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_set_info_fnum(
 	struct cli_state *cli,
 	uint16_t fnum,

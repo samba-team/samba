@@ -753,6 +753,64 @@ NTSTATUS cli_smb2_set_info_fnum_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+struct cli_smb2_lock_state {
+	uint8_t dummy;
+};
+
+static void cli_smb2_lock_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_lock_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct cli_state *cli,
+				      uint16_t fnum,
+				      uint32_t lock_sequence,
+				      uint16_t num_locks,
+				      const struct smb2_lock_element *locks)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_lock_state *state = NULL;
+	const struct smb2_hnd *ph = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_lock_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_lock_send(state,
+				   ev,
+				   cli->conn,
+				   cli->timeout,
+				   cli->smb2.session,
+				   cli->smb2.tcon,
+				   ph->fid_persistent,
+				   ph->fid_volatile,
+				   lock_sequence,
+				   num_locks,
+				   locks);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_lock_done, req);
+	return req;
+}
+
+static void cli_smb2_lock_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = smb2cli_lock_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_smb2_lock_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 NTSTATUS cli_smb2_set_info_fnum(
 	struct cli_state *cli,
 	uint16_t fnum,
