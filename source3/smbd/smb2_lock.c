@@ -28,6 +28,7 @@
 #include "lib/dbwrap/dbwrap_watch.h"
 #include "librpc/gen_ndr/open_files.h"
 #include "messages.h"
+#include "libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -244,6 +245,21 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(10,("smbd_smb2_lock_send: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
+
+	/*
+	 * [MS-SMB2] 3.3.5.14 Receiving an SMB2 LOCK Request: Locks
+	 * and unlocks need FILE_READ_DATA or FILE_WRITE_DATA, checked
+	 * before anything else. Check the granted access, not the
+	 * open mode of the fd: Creating or overwriting a file opens it
+	 * for writing. A stat open does not even have an fd to lock
+	 * on.
+	 */
+	status = check_any_access_fsp(fsp, FILE_READ_DATA | FILE_WRITE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("%s: no data access\n", fsp_str_dbg(fsp));
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
 
 	/*
 	 * Windows sets check_lock_sequence = true
