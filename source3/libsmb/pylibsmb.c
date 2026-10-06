@@ -2165,6 +2165,117 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 	Py_RETURN_NONE;
 }
 
+/*
+ * Byte range locks, SMB2 style: A list of (offset, length, flags)
+ * with SMB2_LOCK_FLAG_* flags. For SMB1 this is mapped to a LockingX
+ * request.
+ */
+static bool py_cli_lock_elements(TALLOC_CTX *mem_ctx,
+				 PyObject *py_locks,
+				 uint16_t *pnum_locks,
+				 struct smb2_lock_element **plocks)
+{
+	struct smb2_lock_element *locks = NULL;
+	Py_ssize_t i, num_locks;
+
+	num_locks = PyList_GET_SIZE(py_locks);
+	if ((num_locks == 0) || (num_locks > UINT16_MAX)) {
+		PyErr_SetString(PyExc_ValueError, "invalid number of locks");
+		return false;
+	}
+
+	locks = talloc_array(mem_ctx, struct smb2_lock_element, num_locks);
+	if (locks == NULL) {
+		PyErr_NoMemory();
+		return false;
+	}
+
+	for (i = 0; i < num_locks; i++) {
+		PyObject *py_lock = PyList_GET_ITEM(py_locks, i);
+		unsigned long long offset = 0;
+		unsigned long long length = 0;
+		unsigned flags = 0;
+		bool ok;
+
+		ok = PyArg_ParseTuple(
+			py_lock, "KKI", &offset, &length, &flags);
+		if (!ok) {
+			return false;
+		}
+		locks[i] = (struct smb2_lock_element){
+			.offset = offset,
+			.length = length,
+			.flags = flags,
+		};
+	}
+
+	*pnum_locks = num_locks;
+	*plocks = locks;
+	return true;
+}
+
+static PyObject *py_cli_lock(struct py_cli_state *self,
+			     PyObject *args,
+			     PyObject *kwds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	static const char *kwlist[] = {
+		"fnum",
+		"locks",
+		"lock_sequence",
+		NULL,
+	};
+	unsigned fnum = 0;
+	PyObject *py_locks = NULL;
+	unsigned lock_sequence = 0;
+	uint16_t num_locks = 0;
+	struct smb2_lock_element *locks = NULL;
+	struct tevent_req *req = NULL;
+	PyObject *result = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	ok = ParseTupleAndKeywords(args,
+				   kwds,
+				   "IO!|I:lock",
+				   kwlist,
+				   &fnum,
+				   &PyList_Type,
+				   &py_locks,
+				   &lock_sequence);
+	if (!ok) {
+		goto done;
+	}
+
+	ok = py_cli_lock_elements(frame, py_locks, &num_locks, &locks);
+	if (!ok) {
+		goto done;
+	}
+
+	req = cli_lock_send(frame,
+			    self->ev,
+			    self->cli,
+			    fnum,
+			    lock_sequence,
+			    num_locks,
+			    locks);
+	ok = py_tevent_req_wait_exc(self, req);
+	if (!ok) {
+		goto done;
+	}
+	status = cli_lock_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		goto done;
+	}
+
+	result = Py_None;
+	Py_INCREF(result);
+done:
+	TALLOC_FREE(frame);
+	return result;
+}
+
 struct py_cli_notify_state {
 	PyObject_HEAD
 	struct py_cli_state *py_cli_state;
@@ -3430,6 +3541,11 @@ static PyMethodDef py_cli_state_methods[] = {
 			py_cli_ftruncate),
 	  METH_VARARGS|METH_KEYWORDS,
 	  "Truncate a file" },
+	{ "lock", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_lock),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "lock(fnum, locks[, lock_sequence=0]) -> None\n\n"
+	  "\t\tByte range locks, locks is a list of (offset, length, flags)\n"
+	  "\t\twith SMB2_LOCK_FLAG_* flags, mapped to LockingX for SMB1." },
 	{ "delete_on_close", PY_DISCARD_FUNC_SIG(PyCFunction,
 					 py_cli_delete_on_close),
 	  METH_VARARGS|METH_KEYWORDS,
@@ -3867,6 +3983,10 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	ADD_FLAGS(FILE_DIRECTORY_FILE);
 
 	ADD_FLAGS(SMB2_CLOSE_FLAGS_FULL_INFORMATION);
+	ADD_FLAGS(SMB2_LOCK_FLAG_SHARED);
+	ADD_FLAGS(SMB2_LOCK_FLAG_EXCLUSIVE);
+	ADD_FLAGS(SMB2_LOCK_FLAG_UNLOCK);
+	ADD_FLAGS(SMB2_LOCK_FLAG_FAIL_IMMEDIATELY);
 
 #define ADD_TEXT(val) PyModule_AddObject(m, #val, PyUnicode_FromString(val))
 
