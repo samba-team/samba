@@ -569,7 +569,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 		<varlistentry>
 		<term>%t</term>
-		<listitem><para>the current date and time in a minimal format without colons (YYYYYmmdd_HHMMSS).</para></listitem>
+		<listitem><para>the current date and time in a minimal format without colons (YYYYmmdd_HHMMSS).</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -704,7 +704,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 	<para>
 	By default, Samba 3.0 has the same semantics as a Windows NT server, in that it is case insensitive
 	but case preserving. As a special case for directories with large numbers of files, if the case
-	options are set as follows, "case sensitive = yes", "case preserve = no", "short preserve case = no"
+	options are set as follows, "case sensitive = yes", "preserve case = no", "short preserve case = no"
 	then the "default case" option will be applied and will modify all filenames sent from the client
 	when accessing this share.
 	</para>
