@@ -4425,6 +4425,15 @@ sub provision_ctdb($$$$)
 	mkdir ($prefix, 0777);
 
 	print "CREATE CTDB TEST ENVIRONMENT in '$prefix'...\n";
+	#
+	# ctdb/tests/scripts/common.sh installs the event scripts with
+	# "cp -pr", which keeps the mode of the source tree. A task which
+	# tests a tree built elsewhere gets that tree read only, so the
+	# copies and the directories holding them end up read only too and
+	# plain rm cannot unlink them. That only matters when an
+	# environment is set up twice, which --resetup-environment does.
+	#
+	system("test -d $prefix && chmod -R +w $prefix");
 	system("rm -rf $prefix/*");
 
 	#
