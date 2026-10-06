@@ -1988,6 +1988,11 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	status = check_any_access_fsp(fsp, FILE_READ_DATA | FILE_WRITE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_OK;
 	}

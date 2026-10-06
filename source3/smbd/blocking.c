@@ -25,6 +25,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/dbwrap/dbwrap_watch.h"
 #include "librpc/gen_ndr/ndr_open_files.h"
+#include "libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -259,6 +260,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 {
 	struct tevent_req *req = NULL;
 	struct smbd_smb1_do_locks_state *state = NULL;
+	NTSTATUS status;
 	bool ok;
 
 	req = tevent_req_create(
@@ -280,6 +282,13 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	if (num_locks == 0 || locks == NULL) {
 		DBG_DEBUG("no locks\n");
 		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	status = check_any_access_fsp(fsp, FILE_READ_DATA | FILE_WRITE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("%s: no data access\n", fsp_str_dbg(fsp));
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
