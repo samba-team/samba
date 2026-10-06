@@ -17,10 +17,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBCLI_SMB_SMB2_LOCK_H__
-#define __LIBCLI_SMB_SMB2_LOCK_H__
+#ifndef __LIBCLI_SMB_SMBX_LOCK_H__
+#define __LIBCLI_SMB_SMBX_LOCK_H__
 
 #include "replace.h"
+
+struct smb1_lock_element {
+	uint16_t pid;
+	uint64_t offset;
+	uint64_t length;
+};
 
 struct smb2_lock_element {
 	uint64_t offset;

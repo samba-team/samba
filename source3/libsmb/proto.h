@@ -460,12 +460,6 @@ NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype);
-struct smb1_lock_element {
-	uint16_t pid;
-	uint64_t offset;
-	uint64_t length;
-};
-
 struct tevent_req *cli_lockingx_create(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
