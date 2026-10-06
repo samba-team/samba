@@ -826,6 +826,30 @@ NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
 		       uint64_t fid_persistent,
 		       uint64_t fid_volatile);
 
+struct smb2_lock_element;
+
+struct tevent_req *smb2cli_lock_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct smbXcli_conn *conn,
+				     uint32_t timeout_msec,
+				     struct smbXcli_session *session,
+				     struct smbXcli_tcon *tcon,
+				     uint64_t fid_persistent,
+				     uint64_t fid_volatile,
+				     uint32_t lock_sequence,
+				     uint16_t num_locks,
+				     const struct smb2_lock_element *locks);
+NTSTATUS smb2cli_lock_recv(struct tevent_req *req);
+NTSTATUS smb2cli_lock(struct smbXcli_conn *conn,
+		      uint32_t timeout_msec,
+		      struct smbXcli_session *session,
+		      struct smbXcli_tcon *tcon,
+		      uint64_t fid_persistent,
+		      uint64_t fid_volatile,
+		      uint32_t lock_sequence,
+		      uint16_t num_locks,
+		      const struct smb2_lock_element *locks);
+
 struct tevent_req *smb2cli_set_info_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct smbXcli_conn *conn,

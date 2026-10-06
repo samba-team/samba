@@ -26,6 +26,7 @@ def build(bld):
            smb2cli_read.c
            smb2cli_write.c
            smb2cli_flush.c
+           smb2cli_lock.c
            smb2cli_set_info.c
            smb2cli_query_info.c
            smb2cli_notify.c
