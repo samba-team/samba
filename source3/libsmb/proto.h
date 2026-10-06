@@ -497,6 +497,15 @@ NTSTATUS cli_lockingx(
 	uint16_t num_locks,
 	const struct smb1_lock_element *locks);
 
+struct tevent_req *cli_lock_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum,
+				 uint32_t lock_sequence,
+				 uint16_t num_locks,
+				 const struct smb2_lock_element *locks);
+NTSTATUS cli_lock_recv(struct tevent_req *req);
+
 NTSTATUS cli_lock32(struct cli_state *cli, uint16_t fnum, uint32_t offset,
 		    uint32_t len, int timeout, enum brl_type lock_type);
 struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,

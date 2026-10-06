@@ -4199,6 +4199,184 @@ fail:
  this is used for testing LOCKING_ANDX_CANCEL_LOCK
 ****************************************************************************/
 
+/*
+ * Protocol independent byte range locking with SMB2 style lock
+ * elements. For SMB1 this is mapped to a LockingX request: Unlock
+ * elements go into the unlock list. Shared and exclusive locks can't
+ * be mixed, LockingX has the lock type per request. The request waits
+ * forever unless all locks have SMB2_LOCK_FLAG_FAIL_IMMEDIATELY set.
+ */
+
+struct cli_lock_state {
+	uint8_t dummy;
+};
+
+static void cli_lock_smb2_done(struct tevent_req *subreq);
+static void cli_lock_smb1_done(struct tevent_req *subreq);
+
+static NTSTATUS cli_lock_smb1_elements(TALLOC_CTX *mem_ctx,
+				       struct cli_state *cli,
+				       uint16_t num_locks,
+				       const struct smb2_lock_element *locks,
+				       uint8_t *ptypeoflock,
+				       int32_t *ptimeout,
+				       uint16_t *pnum_ulocks,
+				       struct smb1_lock_element **pulocks,
+				       uint16_t *pnum_llocks,
+				       struct smb1_lock_element **pllocks)
+{
+	struct smb1_lock_element *ulocks = NULL;
+	struct smb1_lock_element *llocks = NULL;
+	uint16_t num_ulocks = 0;
+	uint16_t num_llocks = 0;
+	uint8_t typeoflock = LOCKING_ANDX_LARGE_FILES;
+	int32_t timeout = 0;
+	bool have_shared = false;
+	bool have_exclusive = false;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	uint16_t i;
+
+	ulocks = talloc_array(mem_ctx, struct smb1_lock_element, num_locks);
+	llocks = talloc_array(mem_ctx, struct smb1_lock_element, num_locks);
+	if ((ulocks == NULL) || (llocks == NULL)) {
+		goto fail;
+	}
+
+	for (i = 0; i < num_locks; i++) {
+		struct smb1_lock_element l = {
+			.pid = cli_getpid(cli),
+			.offset = locks[i].offset,
+			.length = locks[i].length,
+		};
+		uint32_t flags = locks[i].flags;
+
+		if (flags & SMB2_LOCK_FLAG_UNLOCK) {
+			ulocks[num_ulocks++] = l;
+			continue;
+		}
+
+		llocks[num_llocks++] = l;
+
+		if (flags & SMB2_LOCK_FLAG_SHARED) {
+			have_shared = true;
+		} else {
+			have_exclusive = true;
+		}
+		if (!(flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY)) {
+			/* wait forever */
+			timeout = -1;
+		}
+	}
+
+	if (have_shared && have_exclusive) {
+		DBG_DEBUG("SMB1 can't mix shared and exclusive locks\n");
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	if (have_shared) {
+		typeoflock |= LOCKING_ANDX_SHARED_LOCK;
+	}
+
+	*ptypeoflock = typeoflock;
+	*ptimeout = timeout;
+	*pnum_ulocks = num_ulocks;
+	*pulocks = ulocks;
+	*pnum_llocks = num_llocks;
+	*pllocks = llocks;
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(llocks);
+	TALLOC_FREE(ulocks);
+	return status;
+}
+
+struct tevent_req *cli_lock_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum,
+				 uint32_t lock_sequence,
+				 uint16_t num_locks,
+				 const struct smb2_lock_element *locks)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_lock_state *state = NULL;
+	struct smb1_lock_element *ulocks = NULL;
+	struct smb1_lock_element *llocks = NULL;
+	uint16_t num_ulocks = 0;
+	uint16_t num_llocks = 0;
+	uint8_t typeoflock = 0;
+	int32_t timeout = 0;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_lock_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (num_locks == 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_lock_send(
+			state, ev, cli, fnum, lock_sequence, num_locks, locks);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_lock_smb2_done, req);
+		return req;
+	}
+
+	status = cli_lock_smb1_elements(state,
+					cli,
+					num_locks,
+					locks,
+					&typeoflock,
+					&timeout,
+					&num_ulocks,
+					&ulocks,
+					&num_llocks,
+					&llocks);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_lockingx_send(state,
+				   ev,
+				   cli,
+				   fnum,
+				   typeoflock,
+				   0,
+				   timeout,
+				   num_ulocks,
+				   ulocks,
+				   num_llocks,
+				   llocks);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_lock_smb1_done, req);
+	return req;
+}
+
+static void cli_lock_smb2_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_lock_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_lock_smb1_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_lockingx_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_lock_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype)
