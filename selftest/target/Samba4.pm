@@ -2839,7 +2839,7 @@ sub setup_rodc
 
 sub _setup_ad_dc
 {
-	my ($self, $path, $conf_opts, $server, $dom, $functional_level) = @_;
+	my ($self, $path, $conf_opts, $server, $dom, $functional_level, $netbios_domain) = @_;
 
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->{target3}->have_ads()) {
@@ -2855,7 +2855,7 @@ sub _setup_ad_dc
 	if (!defined($dom)) {
 		$dom = "addom.samba.example.com";
 	}
-	my $env = $self->provision_ad_dc($path, $server, "ADDOMAIN",
+	my $env = $self->provision_ad_dc($path, $server, $netbios_domain,
 					 $dom,
 					 undef,
 					 $conf_opts,
@@ -2886,7 +2886,7 @@ sub setup_ad_dc
 	# breaking kerberos tests
 	my $conf_opts = "strong certificate binding enforcement = none\n";
 
-	return _setup_ad_dc($self, $path, $conf_opts, undef, undef);
+	return _setup_ad_dc($self, $path, $conf_opts, undef, undef, undef, "ADDOMAIN");
 }
 
 sub setup_ad_dc_smb1
@@ -2901,7 +2901,8 @@ sub setup_ad_dc_smb1
 	server require schannel:ADDCSMB1\$ = no
 	server schannel require seal:ADDCSMB1\$ = no
 ";
-	return _setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
+	return _setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com",
+			    undef, "ADDOMAIN2");
 }
 
 sub setup_ad_dc_smb1_done
