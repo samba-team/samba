@@ -4775,7 +4775,7 @@ sub wait_for_start_ctdb($$)
 
 		my $cmd2 = "${node0_ctdb} pstore cluster_level.tdb ${hexkey} ${hexval}";
 		my $ret2 = system($cmd2);
-		if ($ret1 != 0) {
+		if ($ret2 != 0) {
 			print("\"$cmd2\" failed\n");
 			return undef;
 		}
