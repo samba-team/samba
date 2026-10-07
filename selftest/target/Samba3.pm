@@ -92,7 +92,7 @@ sub teardown_env_samba($$)
 	my $count = 0;
 
 	# This should cause smbd to terminate gracefully
-	close($envvars->{STDIN_PIPE});
+	close($envvars->{STDIN_PIPE}) if defined($envvars->{STDIN_PIPE});
 
 	my $smbdpid = $envvars->{SMBD_TL_PID};
 	my $nmbdpid = $envvars->{NMBD_TL_PID};
