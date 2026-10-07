@@ -249,33 +249,57 @@ static void test_thread_safety(void **state)
 
 static void fork_job(void *private_data)
 {
+	struct test_state *child_state = NULL;
+	struct pthreadpool_pipe *child_pool = NULL;
 	int status;
-	struct test_state *test_state =
-		talloc_get_type_abort(private_data, struct test_state);
 	pid_t pid, wpid;
+	int ret;
+	int job;
+
 	pid = fork();
 	/* Ensure fork success */
 	assert_true(!(pid < 0));
 	if (pid == 0) {
-		/* child */
-		int ret = 0;
-		int job;
-		ret = pthreadpool_pipe_add_job(test_state->pool,
+		/*
+		 * pthreadpool stops the inherited pool in the child, so
+		 * create a fresh one here instead of reusing the parent's.
+		 *
+		 * cmocka is not fork-safe, so only use it in the parent.
+		 * Report success/failure to the parent via _exit() instead.
+		 */
+		child_state = talloc_zero(NULL, struct test_state);
+		if (child_state == NULL) {
+			_exit(1);
+		}
+		pthread_mutex_init(&child_state->mutex, NULL);
+
+		ret = pthreadpool_pipe_init(4, &child_pool);
+		if (ret != 0) {
+			_exit(2);
+		}
+
+		ret = pthreadpool_pipe_add_job(child_pool,
 					       99,
 					       mutex_job,
-					       test_state);
-		assert_int_equal(ret, 0);
-		ret = pthreadpool_pipe_finished_jobs(test_state->pool,
+					       child_state);
+		if (ret != 0) {
+			_exit(3);
+		}
+
+		ret = pthreadpool_pipe_finished_jobs(child_pool,
 						     &job,
 						     1);
-		assert_int_equal(ret, 1);
-		assert_int_equal(job, 99);
-		assert_int_equal(test_state->job_executed, 1);
-		exit(0);
-	} else {
-		wpid = waitpid(pid, &status, 0);
-		assert_true(wpid != -1);
+		if (ret != 1 || job != 99 || child_state->job_executed != 1) {
+			_exit(4);
+		}
+
+		_exit(0);
 	}
+
+	wpid = waitpid(pid, &status, 0);
+	assert_true(wpid != -1);
+	assert_true(WIFEXITED(status));
+	assert_int_equal(WEXITSTATUS(status), 0);
 }
 
 static void test_fork(void **state)
@@ -289,7 +313,7 @@ static void test_fork(void **state)
 	ret = pthreadpool_pipe_add_job(test_state->pool,
 				       999,
 				       fork_job,
-				       test_state);
+				       NULL);
 	assert_int_equal(ret, 0);
 	ret = pthreadpool_pipe_finished_jobs(test_state->pool,
 					     &job,
