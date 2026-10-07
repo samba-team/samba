@@ -349,8 +349,13 @@ ip_addr_show()
 				if [ "$dev" = "lo" ]; then
 					_state="UNKNOWN"
 				fi
+				_name="$dev"
+				if [ -r "${FAKE_IP_STATE}/interfaces-vlan/${dev}" ]; then
+					read -r _link <"${FAKE_IP_STATE}/interfaces-vlan/${dev}"
+					_name="${dev}@${_link}"
+				fi
 				printf '%-16s %-14s %s\n' \
-					"$dev" \
+					"$_name" \
 					"$_state" \
 					"${_primary}${_primary:+ }${_secondaries}"
 			fi
