@@ -2608,7 +2608,7 @@ static HRESULT wsp_es_get_state_recv(struct tevent_req *req,
 struct wsp_es_get_propertyvalue_for_workid_state {
 	struct tevent_context *ev;
 	DATA_BLOB value;
-	struct binding_result_mapper mapper;
+	struct binding_result_mapper* mapper;
 	struct memcache *id_cache;
 	struct http_request http_request;
 	struct http_request *http_response;
@@ -2717,6 +2717,11 @@ static struct tevent_req *wsp_es_get_propertyvalue_for_workid_send(
 	}
 	state->ev = ev;
 
+	state->mapper = talloc_zero(state, struct binding_result_mapper);
+	if (tevent_req_nomem(state->mapper, req)) {
+                return tevent_req_post(req, ev);
+        }
+
 	handle = get_handle(wspd_client_state);
 	client = find_client_info(handle);
 
@@ -2760,7 +2765,7 @@ static struct tevent_req *wsp_es_get_propertyvalue_for_workid_send(
 					     index_name,
 					     workid,
 					     propspec,
-					     &state->mapper,
+					     state->mapper,
 					     &state->cols_to_convert);
         if (query == NULL) {
                 tevent_req_herror(req,
@@ -2849,7 +2854,7 @@ static bool get_fetch_value(
 	struct map_data *map_data = NULL;
 	struct es_row_data *row_data = NULL;
 
-	map_data = state->mapper.map_data;
+	map_data = state->mapper->map_data;
 
 	row_data = talloc_zero(ctx, struct es_row_data);
 	if (row_data == NULL) {
@@ -2888,7 +2893,7 @@ static bool get_fetch_value(
 			 * if converted type and input type are strings then
 			 * truncate if necessary
 			 */
-			if (state->mapper.map_data->vtype == VT_LPWSTR &&
+			if (state->mapper->map_data->vtype == VT_LPWSTR &&
 			    strlen(col_value->value.string) > (state->size/2)) {
 				/* truncate the string */
 				char *tmp = talloc_strdup(state,
