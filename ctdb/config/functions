@@ -746,7 +746,10 @@ ip_prefix_iface()
 {
 	_addr="$1"
 
-	ip -brief addr show to "$_addr" 2>/dev/null | awk '{ print $3, $1 }'
+	# For interfaces with a link (e.g. VLANs, veth), ip prints the
+	# interface name as "<iface>@<link>", so strip "@<link>"
+	ip -brief addr show to "$_addr" 2>/dev/null |
+		awk '{ iface = $1; sub("@.*", "", iface); print $3, iface }'
 }
 
 # If the given IP is hosted then print 2 items: maskbits and iface
