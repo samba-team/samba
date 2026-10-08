@@ -463,6 +463,58 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(
             c.loadfile(testdir + "\\dir\uf028\\file\uf029"), b"y")
 
+    def test_unique_content_epoch(self):
+        """smbd caches share_mode_data and reuses it if the
+        unique_content_epoch in locking.tdb did not change. Make sure a
+        locking.tdb record recreated by a fresh smbd does not reuse the
+        epoch another smbd has cached.
+        """
+        filename = "test_unique_content_epoch"
+        share_all = (libsmb.FILE_SHARE_READ |
+                     libsmb.FILE_SHARE_WRITE |
+                     libsmb.FILE_SHARE_DELETE)
+
+        c1 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c2 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+
+        self.clean_file(c1, filename)
+
+        try:
+            # c1 creates the file and the share mode record
+            f1 = c1.create(filename,
+                           DesiredAccess=security.SEC_FILE_READ_DATA,
+                           ShareAccess=share_all,
+                           CreateDisposition=libsmb.FILE_CREATE)
+
+            # c2's smbd caches the share_mode_data
+            f2 = c2.create(filename,
+                           DesiredAccess=security.SEC_FILE_READ_DATA,
+                           ShareAccess=share_all)
+            c2.close(f2)
+
+            # The last close removes the share mode record
+            c1.close(f1)
+
+            # A new connection gets a fresh smbd. It recreates the
+            # share mode record, denying write access.
+            c3 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+            f3 = c3.create(filename,
+                           DesiredAccess=security.SEC_FILE_READ_DATA,
+                           ShareAccess=libsmb.FILE_SHARE_READ)
+
+            # c2's smbd must see c3's share mode
+            with self.assertRaises(NTSTATUSError) as cm:
+                f2 = c2.create(filename,
+                               DesiredAccess=security.SEC_FILE_WRITE_DATA,
+                               ShareAccess=share_all)
+                c2.close(f2)
+            self.assertEqual(cm.exception.args[0],
+                             ntstatus.NT_STATUS_SHARING_VIOLATION)
+
+            c3.close(f3)
+        finally:
+            self.clean_file(c1, filename)
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
