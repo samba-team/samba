@@ -76,8 +76,15 @@ _PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
 	if (unlikely(pid != generate_unique_u64_state.pid)) {
 		generate_unique_u64_state = (struct generate_unique_u64_state) {
 			.pid = pid,
-			.next_value = veto_value,
 		};
+
+		/*
+		 * Start at a random value, processes must not
+		 * generate the same sequence of values.
+		 */
+		generate_nonce_buffer(
+			(void *)&generate_unique_u64_state.next_value,
+			sizeof(generate_unique_u64_state.next_value));
 	}
 
 	generate_unique_u64_state.next_value++;
