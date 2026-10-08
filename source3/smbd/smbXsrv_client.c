@@ -678,6 +678,19 @@ verify_again:
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
+
+		/*
+		 * The destination process owns the socket from now
+		 * on, messaging has a dup() of it if the message is
+		 * still queued. If we kept our copy open, we would
+		 * race with the destination for the client's next
+		 * request and might swallow it.
+		 *
+		 * NT_STATUS_CONNECTION_IN_USE, see
+		 * smbd_smb2_request_process_negprot_mc_done().
+		 */
+		smbXsrv_connection_disconnect_transport(
+			xconn, NT_STATUS_CONNECTION_IN_USE);
 	} else {
 		status = smb2srv_client_connection_drop(state->smb2req,
 							global);
