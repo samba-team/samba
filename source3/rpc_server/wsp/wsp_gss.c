@@ -1548,6 +1548,16 @@ static void wsp_gss_getrows_process_rows_for_index(struct tevent_req *req)
 		tevent_req_herror(req, HRESULT_FROM_NT(NT_STATUS_INVALID_PARAMETER));
 		return;
 	}
+
+	if (state->buf_size < state->pad_adjust) {
+		DBG_ERR("buf_size 0x%x will overflow when adjusted "
+			"by pad_adjust 0x%x\n",
+			state->buf_size,
+			state->pad_adjust);
+		tevent_req_herror(req, HRESULT_FROM_NT(NT_STATUS_INVALID_PARAMETER));
+		return;
+	}
+
 	state->row_buff = talloc_zero_array(req, uint8_t, state->buf_size);
 	if (tevent_req_nomem(state->row_buff, req)) {
 		DBG_ERR("out of memory\n");
