@@ -459,7 +459,8 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			 * do not have an object uuid field.
 			 */
 		default:
-			return EPMAPPER_STATUS_CANT_PERFORM_OP;
+			rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
+			goto done;
 		}
 
 		if (match) {
@@ -540,7 +541,8 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 					}
 					break;
 				default:
-					return EPMAPPER_STATUS_CANT_PERFORM_OP;
+					rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
+					goto done;
 				}
 			}
 		}
