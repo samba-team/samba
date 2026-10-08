@@ -873,7 +873,7 @@ sub setup_env($$)
 		if (ref $testenv_vars ne "HASH") {
 			return $testenv_vars;
 		}
-		if (defined($testenv_vars->{target})) {
+		unless (defined($testenv_vars->{target})) {
 			$testenv_vars->{target} = $target;
 		}
 	}
