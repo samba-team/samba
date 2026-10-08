@@ -928,7 +928,7 @@ interface msftewds
 		uint32 cbrowWidth;
 		uint32 cbseek;
 		uint32 cbreserved;
-		uint32 cbreadbuffer;
+		[range(0x200,0x4000)] uint32 cbreadbuffer;
 		uint32 ulclientbase;
 		uint32 fbwdfetch;
 		uint32 etype;
