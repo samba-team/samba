@@ -923,6 +923,7 @@ static void lost_cluster_lock_handler(void *private_data)
 		private_data, struct ctdb_recoverd);
 
 	D_ERR("Cluster lock helper terminated\n");
+	rec->leader = CTDB_UNKNOWN_PNN;
 	TALLOC_FREE(rec->cluster_lock_handle);
 
 	if (this_node_can_be_leader(rec)) {
@@ -1345,12 +1346,16 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		return -1;
 	}
 
-	/* Check if the current node is still the leader.  It's possible that
-	 * re-election has changed the leader.
-	 */
+	/* Check if the current node is still the leader. */
 	if (!this_node_is_leader(rec)) {
-		D_NOTICE("Leader changed to %" PRIu32 ", aborting recovery\n",
-			 rec->leader);
+		if (rec->leader == CTDB_UNKNOWN_PNN) {
+			D_NOTICE("No longer leader, leader unknown, "
+				 "aborting recovery\n");
+		} else {
+			D_NOTICE("Leader changed to %" PRIu32
+				 ", aborting recovery\n",
+				 rec->leader);
+		}
 		return -1;
 	}
 
