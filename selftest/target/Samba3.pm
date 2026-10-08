@@ -109,7 +109,7 @@ sub teardown_env_samba($$)
 	    if ($smbdchild == -1
 		&& $nmbdchild == -1
 		&& $winbinddchild == -1
-		&& $samba_dcerpcdpid == -1) {
+		&& $samba_dcerpcdchild == -1) {
 		last;
 	    }
 	    sleep(1);
@@ -131,12 +131,12 @@ sub teardown_env_samba($$)
 	    my $smbdchild = Samba::cleanup_child($smbdpid, "smbd");
 	    my $nmbdchild = Samba::cleanup_child($nmbdpid, "nmbd");
 	    my $winbinddchild = Samba::cleanup_child($winbinddpid, "winbindd");
-	    my $samba_dcerpcdpid = Samba::cleanup_child(
+	    my $samba_dcerpcdchild = Samba::cleanup_child(
 		$samba_dcerpcdpid, "samba-dcerpcd");
 	    if ($smbdchild == -1
 		&& $nmbdchild == -1
 		&& $winbinddchild == -1
-		&& $samba_dcerpcdpid == -1) {
+		&& $samba_dcerpcdchild == -1) {
 		last;
 	    }
 	    sleep(1);
