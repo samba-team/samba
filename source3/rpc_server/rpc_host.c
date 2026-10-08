@@ -2593,8 +2593,14 @@ static bool rpc_host_dump_status_filter(
 
 	for (i=0; i<num_servers; i++) {
 		struct rpc_server *server = servers[i];
-		size_t j, num_workers = talloc_array_length(server->workers);
+		size_t j, num_workers;
 		size_t active_workers = 0;
+
+		if (server == NULL) {
+			continue;
+		}
+
+		num_workers = talloc_array_length(server->workers);
 
 		for (j=0; j<num_workers; j++) {
 			if (server->workers[j].pid != -1) {
