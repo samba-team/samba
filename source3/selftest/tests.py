@@ -1214,7 +1214,14 @@ for t in tests:
     elif t == "raw.chkpath":
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
-    elif t == "raw.samba3hide" or t == "raw.samba3checkfsp" or t == "raw.samba3closeerr":
+    elif t in ["raw.samba3checkfsp", "smb2.samba3checkfsp"]:
+        modifier = ""
+        if t == "raw.samba3checkfsp":
+            modifier = "_smb1_done"
+        plansmbtorture4testsuite(t, "nt4_dc" + modifier, '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "fileserver" + modifier, '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "ad_dc" + modifier, '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+    elif t == "raw.samba3hide" or t == "raw.samba3closeerr":
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "fileserver_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
