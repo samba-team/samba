@@ -4279,6 +4279,37 @@ sub finish_setup_after_start($$$)
 		return 0;
 	}
 
+	# Ensure Domain Admins is a member of BUILTIN\Administrators,
+	# instead of relying on smbd to add it for us, which only
+	# happens if a token is created while BUILTIN\Administrators
+	# is not yet mapped and winbindd is able to allocate a gid.
+	#
+	# Note: DOMSID is the domain we're a member of
+	# and our own SAM for a DC.
+	if (defined($envvars->{DOMSID})) {
+		my $domadminssid = "$envvars->{DOMSID}-512";
+		my $is_member = 0;
+
+		# This fails if it's already a member, which can also
+		# happen in parallel by a token created by smbd, so we
+		# ignore the result and check the membership afterwards.
+		$cmd = $netcmd . "groupmap addmem S-1-5-32-544 $domadminssid";
+		system($cmd);
+
+		$cmd = $netcmd . "groupmap listmem S-1-5-32-544 |";
+		open(IN, $cmd) or die ("Unable to list BUILTIN\\Administrators members");
+		while (<IN>) {
+			chomp;
+			$is_member = 1 if ($_ eq $domadminssid);
+		}
+		close IN;
+
+		if (!$is_member) {
+			print("$domadminssid is not a member of S-1-5-32-544\n");
+			return 0;
+		}
+	}
+
 	$cmd = $netcmd . "groupmap add unixgroup=group1 type=domain";
 	$ret = system($cmd);
 	if ($ret != 0) {
