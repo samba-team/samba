@@ -504,6 +504,11 @@ sub setup_clusteredmember
 	my @retvals = ();
 	my $ret;
 
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+		return "UNKNOWN";
+	}
+
 	print "PROVISIONING CLUSTEREDMEMBER...\n";
 
 	mkdir($prefix, 0777);
