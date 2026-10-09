@@ -223,6 +223,8 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "sdread", torture_smb2_sdreadtest);
 	torture_suite_add_simple_test(suite, "samba3error",
 				      torture_smb2_samba3_errorpaths);
+	torture_suite_add_1smb2_test(suite,
+		"samba3caseinsensitive", torture_smb2_samba3_caseinsensitive);
 	torture_suite_add_suite(suite, torture_smb2_readwrite_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_max_allowed(suite));
 	torture_suite_add_1smb2_test(suite, "tcon", run_tcon_test);

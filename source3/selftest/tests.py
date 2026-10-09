@@ -1446,7 +1446,6 @@ for t in tests:
                   "raw.rename",
                   "raw.samba3badnameblob",
                   "raw.samba3badpath",
-                  "raw.samba3caseinsensitive",
                   "raw.samba3oplocklogoff",
                   "raw.samba3posixtimedlock",
                   "raw.samba3rootdirfid",
@@ -1459,7 +1458,7 @@ for t in tests:
                   "raw.write",]) :
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
-    elif t in ["base.mangle", "base.tcon", "raw.mkdir", "raw.streams", "base.samba3error", "smb2.samba3error"]:
+    elif t in ["base.mangle", "base.tcon", "raw.mkdir", "raw.streams", "base.samba3error", "smb2.samba3error", "raw.samba3caseinsensitive"]:
         plansmbtorture4testsuite(t, "nt4_dc_smb1_done", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1_done", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "rpc.samr.passwords.validate":
