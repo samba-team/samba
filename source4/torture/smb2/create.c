@@ -34,6 +34,8 @@
 #include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/security.h"
 #include "lib/events/events.h"
+#include "lib/param/param.h"
+#include "libcli/resolve/resolve.h"
 
 #define FNAME "test_create.dat"
 #define DNAME "smb2_open"
@@ -3896,6 +3898,154 @@ done:
 }
 
 /*
+ * Test to verify that a second user is denied an open of another user's
+ * restricted file when it is addressed using a different case, for both
+ * read and write access.
+ */
+static bool set_owner_only_sd(struct torture_context *tctx,
+			      struct smb2_tree *tree,
+			      struct smb2_handle handle)
+{
+	union smb_fileinfo q = {};
+	union smb_setfileinfo s = {};
+	struct security_descriptor *sd = NULL;
+	struct security_ace ace = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = handle;
+	q.query_secdesc.in.secinfo_flags = SECINFO_OWNER | SECINFO_DACL;
+	status = smb2_getinfo_file(tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_assert_goto(tctx, q.query_secdesc.out.sd->owner_sid != NULL,
+			    ret, done, "no owner sid on created file");
+
+	sd = security_descriptor_dacl_create(tctx, 0, NULL, NULL, NULL);
+	torture_assert_goto(tctx, sd != NULL, ret, done,
+			    "security_descriptor_dacl_create failed");
+
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.access_mask = SEC_RIGHTS_FILE_ALL;
+	ace.trustee = *q.query_secdesc.out.sd->owner_sid;
+
+	status = security_descriptor_dacl_add(sd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	s.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	s.set_secdesc.in.file.handle = handle;
+	s.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	s.set_secdesc.in.sd = sd;
+	status = smb2_setinfo_file(tree, &s);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	return ret;
+}
+
+static bool test_case_insensitive_bypass(struct torture_context *tctx,
+					 struct smb2_tree *tree)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *creds2 = torture_user2_credentials(tctx, tctx);
+	struct smbcli_options options = tree->session->transport->options;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_create c;
+	struct smb2_handle h = {};
+	const char *fname = "Secret.txt";
+	const char *fname_upper = "SECRET.TXT";
+	NTSTATUS status;
+	bool ret = true;
+	size_t i;
+	const uint32_t access_masks[] = {
+		SEC_FILE_READ_DATA,
+		SEC_FILE_WRITE_DATA,
+	};
+
+	torture_assert(tctx, creds2 != NULL, "talloc error");
+	if (cli_credentials_is_anonymous(creds2)) {
+		torture_skip(tctx, "valid user2 credentials are required");
+	}
+
+	status = smb2_connect(tctx, host, share, tctx->lp_ctx,
+			      lpcfg_resolve_context(tctx->lp_ctx, tctx),
+			      creds2, &tree2, tctx->ev, &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "smb2_connect as user2 failed");
+
+	for (i = 0; i < ARRAY_SIZE(access_masks); i++) {
+		smb2_util_unlink(tree, fname);
+
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_RIGHTS_FILE_ALL,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.create_disposition = NTCREATEX_DISP_CREATE,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+					   NTCREATEX_SHARE_ACCESS_WRITE,
+			.in.fname = fname,
+		};
+		status = smb2_create(tree, tctx, &c);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		h = c.out.file.handle;
+
+		status = smb2_util_write(tree, h, "foo", 0, 3);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		ret = set_owner_only_sd(tctx, tree, h);
+		if (!ret) {
+			goto done;
+		}
+
+		smb2_util_close(tree, h);
+		ZERO_STRUCT(h);
+
+		/* Exact case open from a different must be denied. */
+		c = (struct smb2_create) {
+			.in.desired_access = access_masks[i],
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.create_disposition = NTCREATEX_DISP_OPEN,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+					   NTCREATEX_SHARE_ACCESS_WRITE,
+			.in.fname = fname,
+		};
+		status = smb2_create(tree2, tctx, &c);
+		torture_assert_ntstatus_equal_goto(tctx, status,
+			NT_STATUS_ACCESS_DENIED, ret, done,
+			"exact-case open not denied");
+
+		/*
+		 * Differently cased open with FILE_OPEN_IF must resolve to
+		 * the same owner only file and denied.
+		 */
+		c = (struct smb2_create) {
+			.in.desired_access = access_masks[i],
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+					   NTCREATEX_SHARE_ACCESS_WRITE,
+			.in.fname = fname_upper,
+		};
+		status = smb2_create(tree2, tctx, &c);
+		if (NT_STATUS_IS_OK(status)) {
+			h = c.out.file.handle;
+		}
+		torture_assert_ntstatus_equal_goto(tctx, status,
+			NT_STATUS_ACCESS_DENIED, ret, done,
+			"differently-cased FILE_OPEN_IF not denied");
+	}
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree2 != NULL ? tree2 : tree, h);
+	}
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
+/*
    basic testing of SMB2 read
 */
 struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
@@ -3920,6 +4070,7 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "quota-fake-file", test_smb2_open_quota_fake_file);
 	torture_suite_add_1smb2_test(suite, "path-length", test_path_length_test);
 	torture_suite_add_1smb2_test(suite, "bench-path-contention-shared", test_smb2_bench_path_contention_shared);
+	torture_suite_add_1smb2_test(suite, "case-insensitive-bypass", test_case_insensitive_bypass);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 

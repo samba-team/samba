@@ -1417,6 +1417,11 @@ for t in tests:
         plansmbtorture4testsuite("smb2.async_dosmode",
                                  "simpleserver",
                                  "//$SERVER_IP/async_dosmode_shadow_copy2 -U$USERNAME%$PASSWORD")
+    elif t == "smb2.create":
+        nt4_creds = " --option=torture:user2name=user1 --option=torture:user2password=$PASSWORD"
+        ad_creds = " --option='torture:user2name=alice' --option='torture:user2password=Secret007'"
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD' + nt4_creds)
+        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD' + ad_creds)
     elif t == "smb2.rename":
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.twrp":
