@@ -26,7 +26,7 @@ use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsPipe is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
-use Parse::Pidl qw(warning);
+use Parse::Pidl qw(warning fatal);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -201,6 +201,24 @@ sub ParseArrayPushHeader($$$$$$)
 	} else {
 		$size = ParseExpr($l->{SIZE_IS}, $env, $e);
 		$length = ParseExpr($l->{LENGTH_IS}, $env, $e);
+	}
+
+	if (my $range = has_property($e, "range")) {
+		my ($low, $high) = parse_range($range);
+		if ($low < 0) {
+			warning(0, "$low is invalid for the range of an array size");
+		}
+		my @checks = ($size);
+		push(@checks, $length) if ($l->{IS_VARYING} and $length ne $size);
+		foreach my $v (@checks) {
+			if ($low == 0) {
+				$self->pidl("if (($v) > $high) {");
+			} else {
+				$self->pidl("if (($v) < $low || ($v) > $high) {");
+			}
+			$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", (uint32_t)($v), (uint32_t)($low), (uint32_t)($high));");
+			$self->pidl("}");
+		}
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
@@ -1066,6 +1084,60 @@ sub ParseDataPush($$$$$$$)
 	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
 
 		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+
+		my $pl = GetPrevLevel($e, $l);
+
+		my $range = has_property($e, "range");
+		if ($range and (not $pl or $pl->{TYPE} ne "ARRAY")) {
+			my $signed = Parse::Pidl::Typelist::is_signed($l->{DATA_TYPE});
+			my ($low, $high) = parse_range($range);
+			if ($low < 0 and not $signed) {
+				warning(0, "$low is invalid for the range of an unsigned type");
+			}
+
+			my $value = has_property($e, "value");
+			my $const_value = undef;
+			if (defined($value)) {
+				my $v = parse_int($value);
+				if ($v =~ /^\d+$/ and
+				    $low =~ /^-?\d+$/ and
+				    $high =~ /^-?\d+$/)
+				{
+					$const_value = $v;
+				}
+			}
+
+			if (defined($const_value)) {
+				# A constant value() can't change at
+				# runtime, so we check it here instead
+				# of generating a check that is never
+				# true.
+				if ($const_value < $low or $const_value > $high) {
+					fatal($e->{ORIGINAL}, "value($value) of `$e->{NAME}' is out of range($range)");
+				}
+			} else {
+				if ($low == 0 and not $signed) {
+					$self->pidl("if (($var_name) > $high) {");
+				} else {
+					$self->pidl("if (($var_name) < $low || ($var_name) > $high) {");
+				}
+
+				my $data_type = mapTypeName($l->{DATA_TYPE});
+				my $fmt = mapTypeSpecifier($data_type);
+
+				if (!defined($fmt)) {
+					if (getType($l->{DATA_TYPE})->{DATA}->{TYPE} eq "ENUM") {
+						$data_type = "int";
+						$fmt = "d";
+					} else {
+						die("Format ($data_type) not supported");
+					}
+				}
+
+				$self->pidl("\treturn ndr_push_error($ndr, NDR_ERR_RANGE, \"value (%$fmt) out of range (%$fmt - %$fmt)\", ($data_type)($var_name), ($data_type)($low), ($data_type)($high));");
+				$self->pidl("}");
+			}
+		}
 
 		# strings are passed by value rather than reference
 		if (need_pointer_to($e, $l, 1)) {
