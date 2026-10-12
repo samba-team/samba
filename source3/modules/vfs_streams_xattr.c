@@ -424,7 +424,8 @@ static int streams_xattr_get_ea_value_fsp(
 		return EACCES;
 	}
 
-	if (attr_size > (SIZE_MAX / config->max_extents)) {
+	if (config->max_extents > 0 &&
+	    attr_size > (SIZE_MAX / config->max_extents)) {
 		return EOVERFLOW;
 	}
 	max_stream_size = attr_size * config->max_extents;
