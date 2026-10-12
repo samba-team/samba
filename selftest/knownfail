@@ -19,8 +19,6 @@
 ^samba3.nbt.dgram.*netlogon2\(nt4_dc\)
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3
-^samba3.libsmbclient.opendir # This requires a workgroup called 'WORKGROUP' and for netbios browse lists to have been registered
-# see bug 8412
 ^samba3.smb2.rename.*.simple_nodelete
 ^samba3.smb2.rename.*.no_share_delete_no_delete_access
 ^samba3.blackbox.smbclient_machine_auth.plain.*nt4_dc:local # the NT4 DC does not currently set up a self-join
@@ -153,7 +151,6 @@
 ^samba4.smb2.streams.perms\(ad_dc_ntvfs\) # fails against ntvfs.
 ^samba4.ldap.dirsync.python.*.__main__.SimpleDirsyncTests.test_dirsync_deleted_items_OBJECT_SECURITY
 #^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.*
-^samba4.libsmbclient.opendir.(NT1|SMB3).opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
 ^samba4.smb2.oplock.exclusive2\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.exclusive5\(.*\)$ # samba 4 oplocks are a mess

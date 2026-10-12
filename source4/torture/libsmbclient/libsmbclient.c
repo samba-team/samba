@@ -237,12 +237,23 @@ static bool test_opendir(struct torture_context *tctx,
 			 const char *fname,
 			 bool expect_success)
 {
-	int handle, ret;
+	int handle = -1;
+	int ret;
 
 	torture_comment(tctx, "Testing smbc_opendir(%s)\n", fname);
 
 	handle = smbc_opendir(fname);
 	if (!expect_success) {
+		if (handle >= 0) {
+			smbc_closedir(handle);
+		}
+		torture_assert(
+			tctx,
+			handle < 0,
+			talloc_asprintf(
+				tctx,
+				"smbc_opendir('%s') unexpectedly succeeded",
+				fname));
 		return true;
 	}
 	if (handle < 0) {
@@ -259,43 +270,78 @@ static bool test_opendir(struct torture_context *tctx,
 static bool torture_libsmbclient_opendir(struct torture_context *tctx)
 {
 	size_t i;
-	SMBCCTX *ctx;
+	SMBCCTX *ctx = NULL;
 	bool ret = true;
-	const char *bad_urls[] = {
-		"",
-		NULL,
-		"smb",
-		"smb:",
-		"smb:/",
-		"smb:///",
-		"bms://",
-		":",
-		":/",
-		"://",
-		":///",
-		"/",
-		"//",
-		"///"
-	};
+	bool ok = false;
+	const char *bad_urls[] = {"",
+				  NULL,
+				  "smb",
+				  "smb:",
+				  "smb:/",
+				  "bms://",
+				  ":",
+				  ":/",
+				  "://",
+				  ":///",
+				  "/",
+				  "//",
+				  "///"};
+
+	torture_assert_goto(tctx,
+			    torture_libsmbclient_init_context(tctx, &ctx),
+			    ok,
+			    done,
+			    "");
+	smbc_set_context(ctx);
+
+	for (i = 0; i < ARRAY_SIZE(bad_urls); i++) {
+		ret &= test_opendir(tctx, ctx, bad_urls[i], false);
+	}
+
+	ok = ret;
+
+done:
+	smbc_free_context(ctx, 1);
+
+	return ok;
+}
+
+static bool torture_libsmbclient_opendir_browse(struct torture_context *tctx)
+{
+	size_t i;
+	SMBCCTX *ctx = NULL;
+	bool ret = true;
+	bool ok = false;
 	const char *good_urls[] = {
 		"smb://",
 		"smb://WORKGROUP",
-		"smb://WORKGROUP/"
-	};
+		"smb://WORKGROUP/",
 
-	torture_assert(tctx, torture_libsmbclient_init_context(tctx, &ctx), "");
+		/*
+		 * SMBC_parse_path() treats a lone trailing slash as a
+		 * request for the configured workgroup, resolved as if it
+		 * were a server name via its local/domain master browser
+		 * (0x1d/0x1b) -- same netbios browsing dependency as above.
+		 */
+		"smb:///"};
+
+	torture_assert_goto(tctx,
+			    torture_libsmbclient_init_context(tctx, &ctx),
+			    ok,
+			    done,
+			    "");
 	smbc_set_context(ctx);
 
-	for (i=0; i < ARRAY_SIZE(bad_urls); i++) {
-		ret &= test_opendir(tctx, ctx, bad_urls[i], false);
-	}
 	for (i=0; i < ARRAY_SIZE(good_urls); i++) {
 		ret &= test_opendir(tctx, ctx, good_urls[i], true);
 	}
 
+	ok = ret;
+
+done:
 	smbc_free_context(ctx, 1);
 
-	return ret;
+	return ok;
 }
 
 static bool torture_libsmbclient_readdirplus(struct torture_context *tctx)
@@ -1884,6 +1930,9 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 		"set_credentials",
 		torture_libsmbclient_set_credentials);
 	torture_suite_add_simple_test(suite, "opendir", torture_libsmbclient_opendir);
+	torture_suite_add_simple_test(suite,
+				      "opendir_browse",
+				      torture_libsmbclient_opendir_browse);
 	torture_suite_add_simple_test(suite, "list_shares", torture_libsmbclient_list_shares);
 	torture_suite_add_simple_test(suite, "readdirplus",
 		torture_libsmbclient_readdirplus);
