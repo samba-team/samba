@@ -161,8 +161,8 @@ nbt.bench-wins
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead
 ^samba4.blackbox.ktpass # this test isn't portable ...
-^samba4.libsmbclient.opendir_browse.SMB3\(nt4_dc\) # flaky: depends on a live netbios master browser answering in time
-^samba4.libsmbclient.opendir_browse.NT1\(nt4_dc_smb1_done\) # flaky: depends on a live netbios master browser answering in time
+^samba4.libsmbclient.opendir_browse.SMB3\(fileserver\) # flaky: depends on a live netbios master browser answering in time
+^samba4.libsmbclient.opendir_browse.NT1\(fileserver_smb1_done\) # flaky: depends on a live netbios master browser answering in time
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba4.smb2.mangle.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
 ^samba4.smb2.tcon.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
