@@ -1697,6 +1697,20 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 			tevent_req_set_callback(subreq,
 						smbXsrv_session_remove_channel_done,
 						session);
+
+			/*
+			 * We must not store a global record without
+			 * any channel, [range(1, 1024)] num_channels
+			 * would make it unparsable for others.
+			 *
+			 * The record still contains the last
+			 * channel, which is fine as the session
+			 * is shutting down and
+			 * smbXsrv_session_remove_channel_done()
+			 * will remove the record via
+			 * smbXsrv_session_logoff().
+			 */
+			return NT_STATUS_OK;
 		}
 		need_update = true;
 	}
