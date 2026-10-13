@@ -858,12 +858,20 @@ static bool close_durable(struct smb_request *req,
 		return false;
 	}
 
-	if (req != NULL) {
-		tv = req->request_time;
-	} else {
-		tv = timeval_current();
+	/*
+	 * A reconnect rejected after the handle was reopened still has the
+	 * disconnect_time of the original disconnect, keep it so the durable
+	 * timeout is not restarted.
+	 */
+	now = fsp->op->global->disconnect_time;
+	if (now == 0) {
+		if (req != NULL) {
+			tv = req->request_time;
+		} else {
+			tv = timeval_current();
+		}
+		now = timeval_to_nttime(&tv);
 	}
-	now = timeval_to_nttime(&tv);
 
 	data_blob_free(&fsp->op->global->backend_cookie);
 	fsp->op->global->backend_cookie = new_cookie;

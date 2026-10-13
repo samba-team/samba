@@ -562,10 +562,24 @@ static NTSTATUS smbXsrv_open_global_allocate(
 
 static int smbXsrv_open_destructor(struct smbXsrv_open *op)
 {
-	struct timeval now = timeval_current();
+	NTTIME now = op->global->disconnect_time;
 	NTSTATUS status;
 
-	status = smbXsrv_open_close(op, timeval_to_nttime(&now));
+	if (now == 0) {
+		struct timeval tv = timeval_current();
+
+		/*
+		 * A durable record stored without a disconnect time starts its
+		 * timeout now. For a persistent handle left behind by a
+		 * crashed smbd, this delays its cleanup by up to one timeout.
+		 * Passing 0 instead would leave the record looking expired to
+		 * smbXsrv_open_cleanup_fn() and make scavenger_add_timer()
+		 * complain.
+		 */
+		now = timeval_to_nttime(&tv);
+	}
+
+	status = smbXsrv_open_close(op, now);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smbXsrv_open_destructor: "
 			  "smbXsrv_open_close() failed - %s\n",
