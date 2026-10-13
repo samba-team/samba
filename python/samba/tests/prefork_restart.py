@@ -410,7 +410,7 @@ class PreforkProcessRestartTests(TestCase):
         backoff_increment = 5
         for expected in [0, 5, 10, 10]:
             # Get the worker processes
-            workers = self.get_worker_pids("kdc", NUM_WORKERS)
+            workers = self.get_worker_pids("echo", NUM_WORKERS)
 
             process = self.get_process("prefork-master-echo")
             os.kill(process, signal.SIGTERM)
