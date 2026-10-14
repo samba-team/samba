@@ -169,6 +169,16 @@ static char *normalise_name(TALLOC_CTX *ctx, const char *pathname_in)
 	return result;
 }
 
+static char *prepare_full_path(TALLOC_CTX *ctx,
+			       const char *dir_name,
+			       const char *base_name)
+{
+	if (*dir_name != '\0') {
+		return talloc_asprintf(ctx, "%s/%s", dir_name, base_name);
+	}
+	return talloc_strdup(ctx, base_name);
+}
+
 static int vfs_ceph_rgw_release_fh(struct vfs_ceph_rgw_fh *cfh)
 {
 	cfh->rgw_fh = NULL;
@@ -249,6 +259,9 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 	bool do_release = false;
 	const struct security_unix_token *utok = NULL;
 	char *open_name = NULL;
+	char *name = NULL;
+	char *dir_name = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_openat);
 
@@ -259,9 +272,21 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 
 	utok = get_current_utok(handle->conn);
 
-	open_name = normalise_name(talloc_tos(), fsp->fsp_name->base_name);
-	if (open_name == NULL) {
+	dir_name = normalise_name(ctx, dirfsp->fsp_name->base_name);
+	if (dir_name == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for dirname\n");
+		goto out;
+	}
+
+	name = normalise_name(ctx, smb_fname->base_name);
+	if (name == NULL) {
 		DBG_ERR("[CEPH_RGW] Not enough memory for name\n");
+		goto out;
+	}
+
+	open_name = prepare_full_path(ctx, dir_name, name);
+	if (open_name == NULL) {
+		DBG_ERR("[CEPH_RGW] Not enough memory for open name\n");
 		goto out;
 	}
 
@@ -398,7 +423,7 @@ out:
 				  RGW_FH_RELE_FLAG_NONE);
 		vfs_ceph_rgw_remove_fh(handle, fsp);
 	}
-	TALLOC_FREE(open_name);
+	TALLOC_FREE(ctx);
 	END_PROFILE_X(syscall_openat);
 	return status_code(rc);
 }
@@ -1692,16 +1717,6 @@ out:
 		  bytes_written);
 	END_PROFILE_BYTES_X(syscall_pwrite);
 	return lstatus_code(bytes_written);
-}
-
-static char *prepare_full_path(TALLOC_CTX *ctx,
-			       const char *dir_name,
-			       const char *base_name)
-{
-	if (*dir_name != '\0') {
-		return talloc_asprintf(ctx, "%s/%s", dir_name, base_name);
-	}
-	return talloc_strdup(ctx, base_name);
 }
 
 /* Note about rename:
