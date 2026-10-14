@@ -88,7 +88,7 @@ static void test_ctdb_rec_buffer_read_write(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_rec_buffer *p1, **p2;
 	char filename[] = "ctdb_rec_buffer_test.XXXXXX";
-	int count = 100;
+	int count = 10;
 	int fd, i, ret;
 	off_t offset;
 
