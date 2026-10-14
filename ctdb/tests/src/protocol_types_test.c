@@ -87,7 +87,7 @@ static void test_ctdb_rec_buffer_read_write(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_rec_buffer *p1, **p2;
-	const char *filename = "ctdb_rec_buffer_test.dat";
+	char filename[] = "ctdb_rec_buffer_test.XXXXXX";
 	int count = 100;
 	int fd, i, ret;
 	off_t offset;
@@ -98,7 +98,7 @@ static void test_ctdb_rec_buffer_read_write(void)
 		fill_ctdb_rec_buffer(mem_ctx, &p1[i]);
 	}
 
-	fd = open(filename, O_RDWR|O_CREAT, 0600);
+	fd = mkstemp(filename);
 	assert(fd != -1);
 	unlink(filename);
 
