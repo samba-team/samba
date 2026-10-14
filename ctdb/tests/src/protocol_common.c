@@ -92,6 +92,9 @@ void fill_ctdb_statistics(TALLOC_CTX *mem_ctx, struct ctdb_statistics *p)
 {
 	int i;
 
+	/* Padding is compared by compatibility tests */
+	memset(p, 0, sizeof(*p));
+
 	p->num_clients = rand32();
 	p->frozen = rand32();
 	p->recovering = rand32();
@@ -338,6 +341,9 @@ void verify_ctdb_echo_data(struct ctdb_echo_data *p1,
 
 void fill_ctdb_ltdb_header(struct ctdb_ltdb_header *p)
 {
+	/* Padding is compared by compatibility tests */
+	memset(p, 0, sizeof(*p));
+
 	p->rsn = rand64();
 	p->dmaster = rand32();
 	p->reserved1 = rand32();
@@ -490,6 +496,9 @@ void verify_ctdb_traverse_all_ext(struct ctdb_traverse_all_ext *p1,
 
 void fill_ctdb_sock_addr(TALLOC_CTX *mem_ctx, ctdb_sock_addr *p)
 {
+	/* Unused bytes are compared by compatibility tests */
+	memset(p, 0, sizeof(*p));
+
 	if (rand_int(2) == 0) {
 		p->ip.sin_family = AF_INET;
 		p->ip.sin_port = rand_int(65535);
