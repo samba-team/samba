@@ -236,10 +236,9 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
     def test_libsmb_shadow_depot(self):
         c = libsmb.Conn(self.server_ip, "shadow_depot", self.lp, self.creds)
         try:
-            fnum=c.create("x:y",CreateDisposition=libsmb.FILE_CREATE)
-            c.close(fnum)
-        except:
-            self.fail()
+            fnum = self.assertNoNTSTATUSError(
+                c.create, "x:y", CreateDisposition=libsmb.FILE_CREATE)
+            self.assertNoNTSTATUSError(c.close, fnum)
         finally:
             # "c" might have crashed, get a new connection
             c1 = libsmb.Conn(self.server_ip, "shadow_depot", self.lp, self.creds)
@@ -287,10 +286,8 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
                       CreateDisposition=libsmb.FILE_CREATE)
         c.delete_on_close(fh, 1)
 
-        try:
-            c.close(fh, libsmb.SMB2_CLOSE_FLAGS_FULL_INFORMATION)
-        except:
-            self.fail()
+        self.assertNoNTSTATUSError(
+            c.close, fh, libsmb.SMB2_CLOSE_FLAGS_FULL_INFORMATION)
 
         c.deltree("teststreams")
 
