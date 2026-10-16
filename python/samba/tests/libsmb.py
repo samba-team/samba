@@ -47,6 +47,14 @@ class LibsmbTests(samba.tests.TestCase):
         self.server = samba.tests.env_get_var_value("SERVER")
         self.server_ip = samba.tests.env_get_var_value("SERVER_IP")
 
+    def assertNoNTSTATUSError(self, fn, *args, **kwargs):
+        """Call fn, turning an NTSTATUSError into a test failure."""
+        try:
+            return fn(*args, **kwargs)
+        except NTSTATUSError as e:
+            self.fail("%s failed: 0x%08x %s" %
+                      (fn.__name__, e.args[0], e.args[1]))
+
     def clean_file(self, conn, filename, retry=True):
         try:
             conn.unlink(filename)
