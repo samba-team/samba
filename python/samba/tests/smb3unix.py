@@ -178,23 +178,21 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                       '.a', ' \\ ', '>', '<' '?']
 
         for fname in test_files:
-            try:
-                wire_mode = libsmb.unix_mode_to_wire(0o744)
-                f,_,cc_out = c.create_ex('\\%s' % fname,
-                                CreateDisposition=libsmb.FILE_CREATE,
-                                DesiredAccess=security.SEC_FILE_READ_ATTRIBUTE,
-                                CreateContexts=[posix_context(wire_mode)])
-            except NTSTATUSError as e:
-                self.fail(e)
+            wire_mode = libsmb.unix_mode_to_wire(0o744)
+            f, _, cc_out = self.assertNoNTSTATUSError(
+                c.create_ex,
+                '\\%s' % fname,
+                CreateDisposition=libsmb.FILE_CREATE,
+                DesiredAccess=security.SEC_FILE_READ_ATTRIBUTE,
+                CreateContexts=[posix_context(wire_mode)])
             c.close(f)
 
         try:
-            res = c.list('', info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
+            res = self.assertNoNTSTATUSError(
+                c.list, '', info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
             found_files = {get_string(i['name']): i for i in res}
             for fname in test_files:
                 self.assertTrue(fname in found_files)
-        except NTSTATUSError as e:
-            self.fail(e)
         finally:
             wire_mode = libsmb.unix_mode_to_wire(0o600)
             for fname in test_files:
@@ -568,10 +566,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         """
         (winconn, posixconn) = self.connections()
 
-        try:
-            posix_info = posixconn.get_posix_fs_info()
-        except Exception as e:
-            self.fail(str(e))
+        posix_info = self.assertNoNTSTATUSError(posixconn.get_posix_fs_info)
         self.assertTrue(isinstance(posix_info, dict))
         self.assertTrue('optimal_transfer_size' in posix_info)
 
@@ -604,9 +599,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         c.write(sh, buffer=b"data", offset=0)
 
         try:
-            written = c.copy_chunk(sh, dh, 4, 0, 0)
-        except Exception as e:
-            self.fail(str(e))
+            written = self.assertNoNTSTATUSError(c.copy_chunk, sh, dh, 4, 0, 0)
         finally:
             c.close(sh)
             c.close(dh)
