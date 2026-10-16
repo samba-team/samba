@@ -2069,6 +2069,7 @@ static struct tevent_req *db_ctdb_parse_record_send(
 		.private_data = private_data,
 		.req_state = req_state,
 		.my_vnn = get_my_vnn(),
+		.local = true,
 		.empty_record = false,
 		.sleep_time = 10000, /* start with 10 ms */
 	};
@@ -2097,6 +2098,7 @@ again_local:
 		goto again_local;
 	}
 
+	state->local = false;
 	if (db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
 		/*
 		 * TODO: check compatibility of using push-record with read-only
