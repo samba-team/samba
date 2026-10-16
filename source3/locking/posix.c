@@ -357,6 +357,29 @@ static TDB_DATA locking_ref_count_key_fsp(const files_struct *fsp,
 	return make_tdb_data((uint8_t *)tmp, sizeof(*tmp));
 }
 
+/*
+ * Key for "this lock context holds POSIX flavour locks on this
+ * file". The tag keeps it distinct from lock_ref_count_key, which
+ * has the same size as file_id+smblctx due to padding.
+ */
+
+struct posix_lock_ctx_key {
+	struct file_id id;
+	uint64_t smblctx;
+	char p;
+};
+
+static TDB_DATA posix_lock_ctx_key_fsp(const files_struct *fsp,
+				       uint64_t smblctx,
+				       struct posix_lock_ctx_key *tmp)
+{
+	ZERO_STRUCTP(tmp);
+	tmp->id = fsp->file_id;
+	tmp->smblctx = smblctx;
+	tmp->p = 'p';
+	return make_tdb_data((uint8_t *)tmp, sizeof(*tmp));
+}
+
 /*******************************************************************
  Convenience function to get an fd_array key from an fsp.
 ******************************************************************/
@@ -1160,28 +1183,29 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 
 /****************************************************************************
  We only increment the lock ref count when we see a POSIX lock on a context
- that doesn't already have them.
+ that doesn't already have them on this file.
 ****************************************************************************/
 
 static void increment_posix_lock_count(const files_struct *fsp,
 					uint64_t smblctx)
 {
+	struct posix_lock_ctx_key tmp = {};
 	NTSTATUS status;
-	TDB_DATA ctx_key;
+	TDB_DATA ctx_key = posix_lock_ctx_key_fsp(fsp, smblctx, &tmp);
 	TDB_DATA val = { 0 };
-
-	ctx_key.dptr = (uint8_t *)&smblctx;
-	ctx_key.dsize = sizeof(smblctx);
 
 	/*
 	 * Don't increment if we already have any POSIX flavor
-	 * locks on this context.
+	 * locks on this context on this file.
 	 */
 	if (dbwrap_exists(posix_pending_close_db, ctx_key)) {
 		return;
 	}
 
-	/* Remember that we have POSIX flavor locks on this context. */
+	/*
+	 * Remember that we have POSIX flavor locks on this context on
+	 * this file.
+	 */
 	status = dbwrap_store(posix_pending_close_db, ctx_key, val, 0);
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
@@ -1193,11 +1217,9 @@ static void increment_posix_lock_count(const files_struct *fsp,
 
 static void decrement_posix_lock_count(const files_struct *fsp, uint64_t smblctx)
 {
+	struct posix_lock_ctx_key tmp = {};
 	NTSTATUS status;
-	TDB_DATA ctx_key;
-
-	ctx_key.dptr = (uint8_t *)&smblctx;
-	ctx_key.dsize = sizeof(smblctx);
+	TDB_DATA ctx_key = posix_lock_ctx_key_fsp(fsp, smblctx, &tmp);
 
 	status = dbwrap_delete(posix_pending_close_db, ctx_key);
 	SMB_ASSERT(NT_STATUS_IS_OK(status));

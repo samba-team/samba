@@ -213,8 +213,10 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
     smblctx LCTX. smbd must keep its per-file POSIX lock accounting right
     for that.
 
-    The comments describe what happens with the "LCTX has POSIX locks"
-    marker in posix_pending_close_db keyed by smblctx alone.
+    The comments describe the "LCTX has POSIX locks on this file"
+    marker in posix_pending_close_db, keyed by file_id and smblctx.
+    Keyed by smblctx alone, lock_ref_count(fnum2) stayed 0 and
+    unlocking fnum2 made smbd panic.
 
     """
 
@@ -240,27 +242,26 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
     def test_two_files_close_second(self):
         fnum1 = self.create("close_second_1")
         fnum2 = self.create("close_second_2")
-        # No marker for LCTX yet: store it, lock_ref_count(fnum1) = 1
+        # No marker for (fnum1, LCTX) yet: store it, lock_ref_count(fnum1) = 1
         self.conn.smb1_posix_lock(fnum1, 0, 10, write=True)
-        # Marker for LCTX exists: lock_ref_count(fnum2) stays 0
+        # No marker for (fnum2, LCTX) yet: store it, lock_ref_count(fnum2) = 1
         self.conn.smb1_posix_lock(fnum2, 0, 10, write=True)
         # brl_close_fnum() unlocks, LCTX has no locks left on fnum2:
-        # decrement_lock_ref_count(fnum2) finds 0, SMB_ASSERT panics
-        self.assertNoNTSTATUSError(self.conn.close, fnum2)
+        # marker (fnum2, LCTX) deleted, lock_ref_count(fnum2) = 0
+        self.conn.close(fnum2)
         self.conn.smb1_posix_unlock(fnum1, 0, 10)
         self.conn.close(fnum1)
 
     def test_two_files_unlock_second(self):
         fnum1 = self.create("unlock_second_1")
         fnum2 = self.create("unlock_second_2")
-        # Marker for LCTX stored, lock_ref_count(fnum1) = 1
+        # Marker for (fnum1, LCTX) stored, lock_ref_count(fnum1) = 1
         self.conn.smb1_posix_lock(fnum1, 0, 10, write=True)
-        # Marker for LCTX exists: lock_ref_count(fnum2) stays 0
+        # Marker for (fnum2, LCTX) stored, lock_ref_count(fnum2) = 1
         self.conn.smb1_posix_lock(fnum2, 0, 10, write=True)
         # LCTX has no locks left on fnum2:
-        # decrement_lock_ref_count(fnum2) finds 0, SMB_ASSERT panics
-        self.assertNoNTSTATUSError(self.conn.smb1_posix_unlock,
-                                   fnum2, 0, 10)
+        # marker (fnum2, LCTX) deleted, lock_ref_count(fnum2) = 0
+        self.conn.smb1_posix_unlock(fnum2, 0, 10)
         self.conn.smb1_posix_unlock(fnum1, 0, 10)
         self.conn.close(fnum2)
         self.conn.close(fnum1)
@@ -268,16 +269,14 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
     def test_two_files_unlock_first(self):
         fnum1 = self.create("unlock_first_1")
         fnum2 = self.create("unlock_first_2")
-        # Marker for LCTX stored, lock_ref_count(fnum1) = 1
+        # Marker for (fnum1, LCTX) stored, lock_ref_count(fnum1) = 1
         self.conn.smb1_posix_lock(fnum1, 0, 10, write=True)
-        # Marker for LCTX exists: lock_ref_count(fnum2) stays 0
+        # Marker for (fnum2, LCTX) stored, lock_ref_count(fnum2) = 1
         self.conn.smb1_posix_lock(fnum2, 0, 10, write=True)
-        # Marker for LCTX deleted, lock_ref_count(fnum1) = 0, fine
+        # Marker (fnum1, LCTX) deleted, lock_ref_count(fnum1) = 0
         self.conn.smb1_posix_unlock(fnum1, 0, 10)
-        # Deleting the missing marker succeeds (rbt), then
-        # decrement_lock_ref_count(fnum2) finds 0, SMB_ASSERT panics
-        self.assertNoNTSTATUSError(self.conn.smb1_posix_unlock,
-                                   fnum2, 0, 10)
+        # Marker (fnum2, LCTX) deleted, lock_ref_count(fnum2) = 0
+        self.conn.smb1_posix_unlock(fnum2, 0, 10)
         self.conn.close(fnum2)
         self.conn.close(fnum1)
 
@@ -291,9 +290,8 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
         self.conn.smb1_posix_lock(fnum1, offset, 10, write=True)
         self.conn.smb1_posix_lock(fnum2, offset, 10, write=True)
         self.conn.smb1_posix_unlock(fnum1, offset, 10)
-        # decrement_lock_ref_count(fnum2) finds 0, SMB_ASSERT panics
-        self.assertNoNTSTATUSError(self.conn.smb1_posix_unlock,
-                                   fnum2, offset, 10)
+        # Marker (fnum2, LCTX) deleted, lock_ref_count(fnum2) = 0
+        self.conn.smb1_posix_unlock(fnum2, offset, 10)
         self.conn.close(fnum2)
         self.conn.close(fnum1)
 
