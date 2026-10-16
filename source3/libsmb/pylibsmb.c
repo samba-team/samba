@@ -3261,6 +3261,116 @@ static PyObject *py_smb_smb1_symlink(
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_smb_smb1_posix_lock(struct py_cli_state *self,
+					PyObject *args,
+					PyObject *kwds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	static const char *kwlist[] = {
+		"fnum",
+		"offset",
+		"length",
+		"write",
+		"wait",
+		NULL,
+	};
+	unsigned fnum = 0;
+	unsigned long long offset = 0;
+	unsigned long long length = 0;
+	int is_write = 0;
+	int wait_lock = 0;
+	struct tevent_req *req = NULL;
+	PyObject *result = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	ok = ParseTupleAndKeywords(args,
+				   kwds,
+				   "IKK|pp:smb1_posix_lock",
+				   kwlist,
+				   &fnum,
+				   &offset,
+				   &length,
+				   &is_write,
+				   &wait_lock);
+	if (!ok) {
+		goto done;
+	}
+
+	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"smb1_posix_lock requires SMB1");
+		goto done;
+	}
+
+	req = cli_posix_lock_send(frame,
+				  self->ev,
+				  self->cli,
+				  fnum,
+				  offset,
+				  length,
+				  wait_lock,
+				  is_write ? WRITE_LOCK : READ_LOCK);
+	ok = py_tevent_req_wait_exc(self, req);
+	if (!ok) {
+		goto done;
+	}
+	status = cli_posix_lock_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		goto done;
+	}
+
+	result = Py_None;
+	Py_INCREF(result);
+done:
+	TALLOC_FREE(frame);
+	return result;
+}
+
+static PyObject *py_smb_smb1_posix_unlock(struct py_cli_state *self,
+					  PyObject *args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	unsigned fnum = 0;
+	unsigned long long offset = 0;
+	unsigned long long length = 0;
+	struct tevent_req *req = NULL;
+	PyObject *result = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTuple(
+		args, "IKK:smb1_posix_unlock", &fnum, &offset, &length);
+	if (!ok) {
+		goto done;
+	}
+
+	if (smbXcli_conn_protocol(self->cli->conn) >= PROTOCOL_SMB2_02) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"smb1_posix_unlock requires SMB1");
+		goto done;
+	}
+
+	req = cli_posix_unlock_send(
+		frame, self->ev, self->cli, fnum, offset, length);
+	ok = py_tevent_req_wait_exc(self, req);
+	if (!ok) {
+		goto done;
+	}
+	status = cli_posix_unlock_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		goto done;
+	}
+
+	result = Py_None;
+	Py_INCREF(result);
+done:
+	TALLOC_FREE(frame);
+	return result;
+}
+
 static PyObject *py_smb_smb1_stat(
 	struct py_cli_state *self, PyObject *args)
 {
@@ -3627,6 +3737,18 @@ static PyMethodDef py_cli_state_methods[] = {
 	  (PyCFunction)py_smb_smb1_stat,
 	  METH_VARARGS,
 	  "smb1_stat(path) -> stat info",
+	},
+	{ "smb1_posix_lock",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_smb_smb1_posix_lock),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "smb1_posix_lock(fnum, offset, length[, write=False, wait=False])"
+	  " -> None\n\n"
+	  "\t\tPOSIX byte range lock via SMB_SET_POSIX_LOCK",
+	},
+	{ "smb1_posix_unlock",
+	  (PyCFunction)py_smb_smb1_posix_unlock,
+	  METH_VARARGS,
+	  "smb1_posix_unlock(fnum, offset, length) -> None",
 	},
 	{ "fsctl",
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_fsctl),
