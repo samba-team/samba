@@ -1220,6 +1220,21 @@ static void decrement_posix_lock_count(const files_struct *fsp, uint64_t smblctx
 	struct posix_lock_ctx_key tmp = {};
 	NTSTATUS status;
 	TDB_DATA ctx_key = posix_lock_ctx_key_fsp(fsp, smblctx, &tmp);
+	bool ok;
+
+	/*
+	 * Without a marker we never incremented the lock ref count
+	 * for this context on this file, e.g. because the locks were
+	 * taken before "posix locking" was switched on.
+	 */
+	ok = dbwrap_exists(posix_pending_close_db, ctx_key);
+	if (!ok) {
+		DBG_NOTICE("No POSIX lock marker for context %" PRIu64
+			   " on file %s\n",
+			   smblctx,
+			   fsp_str_dbg(fsp));
+		return;
+	}
 
 	status = dbwrap_delete(posix_pending_close_db, ctx_key);
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
