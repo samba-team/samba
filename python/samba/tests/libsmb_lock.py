@@ -17,6 +17,10 @@
 
 """Tests for byte range locks via samba.samba3.libsmb."""
 
+import errno
+import fcntl
+import os
+
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3.libsmb_samba_internal import (
     FILE_CREATE,
@@ -229,15 +233,17 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
                                 force_smb1=True)
         self.conn.smb1_posix()
 
-    def create(self, fname):
+    def create(self, fname, conn=None):
+        if conn is None:
+            conn = self.conn
         fname = "posix_lock_%s" % fname
-        self.clean_file(self.conn, fname)
-        return self.conn.create(fname,
-                                DesiredAccess=SEC_FILE_READ_DATA |
-                                SEC_FILE_WRITE_DATA | SEC_STD_DELETE,
-                                ShareAccess=FILE_SHARE_ALL,
-                                CreateDisposition=FILE_CREATE,
-                                CreateOptions=FILE_DELETE_ON_CLOSE)
+        self.clean_file(conn, fname)
+        return conn.create(fname,
+                           DesiredAccess=SEC_FILE_READ_DATA |
+                           SEC_FILE_WRITE_DATA | SEC_STD_DELETE,
+                           ShareAccess=FILE_SHARE_ALL,
+                           CreateDisposition=FILE_CREATE,
+                           CreateOptions=FILE_DELETE_ON_CLOSE)
 
     def test_two_files_close_second(self):
         fnum1 = self.create("close_second_1")
@@ -294,6 +300,44 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
         self.conn.smb1_posix_unlock(fnum2, offset, 10)
         self.conn.close(fnum2)
         self.conn.close(fnum1)
+
+    def test_two_files_close_other_open(self):
+        # With OFD locks fd_close_posix() ignores lock_ref_count
+        conn = libsmb.Conn(self.server_ip,
+                           "posix_process_locks",
+                           self.lp,
+                           self.creds,
+                           force_smb1=True)
+        conn.smb1_posix()
+        fnum1 = self.create("close_other_open_1", conn)
+        fnum2 = self.create("close_other_open_2", conn)
+        # Marker for (fnum1, LCTX) stored, lock_ref_count(fnum1) = 1
+        conn.smb1_posix_lock(fnum1, 0, 10, write=True)
+        # Marker for (fnum2, LCTX) stored, lock_ref_count(fnum2) = 1
+        conn.smb1_posix_lock(fnum2, 0, 10, write=True)
+        fnum3 = conn.create("posix_lock_close_other_open_2",
+                            DesiredAccess=SEC_FILE_READ_DATA,
+                            ShareAccess=FILE_SHARE_ALL,
+                            CreateDisposition=FILE_OPEN)
+        # lock_ref_count(fnum2) > 0: fd_close_posix() defers the
+        # close(), which would drop smbd's fcntl locks on the file
+        conn.close(fnum3)
+
+        # brlock would answer an SMB lock request, ask the kernel
+        path = os.path.join(samba.tests.env_get_var_value("LOCAL_PATH"),
+                            "posix_lock_close_other_open_2")
+        fd = os.open(path, os.O_RDONLY)
+        try:
+            with self.assertRaises(OSError) as cm:
+                fcntl.lockf(fd, fcntl.LOCK_SH | fcntl.LOCK_NB, 10, 0)
+            self.assertIn(cm.exception.errno, (errno.EACCES, errno.EAGAIN))
+        finally:
+            os.close(fd)
+
+        conn.smb1_posix_unlock(fnum2, 0, 10)
+        conn.smb1_posix_unlock(fnum1, 0, 10)
+        conn.close(fnum2)
+        conn.close(fnum1)
 
 if __name__ == "__main__":
     import unittest

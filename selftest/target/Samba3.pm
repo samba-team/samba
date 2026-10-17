@@ -2344,6 +2344,11 @@ sub setup_fileserver_smb1
         vfs objects = aio_fork
         read only = no
         vfs_aio_fork:erratic_testing_mode=yes
+
+[posix_process_locks]
+	path = $prefix/share
+	read only = no
+	smbd force process locks = yes
 ";
 	return $self->setup_fileserver($path, $conf, "FILESERVERSMB1");
 }
