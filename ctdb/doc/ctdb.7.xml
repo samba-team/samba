@@ -1114,9 +1114,11 @@ correct CIFS semantics to clients.
 	set the following two parameters in
 	/usr/local/etc/ctdb/ctdb.conf for the remote node:
         <screen format="linespecific">
+[cluster]
+  leader capability = false
+
 [legacy]
   lmaster capability = false
-  leader capability = false
 	</screen>
     </para>
 
