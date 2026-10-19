@@ -1107,7 +1107,9 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 	};
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
+		if (spnego_state->num_targs == 0) {
+			spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
+		}
 		if (spnego_state->mic_requested) {
 			spnego_out.negTokenTarg.negResult = SPNEGO_REQUEST_MIC;
 			spnego_state->mic_requested = false;
@@ -1116,7 +1118,7 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 		}
 		spnego_state->state_position = SPNEGO_SERVER_TARG;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		if (unwrapped_out.data) {
+		if (unwrapped_out.data && spnego_state->num_targs == 0) {
 			spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
 		}
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
