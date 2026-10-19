@@ -676,11 +676,18 @@ sub setup_clusteredmember
 	for (my $i=0; $i<@retvals; $i++) {
 		my $node_provision = $retvals[$i];
 		my $ok;
+
+		# The one-time setup is only needed on node 0,
+		# as the group mapping database is shared
+		# between the nodes via ctdb.
+		my $finish_setup = ($i == 0) ? "yes" : "no";
+
 		$ok = $self->check_or_start(
 		    env_vars => $node_provision,
 		    samba_dcerpcd => "yes",
 		    winbindd => "yes",
 		    smbd => "yes",
+		    finish_setup => $finish_setup,
 		    child_cleanup => sub {
 			map {
 			    my $fh = $_->{STDIN_PIPE};
@@ -1055,10 +1062,12 @@ sub provision_ad_member
 		my $swrap_env = $ENV{SOCKET_WRAPPER_DIR};
 		$ENV{SOCKET_WRAPPER_DIR} = "$prefix";
 
-		# Start winbindd in offline mode
+		# Start winbindd in offline mode, the one-time
+		# setup was already done by the first start above.
 		if (not $self->check_or_start(
 			env_vars => $ret,
-			winbindd => "offline")) {
+			winbindd => "offline",
+			finish_setup => "no")) {
 			return undef;
 		}
 
@@ -2556,6 +2565,7 @@ sub check_or_start($$) {
 	my $winbindd = $args{winbindd} // "no";
 	my $smbd = $args{smbd} // "no";
 	my $samba_dcerpcd = $args{samba_dcerpcd} // "no";
+	my $finish_setup = $args{finish_setup} // "yes";
 	my $child_cleanup = $args{child_cleanup};
 
 	my $STDIN_READER;
@@ -2672,11 +2682,39 @@ sub check_or_start($$) {
 	# close the parent's read-end of the pipe
 	close($STDIN_READER);
 
-	return $self->wait_for_start($env_vars,
-				$nmbd,
-				$winbindd,
-				$smbd,
-				$samba_dcerpcd);
+	my $ok = $self->wait_for_start($env_vars,
+				       $nmbd,
+				       $winbindd,
+				       $smbd,
+				       $samba_dcerpcd);
+	if (!$ok) {
+		return $ok;
+	}
+
+	# finish_setup => "no" is used by
+	# provision_ad_member() for ad_member_offlogon,
+	# which calls check_or_start() twice on the
+	# same environment: first with winbindd => "yes"
+	# in order to fill the caches, which already runs
+	# finish_setup_after_start(), and then again with
+	# winbindd => "offline", where the one-time setup
+	# is already done and would fail if repeated.
+	#
+	# It's also used by setup_clusteredmember() for all
+	# nodes except node 0, as the group mapping database
+	# is shared between the nodes via ctdb.
+	if ($finish_setup eq "yes") {
+		$ok = $self->finish_setup_after_start($env_vars,
+						      $winbindd);
+		if (!$ok) {
+			teardown_env($self, $env_vars);
+			return 0;
+		}
+	}
+
+	print $self->getlog_env($env_vars);
+
+	return 1;
 }
 
 sub createuser($$$$$)
@@ -4174,6 +4212,24 @@ sub wait_for_start($$$$$)
 	    }
 	}
 
+	return 1;
+}
+
+#
+# One-time setup that requires the started daemons,
+# check_or_start() skips it with finish_setup => "no",
+# when an already setup environment is restarted.
+#
+# Returns 1 on success and 0 on failure, the caller
+# is responsible for calling teardown_env() on failure.
+#
+sub finish_setup_after_start($$$)
+{
+	my ($self, $envvars, $winbindd) = @_;
+	my $cmd;
+	my $netcmd;
+	my $ret;
+
 	# Ensure we have domain users mapped.
 	$netcmd = "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
 	$netcmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
@@ -4184,28 +4240,28 @@ sub wait_for_start($$$$$)
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	$cmd = $netcmd . "groupmap add rid=512 unixgroup=domadmins type=domain";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	$cmd = $netcmd . "groupmap add sid=S-1-1-0 unixgroup=everyone type=builtin";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	$cmd = $netcmd . "groupmap add sid=S-1-5-32-544 unixgroup=systemusergroup type=builtin";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	my $systemusersid;
@@ -4220,21 +4276,21 @@ sub wait_for_start($$$$$)
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	$cmd = $netcmd . "groupmap add unixgroup=group1 type=domain";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	$cmd = $netcmd . "groupmap add unixgroup=group2 type=domain";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
-		return 1;
+		return 0;
 	}
 
 	# note: creating builtin groups requires winbindd for the
@@ -4252,7 +4308,6 @@ sub wait_for_start($$$$$)
 			# different then WBC_ERR_WINBIND_NOT_AVAILABLE
 			if ($wbinfo_out !~ /WBC_ERR_DOMAIN_NOT_FOUND/) {
 				print("Failed to run \"wbinfo --sid-to-gid=S-1-5-32-545\": $wbinfo_out");
-				teardown_env($self, $envvars);
 				return 0;
 			}
 			$create_builtin_users = "yes";
@@ -4267,7 +4322,6 @@ sub wait_for_start($$$$$)
 	    $ret = system($cmd);
 	    if ($ret != 0) {
 	        print "Failed to create BUILTIN\\Users group\n";
-		teardown_env($self, $envvars);
 	        return 0;
 	    }
 
@@ -4282,12 +4336,9 @@ sub wait_for_start($$$$$)
 	    $ret = system($cmd);
 	    if ($ret != 0) {
 		print "Missing \"BUILTIN\\Users\", did net sam createbuiltingroup Users fail?\n";
-		teardown_env($self, $envvars);
 		return 0;
 	    }
 	}
-
-	print $self->getlog_env($envvars);
 
 	return 1;
 }
