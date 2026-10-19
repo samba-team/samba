@@ -2704,8 +2704,7 @@ sub check_or_start($$) {
 	# nodes except node 0, as the group mapping database
 	# is shared between the nodes via ctdb.
 	if ($finish_setup eq "yes") {
-		$ok = $self->finish_setup_after_start($env_vars,
-						      $winbindd);
+		$ok = $self->finish_setup_after_start($env_vars);
 		if (!$ok) {
 			teardown_env($self, $env_vars);
 			return 0;
@@ -3031,6 +3030,7 @@ sub provision($$)
 	my ($gid_jackthemapper);
 	my ($gid_jacknomapper);
 	my ($gid_builtinadmins);
+	my ($gid_builtinusers);
 	my ($gid_group1);
 	my ($gid_group2);
 	my ($uid_user1);
@@ -3088,6 +3088,10 @@ sub provision($$)
 	$gid_group1 = $max_gid - 11;
 	$gid_group2 = $max_gid - 12;
 	$gid_builtinadmins = $max_gid - 13;
+	# $max_gid - 14 till $max_gid - 18 are within
+	# 'idmap config ADDOMAIN : range = 65517-65521'
+	# of ad_member_idmap_nss, so we skip them.
+	$gid_builtinusers = $max_gid - 19;
 
 	##
 	## create conffile
@@ -3982,6 +3986,7 @@ jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 group1:x:$gid_group1:user1
 group2:x:$gid_group2:user2
 builtinadmins:x:$gid_builtinadmins:systemuser
+builtinusers:x:$gid_builtinusers:
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
@@ -4223,9 +4228,9 @@ sub wait_for_start($$$$$)
 # Returns 1 on success and 0 on failure, the caller
 # is responsible for calling teardown_env() on failure.
 #
-sub finish_setup_after_start($$$)
+sub finish_setup_after_start($$)
 {
-	my ($self, $envvars, $winbindd) = @_;
+	my ($self, $envvars) = @_;
 	my $cmd;
 	my $netcmd;
 	my $ret;
@@ -4310,6 +4315,44 @@ sub finish_setup_after_start($$$)
 		}
 	}
 
+	$cmd = $netcmd . "groupmap add sid=S-1-5-32-545 unixgroup=builtinusers type=builtin";
+	$ret = system($cmd);
+	if ($ret != 0) {
+		print("\"$cmd\" failed\n");
+		return 0;
+	}
+
+	# Ensure Domain Users is a member of BUILTIN\Users,
+	# instead of relying on smbd to add it for us, which only
+	# happens if a token is created while BUILTIN\Users
+	# is not yet mapped and winbindd is able to allocate a gid.
+	#
+	# Note: DOMSID is the domain we're a member of
+	# and our own SAM for a DC.
+	if (defined($envvars->{DOMSID})) {
+		my $domuserssid = "$envvars->{DOMSID}-513";
+		my $is_member = 0;
+
+		# This fails if it's already a member, which can also
+		# happen in parallel by a token created by smbd, so we
+		# ignore the result and check the membership afterwards.
+		$cmd = $netcmd . "groupmap addmem S-1-5-32-545 $domuserssid";
+		system($cmd);
+
+		$cmd = $netcmd . "groupmap listmem S-1-5-32-545 |";
+		open(IN, $cmd) or die ("Unable to list BUILTIN\\Users members");
+		while (<IN>) {
+			chomp;
+			$is_member = 1 if ($_ eq $domuserssid);
+		}
+		close IN;
+
+		if (!$is_member) {
+			print("$domuserssid is not a member of S-1-5-32-545\n");
+			return 0;
+		}
+	}
+
 	$cmd = $netcmd . "groupmap add unixgroup=group1 type=domain";
 	$ret = system($cmd);
 	if ($ret != 0) {
@@ -4322,53 +4365,6 @@ sub finish_setup_after_start($$$)
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
 		return 0;
-	}
-
-	# note: creating builtin groups requires winbindd for the
-	# unix id allocator
-	my $create_builtin_users = "no";
-	if ($winbindd eq "yes") {
-		$cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
-		$cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
-		$cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
-		$cmd .= Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545";
-		my $wbinfo_out = qx($cmd 2>&1);
-		if ($? != 0) {
-			# wbinfo doesn't give us a better error code then
-			# WBC_ERR_DOMAIN_NOT_FOUND, but at least that's
-			# different then WBC_ERR_WINBIND_NOT_AVAILABLE
-			if ($wbinfo_out !~ /WBC_ERR_DOMAIN_NOT_FOUND/) {
-				print("Failed to run \"wbinfo --sid-to-gid=S-1-5-32-545\": $wbinfo_out");
-				return 0;
-			}
-			$create_builtin_users = "yes";
-		}
-	}
-	if ($create_builtin_users eq "yes") {
-	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
-	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
-	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
-	    $cmd .= Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} ";
-	    $cmd .= "sam createbuiltingroup Users";
-	    $ret = system($cmd);
-	    if ($ret != 0) {
-	        print "Failed to create BUILTIN\\Users group\n";
-	        return 0;
-	    }
-
-	    $cmd = Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} ";
-	    $cmd .= "cache del IDMAP/SID2XID/S-1-5-32-545";
-	    system($cmd);
-
-	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
-	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
-	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
-	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545";
-	    $ret = system($cmd);
-	    if ($ret != 0) {
-		print "Missing \"BUILTIN\\Users\", did net sam createbuiltingroup Users fail?\n";
-		return 0;
-	    }
 	}
 
 	return 1;
