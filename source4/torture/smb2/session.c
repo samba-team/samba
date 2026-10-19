@@ -33,6 +33,7 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lease_break_handler.h"
 
 /* Ticket lifetime we want to request in seconds */
 #define KRB5_TICKET_LIFETIME 5
@@ -2310,6 +2311,219 @@ done:
 
 	smb2_util_unlink(tree1, fname1);
 	smb2_util_unlink(tree1, fname2);
+
+	talloc_free(tree1);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/*
+ * A session without any channel waits in
+ * smb2srv_session_shutdown_send() until the
+ * handle lease breaks of its delete on close
+ * opens are acked. A bind during that time
+ * should get NT_STATUS_USER_SESSION_DELETED.
+ */
+static bool test_session_bind_shutdown(struct torture_context *tctx,
+				       struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_create c;
+	struct smb2_lease ls;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	bool ret = false;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options options2;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_transport *transport2 = NULL;
+	struct smbcli_options options3;
+	struct smb2_tree *tree3 = NULL;
+	struct smb2_transport *transport3 = NULL;
+	struct smb2_session *session2_2 = NULL;
+	struct smb2_session *session2_3 = NULL;
+	uint64_t lease_key = 0x0bad5e55;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx, "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
+	}
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "server doesn't support SMB2_CAP_LEASING\n");
+	}
+
+	/*
+	 * tree1 holds an RH lease and never acks the
+	 * break, which blocks the shutdown of session2
+	 * until we close the handle.
+	 */
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "session_bind_shutdown_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_lease_create(&c, &ls, false, fname, lease_key,
+			  smb2_util_lease_state("RH"));
+	status = smb2_create(tree1, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1 = c.out.file.handle;
+	h1 = &_h1;
+	torture_assert_int_equal_goto(tctx, c.out.oplock_level,
+				      SMB2_OPLOCK_LEVEL_LEASE, ret, done,
+				      "oplock_level incorrect");
+	torture_assert_int_equal_goto(tctx, c.out.lease_response.lease_state,
+				      smb2_util_lease_state("RH"), ret, done,
+				      "lease_state incorrect");
+
+	/*
+	 * session2 uses its own client guid,
+	 * so it lives in its own smbd.
+	 */
+	options2 = transport1->options;
+	options2.signing = SMB_SIGNING_REQUIRED;
+	options2.client_guid = GUID_random();
+
+	status = smb2_connect(tctx,
+			      host,
+			      share,
+			      tctx->lp_ctx,
+			      lpcfg_resolve_context(tctx->lp_ctx, tctx),
+			      credentials,
+			      &tree2,
+			      tctx->ev,
+			      &options2,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	session2_2 = tree2->session;
+	transport2 = tree2->session->transport;
+	smb2cli_tcon_should_sign(tree2->smbXcli, true);
+
+	/*
+	 * The 3rd connection uses the same client guid
+	 * and ends up in the smbd of session2.
+	 */
+	options3 = transport2->options;
+	options3.only_negprot = true;
+
+	status = smb2_connect(tctx,
+			      host,
+			      share,
+			      tctx->lp_ctx,
+			      lpcfg_resolve_context(tctx->lp_ctx, tctx),
+			      credentials,
+			      &tree3,
+			      tctx->ev,
+			      &options3,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport3 = tree3->session->transport;
+
+	session2_3 = smb2_session_channel(transport3,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2,
+					  session2_2);
+	torture_assert(tctx, session2_3 != NULL, "smb2_session_channel failed");
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree2, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+
+	/*
+	 * Drop the only channel of session2, the session
+	 * shutdown needs to break the H lease of tree1.
+	 */
+	smbXcli_conn_disconnect(transport2->conn, NT_STATUS_LOCAL_DISCONNECT);
+
+	torture_wait_for_lease_break(tctx);
+	torture_assert_int_equal_goto(tctx, lease_break_info.count, 1,
+				      ret, done, "no lease break");
+	torture_assert_int_equal_goto(tctx,
+				      lease_break_info.lease_break.new_lease_state,
+				      smb2_util_lease_state("R"), ret, done,
+				      "new_lease_state incorrect");
+
+	/*
+	 * session2 is still waiting for the lease break ack,
+	 * a bind to it should fail as it's already deleted.
+	 */
+	status = smb2_session_setup_spnego(session2_3,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_USER_SESSION_DELETED,
+					   ret, done,
+					   "smb2_session_setup_spnego failed");
+
+	/*
+	 * Closing the handle lets the shutdown of
+	 * session2 finish and the file is deleted.
+	 */
+	status = smb2_util_close(tree1, *h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+	h1 = NULL;
+	smb_msleep(500);
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree1, mem_ctx, &c);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "file still there?");
+
+	ret = true;
+done:
+	if (transport3 != NULL) {
+		smbXcli_conn_disconnect(transport3->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	if (transport2 != NULL) {
+		smbXcli_conn_disconnect(transport2->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_util_unlink(tree1, fname);
 
 	talloc_free(tree1);
 
@@ -6226,6 +6440,7 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 				      test_session_expire_disconnect);
 	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
 	torture_suite_add_1smb2_test(suite, "bind2", test_session_bind2);
+	torture_suite_add_1smb2_test(suite, "bind_shutdown", test_session_bind_shutdown);
 	torture_suite_add_1smb2_test(suite, "bind_invalid_auth", test_session_bind_invalid_auth);
 	torture_suite_add_1smb2_test(suite, "bind_different_user", test_session_bind_different_user);
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb202", test_session_bind_negative_smb202);
