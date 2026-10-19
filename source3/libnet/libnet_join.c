@@ -2280,8 +2280,8 @@ static void libnet_join_add_dom_rids_to_builtins(struct dom_sid *domain_sid)
 		DEBUG(10,("Unable to auto-add domain users to BUILTIN\\users "
 			  "during join because winbindd must be running.\n"));
 	} else if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("Failed to auto-add domain administrators to "
-			  "BUILTIN\\Administrators during join: %s\n",
+		DEBUG(5, ("Failed to auto-add domain users to "
+			  "BUILTIN\\Users during join: %s\n",
 			  nt_errstr(status)));
 	}
 
