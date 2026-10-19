@@ -2483,6 +2483,32 @@ NTSTATUS smb2srv_session_lookup_client(struct smbXsrv_client *client,
 					  session);
 }
 
+/*
+ * Returns true if session_id belongs to a session of this
+ * process, even if it's already being shut down.
+ */
+bool smb2srv_session_is_local(struct smbXsrv_client *client,
+			      uint64_t session_id)
+{
+	struct smbXsrv_session_table *table = client->session_table;
+	uint32_t local_id = session_id & UINT32_MAX;
+	uint64_t local_zeros = session_id & 0xFFFFFFFF00000000LLU;
+	uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
+	TDB_DATA key;
+
+	if (local_id == 0 || local_zeros != 0) {
+		return false;
+	}
+
+	if (table == NULL || table->local.db_ctx == NULL) {
+		return false;
+	}
+
+	key = smbXsrv_session_local_id_to_key(local_id, key_buf);
+
+	return dbwrap_exists(table->local.db_ctx, key);
+}
+
 struct smbXsrv_session_global_traverse_state {
 	int (*fn)(struct smbXsrv_session_global *, void *);
 	void *private_data;

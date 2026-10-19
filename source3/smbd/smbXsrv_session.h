@@ -84,6 +84,8 @@ NTSTATUS smb2srv_session_lookup_client(struct smbXsrv_client *client,
 				       uint64_t session_id,
 				       NTTIME now,
 				       struct smbXsrv_session **session);
+bool smb2srv_session_is_local(struct smbXsrv_client *client,
+			      uint64_t session_id);
 NTSTATUS smb2srv_session_lookup_global(struct smbXsrv_client *client,
 				       uint64_t session_wire_id,
 				       TALLOC_CTX *mem_ctx,

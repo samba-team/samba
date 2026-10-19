@@ -2659,6 +2659,18 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		switch (in_opcode) {
 		case SMB2_OP_SESSSETUP:
+			if (smb2srv_session_is_local(req->xconn->client,
+						     in_session_id))
+			{
+				/*
+				 * The session belongs to us, but it's
+				 * already being shut down, so the
+				 * record in the global database is
+				 * only waiting for pending requests
+				 * and we should not fallback to it.
+				 */
+				break;
+			}
 			status = smb2srv_session_lookup_global(req->xconn->client,
 							       in_session_id,
 							       req,
