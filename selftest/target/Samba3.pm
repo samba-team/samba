@@ -3030,7 +3030,7 @@ sub provision($$)
 	my ($gid_force_user);
 	my ($gid_jackthemapper);
 	my ($gid_jacknomapper);
-	my ($gid_systemuser);
+	my ($gid_builtinadmins);
 	my ($gid_group1);
 	my ($gid_group2);
 	my ($uid_user1);
@@ -3087,7 +3087,7 @@ sub provision($$)
 	$gid_jacknomapper = $max_gid - 10;
 	$gid_group1 = $max_gid - 11;
 	$gid_group2 = $max_gid - 12;
-	$gid_systemuser = $max_gid - 13;
+	$gid_builtinadmins = $max_gid - 13;
 
 	##
 	## create conffile
@@ -3957,7 +3957,7 @@ bob:x:$uid_localbob:$gid_domusers:localbob gecos:/:/bin/false
 jane:x:$uid_localjane:$gid_domusers:localjane gecos:/:/bin/false
 jackthemapper:x:$uid_localjackthemapper:$gid_domusers:localjackthemaper gecos:/:/bin/false
 jacknomapper:x:$uid_localjacknomapper:$gid_domusers:localjacknomaper gecos:/:/bin/false
-systemuser:x:$uid_localsystemuser:$gid_systemuser:localsystemuser gecos:/:/bin/false
+systemuser:x:$uid_localsystemuser:$gid_builtinadmins:localsystemuser gecos:/:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix:/bin/false
@@ -3981,7 +3981,7 @@ jackthemappergroup:x:$gid_jackthemapper:jackthemapper
 jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 group1:x:$gid_group1:user1
 group2:x:$gid_group2:user2
-systemusergroup:x:$gid_systemuser:systemuser
+builtinadmins:x:$gid_builtinadmins:systemuser
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
@@ -4257,7 +4257,7 @@ sub finish_setup_after_start($$$)
 		return 0;
 	}
 
-	$cmd = $netcmd . "groupmap add sid=S-1-5-32-544 unixgroup=systemusergroup type=builtin";
+	$cmd = $netcmd . "groupmap add sid=S-1-5-32-544 unixgroup=builtinadmins type=builtin";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
