@@ -854,10 +854,10 @@ tasks = {
     "samba-o3": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='" + samba_o3_cflags + "' ./configure.developer --abi-check-disable" + samba_configure_params),
+            ("configure", "ADDITIONAL_CFLAGS='" + samba_o3_cflags + "' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params),
             ("make", "make -j"),
-            ("test", make_test(cmd='make test', TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
-            ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
+            ("test", make_test(cmd='make test', INJECT_SELFTEST_PREFIX=0, TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
+            ("quicktest", make_test(cmd='make quicktest', INJECT_SELFTEST_PREFIX=0, include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
             ("lcov", LCOV_CMD),
             ("install", "make install"),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -886,7 +886,6 @@ tasks = {
         # build samba with cluster support (also building ctdb):
             ("samba-configure",
          "./configure.developer ${PREFIX} "
-         "--with-selftest-prefix=./bin/ab "
          "--with-cluster-support "
          "--with-profiling-data "
          "--with-prometheus-exporter"),
@@ -896,7 +895,6 @@ tasks = {
 
             ("test", make_test(
                 cmd='make test',
-                INJECT_SELFTEST_PREFIX=0,
                 include_envs=["clusteredmember"])
             ),
 
