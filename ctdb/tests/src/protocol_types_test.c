@@ -91,6 +91,7 @@ static void test_ctdb_rec_buffer_read_write(void)
 	int count = 10;
 	int fd, i, ret;
 	off_t offset;
+	mode_t mask;
 
 	p1 = talloc_array(mem_ctx, struct ctdb_rec_buffer, count);
 	assert(p1 != NULL);
@@ -98,7 +99,9 @@ static void test_ctdb_rec_buffer_read_write(void)
 		fill_ctdb_rec_buffer(mem_ctx, &p1[i]);
 	}
 
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(filename);
+	umask(mask);
 	assert(fd != -1);
 	unlink(filename);
 
