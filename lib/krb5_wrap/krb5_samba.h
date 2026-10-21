@@ -307,6 +307,7 @@ out:
 #endif
 
 krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context);
+krb5_error_code smb_krb5_set_trace_callback(krb5_context krb5_ctx);
 
 /*
  * This should only be used in code that

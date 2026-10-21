@@ -4043,6 +4043,33 @@ static void smb_krb5_trace_cb(krb5_context ctx,
 }
 #endif
 
+/**
+ * @brief Set a Kerberos trace callback for logging.
+ *
+ * Install a trace callback on the given krb5 context so that MIT Kerberos
+ * trace messages are forwarded to the Samba debug system (DBGC_KERBEROS).
+ *
+ * If the KRB5_TRACE environment variable is set, krb5_init_context()
+ * already installs its own callback that writes trace output to the given
+ * file (see k5_init_trace() in MIT krb5's lib/krb5/os/trace.c). Calling
+ * this function replaces that callback, so KRB5_TRACE output is routed
+ * through the Samba debug log instead of the file.
+ *
+ * On Heimdal builds this is a no-op.
+ *
+ * @param krb5_ctx	The krb5 context to set the trace callback on.
+ *
+ * @return krb5_error_code, 0 on success, error code otherwise.
+ */
+krb5_error_code smb_krb5_set_trace_callback(krb5_context krb5_ctx)
+{
+#ifndef SAMBA4_USES_HEIMDAL
+	return krb5_set_trace_callback(krb5_ctx, smb_krb5_trace_cb, NULL);
+#else
+	return 0;
+#endif
+}
+
 krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context)
 {
 	krb5_error_code ret;
@@ -4057,16 +4084,11 @@ krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context)
 		return ret;
 	}
 
-	/* The MIT Kerberos build relies on using the system krb5.conf file.
-	 * If you really want to use another file please set KRB5_CONFIG
-	 * accordingly. */
-#ifndef SAMBA4_USES_HEIMDAL
-	ret = krb5_set_trace_callback(krb5_ctx, smb_krb5_trace_cb, NULL);
+	ret = smb_krb5_set_trace_callback(krb5_ctx);
 	if (ret) {
 		DBG_ERR("Failed to set MIT kerberos trace callback! (%s)\n",
 			error_message(ret));
 	}
-#endif
 
 #ifdef SAMBA4_USES_HEIMDAL
 	/* Set options in kerberos */
