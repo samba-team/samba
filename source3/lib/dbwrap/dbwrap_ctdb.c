@@ -2114,7 +2114,7 @@ again_local:
 				  key,
 				  state->ask_for_readonly_copy,
 				  db_ctdb_parse_record_parser_nonpersistent,
-				  private_data,
+				  state,
 				  req_state);
 	if (tevent_req_nomem(subreq, req)) {
 		*req_state = DBWRAP_REQ_ERROR;
@@ -2169,7 +2169,7 @@ static void db_ctdb_parse_record_done(struct tevent_req *subreq)
 					  state->key,
 					  state->ask_for_readonly_copy,
 					  db_ctdb_parse_record_parser_nonpersistent,
-					  state->private_data,
+					  state,
 					  state->req_state);
 		if (tevent_req_nomem(subreq, req)) {
 			*(state->req_state) = DBWRAP_REQ_ERROR;
