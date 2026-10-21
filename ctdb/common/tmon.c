@@ -521,12 +521,13 @@ bool tmon_write(struct tevent_req *req, struct tmon_pkt *pkt)
 			}
 		}
 
+		/* The callback may free req and, therefore, state */
+		state->fd = -1;
 		if (ret == 0) {
 			tevent_req_done(req);
 		} else {
 			tevent_req_error(req, ret);
 		}
-		state->fd = -1;
 		return false;
 	}
 
