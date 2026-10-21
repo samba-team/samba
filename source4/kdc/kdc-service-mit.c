@@ -263,22 +263,30 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 
 	initialize_krb5_error_table();
 
-	code = smb_krb5_init_context(kdc,
-				     kdc->task->lp_ctx,
-				     &kdc->smb_krb5_context);
-	if (code != 0) {
-		task_server_terminate(task,
-				      "KDC: Unable to initialize krb5 context",
-				      true);
-		return NT_STATUS_INTERNAL_ERROR;
+	kdc->smb_krb5_context = talloc_zero(kdc, struct smb_krb5_context);
+	if (kdc->smb_krb5_context == NULL) {
+		task_server_terminate(task, "KDC: Out of memory", true);
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * kadm5 requires a krb5_context created by kadm5_init_krb5_context(),
+	 * so create it directly instead of via smb_krb5_init_context() and
+	 * discarding its context again.
+	 */
 	code = kadm5_init_krb5_context(&kdc->smb_krb5_context->krb5_context);
 	if (code != 0) {
 		task_server_terminate(task,
 				      "KDC: Unable to init kadm5 krb5_context",
 				      true);
 		return NT_STATUS_INTERNAL_ERROR;
+	}
+	talloc_set_destructor(kdc->smb_krb5_context, smb_krb5_context_destroy);
+
+	code = smb_krb5_set_trace_callback(kdc->smb_krb5_context->krb5_context);
+	if (code != 0) {
+		DBG_ERR("Failed to set kerberos trace callback (%s)\n",
+			error_message(code));
 	}
 
 	ZERO_STRUCT(config);
