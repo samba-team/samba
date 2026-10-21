@@ -29,9 +29,18 @@
 #include "util_tdb.h"
 #include "cmdline_contexts.h"
 #include "lib/param/param.h"
+#include "lib/global_contexts.h"
+#include "lib/util/tevent_ntstatus.h"
 
-enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS,
-		 OP_EXISTS };
+enum dbwrap_op {
+	OP_FETCH,
+	OP_STORE,
+	OP_DELETE,
+	OP_ERASE,
+	OP_LISTKEYS,
+	OP_EXISTS,
+	OP_PARSE_RECORDS
+};
 
 enum dbwrap_type { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX, TYPE_NONE };
 
@@ -337,6 +346,243 @@ static int dbwrap_tool_listkeys(struct db_context *db,
 	return 0;
 }
 
+struct parse_record_state {
+	size_t idx;
+	const char *key;
+	bool called;
+	bool nomem;
+	enum dbwrap_req_state req_state;
+};
+
+static void parse_record_parser(TDB_DATA key,
+				TDB_DATA data,
+				void *private_data);
+static void parse_record_done(struct tevent_req *subreq);
+
+static struct tevent_req *parse_record_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct db_context *db,
+					    size_t idx,
+					    const char *key)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct parse_record_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct parse_record_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->idx = idx;
+	state->key = key;
+
+	subreq = dbwrap_parse_record_send(state,
+					  ev,
+					  db,
+					  string_term_tdb_data(key),
+					  parse_record_parser,
+					  state,
+					  &state->req_state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, parse_record_done, req);
+	return req;
+}
+
+static void parse_record_parser(TDB_DATA key,
+				TDB_DATA data,
+				void *private_data)
+{
+	struct parse_record_state *state = talloc_get_type_abort(
+		private_data, struct parse_record_state);
+	DATA_BLOB blob = {
+		.data = data.dptr,
+		.length = data.dsize,
+	};
+	char *hex_string = NULL;
+
+	state->called = true;
+
+	hex_string = data_blob_hex_string_upper(talloc_tos(), &blob);
+	if (hex_string == NULL) {
+		state->nomem = true;
+		return;
+	}
+
+	d_printf("%zu: %s: %s\n", state->idx, state->key, hex_string);
+	TALLOC_FREE(hex_string);
+}
+
+static void parse_record_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct parse_record_state *state = tevent_req_data(
+		req, struct parse_record_state);
+	NTSTATUS status;
+
+	status = dbwrap_parse_record_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (state->nomem) {
+		tevent_req_oom(req);
+		return;
+	}
+	if (!state->called) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS parse_record_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct parse_records_state {
+	size_t num_keys;
+	const char **keys;
+	struct tevent_req **subreqs;
+	size_t num_received;
+	NTSTATUS status;
+};
+
+static void parse_records_done(struct tevent_req *subreq);
+
+static struct tevent_req *parse_records_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct db_context *db,
+					     size_t num_keys,
+					     const char **keys)
+{
+	struct tevent_req *req = NULL;
+	struct parse_records_state *state = NULL;
+	size_t i;
+
+	req = tevent_req_create(mem_ctx, &state, struct parse_records_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->num_keys = num_keys;
+	state->keys = keys;
+	state->status = NT_STATUS_OK;
+
+	if (num_keys == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	state->subreqs = talloc_array(state, struct tevent_req *, num_keys);
+	if (tevent_req_nomem(state->subreqs, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	for (i = 0; i < num_keys; i++) {
+		state->subreqs[i] = parse_record_send(
+			state->subreqs, ev, db, i, keys[i]);
+		if (tevent_req_nomem(state->subreqs[i], req)) {
+			/*
+			 * Free the subreqs already sent, their
+			 * callbacks must not see a finished req
+			 */
+			TALLOC_FREE(state->subreqs);
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(state->subreqs[i],
+					parse_records_done,
+					req);
+	}
+
+	return req;
+}
+
+static void parse_records_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct parse_records_state *state = tevent_req_data(
+		req, struct parse_records_state);
+	NTSTATUS status;
+	size_t i;
+
+	for (i = 0; i < state->num_keys; i++) {
+		if (subreq == state->subreqs[i]) {
+			break;
+		}
+	}
+	if (i == state->num_keys) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	status = parse_record_recv(subreq);
+	TALLOC_FREE(subreq);
+	state->subreqs[i] = NULL;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "ERROR: parse_record failed for '%s': %s\n",
+			  state->keys[i],
+			  nt_errstr(status));
+
+		/*
+		 * Remember the first error, but wait for all records
+		 */
+		if (NT_STATUS_IS_OK(state->status)) {
+			state->status = status;
+		}
+	}
+
+	state->num_received += 1;
+	if (state->num_received < state->num_keys) {
+		return;
+	}
+
+	if (tevent_req_nterror(req, state->status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS parse_records_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static int dbwrap_tool_parse_records(struct db_context *db,
+				     size_t num_keys,
+				     const char **keys)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = global_event_context();
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	req = parse_records_send(frame, ev, db, num_keys, keys);
+	if (req == NULL) {
+		goto done;
+	}
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		goto done;
+	}
+	status = parse_records_recv(req);
+done:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "ERROR: parse_records failed: %s\n",
+			  nt_errstr(status));
+		return -1;
+	}
+	return 0;
+}
+
 struct dbwrap_op_dispatch_table {
 	enum dbwrap_op op;
 	enum dbwrap_type type;
@@ -446,14 +692,14 @@ int main(int argc, const char **argv)
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	if ((extra_argc < 2) || (extra_argc > 5)) {
+	if (extra_argc < 2) {
 		d_fprintf(stderr,
 			  "USAGE: %s [options] <database> <op> [<key> [<type> "
 			  "[<value>]]]\n"
 			  "       ops: fetch, store, delete, exists, "
-			  "erase, listkeys\n"
+			  "erase, listkeys, parse_records\n"
 			  "       types: int32, uint32, string, hex\n",
-			 argv[0]);
+			  argv[0]);
 		goto done;
 	}
 
@@ -519,12 +765,32 @@ int main(int argc, const char **argv)
 		keyname = extra_argv[2];
 		op = OP_EXISTS;
 		keytype = "string";
+	} else if (strcmp(opname, "parse_records") == 0) {
+		if (extra_argc < 3) {
+			d_fprintf(stderr,
+				  "ERROR: operation 'parse_records' "
+				  "requires at least one key argument\n");
+			goto done;
+		}
+		op = OP_PARSE_RECORDS;
 	} else {
+		d_fprintf(
+			stderr,
+			"ERROR: invalid op '%s' specified\n"
+			"       supported ops: fetch, store, delete, exists, "
+			"erase, listkeys, parse_records\n",
+			opname);
+		goto done;
+	}
+
+	if ((op != OP_PARSE_RECORDS) && (extra_argc > 5)) {
 		d_fprintf(stderr,
-			  "ERROR: invalid op '%s' specified\n"
-			  "       supported ops: fetch, store, delete, exists, "
-			  "erase, listkeys\n",
-			  opname);
+			  "USAGE: %s [options] <database> <op> [<key> [<type> "
+			  "[<value>]]]\n"
+			  "       ops: fetch, store, delete, exists, "
+			  "erase, listkeys, parse_records\n"
+			  "       types: int32, uint32, string, hex\n",
+			  argv[0]);
 		goto done;
 	}
 
@@ -565,6 +831,7 @@ int main(int argc, const char **argv)
 	case OP_ERASE:
 	case OP_LISTKEYS:
 	case OP_EXISTS:
+	case OP_PARSE_RECORDS:
 		db = db_open(mem_ctx, dbname, 0, tdb_flags, O_RDWR | O_CREAT,
 			     0644, DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 		if (db == NULL) {
@@ -577,12 +844,20 @@ int main(int argc, const char **argv)
 		break;
 	}
 
-	for (count = 0; dispatch_table[count].cmd != NULL; count++) {
-		if ((op == dispatch_table[count].op) &&
-		    (type == dispatch_table[count].type))
-		{
-			ret = dispatch_table[count].cmd(db, keyname, valuestr);
-			break;
+	if (op == OP_PARSE_RECORDS) {
+		ret = dbwrap_tool_parse_records(db,
+						extra_argc - 2,
+						&extra_argv[2]);
+	} else {
+		for (count = 0; dispatch_table[count].cmd != NULL; count++) {
+			if ((op == dispatch_table[count].op) &&
+			    (type == dispatch_table[count].type))
+			{
+				ret = dispatch_table[count].cmd(db,
+								keyname,
+								valuestr);
+				break;
+			}
 		}
 	}
 

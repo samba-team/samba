@@ -56,6 +56,7 @@
 		<listitem><para>erase: remove all records</para></listitem>
 		<listitem><para>listkeys: list all available records</para></listitem>
 		<listitem><para>listwatchers: list processes, which are waiting for changes in a record</para></listitem>
+		<listitem><para>parse_records: asynchronously parse one or more records</para></listitem>
 	</itemizedlist>
 	</para>
 	<para>The following types are available:
@@ -141,6 +142,12 @@
 		<title>listwatchers</title>
 		<cmdsynopsis>
 			<command>dbwrap_tool</command> &lt;database&gt; listwatchers
+		</cmdsynopsis>
+	</refsect2>
+	<refsect2>
+		<title>parse_records</title>
+		<cmdsynopsis>
+			<command>dbwrap_tool</command> &lt;database&gt; parse_records &lt;key&gt; [&lt;key&gt;...]
 		</cmdsynopsis>
 	</refsect2>
 </refsect1>
