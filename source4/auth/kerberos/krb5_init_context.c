@@ -61,7 +61,7 @@ struct smb_krb5_socket {
 #endif
 };
 
-static krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx)
+krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx)
 {
 #ifdef SAMBA4_USES_HEIMDAL
 	if (ctx->pvt_log_data) {

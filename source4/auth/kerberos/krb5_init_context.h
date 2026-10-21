@@ -26,6 +26,8 @@ struct smb_krb5_context {
 	struct tevent_context *current_ev;
 };
 
+krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx);
+
 struct tevent_context;
 struct loadparm_context;
 
