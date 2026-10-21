@@ -2173,6 +2173,59 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const vo
 	return ndr_pull_set_offset(ndr, rel_offset);
 }
 
+/*
+  called after the referent of a relative pointer was pulled,
+  save_offset is the offset before ndr_pull_relative_ptr2()
+  and referent_offset is the offset it moved to.
+
+  Without LIBNDR_FLAG_RELATIVE_REVERSE ndr_push_relative_ptr2_start()
+  marshals the referent at the current offset (after the alignment
+  padding). In that case the referent is part of the sequential
+  stream and we need to continue behind it, otherwise the
+  elements following it would be pulled from the referent data.
+  This happens e.g. for a security_token with claims followed
+  by a security_unix_token in struct auth_session_info.
+
+  Otherwise we go back to save_offset.
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2_end(struct ndr_pull *ndr,
+						      uint32_t save_offset,
+						      uint32_t referent_offset)
+{
+	if (ndr->offset > ndr->relative_highest_offset) {
+		ndr->relative_highest_offset = ndr->offset;
+	}
+
+	if (!(ndr->flags & LIBNDR_FLAG_RELATIVE_REVERSE) &&
+	    save_offset >= ndr->relative_base_offset &&
+	    ndr->offset >= referent_offset)
+	{
+		uint32_t relative_offset;
+		size_t align = 1;
+		size_t pad;
+
+		relative_offset = save_offset - ndr->relative_base_offset;
+
+		if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
+			align = 1;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+			align = 2;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
+			align = 4;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN8) {
+			align = 8;
+		}
+
+		pad = ndr_align_size(relative_offset, align);
+		if ((uint64_t)referent_offset == (uint64_t)save_offset + pad) {
+			return NDR_ERR_SUCCESS;
+		}
+	}
+
+	ndr->offset = save_offset;
+	return NDR_ERR_SUCCESS;
+}
+
 _PUBLIC_ const char *ndr_map_error2string(enum ndr_err_code ndr_err)
 {
 	const char *ret = "Unknown error";

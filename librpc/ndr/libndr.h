@@ -651,6 +651,9 @@ enum ndr_err_code ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, con
 enum ndr_err_code ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset);
 enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p);
+enum ndr_err_code ndr_pull_relative_ptr2_end(struct ndr_pull *ndr,
+					     uint32_t save_offset,
+					     uint32_t referent_offset);
 enum ndr_err_code ndr_pull_relative_ptr_short(struct ndr_pull *ndr, uint16_t *v);
 size_t ndr_align_size(uint32_t offset, size_t n);
 struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
