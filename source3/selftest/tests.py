@@ -2078,6 +2078,17 @@ if have_cluster_support:
              smbtorture3,
              "-N 1000 -o 2000"])
 
+    #
+    # dbwrap_parse_record_send() for a record on another node
+    #
+    plantestsuite(
+        "samba3.blackbox.dbwrap_ctdb_parse_record_send",
+        "clusteredmember:local",
+        [os.path.join(samba3srcdir,
+                      "script/tests/test_dbwrap_ctdb_parse_record_send.sh"),
+         "$CTDB_PREFIX",
+         dbwrap_tool])
+
 planpythontestsuite("fileserver_smb1", "samba.tests.smb3unix")
 planpythontestsuite("fileserver_smb1", "samba.tests.reparsepoints")
 planpythontestsuite("fileserver_smb1", "samba.tests.smb2symlink")
