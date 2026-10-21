@@ -2079,6 +2079,17 @@ if have_cluster_support:
              "-N 1000 -o 2000"])
 
     #
+    # dbwrap_tool parse_records with multiple keys
+    #
+    plantestsuite(
+        "samba3.blackbox.dbwrap_tool",
+        "clusteredmember:local",
+        [os.path.join(samba3srcdir,
+                      "script/tests/test_dbwrap_tool.sh"),
+         "$CTDB_PREFIX",
+         dbwrap_tool])
+
+    #
     # dbwrap_parse_record_send() for a record on another node
     #
     plantestsuite(
