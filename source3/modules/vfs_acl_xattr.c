@@ -451,6 +451,10 @@ static ssize_t acl_xattr_flistxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (bufsize == 0) {
+		return size;
+	}
+
 	p = listbuf;
 	while (p - listbuf < size) {
 		nlen = strlen(p) + 1;
