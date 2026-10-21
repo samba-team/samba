@@ -387,13 +387,13 @@ const struct cluster_level_active *cluster_level_global_active(void)
 /*
  * This will allow code like this:
  *
- * if (CLUSTER_LEVEL_ACTIVATED(5, 2)) {
+ * if (CLUSTER_LEVEL_ACTIVE(5, 2)) {
  *    // handle 5.2
- * } else if (CLUSTER_LEVEL_ACTIVATED(3, 0)) {
+ * } else if (CLUSTER_LEVEL_ACTIVE(3, 0)) {
  *    // handle 3.0
- * } else if (CLUSTER_LEVEL_ACTIVATED(1, 0)) {
+ * } else if (CLUSTER_LEVEL_ACTIVE(1, 0)) {
  *    // handle 1.0
- * } else if (CLUSTER_LEVEL_ACTIVATED(0, 1)) {
+ * } else if (CLUSTER_LEVEL_ACTIVE(0, 1)) {
  *    // handle 0.1
  * } else {
  *    // error!!! 0.0 should never be active
