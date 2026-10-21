@@ -601,6 +601,14 @@ for t in local_tests:
 plantestsuite("samba.vfstest.stream_depot", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/stream-depot/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 plantestsuite("samba.vfstest.xattr-tdb-1", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/xattr-tdb-1/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 plantestsuite("samba.vfstest.acl", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/vfstest-acl/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
+plantestsuite(
+    "samba.vfstest.acl_xattr",
+    "nt4_dc:local",
+    [os.path.join(samba3srcdir,
+                  "script/tests/vfstest-acl-xattr/run.sh"),
+     binpath("vfstest"),
+     "$PREFIX",
+     configuration])
 plantestsuite("samba.vfstest.catia", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/vfstest-catia/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 plantestsuite(
     "samba.vfstest.full_audit_segfault",
