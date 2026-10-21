@@ -771,30 +771,29 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 				      struct smb_krb5_context **smb_krb5_context)
 {
 	krb5_error_code ret;
-	TALLOC_CTX *tmp_ctx;
-	krb5_context kctx;
+	TALLOC_CTX *frame = talloc_stackframe();
+	krb5_context kctx = NULL;
+	struct smb_krb5_context *s = NULL;
 #ifdef SAMBA4_USES_HEIMDAL
 	krb5_log_facility *logf;
 #endif
 
-	tmp_ctx = talloc_new(parent_ctx);
-	*smb_krb5_context = talloc_zero(tmp_ctx, struct smb_krb5_context);
-
-	if (!*smb_krb5_context || !tmp_ctx) {
-		talloc_free(tmp_ctx);
+	s = talloc_zero(frame, struct smb_krb5_context);
+	if (s == NULL) {
+		TALLOC_FREE(frame);
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_init_context_basic(tmp_ctx, lp_ctx, &kctx);
+	/* smb_krb5_init_context_basic wants a temporary memory context! */
+	ret = smb_krb5_init_context_basic(frame, lp_ctx, &kctx);
 	if (ret) {
-		DEBUG(1,("smb_krb5_context_init_basic failed (%s)\n",
-			 error_message(ret)));
-		talloc_free(tmp_ctx);
+		DBG_WARNING("smb_krb5_init_context_basic failed (%s)\n",
+			    error_message(ret));
+		TALLOC_FREE(frame);
 		return ret;
 	}
-	(*smb_krb5_context)->krb5_context = kctx;
-
-	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destroy);
+	talloc_set_destructor(s, smb_krb5_context_destroy);
+	s->krb5_context = kctx;
 
 #ifdef SAMBA4_USES_HEIMDAL
 	/* TODO: Should we have a different name here? */
@@ -802,19 +801,19 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	if (ret) {
 		DEBUG(1,("krb5_initlog failed (%s)\n",
-			 smb_get_krb5_error_message(kctx, ret, tmp_ctx)));
-		talloc_free(tmp_ctx);
+			 smb_get_krb5_error_message(kctx, ret, frame)));
+		TALLOC_FREE(frame);
 		return ret;
 	}
-	(*smb_krb5_context)->pvt_log_data = logf;
+	s->pvt_log_data = logf;
 
 	ret = krb5_addlog_func(kctx, logf, 0 /* min */, -1 /* max */,
 			       smb_krb5_debug_wrapper,
 				smb_krb5_debug_close, NULL);
 	if (ret) {
 		DEBUG(1,("krb5_addlog_func failed (%s)\n",
-			 smb_get_krb5_error_message(kctx, ret, tmp_ctx)));
-		talloc_free(tmp_ctx);
+			 smb_get_krb5_error_message(kctx, ret, frame)));
+		TALLOC_FREE(frame);
 		return ret;
 	}
 	krb5_set_warn_dest(kctx, logf);
@@ -833,8 +832,9 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	}
 #endif
 
-	talloc_steal(parent_ctx, *smb_krb5_context);
-	talloc_free(tmp_ctx);
+	*smb_krb5_context = talloc_move(parent_ctx, &s);
+
+	TALLOC_FREE(frame);
 
 	return 0;
 }
