@@ -1317,7 +1317,13 @@ sub ParseElementPullLevel
 			$self->pidl("if ($var_name) {");
 			$self->indent;
 
-			if ($l->{POINTER_TYPE} eq "relative" or $l->{POINTER_TYPE} eq "relative_short") {
+			if ($l->{POINTER_TYPE} eq "relative") {
+				$self->pidl("uint32_t _relative_save_offset;");
+				$self->pidl("uint32_t _relative_referent_offset;");
+				$self->pidl("_relative_save_offset = $ndr->offset;");
+				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2($ndr, $var_name));");
+				$self->pidl("_relative_referent_offset = $ndr->offset;");
+			} elsif ($l->{POINTER_TYPE} eq "relative_short") {
 				$self->pidl("uint32_t _relative_save_offset;");
 				$self->pidl("_relative_save_offset = $ndr->offset;");
 				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2($ndr, $var_name));");
@@ -1332,7 +1338,9 @@ sub ParseElementPullLevel
 		$self->ParseMemCtxPullEnd($e, $l, $ndr);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
-			if ($l->{POINTER_TYPE} eq "relative" or $l->{POINTER_TYPE} eq "relative_short") {
+			if ($l->{POINTER_TYPE} eq "relative") {
+				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2_end($ndr, _relative_save_offset, _relative_referent_offset));");
+			} elsif ($l->{POINTER_TYPE} eq "relative_short") {
 				$self->pidl("if ($ndr->offset > $ndr->relative_highest_offset) {");
 				$self->indent;
 				$self->pidl("$ndr->relative_highest_offset = $ndr->offset;");
