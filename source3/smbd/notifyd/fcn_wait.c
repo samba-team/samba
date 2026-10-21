@@ -157,6 +157,7 @@ static bool fcn_wait_filter(struct messaging_rec *rec, void *private_data)
 		req, struct fcn_wait_state);
 	struct notify_event_msg msg = { .action = 0 };
 	struct fcn_event *evt = NULL;
+	size_t evt_size;
 
 	if (rec->msg_type != MSG_PVFS_NOTIFY) {
 		DBG_DEBUG("Ignoring msg %"PRIu32"\n", rec->msg_type);
@@ -184,12 +185,20 @@ static bool fcn_wait_filter(struct messaging_rec *rec, void *private_data)
 		return false;
 	}
 
-	evt = talloc_memdup(state, rec->buf.data, rec->buf.length);
+	/*
+	 * The message needs to be copied into evt->msg,
+	 * evt itself starts with the list pointers.
+	 */
+	evt_size = offsetof(struct fcn_event, msg) + rec->buf.length;
+	evt_size = MAX(evt_size, sizeof(struct fcn_event));
+
+	evt = talloc_zero_size(state, evt_size);
 	if (evt == NULL) {
-		DBG_DEBUG("talloc_memdup failed\n");
+		DBG_DEBUG("talloc_zero_size failed\n");
 		return false;
 	}
 	talloc_set_name_const(evt, "struct fcn_event");
+	memcpy(&evt->msg, rec->buf.data, rec->buf.length);
 
 	/*
 	 * TODO: Sort by timestamp
@@ -260,6 +269,7 @@ NTSTATUS fcn_wait_recv(
 	}
 
 	DLIST_REMOVE(state->events, evt);
+	TALLOC_FREE(evt);
 
 	if (state->events != NULL) {
 		tevent_req_defer_callback(req, state->ev);
