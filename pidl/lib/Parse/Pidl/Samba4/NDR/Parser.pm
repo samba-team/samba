@@ -1096,24 +1096,39 @@ sub ParseDataPush($$$$$$$)
 			}
 
 			my $value = has_property($e, "value");
-			my $const_value = undef;
-			if (defined($value)) {
-				my $v = parse_int($value);
-				if ($v =~ /^\d+$/ and
-				    $low =~ /^-?\d+$/ and
-				    $high =~ /^-?\d+$/)
-				{
-					$const_value = $v;
+			my @const_values = ();
+			if (defined($value) and
+			    $low =~ /^-?\d+$/ and
+			    $high =~ /^-?\d+$/)
+			{
+				my @candidates = ($value);
+
+				# value(cond?A:B) with constant A and B
+				if ($value =~ /^[^?:]+\?([^?:]+):([^?:]+)$/) {
+					@candidates = ($1, $2);
+				}
+
+				foreach my $c (@candidates) {
+					$c =~ s/^\s+|\s+$//g;
+					my $v = parse_int($c);
+					if ($v !~ /^\d+$/) {
+						@const_values = ();
+						last;
+					}
+					push(@const_values, $v);
 				}
 			}
 
-			if (defined($const_value)) {
-				# A constant value() can't change at
-				# runtime, so we check it here instead
-				# of generating a check that is never
+			if (scalar(@const_values) > 0) {
+				# A value() that can only result in
+				# constants can't change at runtime,
+				# so we check it here instead of
+				# generating a check that is never
 				# true.
-				if ($const_value < $low or $const_value > $high) {
-					fatal($e->{ORIGINAL}, "value($value) of `$e->{NAME}' is out of range($range)");
+				foreach my $v (@const_values) {
+					if ($v < $low or $v > $high) {
+						fatal($e->{ORIGINAL}, "value($value) of `$e->{NAME}' is out of range($range)");
+					}
 				}
 			} else {
 				if ($low == 0 and not $signed) {
