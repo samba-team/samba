@@ -2418,6 +2418,12 @@ static bool vfs_ceph_rgw_load_config(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
+	if ((*config_tmp->bkt_name == '\0') ||
+	    (strcmp(config_tmp->bkt_name, "/") == 0))
+	{
+		goto out;
+	}
+
 	SMB_VFS_HANDLE_SET_DATA(handle,
 				config_tmp,
 				NULL,
