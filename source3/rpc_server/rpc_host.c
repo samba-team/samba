@@ -2485,7 +2485,6 @@ struct rpc_host_state {
 	struct tevent_immediate *ready_signal_immediate;
 	int *ready_signal_fds;
 
-	size_t num_servers;
 	size_t num_prepared;
 };
 
