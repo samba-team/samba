@@ -1247,6 +1247,8 @@ for t in tests:
         # Certain tests fail when run against ad_member with MIT kerberos because the private krb5.conf overrides the provisioned lib/krb5.conf,
         # ad_member_idmap_rid sets "create krb5.conf = no"
         plansmbtorture4testsuite(t, "ad_member_idmap_rid", '//$SERVER/tmp -k yes -U$DC_USERNAME@$REALM%$DC_PASSWORD', 'krb5')
+        # bind_shutdown needs a share with 'delay_inject:pread_send'
+        plansmbtorture4testsuite("smb2.session.bind_shutdown", "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:aio_delay_inject_share=aio_delay_inject')
     elif t == "smb2.session-require-signing":
         plansmbtorture4testsuite(t, "ad_member_idmap_rid", '//$SERVER_IP/tmp -U$DC_USERNAME@$REALM%$DC_PASSWORD')
     elif t == "rpc.lsa":

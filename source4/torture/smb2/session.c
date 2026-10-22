@@ -33,7 +33,6 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
 #include "lib/util/tevent_ntstatus.h"
-#include "lease_break_handler.h"
 
 /* Ticket lifetime we want to request in seconds */
 #define KRB5_TICKET_LIFETIME 5
@@ -2321,24 +2320,28 @@ done:
 
 /*
  * A session without any channel waits in
- * smb2srv_session_shutdown_send() until the
- * handle lease breaks of its delete on close
- * opens are acked. A bind during that time
- * should get NT_STATUS_USER_SESSION_DELETED.
+ * smb2srv_session_shutdown_send() until its
+ * pending requests are finished. A bind during
+ * that time should get NT_STATUS_USER_SESSION_DELETED.
+ *
+ * We use a pending read on a share with
+ * 'delay_inject:pread_send = 2000', as async reads
+ * can't be canceled (see [MS-SMB2] 3.3.5.16).
  */
 static bool test_session_bind_shutdown(struct torture_context *tctx,
 				       struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
-	const char *share = torture_setting_string(tctx, "share", NULL);
+	const char *delay_share = torture_setting_string(tctx,
+						"aio_delay_inject_share",
+						NULL);
 	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	char fname[256];
 	struct smb2_create c;
-	struct smb2_lease ls;
-	struct smb2_handle _h1;
-	struct smb2_handle *h1 = NULL;
+	struct smb2_read rd;
+	struct smb2_request *rreq = NULL;
 	bool ret = false;
 	struct smb2_transport *transport1 = tree1->session->transport;
 	struct smbcli_options options2;
@@ -2349,26 +2352,17 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 	struct smb2_transport *transport3 = NULL;
 	struct smb2_session *session2_2 = NULL;
 	struct smb2_session *session2_3 = NULL;
-	uint64_t lease_key = 0x0bad5e55;
 	uint32_t caps;
+
+	if (delay_share == NULL) {
+		torture_skip(tctx, "torture:aio_delay_inject_share "
+			     "not specified\n");
+	}
 
 	caps = smb2cli_conn_server_capabilities(transport1->conn);
 	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
 		torture_skip(tctx, "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
 	}
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "server doesn't support SMB2_CAP_LEASING\n");
-	}
-
-	/*
-	 * tree1 holds an RH lease and never acks the
-	 * break, which blocks the shutdown of session2
-	 * until we close the handle.
-	 */
-	transport1->lease.handler = torture_lease_handler;
-	transport1->lease.private_data = tree1;
-	torture_reset_lease_break_info(tctx, &lease_break_info);
-	lease_break_info.lease_skip_ack = true;
 
 	/* Add some random component to the file name. */
 	snprintf(fname, sizeof(fname), "session_bind_shutdown_%s.dat",
@@ -2376,19 +2370,17 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 
 	smb2_util_unlink(tree1, fname);
 
-	smb2_lease_create(&c, &ls, false, fname, lease_key,
-			  smb2_util_lease_state("RH"));
-	status = smb2_create(tree1, mem_ctx, &c);
+	/*
+	 * Create the file with some content via tree1,
+	 * as writes on the delay share are delayed too.
+	 */
+	status = torture_smb2_testfile(tree1, fname, &c.out.file.handle);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_create failed");
-	_h1 = c.out.file.handle;
-	h1 = &_h1;
-	torture_assert_int_equal_goto(tctx, c.out.oplock_level,
-				      SMB2_OPLOCK_LEVEL_LEASE, ret, done,
-				      "oplock_level incorrect");
-	torture_assert_int_equal_goto(tctx, c.out.lease_response.lease_state,
-				      smb2_util_lease_state("RH"), ret, done,
-				      "lease_state incorrect");
+					"torture_smb2_testfile failed");
+	status = smb2_util_write(tree1, c.out.file.handle, "data", 0, 4);
+	smb2_util_close(tree1, c.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed");
 
 	/*
 	 * session2 uses its own client guid,
@@ -2400,7 +2392,7 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 
 	status = smb2_connect(tctx,
 			      host,
-			      share,
+			      delay_share,
 			      tctx->lp_ctx,
 			      lpcfg_resolve_context(tctx->lp_ctx, tctx),
 			      credentials,
@@ -2425,7 +2417,7 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 
 	status = smb2_connect(tctx,
 			      host,
-			      share,
+			      delay_share,
 			      tctx->lp_ctx,
 			      lpcfg_resolve_context(tctx->lp_ctx, tctx),
 			      credentials,
@@ -2446,11 +2438,10 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 	torture_assert(tctx, session2_3 != NULL, "smb2_session_channel failed");
 
 	c = (struct smb2_create) {
-		.in.desired_access = SEC_RIGHTS_FILE_ALL,
+		.in.desired_access = SEC_RIGHTS_FILE_READ,
 		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
 		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
 		.in.create_disposition = NTCREATEX_DISP_OPEN,
-		.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE,
 		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
 		.in.fname = fname,
 	};
@@ -2459,21 +2450,45 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 					"smb2_create failed");
 
 	/*
+	 * The read is delayed by 2 seconds.
+	 */
+	rd = (struct smb2_read) {
+		.in.file.handle = c.out.file.handle,
+		.in.length = 4,
+		.in.offset = 0,
+	};
+	rreq = smb2_read_send(tree2, &rd);
+	torture_assert_goto(tctx, rreq != NULL, ret, done,
+			    "smb2_read_send failed");
+
+	/*
+	 * Servers don't necessarily send an interim
+	 * response for the read, so we use an echo
+	 * request in order to make sure the server
+	 * received the read, as the requests on
+	 * a connection are processed in order.
+	 */
+	status = smb2_keepalive(transport2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_keepalive failed");
+	torture_assert_goto(tctx, rreq->state < SMB2_REQUEST_DONE, ret, done,
+			    "read is not pending anymore");
+
+	/*
 	 * Drop the only channel of session2, the session
-	 * shutdown needs to break the H lease of tree1.
+	 * shutdown needs to wait for the pending read.
 	 */
 	smbXcli_conn_disconnect(transport2->conn, NT_STATUS_LOCAL_DISCONNECT);
 
-	torture_wait_for_lease_break(tctx);
-	torture_assert_int_equal_goto(tctx, lease_break_info.count, 1,
-				      ret, done, "no lease break");
-	torture_assert_int_equal_goto(tctx,
-				      lease_break_info.lease_break.new_lease_state,
-				      smb2_util_lease_state("R"), ret, done,
-				      "new_lease_state incorrect");
+	/*
+	 * Give the server some time to notice the
+	 * disconnect and start the session shutdown,
+	 * the read is still pending for about 1.5 seconds.
+	 */
+	smb_msleep(500);
 
 	/*
-	 * session2 is still waiting for the lease break ack,
+	 * session2 is still waiting for the pending read,
 	 * a bind to it should fail as it's already deleted.
 	 */
 	status = smb2_session_setup_spnego(session2_3,
@@ -2484,30 +2499,6 @@ static bool test_session_bind_shutdown(struct torture_context *tctx,
 					   ret, done,
 					   "smb2_session_setup_spnego failed");
 
-	/*
-	 * Closing the handle lets the shutdown of
-	 * session2 finish and the file is deleted.
-	 */
-	status = smb2_util_close(tree1, *h1);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_util_close failed");
-	h1 = NULL;
-	smb_msleep(500);
-
-	c = (struct smb2_create) {
-		.in.desired_access = SEC_RIGHTS_FILE_ALL,
-		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
-		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
-		.in.create_disposition = NTCREATEX_DISP_OPEN,
-		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
-		.in.fname = fname,
-	};
-	status = smb2_create(tree1, mem_ctx, &c);
-	torture_assert_ntstatus_equal_goto(tctx, status,
-					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
-					   ret, done,
-					   "file still there?");
-
 	ret = true;
 done:
 	if (transport3 != NULL) {
@@ -2517,10 +2508,6 @@ done:
 	if (transport2 != NULL) {
 		smbXcli_conn_disconnect(transport2->conn,
 					NT_STATUS_LOCAL_DISCONNECT);
-	}
-
-	if (h1 != NULL) {
-		smb2_util_close(tree1, *h1);
 	}
 
 	smb2_util_unlink(tree1, fname);
