@@ -107,6 +107,65 @@ setup_socket_wrapper()
 	mkdir -p "$_d"
 }
 
+# Trim leading/trailing whitespace and squash other whitespace to a
+# single space, like CTDB's config parser
+local_daemons_config_squash()
+{
+	printf '%s\n' "$1" |
+		tr -s '[:space:]' ' ' |
+		sed -e 's/^ //' -e 's/ $//'
+}
+
+# Section names are case-insensitive, so also convert to lowercase
+local_daemons_config_section()
+{
+	local_daemons_config_squash "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+# Set <key> in <section> of config <file> to <value>, replacing any
+# existing setting and adding the section if necessary
+local_daemons_config_set()
+{
+	_file="$1"
+	_section=$(local_daemons_config_section "$2")
+	_key=$(local_daemons_config_squash "$3")
+	_line="	${_key} = $(local_daemons_config_squash "$4")"
+
+	_in_section=false
+	_done=false
+	while IFS='' read -r _l; do
+		case "$_l" in
+		\[*)
+			_s="${_l#\[}"
+			_s=$(local_daemons_config_section "${_s%]*}")
+			_in_section=false
+			if [ "$_s" = "$_section" ]; then
+				_in_section=true
+			fi
+			;;
+		*=*)
+			# Drop existing setting, new one follows header
+			if $_in_section &&
+				[ "$(local_daemons_config_squash "${_l%%=*}")" = \
+					"$_key" ]; then
+				continue
+			fi
+			;;
+		esac
+
+		printf '%s\n' "$_l"
+		if $_in_section && ! $_done; then
+			printf '%s\n' "$_line"
+			_done=true
+		fi
+	done <"$_file" >"${_file}.new"
+
+	if ! $_done; then
+		printf '\n[%s]\n%s\n' "$_section" "$_line" >>"${_file}.new"
+	fi
+	mv "${_file}.new" "$_file"
+}
+
 local_daemons_setup_usage()
 {
 	cat >&2 <<EOF
@@ -121,6 +180,8 @@ Options:
   -R            Use a command for the cluster lock (default: use a file)
   -r <time>     Like -R and set recheck interval to <time> (default: use a file)
   -S <library>  Socket wrapper shared library to preload (default: none)
+  -s <section>.<key>=<value>
+                Set given config item (default: none)
   -6            Generate IPv6 IPs for nodes, public addresses (default: IPv4)
 EOF
 
@@ -130,6 +191,7 @@ EOF
 local_daemons_setup()
 {
 	_commented_config=""
+	_config_settings=""
 	_disable_failover=false
 	_nodes_file=""
 	_num_nodes=3
@@ -141,7 +203,7 @@ local_daemons_setup()
 
 	set -e
 
-	while getopts "C:FN:n:P:Rr:S:6h?" _opt; do
+	while getopts "C:FN:n:P:Rr:S:s:6h?" _opt; do
 		case "$_opt" in
 		C)
 			_t="${_commented_config}${_commented_config:+|}"
@@ -157,6 +219,15 @@ local_daemons_setup()
 			_cluster_lock_recheck_interval="$OPTARG"
 			;;
 		S) _socket_wrapper="$OPTARG" ;;
+		s)
+			case "$OPTARG" in
+			*.*=*) : ;;
+			*) local_daemons_setup_usage ;;
+			esac
+			_t="${_config_settings}${_config_settings:+
+}"
+			_config_settings="${_t}${OPTARG}"
+			;;
 		6) _use_ipv6=true ;;
 		\? | h) local_daemons_setup_usage ;;
 		esac
@@ -259,6 +330,16 @@ EOF
 				# Quote all backslashes due to double-quotes
 				sed -i -e "s|^\\t\\(${_c}\\) = |\\t# \\1 = |" \
 					"${CTDB_BASE}/ctdb.conf"
+			done
+		)
+
+		(
+			IFS='
+'
+			for _s in $_config_settings; do
+				_t="${_s%%=*}"
+				local_daemons_config_set "${CTDB_BASE}/ctdb.conf" \
+					"${_t%%.*}" "${_t#*.}" "${_s#*=}"
 			done
 		)
 	done
