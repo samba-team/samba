@@ -1,4 +1,83 @@
                    ==============================
+                   Release Notes for Samba 4.25.1
+                          October 23, 2026
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.25 release series.
+
+This release also fixes bug 16276, which also has CVE-2026-109411 assigned.
+As this only affects the recently release 4.25.0 version and only the
+newly introduced vfs_ceph_rgw module, we decided to ship this fix with this
+ordinary bugfix release.
+
+
+Changes since 4.25.0
+--------------------
+
+o  Vinit Agnihotri <vagnihot@redhat.com>
+   * BUG 16276: Access control bypass via vfs_ceph_rgw case-insensitive open
+     (CVE-2026-109411)
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 16274: CTDB: Cannot find device "<iface>@<link>": need to extract real
+     interface names
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 16200: generate_unique_u64() may not protect against veto_value
+   * BUG 16261: Rename with ReplaceIfExists to a target differing only in case
+     creates a duplicate instead of replacing (regression in
+     bb130f32)
+
+o  Daeho Ro <email@daeho.ro>
+   * BUG 16263: Samba 4.25.0 fails to build on macOS
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 16258: Python smbconf transaction_start() lacks a talloc stack frame
+     with CTDB
+   * BUG 16265: Linux i686 build fails on dynamic_lookup
+   * BUG 16276: Access control bypass via vfs_ceph_rgw case-insensitive open
+     (CVE-2026-109411)
+   * BUG 16287: vfs_acl_xattr crashes on zero-sized flistxattr queries
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 16235: Dynamic interface support in smbd is racy
+   * BUG 16254: CTDB database operations can be run against incorrect nodes
+   * BUG 16273: A node can be banned because it tries to run recovery after
+     losing the cluster lock
+
+o  Shweta Sodani <ssodani@redhat.com>
+   * BUG 15857: All backend  log should honor global log level  "log level = "
+
+o  Priyanka Soni <priysoni@redhat.com>
+   * BUG 15324: fruit:time machine max size can only be set to an integer and is
+     ignored if user sets a float
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.25.0
                          September 24, 2026
                    ==============================
