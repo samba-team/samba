@@ -80,6 +80,16 @@ static void setup_handlers(struct tevent_context *ev,
                            int from_parent_fd);
 
 /*
+ * Set by the master's SIGTERM handler: its workers must be killed and their
+ * irpc registrations removed when the restart contexts are freed.
+ */
+static bool master_shutdown;
+
+static void irpc_cleanup(struct loadparm_context *lp_ctx,
+			 struct tevent_context *ev,
+			 pid_t pid);
+
+/*
  * State needed to restart the master process or a worker process if they
  * terminate early.
  */
@@ -102,6 +112,11 @@ struct worker_restart_context {
 struct restart_context {
 	struct loadparm_context *lp_ctx;
 	struct tfork *t;
+	/*
+	 * The PID of the process that created the tfork context. Forked
+	 * copies of this context must not kill or wait on the child.
+	 */
+	pid_t owner_pid;
 	int from_parent_fd;
 	const struct service_details *service_details;
 	const char *service_name;
@@ -113,11 +128,47 @@ struct restart_context {
 static int restart_context_destructor(struct restart_context *rc)
 {
 	/*
-	 * Only release our handle. Killing or waiting on the child here would
-	 * break shutdown: a parent freeing its event context must leave the
-	 * children to terminate on their own, and forked copies of the context
-	 * don't own the waiter.
+	 * Only the owner of a handle may kill and reap its child, and only
+	 * when we are tearing down a master that has to take its workers
+	 * down with it. In every other case, e.g. a parent that frees its
+	 * event context at exit, just release the handle and let the children
+	 * terminate on their own.
 	 */
+	if (master_shutdown && rc->t != NULL && getpid() == rc->owner_pid) {
+		pid_t child_pid = tfork_child_pid(rc->t);
+		struct tevent_context *cleanup_ev = NULL;
+		int ret;
+
+		/* Stop the child before removing its registrations. */
+		ret = tfork_destroy(&rc->t);
+		if (ret != 0) {
+			DBG_ERR("Failed to destroy tfork context for "
+				"pid %d: %s\n",
+				child_pid,
+				strerror(errno));
+		} else {
+			/*
+			 * Clean up any irpc name registrations left by the
+			 * child. The master's SIGTERM handler kills its
+			 * workers this way without ever routing through
+			 * prefork_child_pipe_handler(), which is the only
+			 * other place this normally happens.
+			 *
+			 * ev is mid-teardown here, so use a standalone one.
+			 */
+			cleanup_ev = s4_event_context_init(NULL);
+			if (cleanup_ev != NULL) {
+				irpc_cleanup(rc->lp_ctx,
+					     cleanup_ev,
+					     child_pid);
+				TALLOC_FREE(cleanup_ev);
+			} else {
+				DBG_ERR("Failed to create event context "
+					"for irpc cleanup of pid %d\n",
+					child_pid);
+			}
+		}
+	}
 	tfork_close(&rc->t);
 
 	return 0;
@@ -147,6 +198,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 	}
 #endif
 	DBG_NOTICE("Exiting pid %d on SIGTERM\n", getpid());
+	master_shutdown = true;
 	TALLOC_FREE(ev);
 	exit(127);
 }
@@ -283,6 +335,7 @@ static void prefork_fork_master(
 		}
 		talloc_set_destructor(rc, restart_context_destructor);
 		rc->t = t;
+		rc->owner_pid = getpid();
 		rc->lp_ctx = lp_ctx;
 		rc->service_name = service_name;
 		rc->service_details = service_details;
@@ -787,6 +840,7 @@ static void prefork_fork_worker(struct task_server *task,
 		}
 		talloc_set_destructor(rc, restart_context_destructor);
 		rc->t = w;
+		rc->owner_pid = getpid();
 		rc->lp_ctx = lp_ctx;
 		rc->service_name = service_name;
 		rc->service_details = service_details;
