@@ -98,6 +98,22 @@ int tfork_event_fd(struct tfork *t);
 int tfork_status(struct tfork **_t, bool wait);
 
 /**
+ * @brief Close the tfork handle without killing the child
+ *
+ * Closes the status_fd and event_fd (if still owned by the handle) and frees
+ * the tfork handle. Unlike tfork_destroy(), this does not send SIGKILL to the
+ * worker and does not wait()/reap the waiter process.
+ *
+ * It is intended for use in a process that inherited the handle via fork() but
+ * isn't the owner that created it with tfork_create(), and therefore must not
+ * kill or wait on a process it doesn't own.
+ *
+ * @param[in,out]   _t    Pointer-pointer to a struct tfork returned by
+ *                        tfork_create(). Upon completion *_t is set to NULL.
+ **/
+void tfork_close(struct tfork **_t);
+
+/**
  * @brief Terminate the child discarding the exit status
  *
  * @param[in]   t     Pointer-pointer to a struct tfork returned by

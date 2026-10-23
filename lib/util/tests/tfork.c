@@ -810,6 +810,105 @@ done:
 	return ok;
 }
 
+/*
+ * Verify tfork_close() on an inherited copy of the handle releases it without
+ * killing the child, and that the owner can still reap the child afterwards.
+ */
+static bool test_tfork_close(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	pid_t child;
+	pid_t helper;
+	int pipe_fds[2];
+	int helper_fds[2];
+	char c = 0;
+	ssize_t nread;
+	char helper_result = 0;
+	int status;
+	bool ok = true;
+	int ret;
+
+	ret = pipe(pipe_fds);
+	torture_assert(tctx, ret == 0, "pipe failed\n");
+	ret = pipe(helper_fds);
+	if (ret != 0) {
+		close(pipe_fds[0]);
+		close(pipe_fds[1]);
+		torture_fail(tctx, "pipe failed\n");
+		return false;
+	}
+
+	t = tfork_create();
+	if (t == NULL) {
+		close(pipe_fds[0]);
+		close(pipe_fds[1]);
+		close(helper_fds[0]);
+		close(helper_fds[1]);
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		close(pipe_fds[0]);
+		close(helper_fds[0]);
+		close(helper_fds[1]);
+		sleep(1);
+		(void)sys_write(pipe_fds[1], &c, sizeof(c));
+		_exit(0);
+	}
+	close(pipe_fds[1]);
+
+	/* The helper inherits a copy of the handle and closes only that */
+	helper = fork();
+	if (helper == -1) {
+		torture_comment(tctx, "fork failed\n");
+		close(helper_fds[1]);
+		ok = false;
+		goto done;
+	}
+	if (helper == 0) {
+		char r;
+
+		close(pipe_fds[0]);
+		tfork_close(&t);
+		r = (t == NULL) ? 'y' : 'n';
+		(void)sys_write(helper_fds[1], &r, sizeof(r));
+		_exit(0);
+	}
+
+	close(helper_fds[1]);
+
+	/* Read the result instead of relying on the SIGCHLD disposition */
+	nread = sys_read(helper_fds[0], &helper_result, sizeof(helper_result));
+	torture_assert_goto(tctx, nread == 1 && helper_result == 'y', ok, done,
+			    "tfork_close did not reset the handle\n");
+
+	/* If the child had been killed, we would see EOF instead of data */
+	nread = sys_read(pipe_fds[0], &c, sizeof(c));
+	torture_assert_goto(tctx, nread == 1, ok, done,
+			    "child was killed by tfork_close\n");
+
+	/* The owner still holds the handle and can reap the waiter */
+	status = tfork_status(&t, true);
+	torture_assert_goto(tctx, status == 0, ok, done,
+			    "tfork_status failed for the owner\n");
+
+done:
+	close(pipe_fds[0]);
+	close(helper_fds[0]);
+	/*
+	 * Reap the helper so it doesn't linger as a zombie when SIGCHLD is
+	 * left at its default disposition.
+	 */
+	if (helper > 0) {
+		waitpid(helper, NULL, 0);
+	}
+	if (t != NULL) {
+		tfork_destroy(&t);
+	}
+	return ok;
+}
+
 struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -858,6 +957,10 @@ struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "tfork_status_handle",
 				      test_tfork_status_handle);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_close",
+				      test_tfork_close);
 
 	return suite;
 }

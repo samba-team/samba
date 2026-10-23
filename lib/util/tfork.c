@@ -897,7 +897,14 @@ int tfork_status(struct tfork **_t, bool wait)
 		size_t nwritten;
 		nwritten = sys_write(t->status_fd, &(char){0}, sizeof(char));
 		if (nwritten != sizeof(char)) {
+			int saved_errno = errno;
+
 			close(t->status_fd);
+			t->status_fd = -1;
+			ret = tfork_uninstall_sigchld_handler();
+			assert(ret == 0);
+
+			errno = saved_errno;
 			return -1;
 		}
 	}
@@ -941,4 +948,25 @@ int tfork_destroy(struct tfork **_t)
         }
 
         return 0;
+}
+
+void tfork_close(struct tfork **_t)
+{
+	struct tfork *t = *_t;
+
+	if (t == NULL) {
+		return;
+	}
+
+	if (t->status_fd != -1) {
+		close(t->status_fd);
+		t->status_fd = -1;
+	}
+	if (t->event_fd != -1) {
+		close(t->event_fd);
+		t->event_fd = -1;
+	}
+
+	free(t);
+	*_t = NULL;
 }
