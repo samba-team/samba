@@ -1612,18 +1612,7 @@ static int vfs_ceph_rgw_mkdirat(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	/* Prepare dir name, librgw expects dir-name to end with '/',
-	 * thus adding '/' in the end of supplied dir name.
-	 */
-	if (*abs_path != '\0') {
-		name = talloc_asprintf(ctx,
-				       "%s/%s/",
-				       abs_path,
-				       smb_fname->base_name);
-	} else {
-		name = talloc_asprintf(ctx, "%s/", smb_fname->base_name);
-	}
-
+	name = prepare_full_path(ctx, abs_path, smb_fname->base_name);
 	if (name == NULL) {
 		DBG_ERR("[CEPH_RGW] Not enough memory for dir name\n");
 		goto out;
@@ -1641,14 +1630,13 @@ static int vfs_ceph_rgw_mkdirat(struct vfs_handle_struct *handle,
 		utok->gid,
 		mode);
 
-	rc = rgw_create(config->rgw_root_fs,
-			config->rgw_root_fh,
-			name,
-			&st,
-			mask,
-			&rgw_fh,
-			O_CREAT,
-			RGW_CREATE_FLAG_NONE);
+	rc = rgw_mkdir(config->rgw_root_fs,
+		       config->rgw_root_fh,
+		       name,
+		       &st,
+		       mask,
+		       &rgw_fh,
+		       RGW_MKDIR_FLAG_NONE);
 	if (rc < 0) {
 		DBG_ERR("[CEPH_RGW] Error creating [%s]. rc = %d\n", name, rc);
 		goto out;
