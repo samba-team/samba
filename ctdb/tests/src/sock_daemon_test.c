@@ -31,6 +31,7 @@
 #include "common/pidfile.c"
 #include "common/sock_daemon.c"
 #include "common/sock_io.c"
+#include "common/tmon.c"
 
 struct dummy_wait_state {
 };
@@ -1957,6 +1958,158 @@ static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(ret == -1);
 }
 
+/*
+ * test11
+ *
+ * Start daemon with a socket as startup fd, test that it shuts down
+ * when the parent exits, even if the parent is not reaped
+ */
+
+static void test11(TALLOC_CTX *mem_ctx,
+		   const char *pidfile,
+		   const char *sockpath)
+{
+	struct stat st;
+	int fd[2], pfd[2];
+	pid_t pid_watch, pid, pid2;
+	ssize_t n;
+	int ret, i;
+
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+	assert(ret == 0);
+
+	ret = pipe(pfd);
+	assert(ret == 0);
+
+	pid_watch = fork();
+	assert(pid_watch != -1);
+
+	if (pid_watch == 0) {
+		close(fd[1]);
+		close(pfd[0]);
+
+		n = read(fd[0], &ret, sizeof(ret));
+		assert(n == sizeof(ret));
+		assert(ret == 0);
+
+		n = write(pfd[1], &ret, sizeof(ret));
+		assert(n == sizeof(ret));
+
+		sleep(999);
+		exit(1);
+	}
+
+	close(pfd[1]);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+		bool ok;
+
+		close(fd[0]);
+		close(pfd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx,
+					"test11",
+					"file:",
+					"NOTICE",
+					NULL,
+					NULL,
+					&sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd,
+					   sockpath,
+					   &dummy_socket_funcs,
+					   NULL);
+		assert(ret == 0);
+
+		ok = sock_daemon_set_startup_fd(sockd, fd[1]);
+		assert(ok);
+
+		ret = sock_daemon_run(
+			ev, sockd, NULL, false, false, pid_watch);
+		assert(ret == ESRCH);
+
+		talloc_free(mem_ctx);
+		exit(0);
+	}
+
+	close(fd[0]);
+	close(fd[1]);
+
+	n = read(pfd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	close(pfd[0]);
+
+	ret = kill(pid_watch, SIGKILL);
+	assert(ret == 0);
+
+	/* Wait for twice as long as the PID watch interval */
+	for (i = 0; i < 100; i++) {
+		pid2 = waitpid(pid, &ret, WNOHANG);
+		assert(pid2 != -1);
+		if (pid2 == pid) {
+			break;
+		}
+		usleep(100000);
+	}
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	pid2 = waitpid(pid_watch, &ret, 0);
+	assert(pid2 == pid_watch);
+
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
+}
+
+/*
+ * test12
+ *
+ * Test that a startup fd that is not a socket is rejected
+ */
+
+static void test12(TALLOC_CTX *mem_ctx,
+		   const char *pidfile,
+		   const char *sockpath)
+{
+	struct sock_daemon_context *sockd;
+	int fd[2];
+	bool ok;
+	int ret;
+
+	ret = sock_daemon_setup(
+		mem_ctx, "test12", "file:", "NOTICE", NULL, NULL, &sockd);
+	assert(ret == 0);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	ok = sock_daemon_set_startup_fd(sockd, fd[1]);
+	assert(!ok);
+
+	close(fd[0]);
+	close(fd[1]);
+
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+	assert(ret == 0);
+
+	ok = sock_daemon_set_startup_fd(sockd, fd[1]);
+	assert(ok);
+
+	close(fd[0]);
+	close(fd[1]);
+
+	talloc_free(sockd);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -2014,6 +2167,14 @@ int main(int argc, const char **argv)
 
 	case 10:
 		test10(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 11:
+		test11(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 12:
+		test12(mem_ctx, pidfile, sockpath);
 		break;
 
 	default:

@@ -227,6 +227,9 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
  *
  * On successful completion, 0 (unsigned int) will be written to the fd.
  *
+ * The fd must be a socket.  The daemon also shuts down when the other
+ * end is closed.
+ *
  * @param[in] sockd Socket daemon context
  * @param[in] fd File descriptor
  * @return true on success, false on error

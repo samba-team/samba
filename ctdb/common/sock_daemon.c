@@ -38,6 +38,7 @@
 #include "common/comm.h"
 #include "common/pidfile.h"
 #include "common/system.h"
+#include "common/tmon.h"
 #include "common/sock_daemon.h"
 
 struct sock_socket {
@@ -555,6 +556,19 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
 
 bool sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd)
 {
+	struct stat st;
+	int ret;
+
+	ret = fstat(fd, &st);
+	if (ret != 0) {
+		D_ERR("Failed to stat startup fd (%d)\n", errno);
+		return false;
+	}
+	if (!S_ISSOCK(st.st_mode)) {
+		D_ERR("Startup fd is not a socket\n");
+		return false;
+	}
+
 	if (! set_close_on_exec(fd)) {
 		D_ERR("Failed to set close-on-exec on startup fd\n");
 		return false;
@@ -572,6 +586,8 @@ struct sock_daemon_run_state {
 	struct tevent_context *ev;
 	struct sock_daemon_context *sockd;
 	pid_t pid_watch;
+	struct tevent_req *watch_pid_req;
+	struct tevent_req *parent_closed_req;
 
 	int fd;
 	int exit_code;
@@ -593,6 +609,7 @@ static void sock_daemon_run_exit(struct tevent_req *req);
 static bool sock_daemon_run_socket_listen(struct tevent_req *req);
 static void sock_daemon_run_socket_fail(struct tevent_req *subreq);
 static void sock_daemon_run_watch_pid(struct tevent_req *subreq);
+static void sock_daemon_run_parent_closed(struct tevent_req *subreq);
 static void sock_daemon_run_wait(struct tevent_req *req);
 static void sock_daemon_run_wait_done(struct tevent_req *subreq);
 static void sock_daemon_startup_notify(struct sock_daemon_context *sockd);
@@ -661,6 +678,24 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * The startup fd is a socket, so the parent's end closes when
+	 * it exits.  This is noticed immediately, even if the parent
+	 * has not been reaped.  Keep polling the PID too, since other
+	 * processes forked by the parent may hold its end.
+	 */
+	if (sockd->startup_fd != -1) {
+		subreq = tmon_ping_send(
+			state, ev, sockd->startup_fd, TMON_FD_READ, 0, 0);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					sock_daemon_run_parent_closed,
+					req);
+		state->parent_closed_req = subreq;
+	}
+
 	if (pid_watch > 1) {
 		subreq = tevent_wakeup_send(state, ev,
 					    tevent_timeval_current_ofs(1,0));
@@ -669,6 +704,7 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 		}
 		tevent_req_set_callback(subreq, sock_daemon_run_watch_pid,
 					req);
+		state->watch_pid_req = subreq;
 	}
 
 	return req;
@@ -897,6 +933,10 @@ static void sock_daemon_run_shutdown(struct tevent_req *req)
 
 	D_NOTICE("Shutting down\n");
 
+	/* Otherwise a parent watcher can start a second shutdown */
+	TALLOC_FREE(state->watch_pid_req);
+	TALLOC_FREE(state->parent_closed_req);
+
 	while ((sock = sockd->socket_list) != NULL) {
 		DLIST_REMOVE(sockd->socket_list, sock);
 		TALLOC_FREE(sock);
@@ -1009,6 +1049,7 @@ static void sock_daemon_run_watch_pid(struct tevent_req *subreq)
 
 	status = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
+	state->watch_pid_req = NULL;
 	if (! status) {
 		tevent_req_error(req, EIO);
 		return;
@@ -1033,6 +1074,36 @@ static void sock_daemon_run_watch_pid(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, sock_daemon_run_watch_pid, req);
+	state->watch_pid_req = subreq;
+}
+
+static void sock_daemon_run_parent_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	int ret = 0;
+	bool status;
+
+	status = tmon_ping_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	state->parent_closed_req = NULL;
+	if (!status && ret != EPIPE) {
+		D_ERR("Failed to monitor parent via startup fd, ret=%d\n",
+		      ret);
+		if (state->pid_watch > 1) {
+			/* Polling the parent's PID continues */
+			return;
+		}
+		state->exit_code = ret;
+		sock_daemon_run_shutdown(req);
+		return;
+	}
+
+	D_ERR("Parent gone away, exiting\n");
+	state->exit_code = ESRCH;
+	sock_daemon_run_shutdown(req);
 }
 
 static void sock_daemon_run_wait(struct tevent_req *req)
@@ -1083,7 +1154,7 @@ static void sock_daemon_startup_notify(struct sock_daemon_context *sockd)
 
 		num = sys_write(sockd->startup_fd, &zero, sizeof(zero));
 		if (num != sizeof(zero)) {
-			D_WARNING("Failed to write zero to pipe FD\n");
+			D_WARNING("Failed to write zero to startup fd\n");
 		}
 	}
 }
