@@ -420,11 +420,12 @@ static void test_lock_ppid_gone_lock_unlock(TALLOC_CTX *mem_ctx,
 {
 	struct do_lock_context *dl;
 	struct tevent_fd *fde;
+	struct tevent_timer *tt;
 	int pipefd[2];
 	int ret;
-	pid_t pid, pid2;
+	pid_t pid, pid2, holder;
 	ssize_t nread;
-	bool done;
+	bool helper_exited, waited;
 
 	/*
 	 * Do this in the parent - debugging aborts of the child is
@@ -455,6 +456,118 @@ static void test_lock_ppid_gone_lock_unlock(TALLOC_CTX *mem_ctx,
 		 * below.
 		 */
 
+		/*
+		 * Hold this process's end of the helper's stdin open
+		 * in another process, so the helper must poll to
+		 * notice that this process has gone away
+		 */
+		holder = fork();
+		assert(holder != -1);
+		if (holder == 0) {
+			close(pipefd[1]);
+			sleep(999);
+			_exit(1);
+		}
+
+		nwritten = write(pipefd[1], &holder, sizeof(holder));
+		assert(nwritten == sizeof(holder));
+
+		sleep(999);
+		exit(1);
+	}
+
+	close(pipefd[1]);
+
+	nread = read(pipefd[0], &holder, sizeof(holder));
+	assert(nread == sizeof(holder));
+
+	/*
+	 * pipefd[1] is leaked into the helper, so there will be an
+	 * event generated when the helper exits.  Wait for twice as
+	 * long as the PPID timeout, so a helper that doesn't poll
+	 * fails.
+	 */
+	helper_exited = false;
+	fde = tevent_add_fd(ctdb->ev,
+			    ctdb,
+			    pipefd[0],
+			    TEVENT_FD_READ,
+			    fd_done_handler,
+			    &helper_exited);
+	assert(fde != NULL);
+	waited = false;
+	tt = tevent_add_timer(ctdb->ev,
+			      ctdb,
+			      tevent_timeval_current_ofs(2 * 5, 0),
+			      wait_handler,
+			      &waited);
+	assert(tt != NULL);
+
+	ret = kill(pid, SIGKILL);
+	assert(ret == 0);
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+
+	while (!helper_exited && !waited) {
+		tevent_loop_once(ctdb->ev);
+	}
+
+	/* Before checking, so a helper that didn't poll can exit */
+	ret = kill(holder, SIGKILL);
+	assert(ret == 0);
+
+	TALLOC_FREE(fde);
+	/* A timer is freed when it fires */
+	if (!waited) {
+		TALLOC_FREE(tt);
+	}
+	assert(helper_exited);
+
+	/* LOCK */
+	do_lock(dl, mutex_string);
+	assert(dl->mh != NULL);
+
+	/* UNLOCK */
+	do_unlock(dl);
+	assert(dl->mh == NULL);
+}
+
+/*
+ * As above, but the child isn't reaped until the end, so a helper
+ * that polls for its parent would not notice it exiting
+ */
+static void test_lock_parent_exit_lock_unlock(TALLOC_CTX *mem_ctx,
+					      struct ctdb_context *ctdb,
+					      const char *mutex_string)
+{
+	struct do_lock_context *dl;
+	struct tevent_fd *fde;
+	struct tevent_timer *tt;
+	int pipefd[2];
+	int ret;
+	pid_t pid, pid2;
+	ssize_t nread;
+	bool helper_exited, waited;
+
+	dl = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl != NULL);
+	dl->ctdb = ctdb;
+
+	ret = pipe(pipefd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		ssize_t nwritten;
+
+		close(pipefd[0]);
+
+		/* LOCK */
+		do_lock(dl, mutex_string);
+		assert(dl->mh != NULL);
+
 		nwritten = write(pipefd[1], &ret, sizeof(ret));
 		assert(nwritten == sizeof(ret));
 
@@ -470,24 +583,35 @@ static void test_lock_ppid_gone_lock_unlock(TALLOC_CTX *mem_ctx,
 
 	/*
 	 * pipefd[1] is leaked into the helper, so there will be an
-	 * event generated when the helper exits
+	 * event generated when the helper exits.  Wait for twice as
+	 * long as the PPID timeout, so a helper that polls fails.
 	 */
-	done = false;
+	helper_exited = false;
 	fde = tevent_add_fd(ctdb->ev,
 			    ctdb,
 			    pipefd[0],
 			    TEVENT_FD_READ,
 			    fd_done_handler,
-			    &done);
+			    &helper_exited);
 	assert(fde != NULL);
+	waited = false;
+	tt = tevent_add_timer(ctdb->ev,
+			      ctdb,
+			      tevent_timeval_current_ofs(2 * 5, 0),
+			      wait_handler,
+			      &waited);
+	assert(tt != NULL);
 
 	ret = kill(pid, SIGKILL);
 	assert(ret == 0);
-	pid2 = waitpid(pid, &ret, 0);
-	assert(pid2 == pid);
 
-	while (! done) {
+	while (!helper_exited && !waited) {
 		tevent_loop_once(ctdb->ev);
+	}
+	TALLOC_FREE(fde);
+	/* A timer is freed when it fires */
+	if (!waited) {
+		TALLOC_FREE(tt);
 	}
 
 	/* LOCK */
@@ -497,6 +621,9 @@ static void test_lock_ppid_gone_lock_unlock(TALLOC_CTX *mem_ctx,
 	/* UNLOCK */
 	do_unlock(dl);
 	assert(dl->mh == NULL);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
 }
 
 static void test_lock_file_removed_no_recheck(TALLOC_CTX *mem_ctx,
@@ -779,6 +906,8 @@ int main(int argc, const char *argv[])
 		test_lock_wait_unlock(mem_ctx, ctdb, mutex_string);
 	} else if (strcmp(test, "lock-ppid-gone-lock-unlock") == 0) {
 		test_lock_ppid_gone_lock_unlock(mem_ctx, ctdb, mutex_string);
+	} else if (strcmp(test, "lock-parent-exit-lock-unlock") == 0) {
+		test_lock_parent_exit_lock_unlock(mem_ctx, ctdb, mutex_string);
 	} else if (strcmp(test, "lock-file-removed-no-recheck") == 0) {
 		if (argc != 4) {
 			usage();

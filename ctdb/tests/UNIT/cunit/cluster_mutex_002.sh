@@ -65,6 +65,15 @@ UNLOCK
 EOF
 unit_test cluster_mutex_test lock-ppid-gone-lock-unlock "$helper"
 
+test_case "Parent exits, not reaped: lock, wait, lock, unlock"
+ok <<EOF
+LOCK
+parent gone
+LOCK
+UNLOCK
+EOF
+unit_test cluster_mutex_test lock-parent-exit-lock-unlock "$helper"
+
 test_case "Recheck off, lock file removed"
 ok <<EOF
 LOCK
@@ -127,3 +136,11 @@ ctdb_mutex_fcntl_helper: ping timeout from lock test child
 LOST
 EOF
 unit_test cluster_mutex_test lock-io-timeout "$helper 5 3" "$lockfile" 1 7
+
+test_case "stdin not a socket: error"
+ok <<EOF
+ctdb_mutex_fcntl_helper: stdin is not a socket
+3
+EOF
+# Fail rather than hang if the helper takes the lock
+unit_test timeout 10 "$t" "$lockfile" </dev/null

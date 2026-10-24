@@ -96,14 +96,35 @@ static char fcntl_lock(const char *file, int *outfd)
 
 /*
  * Wait and see if the parent exits
+ *
+ * stdin is a socket, so the parent's end closes when it exits.  This
+ * also works if the parent has already exited, or if the parent is
+ * PID 1 (e.g. in a container).  Poll for the parent too, since other
+ * processes forked by the parent may hold its end.
  */
 
 struct wait_for_parent_state {
 	struct tevent_context *ev;
 	pid_t ppid;
+	struct tevent_req *watch_pid_req;
+	struct tevent_req *parent_closed_req;
 };
 
 static void wait_for_parent_check(struct tevent_req *subreq);
+static void wait_for_parent_closed(struct tevent_req *subreq);
+
+static bool stdin_is_socket(void)
+{
+	struct stat st;
+	int ret;
+
+	ret = fstat(STDIN_FILENO, &st);
+	if (ret != 0) {
+		return false;
+	}
+
+	return S_ISSOCK(st.st_mode);
+}
 
 static struct tevent_req *wait_for_parent_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -120,11 +141,12 @@ static struct tevent_req *wait_for_parent_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->ppid = ppid;
 
-	if (ppid == 1) {
-		fprintf(stderr, "parent == 1\n");
-		tevent_req_done(req);
+	subreq = tmon_ping_send(state, ev, STDIN_FILENO, TMON_FD_READ, 0, 0);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, wait_for_parent_closed, req);
+	state->parent_closed_req = subreq;
 
 	subreq = tevent_wakeup_send(state, ev,
 				    tevent_timeval_current_ofs(5,0));
@@ -132,6 +154,7 @@ static struct tevent_req *wait_for_parent_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, wait_for_parent_check, req);
+	state->watch_pid_req = subreq;
 
 	return req;
 }
@@ -146,6 +169,7 @@ static void wait_for_parent_check(struct tevent_req *subreq)
 
 	status = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
+	state->watch_pid_req = NULL;
 	if (! status) {
 		/* Ignore error */
 		fprintf(stderr, "%s: tevent_wakeup_recv() failed\n", progname);
@@ -153,6 +177,7 @@ static void wait_for_parent_check(struct tevent_req *subreq)
 
 	if (kill(state->ppid, 0) == -1 && errno == ESRCH) {
 		fprintf(stderr, "parent gone\n");
+		TALLOC_FREE(state->parent_closed_req);
 		tevent_req_done(req);
 		return;
 	}
@@ -163,6 +188,39 @@ static void wait_for_parent_check(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, wait_for_parent_check, req);
+	state->watch_pid_req = subreq;
+}
+
+static void wait_for_parent_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct wait_for_parent_state *state = tevent_req_data(
+		req, struct wait_for_parent_state);
+	bool status;
+	int err = 0;
+
+	status = tmon_ping_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	state->parent_closed_req = NULL;
+	if (!status && err != EPIPE) {
+		/*
+		 * Don't rely on polling alone.  If the parent exited
+		 * before getppid() was called then this would poll
+		 * init or a subreaper, which won't exit.
+		 */
+		fprintf(stderr,
+			"%s: monitoring parent via stdin failed (%d)\n",
+			progname,
+			err);
+		TALLOC_FREE(state->watch_pid_req);
+		tevent_req_error(req, err);
+		return;
+	}
+
+	fprintf(stderr, "parent gone\n");
+	TALLOC_FREE(state->watch_pid_req);
+	tevent_req_done(req);
 }
 
 static bool wait_for_parent_recv(struct tevent_req *req, int *perr)
@@ -754,6 +812,13 @@ int main(int argc, char *argv[])
 			usage();
 			exit(1);
 		}
+	}
+
+	if (!stdin_is_socket()) {
+		fprintf(stderr, "%s: stdin is not a socket\n", progname);
+		result = '3';
+		sys_write(STDOUT_FILENO, &result, 1);
+		return 0;
 	}
 
 	result = fcntl_lock(file, &fd);
