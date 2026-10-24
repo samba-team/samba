@@ -15,9 +15,15 @@ test_cleanup cleanup_eventd
 
 kill -9 "$helper_pid"
 
-# Only logged when the startup socket is closed, not when polling
-# notices that the parent has gone away
-wait_until 10 grep -q "Parent gone away, exiting" "$eventd_logfile"
+# eventd isn't polling a PID, so it can only notice via the socket.
+# Don't fail here, so the check below reports a failure.
+# eventd_pidfile set in scripts/local.sh
+# shellcheck disable=SC2154
+wait_until 10 test ! -e "$eventd_pidfile" || true
 
+ok_null
+unit_test test ! -e "$eventd_pidfile"
+
+# Only logged when the startup socket is closed
 ok_null
 unit_test grep -q "Parent gone away, exiting" "$eventd_logfile"
