@@ -229,8 +229,19 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	ret = pipe(fd);
+	/*
+	 * A socketpair, rather than a pipe, so the event daemon
+	 * notices immediately when this process exits.  Executed
+	 * child processes must not hold this end open.
+	 */
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
 	if (ret != 0) {
+		return -1;
+	}
+	if (!set_close_on_exec(fd[0])) {
+		D_ERR("Failed to set close-on-exec on event daemon socket\n");
+		close(fd[0]);
+		close(fd[1]);
 		return -1;
 	}
 
