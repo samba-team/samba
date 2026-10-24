@@ -61,3 +61,13 @@ LOCK
 UNLOCK
 EOF
 unit_test cluster_mutex_test lock-ppid-gone-lock-unlock "$lockfile"
+
+# The helper's socketpair uses the closed stdin and stdout
+test_case "No contention, stdin and stdout closed: lock, unlock"
+ok <<EOF
+LOCK
+UNLOCK
+EOF
+export CLUSTER_MUTEX_TEST_CLOSE_STDIN_STDOUT=1
+unit_test cluster_mutex_test lock-unlock "$lockfile"
+unset CLUSTER_MUTEX_TEST_CLOSE_STDIN_STDOUT

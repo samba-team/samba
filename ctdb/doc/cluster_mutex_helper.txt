@@ -67,6 +67,14 @@ termination.  If the parent process disappears then the helper should
 release the mutex and exit.  This avoids stale mutexes.  Note that a
 helper should never wait for parent process ID 1!
 
+CTDB connects a helper's standard input to the same socket as its
+standard output, so a helper can notice immediately that the parent
+process has exited by watching standard input for end-of-file.  This
+is useful because a parent process that has exited is still found
+until it is reaped.  However, other processes forked by the parent
+might also hold the socket open, so a helper should continue to check
+for the parent process.
+
 If a non-0 status code is sent then the helper can exit immediately.
 However, if the helper does not exit then it must terminate if it
 receives SIGTERM.

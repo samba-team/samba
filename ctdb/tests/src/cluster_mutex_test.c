@@ -31,6 +31,9 @@
 
 #include "tests/src/test_backtrace.h"
 
+/* Where results are printed */
+static FILE *out;
+
 /*
  * ctdb_cluster_mutex.c is included below.  This requires a few hacks...
  */
@@ -113,22 +116,22 @@ static void do_lock_handler(char status, double latency, void *private_data)
 
 	switch (status) {
 	case '0':
-		printf("LOCK\n");
+		fprintf(out, "LOCK\n");
 		break;
 
 	case '1':
-		printf("CONTENTION\n");
+		fprintf(out, "CONTENTION\n");
 		break;
 
 	case '2':
-		printf("TIMEOUT\n");
+		fprintf(out, "TIMEOUT\n");
 		break;
 
 	default:
-		printf("ERROR\n");
+		fprintf(out, "ERROR\n");
 	}
 
-	fflush(stdout);
+	fflush(out);
 	mh->done = true;
 }
 
@@ -137,8 +140,8 @@ static void do_lock_lost_handler(void *private_data)
 	struct do_lock_context *dl = talloc_get_type_abort(
 		private_data, struct do_lock_context);
 
-	printf("LOST\n");
-	fflush(stdout);
+	fprintf(out, "LOST\n");
+	fflush(out);
 	TALLOC_FREE(dl->mh);
 }
 
@@ -177,8 +180,8 @@ static void do_lock_check(struct do_lock_context *dl)
 	assert(dl->mh != NULL);
 
 	if (! dl->mh->locked) {
-		printf("NOLOCK\n");
-		fflush(stdout);
+		fprintf(out, "NOLOCK\n");
+		fflush(out);
 		TALLOC_FREE(dl->mh);
 	}
 }
@@ -206,16 +209,16 @@ static void do_unlock(struct do_lock_context *dl)
 		 * handle in place to allow taking of the lock to
 		 * fail.
 		 */
-		printf("CANCEL\n");
-		fflush(stdout);
+		fprintf(out, "CANCEL\n");
+		fflush(out);
 		TALLOC_FREE(dl->mh->h);
 		dl->mh->done = true;
 		dl->mh->locked = false;
 		return;
 	}
 
-	printf("UNLOCK\n");
-	fflush(stdout);
+	fprintf(out, "UNLOCK\n");
+	fflush(out);
 	TALLOC_FREE(dl->mh);
 }
 
@@ -746,6 +749,18 @@ int main(int argc, const char *argv[])
 	alarm(60);
 
 	test_backtrace_setup();
+
+	out = stdout;
+
+	/*
+	 * Close stdin and stdout, so a socketpair created for the lock
+	 * helper uses them, and print results to stderr instead
+	 */
+	if (getenv("CLUSTER_MUTEX_TEST_CLOSE_STDIN_STDOUT") != NULL) {
+		out = stderr;
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
+	}
 
 	test = argv[1];
 	mutex_string = argv[2];

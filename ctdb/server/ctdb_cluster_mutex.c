@@ -273,13 +273,23 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 	h->fd[1] = -1;
 	h->have_response = false;
 
-	ret = pipe(h->fd);
+	/*
+	 * A socketpair, rather than a pipe, so the helper can watch
+	 * stdin to notice when this process exits
+	 */
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, h->fd);
 	if (ret != 0) {
 		talloc_free(h);
-		DBG_ERR("Failed to open pipe\n");
+		DBG_ERR("Failed to create socketpair\n");
 		return NULL;
 	}
-	set_close_on_exec(h->fd[0]);
+	if (!set_close_on_exec(h->fd[0])) {
+		close(h->fd[0]);
+		close(h->fd[1]);
+		talloc_free(h);
+		DBG_ERR("Failed to set close-on-exec on socketpair\n");
+		return NULL;
+	}
 
 	/* Create arguments for lock helper */
 	if (!cluster_mutex_helper_args(h, argstring, &args)) {
@@ -324,10 +334,21 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 			DBG_WARNING("Failed to unblock SIGTERM (%d)\n", errno);
 		}
 
-		/* Make stdout point to the pipe */
-		close(STDOUT_FILENO);
-		dup2(h->fd[1], STDOUT_FILENO);
-		close(h->fd[1]);
+		/*
+		 * Make stdin and stdout point to the socketpair.  If
+		 * they were closed then the socket can be one of them,
+		 * so don't close it.
+		 */
+		if (dup2(h->fd[1], STDIN_FILENO) == -1 ||
+		    dup2(h->fd[1], STDOUT_FILENO) == -1)
+		{
+			DBG_ERR("Failed to redirect stdin/stdout (%d)\n",
+				errno);
+			_exit(1);
+		}
+		if (h->fd[1] != STDIN_FILENO && h->fd[1] != STDOUT_FILENO) {
+			close(h->fd[1]);
+		}
 
 		execv(args[0], args);
 
@@ -343,8 +364,7 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		DBG_WARNING("Failed to unblock SIGTERM (%d)\n", errno);
 	}
 
-	DBG_DEBUG("Created PIPE FD:%d\n", h->fd[0]);
-	set_close_on_exec(h->fd[0]);
+	DBG_DEBUG("Created socketpair FD:%d\n", h->fd[0]);
 
 	close(h->fd[1]);
 	h->fd[1] = -1;
