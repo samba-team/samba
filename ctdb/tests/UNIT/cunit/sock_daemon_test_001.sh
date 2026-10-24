@@ -5,7 +5,7 @@
 pidfile="${CTDB_TEST_TMP_DIR}/sock_daemon_test.pid.$$"
 sockpath="${CTDB_TEST_TMP_DIR}/sock_daemon_test.sock.$$"
 
-remove_files ()
+remove_files()
 {
 	rm -f "$pidfile"
 	rm -f "$sockpath"
@@ -13,13 +13,12 @@ remove_files ()
 
 test_cleanup remove_files
 
-result_filter ()
+result_filter()
 {
 	_pid="[0-9][0-9]*"
 	sed -e "s|pid=${_pid}|pid=PID|" \
-	    -e "s|PID ${_pid}|PID PID|"
+		-e "s|PID ${_pid}|PID PID|"
 }
-
 
 ok <<EOF
 daemon started, pid=PID
