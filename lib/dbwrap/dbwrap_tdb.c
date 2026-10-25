@@ -554,6 +554,11 @@ struct db_tdb_traverse_ctx {
 	struct db_context *db;
 	int (*f)(struct db_record *rec, void *private_data);
 	void *private_data;
+	NTSTATUS (*storev)(struct db_record *rec,
+			   const TDB_DATA *dbufs,
+			   int num_dbufs,
+			   int flag);
+	NTSTATUS (*delete_rec)(struct db_record *rec);
 	bool found_marker;
 };
 
@@ -593,108 +598,65 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		.key = kbuf,
 		.value = dbuf,
 		.value_valid = true,
-		.storev = db_tdb_storev,
-		.delete_rec = db_tdb_delete,
+		.storev = ctx->storev,
+		.delete_rec = ctx->delete_rec,
 		.private_data = ctx->db->private_data,
 		.db = ctx->db,
 		.flags.persistent = persistent,
 	};
 
 	return ctx->f(&rec, ctx->private_data);
+}
+
+static int db_tdb_traverse_internal(struct db_context *db,
+				    struct tdb_wrap *tdb,
+				    bool rw,
+				    int (*f)(struct db_record *rec,
+					     void *private_data),
+				    void *private_data)
+{
+	struct db_tdb_traverse_ctx ctx;
+	int nrecs;
+
+	ctx = (struct db_tdb_traverse_ctx) {
+		.db = db,
+		.f = f,
+		.private_data = private_data,
+		.storev = rw ? db_tdb_storev : db_tdb_storev_deny,
+		.delete_rec = rw ? db_tdb_delete : db_tdb_delete_deny,
+	};
+
+	if (rw) {
+		nrecs = tdb_traverse(tdb->tdb, db_tdb_traverse_func, &ctx);
+	} else {
+		nrecs = tdb_traverse_read(tdb->tdb,
+					  db_tdb_traverse_func,
+					  &ctx);
+	}
+	if (ctx.found_marker) {
+		nrecs--;
+	}
+	return nrecs;
 }
 
 static int db_tdb_traverse(struct db_context *db,
 			   int (*f)(struct db_record *rec, void *private_data),
 			   void *private_data)
 {
-	struct db_tdb_ctx *db_ctx =
-		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	struct db_tdb_traverse_ctx ctx;
-	int nrecs;
-
-	ctx = (struct db_tdb_traverse_ctx) {
-		.db = db,
-		.f = f,
-		.private_data = private_data,
-	};
-
-	nrecs = tdb_traverse(db_ctx->wtdb->tdb, db_tdb_traverse_func, &ctx);
-	if (ctx.found_marker) {
-		nrecs--;
-	}
-	return nrecs;
-}
-
-static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb,
-				     TDB_DATA kbuf,
-				     TDB_DATA dbuf,
-				     void *private_data)
-{
-	struct db_tdb_traverse_ctx *ctx =
-		(struct db_tdb_traverse_ctx *)private_data;
-	struct db_record rec = {};
-	bool persistent = false;
-
-	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
-		bool ok;
-		int cmp = 1;
-
-		if (kbuf.dsize ==
-		    sizeof(DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY))
-		{
-			cmp = memcmp(
-				kbuf.dptr,
-				DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY,
-				sizeof(DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY));
-		}
-		if (cmp == 0) {
-			ctx->found_marker = true;
-			return 0;
-		}
-
-		ok = db_tdb_validate_header(ctx->db, &dbuf, &persistent);
-		if (!ok) {
-			dbwrap_log_key("Invalid record", kbuf);
-			return 0;
-		}
-	}
-
-	rec = (struct db_record){
-		.key = kbuf,
-		.value = dbuf,
-		.value_valid = true,
-		.storev = db_tdb_storev_deny,
-		.delete_rec = db_tdb_delete_deny,
-		.private_data = ctx->db->private_data,
-		.db = ctx->db,
-		.flags.persistent = persistent,
-	};
-
-	return ctx->f(&rec, ctx->private_data);
+	struct db_tdb_ctx *db_ctx = talloc_get_type_abort(db->private_data,
+							  struct db_tdb_ctx);
+	return db_tdb_traverse_internal(
+		db, db_ctx->wtdb, true, f, private_data);
 }
 
 static int db_tdb_traverse_read(struct db_context *db,
 			   int (*f)(struct db_record *rec, void *private_data),
 			   void *private_data)
 {
-	struct db_tdb_ctx *db_ctx =
-		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	struct db_tdb_traverse_ctx ctx;
-	int nrecs;
-
-	ctx = (struct db_tdb_traverse_ctx) {
-		.db = db,
-		.f = f,
-		.private_data = private_data,
-	};
-
-	nrecs = tdb_traverse_read(db_ctx->wtdb->tdb,
-				  db_tdb_traverse_read_func,
-				  &ctx);
-	if (ctx.found_marker) {
-		nrecs--;
-	}
-	return nrecs;
+	struct db_tdb_ctx *db_ctx = talloc_get_type_abort(db->private_data,
+							  struct db_tdb_ctx);
+	return db_tdb_traverse_internal(
+		db, db_ctx->wtdb, false, f, private_data);
 }
 
 static int db_tdb_traverse_per_rec_persistent_read(
@@ -703,28 +665,15 @@ static int db_tdb_traverse_per_rec_persistent_read(
 		 void *private_data),
 	void *private_data)
 {
-	struct db_tdb_ctx *db_ctx = talloc_get_type_abort(
-		db->private_data, struct db_tdb_ctx);
-	struct db_tdb_traverse_ctx ctx;
-	int nrecs;
+	struct db_tdb_ctx *db_ctx = talloc_get_type_abort(db->private_data,
+							  struct db_tdb_ctx);
 
 	if (!(db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT)) {
 		return 0;
 	}
 
-	ctx = (struct db_tdb_traverse_ctx) {
-		.db = db,
-		.f = f,
-		.private_data = private_data,
-	};
-
-	nrecs = tdb_traverse_read(db_ctx->ptdb->tdb,
-				  db_tdb_traverse_read_func,
-				  &ctx);
-	if (ctx.found_marker) {
-		nrecs--;
-	}
-	return nrecs;
+	return db_tdb_traverse_internal(
+		db, db_ctx->ptdb, false, f, private_data);
 }
 
 static int db_tdb_get_seqnum(struct db_context *db)
