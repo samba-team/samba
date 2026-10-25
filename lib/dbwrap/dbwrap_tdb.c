@@ -537,6 +537,19 @@ static NTSTATUS db_tdb_delete(struct db_record *rec)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS db_tdb_storev_deny(struct db_record *rec,
+				   const TDB_DATA *dbufs,
+				   int num_dbufs,
+				   int flag)
+{
+	return NT_STATUS_MEDIA_WRITE_PROTECTED;
+}
+
+static NTSTATUS db_tdb_delete_deny(struct db_record *rec)
+{
+	return NT_STATUS_MEDIA_WRITE_PROTECTED;
+}
+
 struct db_tdb_traverse_ctx {
 	struct db_context *db;
 	int (*f)(struct db_record *rec, void *private_data);
@@ -612,20 +625,10 @@ static int db_tdb_traverse(struct db_context *db,
 	return nrecs;
 }
 
-static NTSTATUS db_tdb_storev_deny(struct db_record *rec,
-				   const TDB_DATA *dbufs, int num_dbufs,
-				   int flag)
-{
-	return NT_STATUS_MEDIA_WRITE_PROTECTED;
-}
-
-static NTSTATUS db_tdb_delete_deny(struct db_record *rec)
-{
-	return NT_STATUS_MEDIA_WRITE_PROTECTED;
-}
-
-static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
-				void *private_data)
+static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb,
+				     TDB_DATA kbuf,
+				     TDB_DATA dbuf,
+				     void *private_data)
 {
 	struct db_tdb_traverse_ctx *ctx =
 		(struct db_tdb_traverse_ctx *)private_data;
