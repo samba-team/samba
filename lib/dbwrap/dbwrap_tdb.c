@@ -66,6 +66,35 @@ static int db_tdb_record_destr(struct db_record* data)
 	return 0;
 }
 
+static bool db_tdb_validate_header(struct db_context *db,
+				   TDB_DATA *data,
+				   bool *_persistent)
+{
+	struct dbwrap_tdb_header hdr = {};
+
+	if (((db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) == 0) ||
+	    (data->dsize == 0))
+	{
+		*_persistent = false;
+		return true;
+	}
+	if (data->dsize < sizeof(hdr)) {
+		return false;
+	}
+
+	memcpy(&hdr, data->dptr, sizeof(hdr));
+
+	if (hdr.version != DBWRAP_TDB_HEADER_VERSION) {
+		return false;
+	}
+
+	data->dptr += sizeof(hdr);
+	data->dsize -= sizeof(hdr);
+	*_persistent = ((hdr.flags & DBWRAP_TDB_FLAG_PERSISTENT) != 0);
+
+	return true;
+}
+
 struct tdb_fetch_locked_state {
 	TALLOC_CTX *mem_ctx;
 	struct db_context *db;
@@ -79,23 +108,11 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 		(struct tdb_fetch_locked_state *)private_data;
 	struct db_record *result;
 	struct db_record_flags flags = {};
+	bool ok, persistent;
 
-	if ((state->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) &&
-	    (data.dsize > 0))
-	{
-		struct dbwrap_tdb_header header;
-
-		SMB_ASSERT(data.dsize >= sizeof(header));
-		memcpy(&header, data.dptr, sizeof(header));
-		SMB_ASSERT(header.version == DBWRAP_TDB_HEADER_VERSION);
-
-		data.dsize -= sizeof(header);
-		data.dptr += sizeof(header);
-
-		if (header.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
-			flags.persistent = true;
-		}
-	}
+	ok = db_tdb_validate_header(state->db, &data, &persistent);
+	SMB_ASSERT(ok);
+	flags.persistent = persistent;
 
 	result = (struct db_record *)talloc_size(
 		state->mem_ctx,
@@ -200,6 +217,7 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 	struct db_record rec;
 	TDB_DATA value;
 	int ret;
+	bool ok, persistent;
 
 	ret = tdb_chainlock(wtdb, key);
 	if (ret == -1) {
@@ -229,21 +247,9 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
                 .dsize = talloc_get_size(buf)
         };
 
-	if ((db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) &&
-	    (value.dsize > 0))
-	{
-                struct dbwrap_tdb_header header;
-
-		SMB_ASSERT(value.dsize >= sizeof(header));
-                memcpy(&header, value.dptr, sizeof(header));
-                value.dsize -= sizeof(struct dbwrap_tdb_header);
-                value.dptr += sizeof(struct dbwrap_tdb_header);
-
-                SMB_ASSERT(header.version == DBWRAP_TDB_HEADER_VERSION);
-                if (header.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
-                        rec.flags.persistent = true;
-                }
-        }
+	ok = db_tdb_validate_header(db, &value, &persistent);
+	SMB_ASSERT(ok);
+	rec.flags.persistent = persistent;
 
         fn(&rec, value, private_data);
 
@@ -315,15 +321,13 @@ static int db_tdb_parser(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	struct db_tdb_parse_state *state =
 		(struct db_tdb_parse_state *)private_data;
+	bool ok, persistent;
 
-	if (state->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
-		if (data.dsize < sizeof(struct dbwrap_tdb_header)) {
-			dbwrap_log_key("bad key", key);
-			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-			return 0;
-		}
-		data.dsize -= sizeof(struct dbwrap_tdb_header);
-		data.dptr += sizeof(struct dbwrap_tdb_header);
+	ok = db_tdb_validate_header(state->db, &data, &persistent);
+	if (!ok) {
+		dbwrap_log_key("bad key", key);
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return 0;
 	}
 
 	state->parser(key, data, state->private_data);
@@ -548,7 +552,7 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	struct db_record rec = {};
 
 	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
-		struct dbwrap_tdb_header h;
+		bool ok, persistent;
 		int cmp = 1;
 
 		if (kbuf.dsize ==
@@ -564,20 +568,12 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 			return 0;
 		}
 
-		if (dbuf.dsize < sizeof(struct dbwrap_tdb_header)) {
-			dbwrap_log_key("Small record", kbuf);
+		ok = db_tdb_validate_header(ctx->db, &dbuf, &persistent);
+		if (!ok) {
+			dbwrap_log_key("Invalid record", kbuf);
 			return 0;
 		}
-
-		memcpy(&h, dbuf.dptr, sizeof(h));
-		SMB_ASSERT(h.version == DBWRAP_TDB_HEADER_VERSION);
-
-		if (h.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
-			rec.flags.persistent = true;
-		}
-
-		dbuf.dptr += sizeof(struct dbwrap_tdb_header);
-		dbuf.dsize -= sizeof(struct dbwrap_tdb_header);
+		rec.flags.persistent = persistent;
 	}
 
 	rec.key = kbuf;
@@ -633,7 +629,7 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 	struct db_record rec = {};
 
 	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
-		struct dbwrap_tdb_header h;
+		bool ok, persistent;
 		int cmp = 1;
 
 		if (kbuf.dsize ==
@@ -649,20 +645,12 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 			return 0;
 		}
 
-		if (dbuf.dsize < sizeof(struct dbwrap_tdb_header)) {
-			dbwrap_log_key("Small record", kbuf);
+		ok = db_tdb_validate_header(ctx->db, &dbuf, &persistent);
+		if (!ok) {
+			dbwrap_log_key("Invalid record", kbuf);
 			return 0;
 		}
-
-		memcpy(&h, dbuf.dptr, sizeof(h));
-		SMB_ASSERT(h.version == DBWRAP_TDB_HEADER_VERSION);
-
-		if (h.flags & DBWRAP_TDB_FLAG_PERSISTENT) {
-			rec.flags.persistent = true;
-		}
-
-		dbuf.dptr += sizeof(struct dbwrap_tdb_header);
-		dbuf.dsize -= sizeof(struct dbwrap_tdb_header);
+		rec.flags.persistent = persistent;
 	}
 
 	rec.key = kbuf;
