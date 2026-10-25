@@ -550,9 +550,10 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	struct db_tdb_traverse_ctx *ctx =
 		(struct db_tdb_traverse_ctx *)private_data;
 	struct db_record rec = {};
+	bool persistent = false;
 
 	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
-		bool ok, persistent;
+		bool ok;
 		int cmp = 1;
 
 		if (kbuf.dsize ==
@@ -573,16 +574,18 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 			dbwrap_log_key("Invalid record", kbuf);
 			return 0;
 		}
-		rec.flags.persistent = persistent;
 	}
 
-	rec.key = kbuf;
-	rec.value = dbuf;
-	rec.value_valid = true;
-	rec.storev = db_tdb_storev;
-	rec.delete_rec = db_tdb_delete;
-	rec.private_data = ctx->db->private_data;
-	rec.db = ctx->db;
+	rec = (struct db_record){
+		.key = kbuf,
+		.value = dbuf,
+		.value_valid = true,
+		.storev = db_tdb_storev,
+		.delete_rec = db_tdb_delete,
+		.private_data = ctx->db->private_data,
+		.db = ctx->db,
+		.flags.persistent = persistent,
+	};
 
 	return ctx->f(&rec, ctx->private_data);
 }
@@ -627,9 +630,10 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 	struct db_tdb_traverse_ctx *ctx =
 		(struct db_tdb_traverse_ctx *)private_data;
 	struct db_record rec = {};
+	bool persistent = false;
 
 	if (ctx->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
-		bool ok, persistent;
+		bool ok;
 		int cmp = 1;
 
 		if (kbuf.dsize ==
@@ -650,16 +654,18 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 			dbwrap_log_key("Invalid record", kbuf);
 			return 0;
 		}
-		rec.flags.persistent = persistent;
 	}
 
-	rec.key = kbuf;
-	rec.value = dbuf;
-	rec.value_valid = true;
-	rec.storev = db_tdb_storev_deny;
-	rec.delete_rec = db_tdb_delete_deny;
-	rec.private_data = ctx->db->private_data;
-	rec.db = ctx->db;
+	rec = (struct db_record){
+		.key = kbuf,
+		.value = dbuf,
+		.value_valid = true,
+		.storev = db_tdb_storev_deny,
+		.delete_rec = db_tdb_delete_deny,
+		.private_data = ctx->db->private_data,
+		.db = ctx->db,
+		.flags.persistent = persistent,
+	};
 
 	return ctx->f(&rec, ctx->private_data);
 }
