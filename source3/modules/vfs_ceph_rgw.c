@@ -79,11 +79,9 @@ struct vfs_ceph_rgw_dir {
 
 /* Ceph-rgw file-handles via fsp-extension */
 struct vfs_ceph_rgw_fh {
-	struct vfs_ceph_rgw_dir *dirp;
 	struct files_struct *fsp;
 	struct rgw_file_handle *rgw_fh;
 	int fd;
-	int o_flags;
 	bool is_writable;
 };
 
@@ -256,7 +254,6 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 	int flags = how->flags;
 	mode_t mode = how->mode;
 	uint32_t mask = RGW_SETATTR_UID | RGW_SETATTR_GID | RGW_SETATTR_MODE;
-	bool skip_open = false;
 	bool do_release = false;
 	const struct security_unix_token *utok = NULL;
 	char *open_name = NULL;
@@ -298,10 +295,6 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 		  fsp_str_dbg(fsp),
 		  open_name);
 
-	if (*open_name == '\0') {
-		skip_open = true;
-	}
-
 	rc = vfs_ceph_rgw_fetch_fh(handle, fsp, &newfh);
 	if (rc != 0) {
 		/* We do not found any handle, so this is new open
@@ -316,7 +309,7 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 		newfh->fd = cephrgw_next_fd();
 	}
 
-	if (skip_open) {
+	if (*open_name == '\0') {
 		DBG_DEBUG("[CEPH_RGW] Skipping open\n");
 		newfh->rgw_fh = config->rgw_root_fh;
 		rc = newfh->fd;
@@ -417,7 +410,6 @@ static int vfs_ceph_rgw_openat(struct vfs_handle_struct *handle,
 
 	newfh->rgw_fh = rgw_fh;
 	rc = newfh->fd;
-	newfh->o_flags = flags;
 
 	DBG_DEBUG("[CEPH_RGW] openat: [%s] success\n", open_name);
 
@@ -726,8 +718,6 @@ out:
 struct vfs_ceph_rgw_aio_state {
 	struct vfs_ceph_rgw_config *config;
 	struct vfs_ceph_rgw_fh *fh;
-	size_t len;
-	off_t off;
 	struct timespec start_time;
 	struct timespec finish_time;
 	ssize_t result;
@@ -1115,7 +1105,6 @@ static int vfs_ceph_rgw_fsetxattr(struct vfs_handle_struct *handle,
 			goto out;
 		}
 		DBG_ERR("[CEPH_RGW] Unable to set x attributes\n");
-		goto out;
 	}
 
 out:
@@ -2131,7 +2120,6 @@ static int vfs_ceph_rgw_fremovexattr(struct vfs_handle_struct *handle,
 			goto out;
 		}
 		DBG_ERR("[CEPH_RGW] Unable to remove xattr\n");
-		goto out;
 	}
 
 out:
