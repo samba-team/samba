@@ -954,8 +954,7 @@ static int ceph_rgw_getxattr_cb(rgw_xattrlist *attr_list,
 				void *arg,
 				uint32_t flags)
 {
-	struct vfs_ceph_rgw_getxattr_arg
-		*cb_arg = (struct vfs_ceph_rgw_getxattr_arg *)arg;
+	struct vfs_ceph_rgw_getxattr_arg *cb_arg = arg;
 	rgw_xattr *xattr = attr_list->xattrs;
 
 	cb_arg->cb_called = true;
@@ -1255,7 +1254,6 @@ static int vfs_ceph_rgw_setattr(struct vfs_handle_struct *handle,
 			 RGW_SETATTR_FLAG_NONE);
 	if (rc < 0) {
 		DBG_ERR("[CEPH_RGW] Unable to set attributes\n");
-		goto out;
 	}
 
 out:
@@ -1374,7 +1372,7 @@ static int vfs_ceph_rgw_rd_cb(const char *name,
 			      uint32_t flags)
 {
 	size_t len = 0;
-	struct vfs_ceph_rgw_rd_arg *cb_arg = (struct vfs_ceph_rgw_rd_arg *)arg;
+	struct vfs_ceph_rgw_rd_arg *cb_arg = arg;
 	struct dirent *d = NULL;
 	struct vfs_ceph_rgw_dir *dirp = cb_arg->dirp;
 
@@ -1990,9 +1988,7 @@ static int vfs_ceph_rgw_fchmod(struct vfs_handle_struct *handle,
 	rc = vfs_ceph_rgw_setattr(handle, fsp, mask, &st);
 	if (rc < 0) {
 		DBG_ERR("[CEPH_RGW] Unable to change mode. rc = %d\n", rc);
-		goto out;
 	}
-out:
 	DBG_DEBUG("[CEPH_RGW] fchmod: fsp_name=%s result=%d\n",
 		  fsp_str_dbg(fsp),
 		  rc);
@@ -2016,10 +2012,8 @@ static int vfs_ceph_rgw_fchown(struct vfs_handle_struct *handle,
 	rc = vfs_ceph_rgw_setattr(handle, fsp, mask, &st);
 	if (rc < 0) {
 		DBG_ERR("[CEPH_RGW] Unable to change owner. rc = %d\n", rc);
-		goto out;
 	}
 
-out:
 	DBG_DEBUG("[CEPH_RGW] fchown: fsp_name=%s result=%d\n",
 		  fsp_str_dbg(fsp),
 		  rc);
