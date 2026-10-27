@@ -131,6 +131,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	TALLOC_CTX *mem_ctx,
 	TDB_DATA key)
 {
+	struct tdb_context *wtdb = ctx->wtdb->tdb;
 	struct tdb_fetch_locked_state state;
 	int ret;
 
@@ -139,12 +140,9 @@ static struct db_record *db_tdb_fetch_locked_internal(
 		.db = db,
 	};
 
-	ret = tdb_parse_record(ctx->wtdb->tdb,
-			       key,
-			       db_tdb_fetchlock_parse,
-			       &state);
-	if ((ret < 0) && (tdb_error(ctx->wtdb->tdb) != TDB_ERR_NOEXIST)) {
-		tdb_chainunlock(ctx->wtdb->tdb, key);
+	ret = tdb_parse_record(wtdb, key, db_tdb_fetchlock_parse, &state);
+	if ((ret < 0) && (tdb_error(wtdb) != TDB_ERR_NOEXIST)) {
+		tdb_chainunlock(wtdb, key);
 		return NULL;
 	}
 
@@ -159,7 +157,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	}
 
 	if (state.result == NULL) {
-		tdb_chainunlock(ctx->wtdb->tdb, key);
+		tdb_chainunlock(wtdb, key);
 		return NULL;
 	}
 
@@ -179,9 +177,10 @@ static struct db_record *db_tdb_fetch_locked(
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
+	struct tdb_context *wtdb = ctx->wtdb->tdb;
 
 	dbwrap_log_key("Locking", key);
-	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
+	if (tdb_chainlock(wtdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		return NULL;
 	}
@@ -196,25 +195,25 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);
+	struct tdb_context *wtdb = ctx->wtdb->tdb;
 	uint8_t *buf = NULL;
 	struct db_record rec;
 	TDB_DATA value;
 	int ret;
 
-	ret = tdb_chainlock(ctx->wtdb->tdb, key);
+	ret = tdb_chainlock(wtdb, key);
 	if (ret == -1) {
-		enum TDB_ERROR err = tdb_error(ctx->wtdb->tdb);
-		DBG_DEBUG("tdb_chainlock failed: %s\n",
-			  tdb_errorstr(ctx->wtdb->tdb));
+		enum TDB_ERROR err = tdb_error(wtdb);
+		DBG_DEBUG("tdb_chainlock failed: %s\n", tdb_errorstr(wtdb));
 		return map_nt_error_from_tdb(err);
 	}
 
-	ret = tdb_fetch_talloc(ctx->wtdb->tdb, key, ctx, &buf);
+	ret = tdb_fetch_talloc(wtdb, key, ctx, &buf);
 
 	if ((ret != 0) && (ret != ENOENT)) {
 		DBG_DEBUG("tdb_fetch_talloc failed: %s\n",
 			  strerror(errno));
-		tdb_chainunlock(ctx->wtdb->tdb, key);
+		tdb_chainunlock(wtdb, key);
 		return map_nt_error_from_unix_common(ret);
 	}
 
@@ -248,7 +247,7 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 
         fn(&rec, value, private_data);
 
-	tdb_chainunlock(ctx->wtdb->tdb, key);
+	tdb_chainunlock(wtdb, key);
 
 	talloc_free(buf);
 
@@ -469,21 +468,22 @@ static NTSTATUS db_tdb_delete_persistent(struct db_record *rec)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
+	struct tdb_context *ptdb = ctx->ptdb->tdb;
 	bool in_txn = false;
 	int ret;
 
-	ret = tdb_transaction_start(ctx->ptdb->tdb);
+	ret = tdb_transaction_start(ptdb);
 	if (ret != 0) {
 		goto fail;
 	}
 	in_txn = true;
 
-	ret = tdb_delete(ctx->ptdb->tdb, rec->key);
+	ret = tdb_delete(ptdb, rec->key);
 	if (ret != 0) {
 		goto fail;
 	}
 
-	ret = tdb_transaction_commit(ctx->ptdb->tdb);
+	ret = tdb_transaction_commit(ptdb);
 	in_txn = false;
 	if (ret != 0) {
 		goto fail;
@@ -493,10 +493,10 @@ static NTSTATUS db_tdb_delete_persistent(struct db_record *rec)
 
 fail:
 	if (in_txn) {
-		ret = tdb_transaction_cancel(ctx->ptdb->tdb);
+		ret = tdb_transaction_cancel(ptdb);
 		SMB_ASSERT(ret == 0);
 	}
-	if (tdb_error(ctx->ptdb->tdb) == TDB_ERR_NOEXIST) {
+	if (tdb_error(ptdb) == TDB_ERR_NOEXIST) {
 		return NT_STATUS_NOT_FOUND;
 	}
 	return NT_STATUS_UNSUCCESSFUL;
