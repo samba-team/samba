@@ -425,7 +425,7 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 
 	ret = tdb_transaction_start(ptdb);
 	if (ret != 0) {
-		enum TDB_ERROR err = tdb_error(wtdb);
+		enum TDB_ERROR err = tdb_error(ptdb);
 		status = map_nt_error_from_tdb(err);
 		goto fail;
 	}
@@ -434,14 +434,14 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 	if (do_persistent_store) {
 		ret = tdb_storev(ptdb, rec->key, dbufs, num_dbufs, tdb_flag);
 		if (ret != 0) {
-			enum TDB_ERROR err = tdb_error(wtdb);
+			enum TDB_ERROR err = tdb_error(ptdb);
 			status = map_nt_error_from_tdb(err);
 			goto fail;
 		}
 	} else {
 		ret = tdb_delete(ptdb, rec->key);
 		if (ret != 0) {
-			enum TDB_ERROR err = tdb_error(wtdb);
+			enum TDB_ERROR err = tdb_error(ptdb);
 			status = map_nt_error_from_tdb(err);
 			goto fail;
 		}
@@ -450,7 +450,7 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 	ret = tdb_transaction_commit(ptdb);
 	in_txn = false;
 	if (ret != 0) {
-		enum TDB_ERROR err = tdb_error(wtdb);
+		enum TDB_ERROR err = tdb_error(ptdb);
 		status = map_nt_error_from_tdb(err);
 		goto fail;
 	}
