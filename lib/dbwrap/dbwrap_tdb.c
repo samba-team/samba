@@ -148,7 +148,13 @@ static struct db_record *db_tdb_fetch_locked_internal(
 		return NULL;
 	}
 
-	if (state.result == NULL) {
+	if (ret < 0) {
+		/*
+		 * TDB_ERR_NOEXIST, create an empty record. Don't do
+		 * this if db_tdb_fetchlock_parse() failed to allocate
+		 * for an existing record, an empty one would
+		 * overwrite it.
+		 */
 		db_tdb_fetchlock_parse(key, tdb_null, &state);
 	}
 
