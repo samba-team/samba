@@ -1692,14 +1692,17 @@ int main(void) {
                        "available, not building ceph vfs modules")
 
     if (Options.options.with_cephrgw is not False and
+        Options.options.with_acl_support and
         conf.CHECK_HEADERS('rados/rgw_file.h', lib='rgw') and
         conf.CHECK_LIB('rgw', shlib=True)):
             conf.DEFINE('HAVE_CEPHRGW', '1')
             Logs.info("building ceph rgw vfs modules")
     elif (Options.options.with_cephrgw is True and
         not conf.CONFIG_SET('HAVE_CEPHRGW')):
-            Logs.error("librgw not present, cannot build ceph rgw module")
-            conf.fatal("librgw not present, but --enable-cephrgw was specified")
+            Logs.error("acl support disabled or librgw not present, "
+                       "cannot build ceph rgw module")
+            conf.fatal("acl support disabled or librgw not present, "
+                       "but --enable-cephrgw was specified")
 
     if Options.options.with_ratelimitd:
         conf.DEFINE('WITH_RATELIMITD', 1)

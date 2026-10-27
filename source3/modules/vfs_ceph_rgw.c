@@ -29,6 +29,7 @@
 #include "system/filesys.h"
 #include <dirent.h>
 #include "smbprofile.h"
+#include "modules/posixacl_xattr.h"
 #include "lib/util/tevent_unix.h"
 #include <rados/librgw.h>
 #include <rados/rgw_file.h>
@@ -2679,10 +2680,10 @@ static struct vfs_fn_pointers ceph_rgw_fns = {
 	.fsetxattr_fn = vfs_ceph_rgw_fsetxattr,
 
 	/* Posix ACL Operations */
-	.sys_acl_get_fd_fn = vfs_not_implemented_sys_acl_get_fd,
-	.sys_acl_blob_get_fd_fn = vfs_not_implemented_sys_acl_blob_get_fd,
-	.sys_acl_set_fd_fn = vfs_not_implemented_sys_acl_set_fd,
-	.sys_acl_delete_def_fd_fn = vfs_not_implemented_sys_acl_delete_def_fd,
+	.sys_acl_get_fd_fn = posixacl_xattr_acl_get_fd,
+	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
+	.sys_acl_set_fd_fn = posixacl_xattr_acl_set_fd,
+	.sys_acl_delete_def_fd_fn = posixacl_xattr_acl_delete_def_fd,
 
 	/* aio operations */
 	.aio_force_fn = vfs_not_implemented_aio_force,
