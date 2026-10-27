@@ -301,12 +301,15 @@ struct db_tdb_parse_state {
 	void (*parser)(TDB_DATA key, TDB_DATA data,
 		       void *private_data);
 	void *private_data;
+	NTSTATUS status;
 };
 
 /*
  * tdb_parse_record expects a parser returning int, mixing up tdb and
  * parser errors. Wrap around that by always returning 0 and have
- * dbwrap_parse_record expect a parser returning void.
+ * dbwrap_parse_record expect a parser returning void. Parser errors
+ * go into state->status, tdb_parse_record() does not set the tdb
+ * error code for them.
  */
 
 static int db_tdb_parser(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -317,7 +320,8 @@ static int db_tdb_parser(TDB_DATA key, TDB_DATA data, void *private_data)
 	if (state->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT) {
 		if (data.dsize < sizeof(struct dbwrap_tdb_header)) {
 			dbwrap_log_key("bad key", key);
-			return -1;
+			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			return 0;
 		}
 		data.dsize -= sizeof(struct dbwrap_tdb_header);
 		data.dptr += sizeof(struct dbwrap_tdb_header);
@@ -341,6 +345,7 @@ static NTSTATUS db_tdb_parse(struct db_context *db, TDB_DATA key,
 		.db = db,
 		.parser = parser,
 		.private_data = private_data,
+		.status = NT_STATUS_OK,
 	};
 
 	ret = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_parser, &state);
@@ -348,7 +353,7 @@ static NTSTATUS db_tdb_parse(struct db_context *db, TDB_DATA key,
 	if (ret != 0) {
 		return map_nt_error_from_tdb(tdb_error(ctx->wtdb->tdb));
 	}
-	return NT_STATUS_OK;
+	return state.status;
 }
 
 static NTSTATUS db_tdb_storev(struct db_record *rec,
