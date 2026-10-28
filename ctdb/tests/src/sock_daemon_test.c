@@ -200,8 +200,6 @@ static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
 	assert(ret == 0);
-
-	talloc_free(mem_ctx);
 }
 
 /*
@@ -439,6 +437,7 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -541,6 +540,7 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -610,6 +610,7 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	if (pid_watch == 0) {
 		sleep(10);
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -634,6 +635,7 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, NULL, false, false, pid_watch);
 		assert(ret == ESRCH);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -744,6 +746,7 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == 0);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1060,6 +1063,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, pid);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1368,6 +1372,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, pid);
 		assert(ret == 0);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1430,6 +1435,7 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1507,6 +1513,7 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1553,6 +1560,7 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, true, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1619,6 +1627,7 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1666,6 +1675,7 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, true, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1828,6 +1838,7 @@ static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1876,6 +1887,7 @@ static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
+		talloc_free(mem_ctx);
 		exit(0);
 	}
 
@@ -1975,6 +1987,8 @@ int main(int argc, const char **argv)
 	default:
 		fprintf(stderr, "Unknown test number %d\n", num);
 	}
+
+	talloc_free(mem_ctx);
 
 	return 0;
 }
