@@ -258,7 +258,6 @@ auto_rpc_tests = list(filter(lambda t: t not in all_rpc_tests, rpc_tests))
 
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
     for transport in ["ncalrpc", "ncacn_np", "ncacn_ip_tcp"]:
-        env = "ad_dc_default"
         local = ""
         if transport == "ncalrpc":
             tests = ncalrpc_tests
@@ -270,10 +269,12 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
         else:
             raise AssertionError("invalid transport %r" % transport)
         for t in tests:
-            if t == "rpc.netlogon":
+            if "rpc.netlogon" in t or t == "rpc.authcontext":
                 env = "ad_dc_ntvfs"
             elif t == "rpc.join":
                 env = "ad_dc_default_smb1"
+            else:
+                env = "ad_dc_default"
             plansmbtorture4testsuite(t, env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
         plansmbtorture4testsuite('rpc.samba3-sharesec', env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
 
