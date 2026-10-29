@@ -67,12 +67,21 @@ static void reset_priority(void)
 	}
 }
 
-static void send_result(int fd, char result)
+static bool send_result(int fd, char result)
 {
-	sys_write(fd, &result, 1);
-	if (result == 1) {
-		exit(1);
+	ssize_t n;
+
+	n = sys_write(fd, &result, 1);
+	if (n != 1) {
+		/*
+		 * Pass on the write failure.  In particular, EPIPE
+		 * means the write failed because the parent has gone
+		 * away.
+		 */
+		return false;
 	}
+
+	return true;
 }
 
 
@@ -186,11 +195,6 @@ static struct tevent_req *wait_for_parent_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->ppid = ppid;
-
-	if (ppid == 1) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
 
 	subreq = tevent_wakeup_send(state, ev,
 				    tevent_timeval_current_ofs(5,0));
@@ -326,7 +330,19 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	send_result(write_fd, result);
+	status = send_result(write_fd, result);
+	if (!status) {
+		fprintf(stderr,
+			"locking: Failed to send result (%d)\n",
+			errno);
+		cleanup(&state);
+		exit(1);
+	}
+
+	if (result == 1) {
+		/* The lock was not taken, so there is nothing to hold */
+		exit(1);
+	}
 
 	req = wait_for_parent_send(ev, ev, ppid);
 	if (req == NULL) {
