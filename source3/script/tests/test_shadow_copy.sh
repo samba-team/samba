@@ -419,6 +419,41 @@ test_missing_basedir()
     (cd "$WORKDIR/$where"/share; mv _bar bar)
 }
 
+# Test previous versions of a file in a nested directory, the
+# path walk in smbd reuses fsps for the directory components
+test_nested_dir()
+{
+    local share
+    local where
+    local prefix
+    local nested
+
+    share=$1
+    where=$2
+    prefix=$3
+    nested=bar/d1/d2/d3
+
+    #delete snapshots from previous tests
+    find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
+    build_snapshots $WORKDIR/$where "$prefix" 0 0
+
+    mkdir -p $WORKDIR/$where/.snapshots/${SNAPSHOTS[0]}/$prefix/$nested
+    echo "${SNAPSHOTS[0]}" > \
+        $WORKDIR/$where/.snapshots/${SNAPSHOTS[0]}/$prefix/$nested/baz
+    mkdir -p $WORKDIR/mount/base/share/$nested
+    echo "latest" > $WORKDIR/mount/base/share/$nested/baz
+
+    testit "nested directory - regular file" \
+        test_count_versions $share $nested/baz 2 || \
+        failed=`expr $failed + 1`
+
+    testit "nested directory - list directory" \
+        test_count_versions $share $nested 2 || \
+        failed=`expr $failed + 1`
+
+    rm -rf $WORKDIR/mount/base/share/bar/d1
+}
+
 #build "latest" files
 build_files $WORKDIR/mount base/share "latest" "latest"
 
@@ -454,5 +489,8 @@ test_shadow_copy_format shadow_fmt3 mount/base share 2 "shadow:format with modif
 test_shadow_copy_format shadow_fmt4 mount/base share 3 "shadow:format with snapprefix"
 test_shadow_copy_format shadow_fmt5 mount/base share 6 "shadow:format with delimiter"
 test_missing_basedir shadow3 "mount/base" "share" 6
+
+# catia above shadow_copy2 must not break nested paths
+test_nested_dir shadow_catia mount base/share
 
 exit $failed

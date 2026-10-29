@@ -3611,6 +3611,12 @@ sub provision($$)
 	shadow:snapdir = $shadow_tstdir/.snapshots
 	shadow:snapsharepath = share
 
+[shadow_catia]
+	path = $shadow_shrdir
+	comment = previous versions with catia stacked above shadow_copy2
+	vfs objects = catia shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+
 [shadow_fmt0]
 	comment = Testing shadow:format with default option
 	vfs object = shadow_copy2
