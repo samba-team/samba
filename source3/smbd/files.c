@@ -1455,7 +1455,12 @@ next:
 		struct files_struct *tmp = NULL;
 
 		if (dirfsp != in_dirfsp) {
+			/*
+			 * dirfsp gets reused for the next path component,
+			 * drop VFS module state tied to the old name.
+			 */
 			fd_close(dirfsp);
+			vfs_remove_all_fsp_extensions(dirfsp);
 		}
 
 		tmp = dirfsp;
