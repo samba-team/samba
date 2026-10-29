@@ -83,6 +83,7 @@ struct lock_context {
 	struct timeval start_time;
 	uint32_t key_hash;
 	bool can_schedule;
+	bool result_received;
 };
 
 /* lock_request is the client specific part for a lock request */
@@ -263,11 +264,18 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 		 * context, so request destructor will not free lock context.
 		 */
 		request->lctx = NULL;
+
+		/* Since request may be freed in the callback, unset the
+		 * request
+		 */
+		lock_ctx->request = NULL;
 	}
 
-	/* Since request may be freed in the callback, unset the request */
-	lock_ctx->request = NULL;
-
+	/*
+	 * Without auto_mark, if request is freed in the callback then
+	 * the request destructor frees the lock context.  Otherwise,
+	 * the request is kept, so it can be told if the lock is lost.
+	 */
 	request->callback(request->private_data, locked);
 
 	if (!auto_mark) {
@@ -338,6 +346,20 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	int id;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
+
+	if (lock_ctx->result_received) {
+		/*
+		 * The result has already been processed, so the lock
+		 * helper has exited while holding the lock.  Tell the
+		 * requester that the lock has been lost.
+		 */
+		D_ERR("Lock helper for database %s exited unexpectedly\n",
+		      lock_ctx->ctdb_db->db_name);
+		TALLOC_FREE(lock_ctx->tfd);
+		process_callbacks(lock_ctx, false);
+		return;
+	}
+	lock_ctx->result_received = true;
 
 	/* cancel the timeout event */
 	TALLOC_FREE(lock_ctx->ttimer);
