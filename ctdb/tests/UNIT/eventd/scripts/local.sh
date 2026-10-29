@@ -44,7 +44,9 @@ setup_eventd()
 {
 	echo "Setting up eventd"
 
-	$VALGRIND ctdb-eventd 2>&1 | tee "$eventd_logfile" &
+	# Want word splitting in $VALGRIND
+	# shellcheck disable=SC2086
+	stdin_socket $VALGRIND ctdb-eventd 2>&1 | tee "$eventd_logfile" &
 	# Wait till eventd is running
 	wait_until 10 test -S "$eventd_socket" ||
 		die "ctdb_eventd failed to start"

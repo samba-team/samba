@@ -956,6 +956,11 @@ def build(bld):
                      deps='replace',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_BINARY('stdin_socket',
+                     source='tests/src/stdin_socket.c',
+                     deps='replace',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
     # Unit tests
     ctdb_util_tests = [
         'cmdline_test',
