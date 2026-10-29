@@ -231,8 +231,9 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 
 	/*
 	 * A socketpair, rather than a pipe, so the event daemon
-	 * notices immediately when this process exits.  Executed
-	 * child processes must not hold this end open.
+	 * notices immediately when this process exits.  The event
+	 * daemon's end is its stdin.  Executed child processes must
+	 * not hold this process's end open.
 	 */
 	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
 	if (ret != 0) {
@@ -245,7 +246,7 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	argv = talloc_array(ectx, const char *, 6);
+	argv = talloc_array(ectx, const char *, 4);
 	if (argv == NULL) {
 		close(fd[0]);
 		close(fd[1]);
@@ -255,23 +256,19 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 	argv[0] = ectx->path;
 	argv[1] = "-P";
 	argv[2] = talloc_asprintf(argv, "%d", ctdb->ctdbd_pid);
-	argv[3] = "-S";
-	argv[4] = talloc_asprintf(argv, "%d", fd[1]);
-	argv[5] = NULL;
+	argv[3] = NULL;
 
-	if (argv[2] == NULL || argv[4] == NULL) {
+	if (argv[2] == NULL) {
 		close(fd[0]);
 		close(fd[1]);
 		talloc_free(argv);
 		return -1;
 	}
 
-	D_NOTICE("Starting event daemon %s %s %s %s %s\n",
+	D_NOTICE("Starting event daemon %s %s %s\n",
 		 argv[0],
 		 argv[1],
-		 argv[2],
-		 argv[3],
-		 argv[4]);
+		 argv[2]);
 
 	pid = ctdb_fork(ctdb);
 	if (pid == -1) {
@@ -283,6 +280,13 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 
 	if (pid == 0) {
 		close(fd[0]);
+		if (fd[1] != STDIN_FILENO) {
+			ret = dup2(fd[1], STDIN_FILENO);
+			if (ret == -1) {
+				_exit(errno);
+			}
+			close(fd[1]);
+		}
 		ret = execv(argv[0], discard_const(argv));
 		if (ret == -1) {
 			_exit(errno);

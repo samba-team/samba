@@ -1,0 +1,23 @@
+#!/bin/sh
+
+. "${TEST_SCRIPTS_DIR}/unit.sh"
+
+define_test "exit when the startup socket is closed"
+
+# Want word splitting in $VALGRIND, eventd_* set in scripts/local.sh
+# shellcheck disable=SC2086,SC2154
+stdin_socket $VALGRIND ctdb-eventd >"$eventd_logfile" 2>&1 &
+helper_pid=$!
+# shellcheck disable=SC2154
+wait_until 10 test -S "$eventd_socket" ||
+	die "ctdb_eventd failed to start"
+test_cleanup cleanup_eventd
+
+kill -9 "$helper_pid"
+
+# Only logged when the startup socket is closed, not when polling
+# notices that the parent has gone away
+wait_until 10 grep -q "Parent gone away, exiting" "$eventd_logfile"
+
+ok_null
+unit_test grep -q "Parent gone away, exiting" "$eventd_logfile"

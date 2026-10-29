@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# The event daemon's stdin is its startup socket, which must not be
+# passed to scripts
+if [ -S /dev/stdin ]; then
+	echo "stdin is a socket"
+	exit 1
+fi
+
+exit 0

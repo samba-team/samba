@@ -228,13 +228,25 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
  * On successful completion, 0 (unsigned int) will be written to the fd.
  *
  * The fd must be a socket.  The daemon also shuts down when the other
- * end is closed.
+ * end is closed.  The startup fd can only be set once.
  *
  * @param[in] sockd Socket daemon context
  * @param[in] fd File descriptor
  * @return true on success, false on error
  */
 bool sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd);
+
+/**
+ * @brief Use stdin for indicating startup success
+ *
+ * As for sock_daemon_set_startup_fd(), using a duplicate of stdin,
+ * which must be a socket.  stdin is then replaced by /dev/null.  The
+ * duplicate is closed when the socket daemon context is freed.
+ *
+ * @param[in] sockd Socket daemon context
+ * @return true on success, false on error
+ */
+bool sock_daemon_set_startup_fd_stdin(struct sock_daemon_context *sockd);
 
 /**
  * @brief Async computation start to run a socket daemon

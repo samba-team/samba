@@ -2110,6 +2110,98 @@ static void test12(TALLOC_CTX *mem_ctx,
 	talloc_free(sockd);
 }
 
+/*
+ * test13
+ *
+ * Start daemon with a socket on stdin as startup fd, test that stdin
+ * is replaced by /dev/null and that the daemon shuts down when the
+ * parent's end is closed
+ */
+
+static void test13(TALLOC_CTX *mem_ctx,
+		   const char *pidfile,
+		   const char *sockpath)
+{
+	struct stat st;
+	int fd[2];
+	pid_t pid, pid2;
+	ssize_t n;
+	int ret, i;
+
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+		struct stat st_null;
+		bool ok;
+
+		close(fd[0]);
+		ret = dup2(fd[1], STDIN_FILENO);
+		assert(ret == STDIN_FILENO);
+		close(fd[1]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx,
+					"test13",
+					"file:",
+					"NOTICE",
+					NULL,
+					NULL,
+					&sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd,
+					   sockpath,
+					   &dummy_socket_funcs,
+					   NULL);
+		assert(ret == 0);
+
+		ok = sock_daemon_set_startup_fd_stdin(sockd);
+		assert(ok);
+
+		ret = fstat(STDIN_FILENO, &st);
+		assert(ret == 0);
+		ret = stat("/dev/null", &st_null);
+		assert(ret == 0);
+		assert(st.st_rdev == st_null.st_rdev);
+
+		ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
+		assert(ret == ESRCH);
+
+		talloc_free(mem_ctx);
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 0);
+
+	close(fd[0]);
+
+	for (i = 0; i < 100; i++) {
+		pid2 = waitpid(pid, &ret, WNOHANG);
+		assert(pid2 != -1);
+		if (pid2 == pid) {
+			break;
+		}
+		usleep(100000);
+	}
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -2175,6 +2267,10 @@ int main(int argc, const char **argv)
 
 	case 12:
 		test12(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 13:
+		test13(mem_ctx, pidfile, sockpath);
 		break;
 
 	default:

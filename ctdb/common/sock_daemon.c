@@ -75,6 +75,7 @@ struct sock_daemon_context {
 	struct pidfile_context *pid_ctx;
 	struct sock_socket *socket_list;
 	int startup_fd;
+	bool close_startup_fd;
 };
 
 /*
@@ -506,6 +507,17 @@ bool sock_socket_write_recv(struct tevent_req *req, int *perr)
  * Socket daemon
  */
 
+static int sock_daemon_context_destructor(struct sock_daemon_context *sockd)
+{
+	if (sockd->close_startup_fd) {
+		close(sockd->startup_fd);
+		sockd->startup_fd = -1;
+		sockd->close_startup_fd = false;
+	}
+
+	return 0;
+}
+
 int sock_daemon_setup(TALLOC_CTX *mem_ctx, const char *daemon_name,
 		      const char *logging, const char *debug_level,
 		      struct sock_daemon_funcs *funcs,
@@ -523,6 +535,7 @@ int sock_daemon_setup(TALLOC_CTX *mem_ctx, const char *daemon_name,
 	sockd->funcs = funcs;
 	sockd->private_data = private_data;
 	sockd->startup_fd = -1;
+	talloc_set_destructor(sockd, sock_daemon_context_destructor);
 
 	ret = logging_init(sockd, logging, debug_level, daemon_name);
 	if (ret != 0) {
@@ -559,6 +572,12 @@ bool sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd)
 	struct stat st;
 	int ret;
 
+	/* Replacing it would lose track of which fd sockd owns */
+	if (sockd->startup_fd != -1) {
+		D_ERR("Startup fd already set\n");
+		return false;
+	}
+
 	ret = fstat(fd, &st);
 	if (ret != 0) {
 		D_ERR("Failed to stat startup fd (%d)\n", errno);
@@ -576,6 +595,49 @@ bool sock_daemon_set_startup_fd(struct sock_daemon_context *sockd, int fd)
 
 	sockd->startup_fd = fd;
 	return true;
+}
+
+bool sock_daemon_set_startup_fd_stdin(struct sock_daemon_context *sockd)
+{
+	int fd, nullfd;
+	int ret;
+	bool ok;
+
+	fd = fcntl(STDIN_FILENO, F_DUPFD_CLOEXEC, 3);
+	if (fd == -1) {
+		D_ERR("Failed to duplicate stdin (%d)\n", errno);
+		return false;
+	}
+
+	ok = sock_daemon_set_startup_fd(sockd, fd);
+	if (!ok) {
+		close(fd);
+		return false;
+	}
+
+	/* Child processes must not hold the startup socket open */
+	nullfd = open("/dev/null", O_RDONLY);
+	if (nullfd == -1) {
+		D_ERR("Failed to open /dev/null (%d)\n", errno);
+		goto fail;
+	}
+	ret = dup2(nullfd, STDIN_FILENO);
+	if (ret == -1) {
+		D_ERR("Failed to replace stdin (%d)\n", errno);
+		close(nullfd);
+		goto fail;
+	}
+	close(nullfd);
+
+	/* Created here, so owned by sockd, unlike a caller's fd */
+	sockd->close_startup_fd = true;
+
+	return true;
+
+fail:
+	sockd->startup_fd = -1;
+	close(fd);
+	return false;
 }
 
 /*

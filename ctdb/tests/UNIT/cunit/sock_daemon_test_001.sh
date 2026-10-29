@@ -146,3 +146,11 @@ ok <<EOF
 Startup fd is not a socket
 EOF
 unit_test sock_daemon_test "$pidfile" "$sockpath" 12
+
+ok <<EOF
+daemon started, pid=PID
+listening on $sockpath
+Parent gone away, exiting
+Shutting down
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 13
