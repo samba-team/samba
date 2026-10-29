@@ -1556,6 +1556,11 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	int ret;
 	bool ok;
 
+	if (smb_fname_in->twrp == 0) {
+		return SMB_VFS_NEXT_OPENAT(
+			handle, dirfsp, smb_fname_in, fsp, &how);
+	}
+
 	if ((how.resolve & ~(VFS_OPEN_HOW_WITH_BACKUP_INTENT |
 			     VFS_OPEN_HOW_RESOLVE_NO_XDEV)) != 0)
 	{
