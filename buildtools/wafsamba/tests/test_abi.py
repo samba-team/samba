@@ -73,6 +73,33 @@ class WriteVscriptTests(TestCase):
 };
 """)
 
+    def test_one_no_linker_symbols(self):
+        f = StringIO()
+        abi_write_vscript(f, "MYLIB", "1.0", [], {
+            "old": "1.0",
+            "new": "1.0"}, ["*"], hide_linker_symbols=False)
+        self.assertEqual(f.getvalue(), """\
+1.0 {
+\tglobal:
+\t\t*;
+};
+""")
+
+    def test_exclude_no_linker_symbols(self):
+        f = StringIO()
+        abi_write_vscript(f, "MYLIB", "1.0", [], {
+            "exc_old": "0.1",
+            "old": "0.1",
+            "new": "1.0"}, ["!exc_*"], hide_linker_symbols=False)
+        self.assertEqual(f.getvalue(), """\
+1.0 {
+\tglobal:
+\t\t*;
+\tlocal:
+\t\texc_*;
+};
+""")
+
     def test_simple(self):
         # No restrictions.
         f = StringIO()

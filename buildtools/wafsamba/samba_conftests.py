@@ -1,7 +1,7 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
 
-import os, shutil, re
+import os, shutil, re, shlex
 from waflib import Build, Configure, Utils, Options, Logs, Errors
 from waflib.Configure import conf
 from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH, get_string
@@ -264,6 +264,56 @@ int foo(int v) {
 }
 '''
     return conf.check(features='c cshlib',uselib='PYEMBED',fragment=snip,msg=msg, mandatory=False)
+
+@conf
+def CHECK_LD_VERSION_SCRIPT_LINKER_SYMBOLS(conf):
+    '''see if the linker accepts _end, __bss_start and _edata as
+    local symbols in a version script
+
+    binutils >= 2.31 defines these symbols in each shared library,
+    so we hide them in our version scripts. Other linkers (e.g. mold)
+    don't define them and warn for each version script that mentions
+    them.'''
+
+    dir = find_config_dir(conf)
+
+    vscript_plain = os.path.join(dir, 'vscript-plain')
+    Utils.writef(vscript_plain, 'TEST_1.0A2 { global: *; };\n')
+    vscript_local = os.path.join(dir, 'vscript-local')
+    Utils.writef(vscript_local,
+                 'TEST_1.0A2 {\n'
+                 '\tglobal: *;\n'
+                 '\tlocal: _end; __bss_start; _edata;\n'
+                 '};\n')
+
+    fragment = 'int lib_func(void) { return 42; }\n'
+
+    # ADDITIONAL_LDFLAGS are only added to EXTRA_LDFLAGS at the end
+    # of the configure step, but they are used for the final build
+    # and may select a different linker, e.g. -fuse-ld=mold.
+    additional_ldflags = shlex.split(conf.environ.get('ADDITIONAL_LDFLAGS', ''))
+
+    # If the linker doesn't support --fatal-warnings we can't tell,
+    # so we keep hiding the symbols.
+    if not conf.check(fragment=fragment,
+                      features='c cshlib',
+                      ldflags=additional_ldflags + [
+                          '-Wl,--fatal-warnings',
+                          '-Wl,--version-script=%s' % vscript_plain],
+                      mandatory=False,
+                      msg='Checking linker accepts -Wl,--fatal-warnings '
+                          'with a version script'):
+        return True
+
+    return conf.check(fragment=fragment,
+                      features='c cshlib',
+                      ldflags=additional_ldflags + [
+                          '-Wl,--fatal-warnings',
+                          '-Wl,--version-script=%s' % vscript_local],
+                      mandatory=False,
+                      msg='Checking linker accepts _end, __bss_start and '
+                          '_edata in a version script')
+
 
 # this one is quite complex, and should probably be broken up
 # into several parts. I'd quite like to create a set of CHECK_COMPOUND()

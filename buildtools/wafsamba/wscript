@@ -450,6 +450,8 @@ def configure(conf):
                                    version_script=True,
                                    msg='-Wl,--version-script support')):
         conf.env.HAVE_LD_VERSION_SCRIPT = True
+        conf.env.LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS = \
+            not conf.CHECK_LD_VERSION_SCRIPT_LINKER_SYMBOLS()
     else:
         conf.env.HAVE_LD_VERSION_SCRIPT = False
 

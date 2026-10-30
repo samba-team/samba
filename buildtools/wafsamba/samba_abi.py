@@ -199,7 +199,8 @@ def version_script_map_process_file(fname, version, abi_match):
         if not symname in abi_match:
             abi_match.append(symname)
 
-def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
+def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match,
+                      hide_linker_symbols=True):
     """Write a vscript file for a library in --version-script format.
 
     :param f: File-like object to write to
@@ -209,6 +210,8 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
     :param symmap: Dictionary mapping symbols -> version
     :param abi_match: List of symbols considered to be public in the current
         version
+    :param hide_linker_symbols: Mark the symbols the linker defines in
+        each shared library (_end, __bss_start, _edata) as local
     """
 
     invmap = {}
@@ -237,14 +240,19 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
             f.write("\t\t%s;\n" % x)
     else:
         f.write("\t\t*;\n")
-    # Always hide symbols that must be local if exist
-    local_abi.extend(["!_end", "!__bss_start", "!_edata"])
-    f.write("\tlocal:\n")
-    for x in local_abi:
-        f.write("\t\t%s;\n" % x[1:])
+    # Always hide symbols that must be local if exist,
+    # unless the linker complains about them (e.g. mold)
+    if hide_linker_symbols:
+        local_abi.extend(["!_end", "!__bss_start", "!_edata"])
+    local_lines = ["\t\t%s;\n" % x[1:] for x in local_abi]
     if global_abi != ["*"]:
         if len(global_abi) > 0:
-            f.write("\t\t*;\n")
+            local_lines.append("\t\t*;\n")
+    # An empty local section is a syntax error for GNU ld
+    if len(local_lines) > 0:
+        f.write("\tlocal:\n")
+        for x in local_lines:
+            f.write(x)
     f.write("};\n")
 
 
@@ -280,8 +288,11 @@ def abi_build_vscript(task):
         versions = []
     f = open(tgt, mode='w')
     try:
-        abi_write_vscript(f, task.env.LIBNAME, task.env.VERSION, versions,
-            symmap, abi_match)
+        abi_write_vscript(
+            f, task.env.LIBNAME, task.env.VERSION, versions, symmap, abi_match,
+            hide_linker_symbols=(
+                not task.env.LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS),
+        )
     finally:
         f.close()
 
@@ -296,7 +307,8 @@ def VSCRIPT_MAP_PRIVATE(bld, libname, orig_vscript, version, private_vscript):
     t.env.VERSION = version
     t.env.LIBNAME = libname
     t.env.PRIVATE_LIBRARY = True
-    t.vars = ['LIBNAME', 'VERSION', 'ABI_MATCH', 'PRIVATE_LIBRARY']
+    t.vars = ['LIBNAME', 'VERSION', 'ABI_MATCH', 'PRIVATE_LIBRARY',
+              'LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS']
 Build.BuildContext.VSCRIPT_MAP_PRIVATE = VSCRIPT_MAP_PRIVATE
 
 def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None, private_library=False):
@@ -330,5 +342,6 @@ def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None, p
     t.env.VERSION = version
     t.env.LIBNAME = libname
     t.env.PRIVATE_LIBRARY = private_library
-    t.vars = ['LIBNAME', 'VERSION', 'ABI_MATCH', 'PRIVATE_LIBRARY']
+    t.vars = ['LIBNAME', 'VERSION', 'ABI_MATCH', 'PRIVATE_LIBRARY',
+              'LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS']
 Build.BuildContext.ABI_VSCRIPT = ABI_VSCRIPT
