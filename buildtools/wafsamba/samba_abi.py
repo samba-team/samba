@@ -46,6 +46,16 @@ def normalise_varargs(sig):
     return bytes(sig, encoding='utf-8').decode('unicode_escape')
 
 
+def abi_match_symbol(symname, abi_match):
+    '''check if a symbol is part of the ABI described by abi_match'''
+    for p in abi_match:
+        if p[0] == '!' and fnmatch.fnmatch(symname, p[1:]):
+            return False
+        elif fnmatch.fnmatch(symname, p):
+            return True
+    return True
+
+
 def parse_sigs(sigs, abi_match):
     '''parse ABI signatures file'''
     abi_match = samba_utils.TO_LIST(abi_match)
@@ -55,18 +65,8 @@ def parse_sigs(sigs, abi_match):
         if s.find(':') == -1:
             continue
         sa = s.split(':')
-        if abi_match:
-            matched = False
-            negative = False
-            for p in abi_match:
-                if p[0] == '!' and fnmatch.fnmatch(sa[0], p[1:]):
-                    negative = True
-                    break
-                elif fnmatch.fnmatch(sa[0], p):
-                    matched = True
-                    break
-            if (not matched) and negative:
-                continue
+        if not abi_match_symbol(sa[0], abi_match):
+            continue
         Logs.debug("%s -> %s" % (sa[1], normalise_signature(sa[1])))
         ret[sa[0]] = normalise_signature(sa[1])
     return ret
@@ -152,11 +152,15 @@ def abi_check(self):
 
 
 def abi_process_file(fname, version, symmap):
-    '''process one ABI file, adding new symbols to the symmap'''
+    '''process one ABI file, adding new symbols to the symmap,
+    returns the symbols of this file'''
+    symbols = set()
     for line in Utils.readf(fname).splitlines():
         symname = line.split(":")[0]
+        symbols.add(symname)
         if not symname in symmap:
             symmap[symname] = version
+    return symbols
 
 def version_script_map_process_file(fname, version, abi_match):
     '''process one standard version_script file, adding the symbols to the
@@ -263,6 +267,8 @@ def abi_build_vscript(task):
 
     symmap = {}
     versions = []
+    latest_version = None
+    latest_symbols = set()
     abi_match = list(task.env.ABI_MATCH)
     for f in task.inputs:
         fname = f.abspath(task.env)
@@ -270,12 +276,24 @@ def abi_build_vscript(task):
         if basename.endswith(".sigs"):
             version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
             versions.append(version)
-            abi_process_file(fname, version, symmap)
+            symbols = abi_process_file(fname, version, symmap)
+            if (latest_version is None or
+                version_key(version) > version_key(latest_version)):
+                latest_version = version
+                latest_symbols = symbols
             continue
         if basename == "version-script.map":
             version_script_map_process_file(fname, task.env.VERSION, abi_match)
             continue
         raise Errors.WafError('Unsupported input "%s"' % fname)
+    if task.env.LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS and latest_version:
+        # The linker warns about symbols in the version script
+        # it can't find. Symbols which are part of the ABI, but
+        # are not in the latest ABI file were removed from the
+        # library, so we don't list them in the older versions.
+        symmap = dict((s, v) for (s, v) in symmap.items()
+                      if s in latest_symbols or
+                         not abi_match_symbol(s, abi_match))
     if task.env.PRIVATE_LIBRARY:
         # For private libraries we need to inject
         # each public symbol explicitly into the
