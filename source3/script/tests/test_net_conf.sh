@@ -465,7 +465,8 @@ test_conf_setparm_forbidden()
 lock directory
 lock dir
 config backend
-include"
+include
+clustering"
 
 	echo '\nTrying to set forbidden parameters' >>$LOG
 

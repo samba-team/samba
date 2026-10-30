@@ -778,6 +778,18 @@ chmod 1770 /usr/local/samba/lib/usershares
 	</para>
 
 	<para>
+		For the same reason <parameter>state directory</parameter>
+		and <parameter>clustering</parameter> can't be stored in the
+		registry configuration: they need to be known before the
+		registry database is opened. So set them in
+		<emphasis>smb.conf</emphasis> before
+		<smbconfoption name="include">registry</smbconfoption>.
+		Values of <parameter>clustering</parameter> stored in the
+		registry by older versions are still used, they can be
+		removed with <emphasis>net conf delparm</emphasis>.
+	</para>
+
+	<para>
 		The registry configuration can be accessed with
 		tools like <emphasis>regedit</emphasis> or <emphasis>net (rpc)
 		registry</emphasis> in the key

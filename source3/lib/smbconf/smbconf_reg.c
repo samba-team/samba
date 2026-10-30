@@ -91,6 +91,38 @@ bool smbconf_reg_parameter_is_valid(const char *param_name)
 }
 
 /**
+ * Check whether a given parameter name can be set in the
+ * smbconf registry backend.
+ *
+ * Configurations created by older versions may still have
+ * parameters that can't be set anymore, they are still valid,
+ * so they're used when reading the configuration and can be
+ * deleted.
+ */
+bool smbconf_reg_parameter_is_settable(const char *param_name)
+{
+	const char *forbidden_names[] = {/*
+					  * "clustering" needs to be known
+					  * before registry.tdb can be opened.
+					  */
+					 "clustering",
+					 NULL};
+	const char **forbidden = NULL;
+
+	if (!smbconf_reg_parameter_is_valid(param_name)) {
+		return false;
+	}
+
+	for (forbidden = forbidden_names; *forbidden != NULL; forbidden++) {
+		if (strwicmp(param_name, *forbidden) == 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
  * Open a subkey of the base key (i.e a service)
  */
 static sbcErr smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
@@ -191,7 +223,7 @@ static sbcErr smbconf_reg_set_value(struct registry_key *key,
 		goto done;
 	}
 
-	if (!smbconf_reg_parameter_is_valid(valname)) {
+	if (!smbconf_reg_parameter_is_settable(valname)) {
 		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
 			  valname));
 		err = SBC_ERR_INVALID_PARAM;

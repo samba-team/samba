@@ -11,6 +11,12 @@
 	<para>Set this parameter to <value type="example">yes</value> only if
 	you have a cluster setup with ctdb running.
 	</para>
+
+	<para>This parameter can't be stored in the registry configuration,
+	as it needs to be known before the registry database is opened.
+	Set it in <filename moreinfo="none">smb.conf</filename> before
+	<smbconfoption name="include">registry</smbconfoption>.
+	</para>
 </description>
 <value type="default">no</value>
 </samba:parameter>

@@ -40,7 +40,7 @@ bool net_conf_param_valid(const char *service,
 		return false;
 	}
 
-	if (!smbconf_reg_parameter_is_valid(param)) {
+	if (!smbconf_reg_parameter_is_settable(param)) {
 		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
 			  param);
 		return false;
