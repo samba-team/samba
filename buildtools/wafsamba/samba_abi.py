@@ -162,9 +162,42 @@ def abi_process_file(fname, version, symmap):
             symmap[symname] = version
     return symbols
 
-def version_script_map_process_file(fname, version, abi_match):
+
+def symbol_as_pattern(symname):
+    '''return a wildcard pattern only matching the given symbol'''
+    if any(c in symname for c in "*?["):
+        return symname
+    return "%s[%s]" % (symname[:-1], symname[-1])
+
+
+def abi_match_excludes_as_patterns(abi_match):
+    '''return abi_match with excluded symbols as wildcard patterns
+
+    The linker warns about excluded symbols it can't find, e.g. symbols
+    of modules, which are only part of the library if the modules are
+    linked statically.
+
+    An exact name has precedence over a wildcard pattern in the global
+    section, so we keep the exact name if a global pattern other
+    than "*" matches the symbol.'''
+    global_abi = [x for x in abi_match if x[0] != '!' and x != '*']
+    ret = []
+    for x in abi_match:
+        if x[0] == '!' and not any(fnmatch.fnmatch(x[1:], g)
+                                   for g in global_abi):
+            x = "!%s" % symbol_as_pattern(x[1:])
+        ret.append(x)
+    return ret
+
+
+def version_script_map_process_file(fname, version, abi_match,
+                                    as_pattern=False):
     '''process one standard version_script file, adding the symbols to the
-    abi_match'''
+    abi_match
+
+    With as_pattern=True the symbols are added as wildcard patterns,
+    which only match the given symbol. The linker doesn't warn about
+    patterns not matching any symbol.'''
     in_section = False
     in_global = False
     in_local = False
@@ -196,9 +229,11 @@ def version_script_map_process_file(fname, version, abi_match):
 
         symname = line.split(";")[0]
         assert symname != ""
+        if in_local and symname == "*":
+            continue
+        if as_pattern:
+            symname = symbol_as_pattern(symname)
         if in_local:
-            if symname == "*":
-                continue
             symname = "!%s" % symname
         if not symname in abi_match:
             abi_match.append(symname)
@@ -283,7 +318,16 @@ def abi_build_vscript(task):
                 latest_symbols = symbols
             continue
         if basename == "version-script.map":
-            version_script_map_process_file(fname, task.env.VERSION, abi_match)
+            # The linker warns about symbols in the version script it
+            # can't find, e.g. functions of the upstream library we
+            # don't build, so we use patterns matching only the
+            # given symbol. This is fine as orig_vscript_map is only
+            # allowed for private libraries, so there's only one
+            # version node.
+            version_script_map_process_file(
+                fname, task.env.VERSION, abi_match,
+                as_pattern=task.env.LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS,
+            )
             continue
         raise Errors.WafError('Unsupported input "%s"' % fname)
     if task.env.LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS and latest_version:
@@ -294,6 +338,8 @@ def abi_build_vscript(task):
         symmap = dict((s, v) for (s, v) in symmap.items()
                       if s in latest_symbols or
                          not abi_match_symbol(s, abi_match))
+    if task.env.LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS:
+        abi_match = abi_match_excludes_as_patterns(abi_match)
     if task.env.PRIVATE_LIBRARY:
         # For private libraries we need to inject
         # each public symbol explicitly into the
