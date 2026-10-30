@@ -407,6 +407,8 @@ local_daemons_onnode()
 		local_daemons_onnode_usage
 	fi
 
+	local_daemons_start_socket_wrapper
+
 	_nodes="$1"
 	shift
 
