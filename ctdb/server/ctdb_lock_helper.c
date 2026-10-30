@@ -38,6 +38,8 @@ static bool realtime = true;
 struct lock_state {
 	struct tdb_context *tdb;
 	TDB_DATA key;
+	bool record_locked;
+	bool db_locked;
 };
 
 static void set_priority(void)
@@ -140,6 +142,7 @@ static int lock_record(const char *dbpath, const char *dbflags,
 			tdb_errorstr(state->tdb));
 		return 1;
 	}
+	state->record_locked = true;
 
 	reset_priority();
 
@@ -168,6 +171,7 @@ static int lock_db(const char *dbpath, const char *dbflags,
 			tdb_errorstr(state->tdb));
 		return 1;
 	}
+	state->db_locked = true;
 
 	reset_priority();
 
@@ -246,9 +250,9 @@ static bool wait_for_parent_recv(struct tevent_req *req, int *perr)
 static void cleanup(struct lock_state *state)
 {
 	if (state->tdb != NULL) {
-		if (state->key.dsize == 0) {
+		if (state->db_locked) {
 			tdb_unlockall(state->tdb);
-		} else {
+		} else if (state->record_locked) {
 			tdb_chainunlock(state->tdb, state->key);
 		}
 		tdb_close(state->tdb);
