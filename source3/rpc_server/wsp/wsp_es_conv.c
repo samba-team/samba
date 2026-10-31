@@ -1726,7 +1726,7 @@ static json_t *get_json_mappings(void)
 		DBG_ERR("No elasticesearch mapping %s %s, "
 			"can't build query\n",
 			path ? path : "",
-			json_error.text ? json_error.text : "");
+			json_error.text);
 	}
 	TALLOC_FREE(default_path);
 
