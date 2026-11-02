@@ -99,8 +99,14 @@ ctdb_test_init()
 		echo "Configuring cluster..."
 		setup_ctdb || ctdb_test_error "Cluster configuration failed"
 
+		# Logs printed on startup failure start here
+		ctdb_logs_checkpoint all
+
 		echo "Starting cluster..."
 		ctdb_init || ctdb_test_error "Cluster startup failed"
+
+		# Logs printed on test failure start here
+		ctdb_logs_checkpoint all
 	fi
 
 	echo "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
@@ -117,8 +123,14 @@ ctdb_nodes_start_custom()
 	echo "Configuring cluster..."
 	setup_ctdb "$@" || ctdb_test_error "Cluster configuration failed"
 
+	# Logs printed on startup failure start here
+	ctdb_logs_checkpoint all
+
 	echo "Starting cluster..."
 	ctdb_init || ctdb_test_fail "Cluster startup failed"
+
+	# Logs printed on test failure start here
+	ctdb_logs_checkpoint all
 }
 
 ctdb_test_skip_on_cluster()

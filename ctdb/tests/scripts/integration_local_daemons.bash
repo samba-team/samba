@@ -86,10 +86,11 @@ ctdb_logs_since_checkpoint()
 	$ctdb_local_daemons print-log -c "$1"
 }
 
+# Print all lines since the most recent checkpoint
 _print_logs()
 {
 	echo "*** LOG START --------------------"
-	$ctdb_local_daemons print-log all | tail -n 500
+	ctdb_logs_since_checkpoint all
 	echo "*** LOG END   --------------------"
 }
 

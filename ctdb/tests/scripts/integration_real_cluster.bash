@@ -50,3 +50,9 @@ ctdb_nodes_start()
 
 	onnode -p "$nodespec" "$CTDB_TEST_WRAPPER" _service_ctdb start
 }
+
+# Logs are not printed for real clusters
+ctdb_logs_checkpoint()
+{
+	:
+}
