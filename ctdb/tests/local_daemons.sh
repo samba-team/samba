@@ -419,10 +419,10 @@ local_daemons_print_socket()
 	onnode -q "$_nodes" "${VALGRIND:-} ctdb-path socket ctdbd"
 }
 
-local_daemons_print_log()
+local_daemons_checkpoint_log()
 {
 	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
-		local_daemons_generic_usage "print-log"
+		local_daemons_generic_usage "checkpoint-log"
 	fi
 
 	_nodes="$1"
@@ -432,9 +432,56 @@ local_daemons_print_log()
 
 	# shellcheck disable=SC2016
 	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
-	onnode -q "$_nodes" 'cat ${CTDB_BASE}/log.ctdb' |
-		sort
+	onnode -q "$_nodes" \
+		'_l="${CTDB_BASE}/log.ctdb"
+		 if [ -f "$_l" ]; then
+			 wc -l <"$_l" | tr -d "[:blank:]"
+		 else
+			 echo 0
+		 fi >"${_l}.checkpoint"'
+}
 
+local_daemons_print_log_usage()
+{
+	cat >&2 <<EOF
+usage: $0 <directory> print-log [ -c ] <nodes>
+
+Options:
+  -c  Only print lines logged since checkpoint-log was run
+
+<nodes> can be  "all", a node number or any specification supported by onnode
+EOF
+
+	exit 1
+}
+
+local_daemons_print_log()
+{
+	_since_checkpoint=false
+	if [ "${1:-}" = "-c" ]; then
+		_since_checkpoint=true
+		shift
+	fi
+
+	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
+		local_daemons_print_log_usage
+	fi
+
+	_nodes="$1"
+	shift
+
+	onnode_common
+
+	# shellcheck disable=SC2016
+	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
+	if $_since_checkpoint; then
+		onnode -q "$_nodes" \
+			'_l="${CTDB_BASE}/log.ctdb"
+			 _n=$(cat "${_l}.checkpoint" 2>/dev/null || echo 0)
+			 tail -n "+$((_n + 1))" "$_l"'
+	else
+		onnode -q "$_nodes" 'cat ${CTDB_BASE}/log.ctdb'
+	fi | sort
 }
 
 local_daemons_tail_log()
@@ -465,6 +512,7 @@ Commands:
   stop           Stop specified daemon(s)
   onnode         Run a command in the environment of specified daemon(s)
   print-socket   Print the Unix domain socket used by specified daemon(s)
+  checkpoint-log Record end of logs for specified daemon(s)
   print-log      Print logs for specified daemon(s) to stdout
   tail-log       Follow logs for specified daemon(s) to stdout
 
@@ -491,6 +539,7 @@ start) local_daemons_start "$@" ;;
 stop) local_daemons_stop "$@" ;;
 onnode) local_daemons_onnode "$@" ;;
 print-socket) local_daemons_print_socket "$@" ;;
+checkpoint-log) local_daemons_checkpoint_log "$@" ;;
 print-log) local_daemons_print_log "$@" ;;
 tail-log) local_daemons_tail_log "$@" ;;
 *) usage ;;

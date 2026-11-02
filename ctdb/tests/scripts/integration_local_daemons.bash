@@ -74,6 +74,18 @@ onnode()
 	$ctdb_local_daemons onnode "$@"
 }
 
+# Only lines logged after the most recent checkpoint are printed by
+# ctdb_logs_since_checkpoint()
+ctdb_logs_checkpoint()
+{
+	$ctdb_local_daemons checkpoint-log "$1"
+}
+
+ctdb_logs_since_checkpoint()
+{
+	$ctdb_local_daemons print-log -c "$1"
+}
+
 _print_logs()
 {
 	echo "*** LOG START --------------------"
