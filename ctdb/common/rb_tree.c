@@ -31,18 +31,11 @@
 	  exit(10); \
 	  }} while (0)
 
-
-static void
-tree_destructor_traverse_node(TALLOC_CTX *mem_ctx, trbt_node_t *node)
+static inline trbt_node_t *trbt_rb2node(struct rb_node *rb)
 {
-	talloc_set_destructor(node, NULL);
-	if (node->left) {
-		tree_destructor_traverse_node(mem_ctx, node->left);
-	}
-	if (node->right) {
-		tree_destructor_traverse_node(mem_ctx, node->right);
-	}
-	talloc_steal(mem_ctx, node);
+	void *p = (char *)rb - offsetof(trbt_node_t, rb);
+
+	return (trbt_node_t *)p;
 }
 
 /*
@@ -50,29 +43,31 @@ tree_destructor_traverse_node(TALLOC_CTX *mem_ctx, trbt_node_t *node)
  */
 static int tree_destructor(trbt_tree_t *tree)
 {
-	TALLOC_CTX *tmp_ctx;
-	trbt_node_t *node;
+	struct rb_node *rb = NULL;
 
 	if (tree == NULL) {
 		return 0;
 	}
 
-	node=tree->root;
-	if (node == NULL) {
+	if (tree->root.rb_node == NULL) {
 		return 0;
 	}
 
-	/* traverse the tree and remove the node destructor and steal
-	   the node to the temporary context.
-	   we don't want to use the existing destructor for the node
-	   since that will remove the nodes one by one from the tree.
-	   since the entire tree will be completely destroyed we don't care
-	   if it is inconsistent or unbalanced while freeing the
-	   individual nodes
-	*/
-	tmp_ctx = talloc_new(NULL);
-	tree_destructor_traverse_node(tmp_ctx, node);
-	talloc_free(tmp_ctx);
+	/*
+	 * Traverse the tree, remove the node destructor and steal the
+	 * node to the tree. talloc frees the tree's children after
+	 * this destructor returns. We don't want to use the existing
+	 * destructor for the node since that will remove the nodes
+	 * one by one from the tree. Since the entire tree will be
+	 * completely destroyed we don't care if it is inconsistent or
+	 * unbalanced while freeing the individual nodes.
+	 */
+	for (rb = rb_first(&tree->root); rb != NULL; rb = rb_next(rb)) {
+		trbt_node_t *node = trbt_rb2node(rb);
+
+		talloc_set_destructor(node, NULL);
+		talloc_steal(tree, node);
+	}
 
 	return 0;
 }
@@ -98,548 +93,80 @@ trbt_create(TALLOC_CTX *memctx, uint32_t flags)
 	return tree;
 }
 
-static inline trbt_node_t *
-trbt_parent(trbt_node_t *node)
-{
-	return node->parent;
-}
-
-static inline trbt_node_t *
-trbt_grandparent(trbt_node_t *node)
-{
-	trbt_node_t *parent;
-
-	parent=trbt_parent(node);
-	if(parent){
-		return parent->parent;
-	}
-	return NULL;
-}
-
-static inline trbt_node_t *
-trbt_uncle(trbt_node_t *node)
-{
-	trbt_node_t *parent, *grandparent;
-
-	parent=trbt_parent(node);
-	if(!parent){
-		return NULL;
-	}
-	grandparent=trbt_parent(parent);
-	if(!grandparent){
-		return NULL;
-	}
-	if(parent==grandparent->left){
-		return grandparent->right;
-	}
-	return grandparent->left;
-}
-
-
-static inline void trbt_insert_case1(trbt_tree_t *tree, trbt_node_t *node);
-static inline void trbt_insert_case2(trbt_tree_t *tree, trbt_node_t *node);
-
-static inline void
-trbt_rotate_left(trbt_node_t *node)
-{
-	trbt_tree_t *tree = node->tree;
-
-	if(node->parent){
-		if(node->parent->left==node){
-			node->parent->left=node->right;
-		} else {
-			node->parent->right=node->right;
-		}
-	} else {
-		tree->root=node->right;
-	}
-	node->right->parent=node->parent;
-	node->parent=node->right;
-	node->right=node->right->left;
-	if(node->right){
-		node->right->parent=node;
-	}
-	node->parent->left=node;
-}
-
-static inline void
-trbt_rotate_right(trbt_node_t *node)
-{
-	trbt_tree_t *tree = node->tree;
-
-	if(node->parent){
-		if(node->parent->left==node){
-			node->parent->left=node->left;
-		} else {
-			node->parent->right=node->left;
-		}
-	} else {
-		tree->root=node->left;
-	}
-	node->left->parent=node->parent;
-	node->parent=node->left;
-	node->left=node->left->right;
-	if(node->left){
-		node->left->parent=node;
-	}
-	node->parent->right=node;
-}
-
-/* NULL nodes are black by definition */
-static inline int trbt_get_color(trbt_node_t *node)
-{
-	if (node==NULL) {
-		return TRBT_BLACK;
-	}
-	return node->rb_color;
-}
-static inline int trbt_get_color_left(trbt_node_t *node)
-{
-	if (node==NULL) {
-		return TRBT_BLACK;
-	}
-	if (node->left==NULL) {
-		return TRBT_BLACK;
-	}
-	return node->left->rb_color;
-}
-static inline int trbt_get_color_right(trbt_node_t *node)
-{
-	if (node==NULL) {
-		return TRBT_BLACK;
-	}
-	if (node->right==NULL) {
-		return TRBT_BLACK;
-	}
-	return node->right->rb_color;
-}
-/* setting a NULL node to black is a nop */
-static inline void trbt_set_color(trbt_node_t *node, int color)
-{
-	if (node == NULL) {
-		return;
-	}
-	node->rb_color = color;
-}
-static inline void trbt_set_color_left(trbt_node_t *node, int color)
-{
-	if (node == NULL || node->left == NULL) {
-		return;
-	}
-	node->left->rb_color = color;
-}
-static inline void trbt_set_color_right(trbt_node_t *node, int color)
-{
-	if (node == NULL || node->right == NULL) {
-		return;
-	}
-	node->right->rb_color = color;
-}
-
-static inline void
-trbt_insert_case5(trbt_tree_t *tree, trbt_node_t *node)
-{
-	trbt_node_t *grandparent;
-	trbt_node_t *parent;
-
-	parent=trbt_parent(node);
-	grandparent=trbt_parent(parent);
-	parent->rb_color=TRBT_BLACK;
-	grandparent->rb_color=TRBT_RED;
-	if( (node==parent->left) && (parent==grandparent->left) ){
-		trbt_rotate_right(grandparent);
-	} else {
-		trbt_rotate_left(grandparent);
-	}
-}
-
-static inline void
-trbt_insert_case4(trbt_tree_t *tree, trbt_node_t *node)
-{
-	trbt_node_t *grandparent;
-	trbt_node_t *parent;
-
-	parent=trbt_parent(node);
-	grandparent=trbt_parent(parent);
-	if(!grandparent){
-		return;
-	}
-	if( (node==parent->right) && (parent==grandparent->left) ){
-		trbt_rotate_left(parent);
-		node=node->left;
-	} else if( (node==parent->left) && (parent==grandparent->right) ){
-		trbt_rotate_right(parent);
-		node=node->right;
-	}
-	trbt_insert_case5(tree, node);
-}
-
-static inline void
-trbt_insert_case3(trbt_tree_t *tree, trbt_node_t *node)
-{
-	trbt_node_t *grandparent;
-	trbt_node_t *parent;
-	trbt_node_t *uncle;
-
-	uncle=trbt_uncle(node);
-	if(uncle && (uncle->rb_color==TRBT_RED)){
-		parent=trbt_parent(node);
-		parent->rb_color=TRBT_BLACK;
-		uncle->rb_color=TRBT_BLACK;
-		grandparent=trbt_grandparent(node);
-		grandparent->rb_color=TRBT_RED;
-		trbt_insert_case1(tree, grandparent);
-	} else {
-		trbt_insert_case4(tree, node);
-	}
-}
-
-static inline void
-trbt_insert_case2(trbt_tree_t *tree, trbt_node_t *node)
-{
-	trbt_node_t *parent;
-
-	parent=trbt_parent(node);
-	/* parent is always non-NULL here */
-	if(parent->rb_color==TRBT_BLACK){
-		return;
-	}
-	trbt_insert_case3(tree, node);
-}
-
-static inline void
-trbt_insert_case1(trbt_tree_t *tree, trbt_node_t *node)
-{
-	trbt_node_t *parent;
-
-	parent=trbt_parent(node);
-	if(!parent){
-		node->rb_color=TRBT_BLACK;
-		return;
-	}
-	trbt_insert_case2(tree, node);
-}
-
-static inline trbt_node_t *
-trbt_sibling(trbt_node_t *node)
-{
-	trbt_node_t *parent;
-
-	parent=trbt_parent(node);
-	if(!parent){
-		return NULL;
-	}
-
-	if (node == parent->left) {
-		return parent->right;
-	} else {
-		return parent->left;
-	}
-}
-
-static inline void
-trbt_delete_case6(trbt_node_t *node)
-{
-	trbt_node_t *sibling, *parent;
-
-	sibling = trbt_sibling(node);
-	parent  = trbt_parent(node);
-
-	trbt_set_color(sibling, parent->rb_color);
-	trbt_set_color(parent, TRBT_BLACK);
-	if (node == parent->left) {
-		trbt_set_color_right(sibling, TRBT_BLACK);
-		trbt_rotate_left(parent);
-	} else {
-		trbt_set_color_left(sibling, TRBT_BLACK);
-		trbt_rotate_right(parent);
-	}
-}
-
-
-static inline void
-trbt_delete_case5(trbt_node_t *node)
-{
-	trbt_node_t *parent, *sibling;
-
-	parent = trbt_parent(node);
-	sibling = trbt_sibling(node);
-	if ( (node == parent->left)
-	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_get_color_left(sibling)   == TRBT_RED)
-	   &&(trbt_get_color_right(sibling)  == TRBT_BLACK) ){
-		trbt_set_color(sibling, TRBT_RED);
-		trbt_set_color_left(sibling, TRBT_BLACK);
-		trbt_rotate_right(sibling);
-		trbt_delete_case6(node);
-		return;
-	}
-	if ( (node == parent->right)
-	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_get_color_right(sibling)  == TRBT_RED)
-	   &&(trbt_get_color_left(sibling)   == TRBT_BLACK) ){
-		trbt_set_color(sibling, TRBT_RED);
-		trbt_set_color_right(sibling, TRBT_BLACK);
-		trbt_rotate_left(sibling);
-		trbt_delete_case6(node);
-		return;
-	}
-
-	trbt_delete_case6(node);
-}
-
-static inline void
-trbt_delete_case4(trbt_node_t *node)
-{
-	trbt_node_t *sibling;
-
-	sibling = trbt_sibling(node);
-	if ( (trbt_get_color(node->parent)   == TRBT_RED)
-	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_get_color_left(sibling)   == TRBT_BLACK)
-	   &&(trbt_get_color_right(sibling)  == TRBT_BLACK) ){
-		trbt_set_color(sibling, TRBT_RED);
-		trbt_set_color(node->parent, TRBT_BLACK);
-	} else {
-		trbt_delete_case5(node);
-	}
-}
-
-static void trbt_delete_case1(trbt_node_t *node);
-
-static inline void
-trbt_delete_case3(trbt_node_t *node)
-{
-	trbt_node_t *sibling;
-
-	sibling = trbt_sibling(node);
-	if ( (trbt_get_color(node->parent)   == TRBT_BLACK)
-	   &&(trbt_get_color(sibling)        == TRBT_BLACK)
-	   &&(trbt_get_color_left(sibling)   == TRBT_BLACK)
-	   &&(trbt_get_color_right(sibling)  == TRBT_BLACK) ){
-		trbt_set_color(sibling, TRBT_RED);
-		trbt_delete_case1(node->parent);
-	} else {
-		trbt_delete_case4(node);
-	}
-}
-
-static inline void
-trbt_delete_case2(trbt_node_t *node)
-{
-	trbt_node_t *sibling;
-
-	sibling = trbt_sibling(node);
-	if (trbt_get_color(sibling) == TRBT_RED) {
-		trbt_set_color(node->parent, TRBT_RED);
-		trbt_set_color(sibling, TRBT_BLACK);
-		if (node == node->parent->left) {
-			trbt_rotate_left(node->parent);
-		} else {
-			trbt_rotate_right(node->parent);
-		}
-	}
-	trbt_delete_case3(node);
-}
-
-static void
-trbt_delete_case1(trbt_node_t *node)
-{
-	if (!node->parent) {
-		return;
-	} else {
-		trbt_delete_case2(node);
-	}
-}
-
-static void
-delete_node(trbt_node_t *node, bool from_destructor)
-{
-	trbt_node_t *parent, *child, dc;
-	trbt_node_t *temp = NULL;
-
-	/* This node has two child nodes, then just copy the content
-	   from the next smaller node with this node and delete the
-	   predecessor instead.
-	   The predecessor is guaranteed to have at most one child
-	   node since its right arm must be NULL
-	   (It must be NULL since we are its successor and we are above
-	    it in the tree)
-	 */
-	if (node->left != NULL && node->right != NULL) {
-		/* This node has two children, just copy the data */
-		/* find the predecessor */
-		temp = node->left;
-
-		while (temp->right != NULL) {
-			temp = temp->right;
-		}
-
-		/* swap the predecessor data and key with the node to
-		   be deleted.
-		 */
-		node->key32 = temp->key32;
-		node->data  = temp->data;
-		/* now we let node hang off the new data */
-		talloc_steal(node->data, node);
-
-		temp->data  = NULL;
-		temp->key32 = -1;
-		/* then delete the temp node.
-		   this node is guaranteed to have at least one leaf
-		   child */
-		delete_node(temp, from_destructor);
-		goto finished;
-	}
-
-
-	/* There is at most one child to this node to be deleted */
-	child = node->left;
-	if (node->right) {
-		child = node->right;
-	}
-
-	/* If the node to be deleted did not have any child at all we
-	   create a temporary dummy node for the child and mark it black.
-	   Once the delete of the node is finished, we remove this dummy
-	   node, which is simple to do since it is guaranteed that it will
-	   still not have any children after the delete operation.
-	   This is because we don't represent the leaf-nodes as actual nodes
-	   in this implementation.
-	 */
-	if (!child) {
-		child = &dc;
-		child->tree = node->tree;
-		child->left=NULL;
-		child->right=NULL;
-		child->rb_color=TRBT_BLACK;
-		child->data=NULL;
-	}
-
-	/* replace node with child */
-	parent = trbt_parent(node);
-	if (parent) {
-		if (parent->left == node) {
-			parent->left = child;
-		} else {
-			parent->right = child;
-		}
-	} else {
-		node->tree->root = child;
-	}
-	child->parent = node->parent;
-
-
-	if (node->rb_color == TRBT_BLACK) {
-		if (trbt_get_color(child) == TRBT_RED) {
-			child->rb_color = TRBT_BLACK;
-		} else {
-			trbt_delete_case1(child);
-		}
-	}
-
-	/* If we had to create a temporary dummy node to represent a black
-	   leaf child we now has to delete it.
-	   This is simple since this dummy node originally had no children
-	   and we are guaranteed that it will also not have any children
-	   after the node has been deleted and any possible rotations
-	   have occurred.
-
-	   The only special case is if this was the last node of the tree
-	   in which case we have to reset the root to NULL as well.
-	   Othervise it is enough to just unlink the child from its new
-	   parent.
-	 */
-	if (child == &dc) {
-		if (child->parent == NULL) {
-			node->tree->root = NULL;
-		} else if (child == child->parent->left) {
-			child->parent->left = NULL;
-		} else {
-			child->parent->right = NULL;
-		}
-	}
-
-finished:
-	if (!from_destructor) {
-		talloc_free(node);
-	}
-
-	/* if we came from a destructor and temp!=NULL  this means we
-	   did the node-swap but now the tree still contains the old
-	   node  which was freed in the destructor. Not good.
-	*/
-	if (from_destructor && temp) {
-		temp->key32    = node->key32;
-		temp->rb_color = node->rb_color;
-
-		temp->data = node->data;
-		talloc_steal(temp->data, temp);
-
-		temp->parent = node->parent;
-		if (temp->parent) {
-			if (temp->parent->left == node) {
-				temp->parent->left = temp;
-			} else {
-				temp->parent->right = temp;
-			}
-		}
-
-		temp->left = node->left;
-		if (temp->left) {
-			temp->left->parent = temp;
-		}
-		temp->right = node->right;
-		if (temp->right) {
-			temp->right->parent = temp;
-		}
-
-		if (temp->tree->root == node) {
-			temp->tree->root = temp;
-		}
-	}
-
-	if ( (node->tree->flags & TRBT_AUTOFREE)
-	&&   (node->tree->root == NULL) ) {
-		talloc_free(node->tree);
-	}
-
-	return;
-}
-
 /*
   destroy a node and remove it from its tree
  */
 static int node_destructor(trbt_node_t *node)
 {
-	delete_node(node, true);
+	trbt_tree_t *tree = node->tree;
+
+	rb_erase(&node->rb, &tree->root);
+
+	if ((tree->flags & TRBT_AUTOFREE) && (tree->root.rb_node == NULL)) {
+		talloc_free(tree);
+	}
 
 	return 0;
 }
 
-static inline trbt_node_t *
-trbt_create_node(trbt_tree_t *tree, trbt_node_t *parent, uint32_t key, void *data)
+static inline trbt_node_t *trbt_create_node(trbt_tree_t *tree,
+					    uint32_t key,
+					    void *data)
 {
-	trbt_node_t *node;
+	trbt_node_t *node = NULL;
 
-	node=talloc_zero(tree, trbt_node_t);
+	/*
+	 * Let this node hang off data so that it is removed when data
+	 * is freed
+	 */
+	node = talloc(data, trbt_node_t);
 	NO_MEMORY_FATAL(node);
 
-	node->tree=tree;
-	node->rb_color=TRBT_BLACK;
-	node->parent=parent;
-	node->left=NULL;
-	node->right=NULL;
-	node->key32=key;
-	node->data = data;
+	*node = (trbt_node_t){
+		.tree = tree,
+		.key32 = key,
+		.data = data,
+	};
 
-	/* let this node hang off data so that it is removed when
-	   data is freed
-	 */
-	talloc_steal(data, node);
 	talloc_set_destructor(node, node_destructor);
 
 	return node;
+}
+
+/*
+ * Find the node with the given key.
+ * If there is no such node return NULL and set *parent and *link to where
+ * a new node has to be linked in. parent and link may be NULL.
+ */
+static trbt_node_t *trbt_find(trbt_tree_t *tree,
+			      uint32_t key,
+			      struct rb_node **parent,
+			      struct rb_node ***link)
+{
+	struct rb_node **p = &tree->root.rb_node;
+	struct rb_node *pa = NULL;
+
+	while (*p != NULL) {
+		trbt_node_t *node = trbt_rb2node(*p);
+
+		if (key == node->key32) {
+			return node;
+		}
+		pa = *p;
+		if (key < node->key32) {
+			p = &(*p)->rb_left;
+		} else {
+			p = &(*p)->rb_right;
+		}
+	}
+
+	if (parent != NULL) {
+		*parent = pa;
+	}
+	if (link != NULL) {
+		*link = p;
+	}
+	return NULL;
 }
 
 /* insert a new node in the tree.
@@ -650,93 +177,44 @@ trbt_create_node(trbt_tree_t *tree, trbt_node_t *parent, uint32_t key, void *dat
 void *
 trbt_insert32(trbt_tree_t *tree, uint32_t key, void *data)
 {
-	trbt_node_t *node;
+	trbt_node_t *node = NULL;
+	struct rb_node *parent = NULL;
+	struct rb_node **link = NULL;
 
-	node=tree->root;
+	node = trbt_find(tree, key, &parent, &link);
+	if (node != NULL) {
+		void *old_data = NULL;
 
-	/* is this the first node ?*/
-	if(!node){
-		node = trbt_create_node(tree, NULL, key, data);
-
-		tree->root=node;
-		return NULL;
-	}
-
-	/* it was not the new root so walk the tree until we find where to
-	 * insert this new leaf.
-	 */
-	while(1){
 		/* this node already exists, replace data and return the
 		   old data
 		 */
-		if(key==node->key32){
-			void *old_data;
+		old_data = node->data;
+		node->data = data;
+		/*
+		 * Let the node now be owned by the new data
+		 * so the node is freed when the new data is released
+		 */
+		talloc_steal(node->data, node);
 
-			old_data = node->data;
-			node->data  = data;
-			/* Let the node now be owned by the new data
-			   so the node is freed when the enw data is released
-			*/
-			talloc_steal(node->data, node);
-
-			return old_data;
-		}
-		if(key<node->key32) {
-			if(!node->left){
-				/* new node to the left */
-				trbt_node_t *new_node;
-
-				new_node = trbt_create_node(tree, node, key, data);
-				node->left=new_node;
-				node=new_node;
-
-				break;
-			}
-			node=node->left;
-			continue;
-		}
-		if(key>node->key32) {
-			if(!node->right){
-				/* new node to the right */
-				trbt_node_t *new_node;
-
-				new_node = trbt_create_node(tree, node, key, data);
-				node->right=new_node;
-				node=new_node;
-				break;
-			}
-			node=node->right;
-			continue;
-		}
+		return old_data;
 	}
 
-	/* node will now point to the newly created node */
-	node->rb_color=TRBT_RED;
-	trbt_insert_case1(tree, node);
+	node = trbt_create_node(tree, key, data);
+	rb_link_node(&node->rb, parent, link);
+	rb_insert_color(&node->rb, &tree->root);
 	return NULL;
 }
 
 void *
 trbt_lookup32(trbt_tree_t *tree, uint32_t key)
 {
-	trbt_node_t *node;
+	trbt_node_t *node = NULL;
 
-	node=tree->root;
-
-	while(node){
-		if(key==node->key32){
-			return node->data;
-		}
-		if(key<node->key32){
-			node=node->left;
-			continue;
-		}
-		if(key>node->key32){
-			node=node->right;
-			continue;
-		}
+	node = trbt_find(tree, key, NULL, NULL);
+	if (node == NULL) {
+		return NULL;
 	}
-	return NULL;
+	return node->data;
 }
 
 
@@ -746,90 +224,38 @@ trbt_lookup32(trbt_tree_t *tree, uint32_t key)
 void
 trbt_delete32(trbt_tree_t *tree, uint32_t key)
 {
-	trbt_node_t *node;
+	trbt_node_t *node = NULL;
 
-	node=tree->root;
-
-	while(node){
-		if(key==node->key32){
-			delete_node(node, false);
-			return;
-		}
-		if(key<node->key32){
-			node=node->left;
-			continue;
-		}
-		if(key>node->key32){
-			node=node->right;
-			continue;
-		}
+	node = trbt_find(tree, key, NULL, NULL);
+	if (node == NULL) {
+		return;
 	}
+
+	/* The node destructor unlinks the node from the tree */
+	talloc_free(node);
 }
 
 
 void
 trbt_insert32_callback(trbt_tree_t *tree, uint32_t key, void *(*callback)(void *param, void *data), void *param)
 {
-	trbt_node_t *node;
+	trbt_node_t *node = NULL;
+	struct rb_node *parent = NULL;
+	struct rb_node **link = NULL;
 
-	node=tree->root;
+	node = trbt_find(tree, key, &parent, &link);
+	if (node != NULL) {
+		/* this node already exists, replace it
+		 */
+		node->data = callback(param, node->data);
+		talloc_steal(node->data, node);
 
-	/* is this the first node ?*/
-	if(!node){
-		node = trbt_create_node(tree, NULL, key,
-				callback(param, NULL));
-
-		tree->root=node;
 		return;
 	}
 
-	/* it was not the new root so walk the tree until we find where to
-	 * insert this new leaf.
-	 */
-	while(1){
-		/* this node already exists, replace it
-		 */
-		if(key==node->key32){
-			node->data  = callback(param, node->data);
-			talloc_steal(node->data, node);
-
-			return;
-		}
-		if(key<node->key32) {
-			if(!node->left){
-				/* new node to the left */
-				trbt_node_t *new_node;
-
-				new_node = trbt_create_node(tree, node, key,
-						callback(param, NULL));
-				node->left=new_node;
-				node=new_node;
-
-				break;
-			}
-			node=node->left;
-			continue;
-		}
-		if(key>node->key32) {
-			if(!node->right){
-				/* new node to the right */
-				trbt_node_t *new_node;
-
-				new_node = trbt_create_node(tree, node, key,
-						callback(param, NULL));
-				node->right=new_node;
-				node=new_node;
-				break;
-			}
-			node=node->right;
-			continue;
-		}
-	}
-
-	/* node will now point to the newly created node */
-	node->rb_color=TRBT_RED;
-	trbt_insert_case1(tree, node);
-	return;
+	node = trbt_create_node(tree, key, callback(param, NULL));
+	rb_link_node(&node->rb, parent, link);
+	rb_insert_color(&node->rb, &tree->root);
 }
 
 
@@ -920,48 +346,42 @@ trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
 	return trbt_lookuparray32(tree, keylen-1, &key[1]);
 }
 
-
-/* traverse a tree starting at node */
-static int
-trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
-	int (*callback)(void *param, void *data),
-	void *param)
+/* traverse the tree using an array of uint32 as a key */
+int trbt_traversearray32(trbt_tree_t *tree,
+			 uint32_t keylen,
+			 int (*callback)(void *param, void *data),
+			 void *param)
 {
-	trbt_node_t *left = node->left;
-	trbt_node_t *right = node->right;
+	struct rb_node *rb = NULL;
+	struct rb_node *next = NULL;
 
-	if (left) {
-		int ret;
-		ret = trbt_traversearray32_node(left, keylen, callback, param);
-		if (ret != 0) {
-			return ret;
-		}
+	if (tree == NULL) {
+		return 0;
 	}
 
-	/* this is the smallest node in this subtree
-	   if keylen is 0 this means we can just call the callback
-	   otherwise we must pull the next subtree and traverse that one as well
-	*/
-	if (keylen == 0) {
+	/*
+	 * The callbacks might free the data and with it the node, so
+	 * determine the next node before calling out.
+	 */
+	for (rb = rb_first(&tree->root); rb != NULL; rb = next) {
+		trbt_node_t *node = trbt_rb2node(rb);
 		int ret;
 
-		ret = callback(param, node->data);
-		if (ret != 0) {
-			return ret;
+		next = rb_next(rb);
+
+		/*
+		 * if keylen is 1 this means we can just call the callback
+		 * otherwise we must pull the next subtree and traverse that
+		 * one as well
+		 */
+		if (keylen == 1) {
+			ret = callback(param, node->data);
+		} else {
+			ret = trbt_traversearray32(node->data,
+						   keylen - 1,
+						   callback,
+						   param);
 		}
-	} else {
-		int ret;
-
-		ret = trbt_traversearray32(node->data, keylen, callback, param);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
-	if (right) {
-		int ret;
-
-		ret = trbt_traversearray32_node(right, keylen, callback, param);
 		if (ret != 0) {
 			return ret;
 		}
@@ -970,35 +390,14 @@ trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
 	return 0;
 }
 
-
-/* traverse the tree using an array of uint32 as a key */
-int
-trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen,
-	int (*callback)(void *param, void *data),
-	void *param)
-{
-	trbt_node_t *node;
-
-	if (tree == NULL) {
-		return 0;
-	}
-
-	node=tree->root;
-	if (node == NULL) {
-		return 0;
-	}
-
-	return trbt_traversearray32_node(node, keylen-1, callback, param);
-}
-
-
 /* this function will return the first node in a tree where
    the key is an array of uint32_t
 */
 void *
 trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
 {
-	trbt_node_t *node;
+	struct rb_node *rb = NULL;
+	trbt_node_t *node = NULL;
 
 	if (keylen < 1) {
 		return NULL;
@@ -1008,14 +407,11 @@ trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
 		return NULL;
 	}
 
-	node=tree->root;
-	if (node == NULL) {
+	rb = rb_first(&tree->root);
+	if (rb == NULL) {
 		return NULL;
 	}
-
-	while (node->left) {
-		node = node->left;
-	}
+	node = trbt_rb2node(rb);
 
 	/* we found our node so return the data */
 	if (keylen == 1) {
@@ -1027,75 +423,3 @@ trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
 	*/
 	return trbt_findfirstarray32(node->data, keylen-1);
 }
-
-
-#ifdef TEST_RB_TREE
-static void printtree(trbt_node_t *node, int levels)
-{
-	int i;
-	if(node==NULL)return;
-	printtree(node->left, levels+1);
-
-	for(i=0;i<levels;i++)printf("    ");
-	printf("key:%d COLOR:%s (node:%p parent:%p left:%p right:%p)\n",node->key32,node->rb_color==TRBT_BLACK?"BLACK":"RED", node, node->parent, node->left, node->right);
-
-	printtree(node->right, levels+1);
-	printf("\n");
-}
-
-void print_tree(trbt_tree_t *tree)
-{
-	if(tree->root==NULL){
-		printf("tree is empty\n");
-		return;
-	}
-	printf("---\n");
-	printtree(tree->root->left, 1);
-	printf("root node key:%d COLOR:%s (node:%p left:%p right:%p)\n",tree->root->key32,tree->root->rb_color==TRBT_BLACK?"BLACK":"RED", tree->root, tree->root->left, tree->root->right);
-	printtree(tree->root->right, 1);
-	printf("===\n");
-}
-
-void
-test_tree(void)
-{
-	trbt_tree_t *tree;
-	char *str;
-	int i, ret;
-	int NUM=15;
-	int cnt=0;
-
-	tree=trbt_create(talloc_new(NULL), 0);
-#if 0
-	for(i=0;i<10;i++){
-		printf("adding node %i\n",i);
-		trbt_insert32(tree, i, NULL);
-		print_tree(tree);
-	}
-	printf("deleting node %i\n",3);
-	trbt_delete32(tree, 3);
-	print_tree(tree);
-	for(i=0;i<10;i++){
-		printf("deleting node %i\n",i);
-		trbt_delete32(tree, i);
-		print_tree(tree);
-	}
-exit(0);
-#endif
-	while(++cnt){
-		int i;
-		printf("iteration : %d\n",cnt);
-		i=random()%20;
-		printf("adding node %i\n",i);
-		trbt_insert32(tree, i, NULL);
-		print_tree(tree);
-
-		i=random()%20;
-		printf("deleting node %i\n",i);
-		trbt_delete32(tree, i);
-		print_tree(tree);
-	}
-
-}
-
-#endif /* TEST_RB_TREE */

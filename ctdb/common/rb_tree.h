@@ -19,21 +19,18 @@
 
 #ifndef _RB_TREE_H
 #define _RB_TREE_H
- 
-#define TRBT_RED		0x00
-#define TRBT_BLACK		0x01
+
+#include "lib/util/rbtree.h"
+
 typedef struct trbt_node {
+	struct rb_node rb;
 	struct trbt_tree *tree;
-	struct trbt_node *parent;
-	struct trbt_node *left;
-	struct trbt_node *right;
-	uint32_t rb_color;
 	uint32_t key32;
 	void *data;
 } trbt_node_t;
 
 typedef struct trbt_tree {
-	trbt_node_t *root;
+	struct rb_root root;
 /* automatically free the tree when the last node has been deleted */
 #define TRBT_AUTOFREE		0x00000001
 	uint32_t flags;
