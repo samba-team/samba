@@ -107,6 +107,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                     become_daemon.c
                     mkdir_p.c
                     samba_sockaddr.c
+                    rbtree.c
                     ''',
                     deps='''
                     time-basic
@@ -200,7 +201,6 @@ else:
                          idtree_random.c
                          memcache.c
                          params.c
-                         rbtree.c
                          rfc1738.c
                          server_id.c
                          smb_threads.c
