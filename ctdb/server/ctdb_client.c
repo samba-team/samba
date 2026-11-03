@@ -427,8 +427,8 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 {
 	struct ctdb_client_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	struct ctdb_ltdb_header header;
-	TDB_DATA data;
+	struct ctdb_ltdb_header header = {};
+	TDB_DATA data = {};
 	int ret;
 	size_t len;
 	struct ctdb_req_call_old *c;
