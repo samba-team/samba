@@ -893,9 +893,11 @@ char *ssaddr_str_buf(const struct samba_sockaddr *addr, struct ssaddr_buf *dst)
 	case AF_INET:
 		salen = sizeof(addr->u.in);
 		break;
+#ifdef HAVE_IPV6
 	case AF_INET6:
 		salen = sizeof(addr->u.in6);
 		break;
+#endif
 	case AF_UNIX:
 		/*
 		 * Not sure what getnameinfo does for AF_UNIX, but
