@@ -40,7 +40,12 @@ struct samba_sockaddr {
 	} u;
 };
 
-struct ssaddr_buf { char buf[INET6_ADDRSTRLEN]; };
+/*
+ * Large enough for an IPv6 address or a 20 octet IPoIB hardware
+ * address as colon-separated hex (3 characters per octet).  This is
+ * larger than INET6_ADDRSTRLEN (46).
+ */
+struct ssaddr_buf { char buf[3 * 20]; };
 char *ssaddr_str_buf(const struct samba_sockaddr *addr,
 		     struct ssaddr_buf *dst);
 

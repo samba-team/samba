@@ -78,6 +78,42 @@ bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port)
 	return false;
 }
 
+#ifdef HAVE_PACKETSOCKET
+/*
+ * getnameinfo() doesn't handle AF_PACKET, so print the hardware
+ * address as colon-separated hex
+ */
+static char *ssaddr_ll_str_buf(const struct samba_sockaddr *addr,
+			       struct ssaddr_buf *dst)
+{
+	/*
+	 * Read via the union because a hardware address (e.g. IPoIB)
+	 * can be larger than sll_addr[]
+	 */
+	const uint8_t *hwaddr = (const uint8_t *)&addr->u +
+				offsetof(struct sockaddr_ll, sll_addr);
+	size_t len = addr->u.ll.sll_halen;
+	char *p = dst->buf;
+	size_t i;
+
+	len = MIN(len,
+		  sizeof(addr->u) - offsetof(struct sockaddr_ll, sll_addr));
+	/* Truncate to fit, 3 characters per octet, including NUL */
+	len = MIN(len, sizeof(dst->buf) / 3);
+
+	for (i = 0; i < len; i++) {
+		if (i > 0) {
+			*p++ = ':';
+		}
+		*p++ = hexchars_lower[hwaddr[i] >> 4];
+		*p++ = hexchars_lower[hwaddr[i] & 0xf];
+	}
+	*p = '\0';
+
+	return dst->buf;
+}
+#endif
+
 char *ssaddr_str_buf(const struct samba_sockaddr *addr, struct ssaddr_buf *dst)
 {
 	socklen_t salen;
@@ -98,6 +134,10 @@ char *ssaddr_str_buf(const struct samba_sockaddr *addr, struct ssaddr_buf *dst)
 		 */
 		salen = sizeof(addr->u.un);
 		break;
+#ifdef HAVE_PACKETSOCKET
+	case AF_PACKET:
+		return ssaddr_ll_str_buf(addr, dst);
+#endif
 	default:
 		snprintf(dst->buf,
 			 sizeof(dst->buf),
