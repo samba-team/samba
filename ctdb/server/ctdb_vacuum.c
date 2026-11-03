@@ -587,6 +587,11 @@ static int delete_queue_traverse(void *param, void *data)
 		goto done;
 	}
 
+	if (header.flags & CTDB_REC_RO_FLAGS) {
+		/* Deleting it would leave stale read-only copies */
+		goto skipped;
+	}
+
 	/* use header->flags or dd->hdr.flags ?? */
 	if (dd->hdr.flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) {
 		res = add_record_to_delete_list(vdata, dd->key, &dd->hdr);
