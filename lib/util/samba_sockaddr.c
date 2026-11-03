@@ -18,7 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "config.h"
+#include "replace.h"
 
 #include "lib/util/samba_sockaddr.h"
 
@@ -76,4 +76,43 @@ bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port)
 	}
 #endif
 	return false;
+}
+
+char *ssaddr_str_buf(const struct samba_sockaddr *addr, struct ssaddr_buf *dst)
+{
+	socklen_t salen;
+
+	switch (addr->u.ss.ss_family) {
+	case AF_INET:
+		salen = sizeof(addr->u.in);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		salen = sizeof(addr->u.in6);
+		break;
+#endif
+	case AF_UNIX:
+		/*
+		 * Not sure what getnameinfo does for AF_UNIX, but
+		 * lets put it in for completeness.
+		 */
+		salen = sizeof(addr->u.un);
+		break;
+	default:
+		snprintf(dst->buf,
+			 sizeof(dst->buf),
+			 "AF %d unknown",
+			 addr->u.ss.ss_family);
+		return dst->buf;
+	}
+
+	dst->buf[0] = '\0';
+	(void)getnameinfo(&addr->u.sa,
+			  salen,
+			  dst->buf,
+			  sizeof(dst->buf),
+			  NULL,
+			  0,
+			  NI_NUMERICHOST);
+	return dst->buf;
 }
