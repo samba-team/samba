@@ -21,9 +21,7 @@
 #ifndef _SAMBA_SOCKADDR_H_
 #define _SAMBA_SOCKADDR_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-
+#include "replace.h"
 #include "system/network.h"
 
 struct samba_sockaddr {
