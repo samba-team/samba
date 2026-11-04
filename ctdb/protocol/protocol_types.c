@@ -4645,7 +4645,13 @@ static void tdb_data_struct_push(TDB_DATA *data, uint8_t *buf, size_t *npush)
 {
 	size_t offset = 0;
 
-	memcpy(buf+offset, &data->dptr, sizeof(void *));
+	/*
+	 * This is the in memory layout of TDB_DATA,
+	 * the pointer is meaningless for the receiver,
+	 * tdb_data_struct_pull() ignores it, so we
+	 * don't leak our heap addresses.
+	 */
+	memset(buf+offset, 0, sizeof(void *));
 	offset += sizeof(void *);
 
 	memcpy(buf+offset, &data->dsize, sizeof(size_t));

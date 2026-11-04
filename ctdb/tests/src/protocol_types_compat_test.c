@@ -2008,6 +2008,9 @@ static void ctdb_db_statistics_push_old(struct ctdb_db_statistics *in,
 
 	in->num_hot_keys = MAX_HOT_KEYS;
 	memcpy(wire, in, sizeof(struct ctdb_db_statistics));
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		wire->dbstats.hot_keys[i].key.dptr = NULL;
+	}
 
 	offset = 0;
 	for (i=0; i<MAX_HOT_KEYS; i++) {
