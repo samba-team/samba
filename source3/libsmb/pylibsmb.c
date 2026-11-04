@@ -725,16 +725,14 @@ static void py_cli_got_oplock_break(struct tevent_req *req)
 	self->oplock_waiter = NULL;
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return;
+		goto done;
 	}
 
 	num_breaks = talloc_array_length(self->oplock_breaks);
 	tmp = talloc_realloc(self->ev, self->oplock_breaks,
 			     struct py_cli_oplock_break, num_breaks+1);
 	if (tmp == NULL) {
-		TALLOC_FREE(frame);
-		return;
+		goto done;
 	}
 	self->oplock_breaks = tmp;
 	self->oplock_breaks[num_breaks] = b;
@@ -746,11 +744,12 @@ static void py_cli_got_oplock_break(struct tevent_req *req)
 	self->oplock_waiter = cli_smb_oplock_break_waiter_send(
 		self->ev, self->ev, self->cli);
 	if (self->oplock_waiter == NULL) {
-		TALLOC_FREE(frame);
-		return;
+		goto done;
 	}
 	tevent_req_set_callback(self->oplock_waiter, py_cli_got_oplock_break,
 				self);
+done:
+	TALLOC_FREE(frame);
 }
 
 static PyObject *py_cli_get_oplock_break(struct py_cli_state *self,
