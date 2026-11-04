@@ -266,20 +266,4 @@ int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb,
 int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout,
 		      uint32_t destnode, struct ctdb_ban_state *bantime);
 
-struct ctdb_client_control_state *ctdb_ctrl_updaterecord_send(
-					struct ctdb_context *ctdb,
-					TALLOC_CTX *mem_ctx,
-					struct timeval timeout,
-					uint32_t destnode,
-					struct ctdb_db_context *ctdb_db,
-					TDB_DATA key,
-					struct ctdb_ltdb_header *header,
-					TDB_DATA data);
-int ctdb_ctrl_updaterecord_recv(struct ctdb_context *ctdb,
-				struct ctdb_client_control_state *state);
-int ctdb_ctrl_updaterecord(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-			   struct timeval timeout, uint32_t destnode,
-			   struct ctdb_db_context *ctdb_db, TDB_DATA key,
-			   struct ctdb_ltdb_header *header, TDB_DATA data);
-
 #endif /* _CTDB_CLIENT_H */
