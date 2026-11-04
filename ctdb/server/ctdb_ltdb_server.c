@@ -1657,6 +1657,15 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 
 	stats->num_hot_keys = MAX_HOT_KEYS;
 
+	/*
+	 * The key pointers are meaningless for the receiver,
+	 * tdb_data_struct_pull() ignores them, so we don't
+	 * leak our heap addresses.
+	 */
+	for (i = 0; i < MAX_HOT_KEYS; i++) {
+		stats->hot_keys[i].key.dptr = NULL;
+	}
+
 	ptr = &stats->hot_keys_wire[0];
 	for (i = 0; i < MAX_HOT_KEYS; i++) {
 		memcpy(ptr, ctdb_db->statistics.hot_keys[i].key.dptr,
