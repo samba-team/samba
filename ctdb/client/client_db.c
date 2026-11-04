@@ -1133,19 +1133,21 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
 
 	ret = ctdb_ltdb_header_pull(rec.dptr, rec.dsize, header, &np);
 	if (ret != 0) {
-		return ret;
+		goto fail;
 	}
 
-	ret = 0;
 	if (data != NULL) {
 		data->dsize = rec.dsize - np;
 		data->dptr = talloc_memdup(mem_ctx, rec.dptr + np,
 					   data->dsize);
 		if (data->dptr == NULL) {
 			ret = ENOMEM;
+			goto fail;
 		}
 	}
 
+	ret = 0;
+fail:
 	free(rec.dptr);
 	return ret;
 }
