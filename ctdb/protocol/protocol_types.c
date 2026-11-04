@@ -2251,7 +2251,29 @@ size_t ctdb_sock_addr_len(ctdb_sock_addr *in)
 
 void ctdb_sock_addr_push(ctdb_sock_addr *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, in, sizeof(ctdb_sock_addr));
+	ctdb_sock_addr tmp;
+
+	/*
+	 * The wire format is the in memory layout of the union,
+	 * but only the members for the address family are used,
+	 * so we push zeros for the unused bytes instead of
+	 * whatever is in the memory of the caller.
+	 */
+	memset(&tmp, 0, sizeof(tmp));
+	switch (in->sa.sa_family) {
+	case AF_INET:
+		tmp.ip = in->ip;
+		memset(tmp.ip.sin_zero, 0, sizeof(tmp.ip.sin_zero));
+		break;
+	case AF_INET6:
+		tmp.ip6 = in->ip6;
+		break;
+	default:
+		tmp = *in;
+		break;
+	}
+
+	memcpy(buf, &tmp, sizeof(ctdb_sock_addr));
 	*npush = sizeof(ctdb_sock_addr);
 }
 
