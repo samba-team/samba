@@ -1527,6 +1527,31 @@ static NTSTATUS gensec_spnego_server_negTokenTarg_finish(
 	}
 
  server_response:
+	if (NT_STATUS_IS_OK(status) &&
+	    sub_out.length == 0 &&
+	    mech_list_mic.length == 0 &&
+	    ta->negResult == SPNEGO_ACCEPT_COMPLETED &&
+	    !spnego_state->needs_mic_check)
+	{
+		/*
+		 * RFC 4178 section 4.2.2: accept-completed means no further
+		 * negotiation message from the peer is expected. Section
+		 * 5(b)(I) ends this exact exchange, an acceptor-sent last
+		 * mechanism token with a required MIC, with the acceptor
+		 * verifying the initiator's mechListMIC; no further acceptor
+		 * output is described.
+		 *
+		 * A Windows IAKerb initiator relies on this: it sends its
+		 * mechListMIC with accept-completed already set. Sending
+		 * another token anyway, even an empty accept-completed one,
+		 * hands it a token for an already-completed context, and it
+		 * fails the logon with SEC_E_INVALID_HANDLE.
+		 */
+		*out = data_blob_null;
+		spnego_state->state_position = SPNEGO_DONE;
+		return NT_STATUS_OK;
+	}
+
 	return gensec_spnego_server_response(spnego_state,
 					     out_mem_ctx,
 					     status,

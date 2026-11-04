@@ -195,7 +195,20 @@ static bool write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenIni
 static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			      struct spnego_negTokenTarg *token)
 {
-	ZERO_STRUCTP(token);
+	/*
+	 * Every field of negTokenTarg is OPTIONAL on the wire (RFC 4178).
+	 * Each is only overwritten below if the peer actually sent it. Zero
+	 * the out param first so skipped fields come back as NULL/empty
+	 * instead of whatever `*token` happened to hold on entry.
+	 */
+	*token = (struct spnego_negTokenTarg) {
+		/*
+		 * negResult (negState) should defaults to SPNEGO_NONE_RESULT.
+		 * The same sentinel is used by write_negTokenTarg() for
+		 * "absent".
+		 */
+		.negResult = SPNEGO_NONE_RESULT,
+	};
 
 	if (!asn1_start_tag(asn1, ASN1_CONTEXT(1))) return false;
 	if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;

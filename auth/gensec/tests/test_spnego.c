@@ -189,6 +189,91 @@ static void test_server_response_ok_no_data(void **state)
 	assert_int_equal(targ.negResult, SPNEGO_ACCEPT_COMPLETED);
 }
 
+/*
+ * A Windows IAKerb initiator self-declares accept-completed on its own
+ * final mechListMIC-only leg. If the acceptor then sends another SPNEGO
+ * token, even an empty accept-completed one, the initiator hands it to
+ * InitializeSecurityContext on an already-completed context and fails
+ * the logon with SEC_E_INVALID_HANDLE. The acceptor must stay silent
+ * once the initiator already says it is done and there is nothing left
+ * to send.
+ */
+static void test_server_finish_initiator_accept_completed(void **state)
+{
+	TALLOC_CTX *mem_ctx = *state;
+	struct spnego_state *spnego_state = make_spnego_state(mem_ctx, 2);
+	struct spnego_data spnego_in = {
+		.type = SPNEGO_NEG_TOKEN_TARG,
+		.negTokenTarg =
+			{
+				.negResult = SPNEGO_ACCEPT_COMPLETED,
+			},
+	};
+	struct spnego_neg_state n = {
+		.ops = &gensec_spnego_server_negTokenTarg_ops,
+	};
+	DATA_BLOB out = data_blob_null;
+	NTSTATUS status;
+
+	spnego_state->sub_sec_ready = true;
+	spnego_state->done_mic_check = true;
+	spnego_state->needs_mic_check = false;
+
+	status = gensec_spnego_server_negTokenTarg_finish(NULL,
+							  spnego_state,
+							  &n,
+							  &spnego_in,
+							  NT_STATUS_OK,
+							  data_blob_null,
+							  mem_ctx,
+							  &out);
+	assert_ntstatus_ok(status);
+	assert_int_equal(out.length, 0);
+	assert_int_equal(spnego_state->state_position, SPNEGO_DONE);
+}
+
+/*
+ * The ordinary case: the initiator did not self-declare completion
+ * (negResult absent), so the acceptor still sends the authoritative
+ * accept-completed confirmation other clients rely on.
+ */
+static void test_server_finish_normal_mic_done(void **state)
+{
+	TALLOC_CTX *mem_ctx = *state;
+	struct spnego_state *spnego_state = make_spnego_state(mem_ctx, 2);
+	struct spnego_data spnego_in = {
+		.type = SPNEGO_NEG_TOKEN_TARG,
+		.negTokenTarg =
+			{
+				.negResult = SPNEGO_NONE_RESULT,
+			},
+	};
+	struct spnego_neg_state n = {
+		.ops = &gensec_spnego_server_negTokenTarg_ops,
+	};
+	struct spnego_negTokenTarg targ;
+	DATA_BLOB out = data_blob_null;
+	NTSTATUS status;
+
+	spnego_state->sub_sec_ready = true;
+	spnego_state->done_mic_check = true;
+	spnego_state->needs_mic_check = false;
+
+	status = gensec_spnego_server_negTokenTarg_finish(NULL,
+							  spnego_state,
+							  &n,
+							  &spnego_in,
+							  NT_STATUS_OK,
+							  data_blob_null,
+							  mem_ctx,
+							  &out);
+	assert_ntstatus_ok(status);
+	assert_int_equal(spnego_state->state_position, SPNEGO_DONE);
+
+	targ = parse_negTokenTarg(mem_ctx, out);
+	assert_int_equal(targ.negResult, SPNEGO_ACCEPT_COMPLETED);
+}
+
 int main(int argc, char *argv[])
 {
 	const struct CMUnitTest tests[] = {
@@ -199,6 +284,9 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(test_server_response_first_targ_ok),
 		cmocka_unit_test(test_server_response_later_targ_ok),
 		cmocka_unit_test(test_server_response_ok_no_data),
+		cmocka_unit_test(
+			test_server_finish_initiator_accept_completed),
+		cmocka_unit_test(test_server_finish_normal_mic_done),
 	};
 
 	if (argc == 2) {
