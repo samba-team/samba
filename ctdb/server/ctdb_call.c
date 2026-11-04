@@ -1652,17 +1652,11 @@ static void deferred_call_requeue(struct tevent_context *ev,
 				  struct tevent_timer *te,
 				  struct timeval t, void *private_data)
 {
-	struct revokechild_deferred_call *dlist = talloc_get_type_abort(
+	struct revokechild_deferred_call *dcall = talloc_get_type_abort(
 		private_data, struct revokechild_deferred_call);
 
-	while (dlist != NULL) {
-		struct revokechild_deferred_call *dcall = dlist;
-
-		talloc_set_destructor(dcall, NULL);
-		DLIST_REMOVE(dlist, dcall);
-		dcall->fn(dcall->ctx, dcall->hdr);
-		talloc_free(dcall);
-	}
+	dcall->fn(dcall->ctx, dcall->hdr);
+	TALLOC_FREE(dcall);
 }
 
 static int deferred_call_destructor(struct revokechild_deferred_call *dcall)
@@ -1686,9 +1680,6 @@ static void revokechild_finish(struct revokechild_handle *rev_hdl)
 
 static int revokechild_destructor(struct revokechild_handle *rev_hdl)
 {
-	struct revokechild_deferred_call *now_list = NULL;
-	struct revokechild_deferred_call *delay_list = NULL;
-
 	if (rev_hdl->fde != NULL) {
 		talloc_free(rev_hdl->fde);
 	}
@@ -1698,10 +1689,21 @@ static int revokechild_destructor(struct revokechild_handle *rev_hdl)
 	DLIST_REMOVE(rev_hdl->ctdb_db->revokechild_active, rev_hdl);
 
 	while (rev_hdl->deferred_call_list != NULL) {
-		struct revokechild_deferred_call *dcall;
+		struct revokechild_deferred_call *dcall = NULL;
+		struct tevent_timer *te = NULL;
+		struct timeval when = tevent_timeval_current_ofs(1, 0);
 
 		dcall = rev_hdl->deferred_call_list;
 		DLIST_REMOVE(rev_hdl->deferred_call_list, dcall);
+
+		/*
+		 * rev_hdl is going away, the call must not point at it
+		 * anymore. The timer is a child of dcall, so a call
+		 * freed with its client before the timer fires takes
+		 * the timer with it.
+		 */
+		talloc_set_destructor(dcall, NULL);
+		dcall->rev_hdl = NULL;
 
 		/* If revoke is successful, then first process all the calls
 		 * that need write access, and delay readonly requests by 1
@@ -1716,30 +1718,25 @@ static int revokechild_destructor(struct revokechild_handle *rev_hdl)
 			struct ctdb_req_call_old *c;
 
 			c = (struct ctdb_req_call_old *)dcall->hdr;
-			if (c->flags & CTDB_WANT_READONLY) {
-				DLIST_ADD(delay_list, dcall);
-			} else {
-				DLIST_ADD(now_list, dcall);
+			if (!(c->flags & CTDB_WANT_READONLY)) {
+				/*
+				 * tevent queues a zero timeval behind the
+				 * other zero timers without scanning the
+				 * whole timer list.
+				 */
+				when = tevent_timeval_zero();
 			}
-		} else {
-			DLIST_ADD(delay_list, dcall);
 		}
-	}
 
-	if (now_list != NULL) {
-		tevent_add_timer(rev_hdl->ctdb->ev,
-				 rev_hdl->ctdb_db,
-				 tevent_timeval_current_ofs(0, 0),
-				 deferred_call_requeue,
-				 now_list);
-	}
-
-	if (delay_list != NULL) {
-		tevent_add_timer(rev_hdl->ctdb->ev,
-				 rev_hdl->ctdb_db,
-				 tevent_timeval_current_ofs(1, 0),
-				 deferred_call_requeue,
-				 delay_list);
+		te = tevent_add_timer(rev_hdl->ctdb->ev,
+				      dcall,
+				      when,
+				      deferred_call_requeue,
+				      dcall);
+		if (te == NULL) {
+			DBG_ERR("tevent_add_timer failed, dropping call\n");
+			TALLOC_FREE(dcall);
+		}
 	}
 
 	return 0;
@@ -2054,7 +2051,7 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 
 	talloc_set_destructor(deferred_call, deferred_call_destructor);
 
-	DLIST_ADD(rev_hdl->deferred_call_list, deferred_call);
+	DLIST_ADD_END(rev_hdl->deferred_call_list, deferred_call);
 
 	return 0;
 }
