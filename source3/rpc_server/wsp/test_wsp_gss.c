@@ -447,6 +447,100 @@ static void test_getrows_close_pipe(void **state)
 				       payload, sizeof(payload));
 }
 
+#define ROW_WIDTH 16
+
+static void setup_vector_column(TALLOC_CTX *mem_ctx,
+				struct wsp_ctablecolumn *col,
+				struct wsp_cbasestoragevariant *val)
+{
+	struct vt_lpwstr *data = NULL;
+
+	*col = (struct wsp_ctablecolumn) {
+		.vtype = VT_VARIANT,
+		.valueused = 1,
+		.valueoffset.value = 0,
+	};
+
+	data = talloc_zero_array(mem_ctx, struct vt_lpwstr, 1);
+	assert_non_null(data);
+	data[0].value = talloc_strdup(data, "Document");
+	assert_non_null(data[0].value);
+
+	*val = (struct wsp_cbasestoragevariant) {
+		.vtype = VT_VECTOR | VT_LPWSTR,
+		.vvalue.vt_lpwstr_v.vvector_elements = 1,
+		.vvalue.vt_lpwstr_v.vvector_data = data,
+	};
+}
+
+/*
+ * A vector value that fits into the remaining buffer is stored at the
+ * end of the buffer, followed by its address list.
+ */
+static void test_push_column_vector_fits(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct wsp_ctablecolumn col;
+	struct wsp_cbasestoragevariant val;
+	DATA_BLOB blob = data_blob_talloc_zero(mem_ctx, 128);
+	uint32_t end_pos = blob.length;
+	enum ndr_err_code err;
+
+	setup_vector_column(mem_ctx, &col, &val);
+
+	err = push_column(mem_ctx, &col, &val, &blob, &end_pos,
+			  0, 0, ROW_WIDTH, false);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_true(end_pos > ROW_WIDTH);
+	assert_true(end_pos < blob.length);
+
+	TALLOC_FREE(mem_ctx);
+}
+
+/*
+ * A vector value larger than the space left between the end of the
+ * row and the variable data already stored must be rejected without
+ * moving the end position.
+ */
+static void test_push_column_vector_too_big(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct wsp_ctablecolumn col;
+	struct wsp_cbasestoragevariant val;
+	DATA_BLOB blob = data_blob_talloc_zero(mem_ctx, ROW_WIDTH + 4);
+	uint32_t end_pos = blob.length;
+	enum ndr_err_code err;
+
+	setup_vector_column(mem_ctx, &col, &val);
+
+	err = push_column(mem_ctx, &col, &val, &blob, &end_pos,
+			  0, 0, ROW_WIDTH, false);
+	assert_int_not_equal(err, NDR_ERR_SUCCESS);
+	assert_int_equal(end_pos, blob.length);
+
+	TALLOC_FREE(mem_ctx);
+}
+
+/* The same for the 64 bit layout, which uses 8 byte addresses */
+static void test_push_column_vector_too_big_64bit(void **state)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct wsp_ctablecolumn col;
+	struct wsp_cbasestoragevariant val;
+	DATA_BLOB blob = data_blob_talloc_zero(mem_ctx, ROW_WIDTH + 4);
+	uint32_t end_pos = blob.length;
+	enum ndr_err_code err;
+
+	setup_vector_column(mem_ctx, &col, &val);
+
+	err = push_column(mem_ctx, &col, &val, &blob, &end_pos,
+			  0, 0, ROW_WIDTH, true);
+	assert_int_not_equal(err, NDR_ERR_SUCCESS);
+	assert_int_equal(end_pos, blob.length);
+
+	TALLOC_FREE(mem_ctx);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -460,6 +554,9 @@ int main(int argc, const char **argv)
 			test_ratiofinished_close_pipe, setup, teardown),
 		cmocka_unit_test_setup_teardown(
 			test_getrows_close_pipe, setup, teardown),
+		cmocka_unit_test(test_push_column_vector_fits),
+		cmocka_unit_test(test_push_column_vector_too_big),
+		cmocka_unit_test(test_push_column_vector_too_big_64bit),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
