@@ -1298,9 +1298,10 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 		talloc_free(ctdb_db->revokechild_active);
 	}
 
-	/* Free readonly tracking database */
+	/* Close readonly tracking database */
 	if (ctdb_db_readonly(ctdb_db)) {
-		talloc_free(ctdb_db->rottdb);
+		tdb_close(ctdb_db->rottdb);
+		ctdb_db->rottdb = NULL;
 	}
 
 	DLIST_REMOVE(ctdb->db_list, ctdb_db);
