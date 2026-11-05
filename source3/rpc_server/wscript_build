@@ -183,6 +183,17 @@ bld.SAMBA3_SUBSYSTEM('WSP_GSS',
                     source='''wsp/wsp_gss.c''',
                     enabled=bld.env.with_wsp)
 
+bld.SAMBA3_BINARY('test_wsp_gss',
+                  source='wsp/test_wsp_gss.c',
+                  deps='''
+                  RPC_WORKER
+                  WSP_UTIL
+                  WSP_BACKEND
+                  cmocka
+                  ''',
+                  for_selftest=True,
+                  enabled=bld.env.with_wsp)
+
 bld.SAMBA3_BINARY('npsd_wsp_server',
                   source='npsd_wsp_server.c',
                   deps='''

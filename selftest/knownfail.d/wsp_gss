@@ -1,0 +1,5 @@
+^samba.unittests.test_wsp_gss.test_cistateinout_close_pipe
+^samba.unittests.test_wsp_gss.test_querystatus_close_pipe
+^samba.unittests.test_wsp_gss.test_querystatusex_close_pipe
+^samba.unittests.test_wsp_gss.test_ratiofinished_close_pipe
+^samba.unittests.test_wsp_gss.test_getrows_close_pipe

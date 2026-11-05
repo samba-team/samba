@@ -585,6 +585,8 @@ if have_heimdal_support and not using_system_gssapi:
                   [valgrindify(os.path.join(bindir(), "test_heimdal_gensec_unwrap_des"))])
 plantestsuite("samba.unittests.test_wsp_parser", "none",
               [os.path.join(bindir(), "default/libcli/wsp/test_wsp_parser")] + [configuration])
+plantestsuite("samba.unittests.test_wsp_gss", "none",
+              [os.path.join(bindir(), "test_wsp_gss")])
 if with_elasticsearch_backend:
     plantestsuite("samba.unittests.mdsparser_es", "none",
                   [os.path.join(bindir(), "default/source3/test_mdsparser_es")] + [configuration])
