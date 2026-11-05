@@ -742,9 +742,7 @@ static struct tevent_req *wsp_gss_querystatus_send(TALLOC_CTX *ctx,
 	DATA_BLOB payload = data_blob_null;
 	bool ok;
 
-	req = tevent_req_create(wsp_gss_state,
-				&state,
-				struct wsp_gss_querystatus_state);
+	req = tevent_req_create(ctx, &state, struct wsp_gss_querystatus_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -864,7 +862,7 @@ static struct tevent_req *wsp_gss_querystatusex_send(TALLOC_CTX *ctx,
 	DATA_BLOB payload = data_blob_null;
 	bool ok;
 
-	req = tevent_req_create(wsp_gss_state,
+	req = tevent_req_create(ctx,
 				&state,
 				struct wsp_gss_querystatusex_state);
 	if (req == NULL) {
@@ -1114,7 +1112,7 @@ static struct tevent_req *wsp_gss_getratiofinished_send(
 	int ndr_flags = NDR_SCALARS | NDR_BUFFERS;
 	DATA_BLOB payload = data_blob_null;
 
-	req = tevent_req_create(wsp_gss_state,
+	req = tevent_req_create(ctx,
 				&state,
 				struct wsp_gss_getratiofinished_state);
 	if (req == NULL) {
@@ -1251,9 +1249,7 @@ static struct tevent_req *wsp_gss_getrows_send(TALLOC_CTX *ctx,
 	int32_t clientversion;
 	DATA_BLOB payload = data_blob_null;
 
-	req = tevent_req_create(wsp_gss_state,
-				&state,
-				struct wsp_gss_getrows_state);
+	req = tevent_req_create(ctx, &state, struct wsp_gss_getrows_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -3389,9 +3385,7 @@ static struct tevent_req *wsp_gss_cistateout_send(TALLOC_CTX *ctx,
 	int ndr_flags = NDR_SCALARS | NDR_BUFFERS;
 	DATA_BLOB payload = data_blob_null;
 
-	req = tevent_req_create(wsp_gss_state,
-				&state,
-				struct wsp_gss_cistateout_state);
+	req = tevent_req_create(ctx, &state, struct wsp_gss_cistateout_state);
 	if (req == NULL) {
 		return NULL;
 	}
