@@ -495,6 +495,134 @@ struct wsp_gss_createquery_state {
 
 static void wsp_gss_createquery_done(struct tevent_req *subreq);
 
+static bool pid_index_valid(const struct wsp_cpidmapper *pidmapper,
+			    uint32_t pid,
+			    const char *what)
+{
+	if (pid >= pidmapper->count) {
+		DBG_WARNING("%s index %" PRIu32 ", pidmapper has %" PRIu32
+			    " entries\n",
+			    what,
+			    pid,
+			    pidmapper->count);
+		return false;
+	}
+	return true;
+}
+
+static bool columnset_valid(const struct wsp_cpidmapper *pidmapper,
+			    const struct wsp_ccolumnset *columnset)
+{
+	uint32_t i;
+
+	for (i = 0; i < columnset->count; i++) {
+		if (!pid_index_valid(pidmapper,
+				     columnset->indexes[i],
+				     "column"))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool sortset_valid(const struct wsp_cpidmapper *pidmapper,
+			  const struct wsp_csortset *sortset)
+{
+	uint32_t i;
+
+	for (i = 0; i < sortset->count; i++) {
+		if (!pid_index_valid(pidmapper,
+				     sortset->sortarray[i].pidcolumn,
+				     "sort column"))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool ingroupsortaggregsets_valid(
+	const struct wsp_cpidmapper *pidmapper,
+	const struct wsp_cingroupsortaggregsets *sortsets)
+{
+	uint32_t i;
+
+	for (i = 0; i < sortsets->ccount; i++) {
+		if (!sortset_valid(pidmapper,
+				   &sortsets->sortsets[i].sortaggregset))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool categorizationset_valid(
+	const struct wsp_cpidmapper *pidmapper,
+	const struct wsp_ccategorizationset *categories)
+{
+	uint32_t i;
+
+	for (i = 0; i < categories->size; i++) {
+		const struct wsp_ccategorizationspec *spec = NULL;
+
+		spec = &categories->categories[i];
+
+		if (!columnset_valid(pidmapper, &spec->cscolumns)) {
+			return false;
+		}
+		if (!pid_index_valid(pidmapper,
+				     spec->spec.sortkey.pidcolumn,
+				     "category sort key"))
+		{
+			return false;
+		}
+		if (!ingroupsortaggregsets_valid(pidmapper,
+						 &spec->ingroupsortaggset))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+/*
+ * The columns of every CColumnSet and CSort in a CPMCreateQueryIn
+ * message are indexes into its CPidMapper (MS-WSP 2.2.1.10, 2.2.1.18);
+ * check them all once here, so that the backend can look them up
+ * without checking them again.
+ *
+ * CAggregSpec.idColumn and CColumnGroup._groupPid are not plain
+ * indexes (MS-WSP 2.2.1.25, 3.1.7) and are not used by the backend,
+ * so they are not checked.
+ */
+static bool query_pid_indexes_valid(const struct wsp_cpmcreatequeryin *query)
+{
+	const struct wsp_cpidmapper *pidmapper = NULL;
+
+	pidmapper = &query->pidmapper;
+
+	if (query->ccolumnsetpresent &&
+	    !columnset_valid(pidmapper, &query->columnset.columnset))
+	{
+		return false;
+	}
+	if (query->csortsetpresent &&
+	    !ingroupsortaggregsets_valid(pidmapper,
+					 &query->sortset.groupsortaggregsets))
+	{
+		return false;
+	}
+	if (query->ccategorizationsetpresent &&
+	    !categorizationset_valid(
+		    pidmapper, &query->ccategorizationset.ccategorizationset))
+	{
+		return false;
+	}
+	return true;
+}
+
 /* MS-WSP 2.2.3.4, MS-WSP 3.1.5.2.2 */
 static struct tevent_req *wsp_gss_createquery_send(TALLOC_CTX *ctx,
 			       struct tevent_context *ev,
@@ -600,6 +728,13 @@ static struct tevent_req *wsp_gss_createquery_send(TALLOC_CTX *ctx,
 		      handle);
 		tevent_req_herror(req,
 				  HRESULT_FROM_NT(NT_STATUS_INVALID_PARAMETER));
+		return tevent_req_post(req, ev);
+	}
+
+	if (!query_pid_indexes_valid(query)) {
+		tevent_req_herror(req,
+				  HRESULT_FROM_NT(
+					  NT_STATUS_INVALID_PARAMETER));
 		return tevent_req_post(req, ev);
 	}
 
