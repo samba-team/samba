@@ -6136,6 +6136,24 @@ done:
 	return ret;
 }
 
+/*
+ * Volatile databases use mutexes, which tdb only opens with
+ * TDB_MUTEX_LOCKING. The flag does not change the locking of a tdb
+ * without mutexes, and the hash function is taken from the file.
+ */
+static int tdb_file_open_flags(void)
+{
+	int tdb_flags = TDB_DEFAULT;
+
+#ifdef TDB_MUTEX_LOCKING
+	if (tdb_runtime_check_for_robust_mutexes()) {
+		tdb_flags |= TDB_MUTEX_LOCKING;
+	}
+#endif
+
+	return tdb_flags;
+}
+
 static int control_tfetch(TALLOC_CTX *mem_ctx,
 			  struct ctdb_context *ctdb,
 			  int argc,
@@ -6144,13 +6162,15 @@ static int control_tfetch(TALLOC_CTX *mem_ctx,
 	struct tdb_context *tdb;
 	TDB_DATA key, data;
 	struct ctdb_ltdb_header header;
+	int tdb_flags;
 	int ret;
 
 	if (argc < 2 || argc > 3) {
 		usage("tfetch");
 	}
 
-	tdb = tdb_open(argv[0], 0, 0, O_RDWR, 0);
+	tdb_flags = tdb_file_open_flags();
+	tdb = tdb_open(argv[0], 0, tdb_flags, O_RDWR, 0);
 	if (tdb == NULL) {
 		fprintf(stderr, "Failed to open TDB file %s\n", argv[0]);
 		return 1;
@@ -6223,13 +6243,15 @@ static int control_tstore(TALLOC_CTX *mem_ctx,
 	struct ctdb_ltdb_header header;
 	uint8_t header_buf[sizeof(struct ctdb_ltdb_header)];
 	size_t np;
+	int tdb_flags;
 	int ret = 0;
 
 	if (argc < 3 || argc > 5) {
 		usage("tstore");
 	}
 
-	tdb = tdb_open(argv[0], 0, 0, O_RDWR, 0);
+	tdb_flags = tdb_file_open_flags();
+	tdb = tdb_open(argv[0], 0, tdb_flags, O_RDWR, 0);
 	if (tdb == NULL) {
 		fprintf(stderr, "Failed to open TDB file %s\n", argv[0]);
 		return 1;
