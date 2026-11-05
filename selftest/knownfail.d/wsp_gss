@@ -1,0 +1,3 @@
+^samba.unittests.test_wsp_gss.test_createquery_column_past_pidmapper
+^samba.unittests.test_wsp_gss.test_createquery_sort_past_pidmapper
+^samba.unittests.test_wsp_gss.test_createquery_category_past_pidmapper
