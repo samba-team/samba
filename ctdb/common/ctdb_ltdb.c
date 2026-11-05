@@ -371,8 +371,7 @@ int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t 
 	if (byte_pos + 1 > data->dsize) {
 		char *buf;
 
-		buf = malloc(byte_pos + 1);
-		memset(buf, 0, byte_pos + 1);
+		buf = calloc(1, byte_pos + 1);
 		if (buf == NULL) {
 			DEBUG(DEBUG_ERR, ("Out of memory when allocating buffer of %d bytes for trackingdb\n", byte_pos + 1));
 			return -1;
