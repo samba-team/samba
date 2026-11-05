@@ -1746,6 +1746,26 @@ static bool convert_variant_vector_to_array(TALLOC_CTX *ctx,
 	return true;
 }
 
+/*
+ * Reserve len bytes for variable sized data at the end of the row
+ * buffer, below the variable data already stored there and above the
+ * fixed portion of the current row (which ends at row_boundry).
+ * On failure *cur_rowbuf_end_pos is left unchanged.
+ */
+static bool reserve_rowbuf_space(uint32_t *cur_rowbuf_end_pos,
+				 uint32_t row_boundry,
+				 uint64_t len)
+{
+	if (*cur_rowbuf_end_pos <= row_boundry) {
+		return false;
+	}
+	if (len >= *cur_rowbuf_end_pos - row_boundry) {
+		return false;
+	}
+	*cur_rowbuf_end_pos -= len;
+	return true;
+}
+
 static enum ndr_err_code push_variable_type(
 			TALLOC_CTX *ctx,
 			bool is_64bit,
@@ -1843,8 +1863,21 @@ static enum ndr_err_code push_variable_type(
 
 	if (is_vector) {
 		/* update position of buffer offset */
-		*cur_rowbuf_end_pos = *cur_rowbuf_end_pos
-				     - (count * intsize) - values_buf.length;
+		if (!reserve_rowbuf_space(cur_rowbuf_end_pos,
+					  row_boundry,
+					  (count * intsize) +
+						  values_buf.length))
+		{
+			DBG_NOTICE(
+				"Vector of %" PRIu64 " values (%zu bytes) "
+				"does not fit remaining buffer size %" PRIu32
+				"\n",
+				count,
+				values_buf.length,
+				*cur_rowbuf_end_pos);
+			err = NDR_ERR_OFFSET;
+			goto out;
+		}
 		/* save pos in buffer to write address list to */
 		addresslist_offset = *cur_rowbuf_end_pos + values_buf.length;
 
@@ -1861,29 +1894,19 @@ static enum ndr_err_code push_variable_type(
 
 	} else {
 		/* update position of buffer offset */
-		if (values_buf.length >= *cur_rowbuf_end_pos) {
-			DBG_NOTICE("Value len is %zd is larger or equal "
-				   "to remaining buffer size %d\n",
+		if (!reserve_rowbuf_space(cur_rowbuf_end_pos,
+					  row_boundry,
+					  values_buf.length))
+		{
+			DBG_NOTICE("Value len is %zu is larger or equal "
+				   "to remaining buffer size %" PRIu32 "\n",
 				   values_buf.length,
-				    *cur_rowbuf_end_pos);
+				   *cur_rowbuf_end_pos);
 			err = NDR_ERR_OFFSET;
 			goto out;
 		}
-
-		*cur_rowbuf_end_pos = *cur_rowbuf_end_pos - values_buf.length;
 		/* won't be using addresslist or addresses_buf */
 		addresslist_offset = 0;
-	}
-
-	if (row_boundry >= *cur_rowbuf_end_pos) {
-		/*
-		 * col variant value about to corrupt
-		 * fixed buffer
-		*/
-		DBG_NOTICE("col value overlapping fixed buffer "
-			  "area\n");
-		err = NDR_ERR_ARRAY_SIZE;
-		goto out;
 	}
 
 	/* write out remainder of wsp_ctablevariant structure */
