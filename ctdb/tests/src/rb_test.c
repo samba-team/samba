@@ -340,5 +340,7 @@ int main(int argc, const char *argv[])
 
 	assert(talloc_total_size(memctx) == 16);
 
+	talloc_free(memctx);
+
 	return 0;
 }
