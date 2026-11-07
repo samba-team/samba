@@ -1,0 +1,2 @@
+^samba3.blackbox.close-denied-share.share_hosts_deny
+^samba3.blackbox.close-denied-share.global_hosts_deny
