@@ -3880,6 +3880,81 @@ wreplsrv:propagate name releases = no
 
 Значение по умолчанию:
 Welcome to \s \r \l</string>
+
+          <string id="CAT_371A8FF5_990F_47DD_B200_D436AC28A4F9">Firewalld</string>
+      <string id="POL_ADABE9E0_FFF9_4FFE_A105_03E646C79978">Зоны</string>
+      <string id="POL_ADABE9E0_FFF9_4FFE_A105_03E646C79978_Help">Список зон для создания. Существующие зоны на хосте не будут изменены.
+
+Создание правил для зон осуществляется в настройке «Правила».</string>
+      <string id="POL_B21F349F_4BF6_473E_8452_047D714F156C">Правила</string>
+      <string id="POL_B21F349F_4BF6_473E_8452_047D714F156C_Help">Словарь в формате JSON, содержащий зоны, сопоставленные со списком правил.
+
+Например, чтобы создать правила для зон Work и Home, укажите следующий JSON:
+
+{
+  "work": [
+    {"rule": {"family": "ipv4"}, "source address": "172.25.1.7", "service name": "ftp", "reject": {}},
+    {"rule": {}, "source address": "172.25.1.8", "service name": "ftp", "reject": {}}
+  ],
+  "home": [
+    {"rule": {}, "protocol value": "icmp", "reject": {}},
+    {"rule": {"family": "ipv4"}, "source address": "192.168.1.2/32", "service name": "telnet", "accept": {"limit value": "1/m"}}
+  ]
+}
+
+Неправильно отформатированный JSON будет игнорироваться.
+
+Структура правил примерно соответствует документации Firewalld Rich Language.
+
+Общая структура правила:
+{
+  "rule": {
+    "family": "ipv4 | ipv6",
+    "priority": "priority"
+  },
+  "source [not] address | mac | ipset": "address[/mask] | mac-address | ipset",
+  "destination [not] address": "address[/mask]",
+  "service name": "service name",
+  "port": {
+    "port": "port value",
+    "protocol": "tcp | udp"
+  }
+  "protocol value": "protocol value",
+  "icmp-block name": "icmptype name",
+  "Masquerade": true|false,
+  "icmp-type": "icmptype name",
+  "forward-port": {
+    "port": "port value",
+    "protocol": "tcp | udp",
+    "to-port": "port value",
+    "to-addr": "address"
+  },
+  "source-port": {
+    "port": "port value",
+    "protocol": "tcp | udp"
+  },
+  "log": {
+    "prefix": "prefix text",
+    "level": "emerg | alert | crit | error | warning | notice | info | debug",
+    "limit value": "rate/duration"
+  },
+  "audit": {
+    "limit value": "rate/duration"
+  },
+  "accept" : {
+    "limit value": "rate/duration"
+  } | "reject": {
+    "type": "reject type",
+    "limit value": "rate/duration"
+  } | "drop": {
+    "limit value": "rate/duration"
+  } | "mark": {
+    "set": "mark[/mask]",
+    "limit value": "rate/duration"
+  }
+}
+    </string>
+
     </stringTable>
     <presentationTable>
       <presentation id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">
@@ -5396,6 +5471,15 @@ Welcome to \s \r \l</string>
         <textBox refId="TXT_8075D9EA_6E15_4B2A_833A_B918EE90856F">
           <label>Login Prompt Message</label>
           <defaultValue>Welcome to \s \r \l</defaultValue>
+        </textBox>
+      </presentation>
+      <presentation id="POL_ADABE9E0_FFF9_4FFE_A105_03E646C79978">
+        <listBox refId="LST_5B9AE80A_6529_4313_A9A1_764DF5320930">Зоны Firewalld</listBox>
+      </presentation>
+      <presentation id="POL_B21F349F_4BF6_473E_8452_047D714F156C">
+        <textBox refId="TXT_76109A0B_AA79_4F69_ADFC_2B3CA52763D2">
+          <label>Правила Firewalld</label>
+          <defaultValue>{}</defaultValue>
         </textBox>
       </presentation>
     </presentationTable>
