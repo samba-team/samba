@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "lib/tsocket/tsocket.h"
 
 /****************************************************************************
  Receive a smbcontrol message to forcibly unmount a share.
@@ -86,10 +87,39 @@ static bool force_tdis_denied_check(
 	uint32_t share_access;
 	bool read_only;
 	NTSTATUS status;
+	const char *raddr = NULL;
+	bool allowed;
 
 	do_close = force_tdis_check(conn, private_data);
 	if (!do_close) {
 		return false;
+	}
+
+	raddr = tsocket_address_inet_addr_string(conn->sconn->remote_address,
+						 talloc_tos());
+	if (raddr == NULL) {
+		DBG_ERR("cannot get client address, closing share %s\n",
+			lp_const_servicename(SNUM(conn)));
+		return true; /* close the share */
+	}
+
+	/* Check global first, then share-level */
+	allowed = allow_access(lp_hosts_deny(-1),
+			       lp_hosts_allow(-1),
+			       conn->sconn->remote_hostname,
+			       raddr);
+	if (allowed) {
+		allowed = allow_access(lp_hosts_deny(SNUM(conn)),
+				       lp_hosts_allow(SNUM(conn)),
+				       conn->sconn->remote_hostname,
+				       raddr);
+	}
+	if (!allowed) {
+		DBG_NOTICE("Hosts allow/deny denied share "
+			   "%s for client %s\n",
+			   lp_const_servicename(SNUM(conn)),
+			   raddr);
+		return true; /* close the share */
 	}
 
 	status = check_user_share_access(

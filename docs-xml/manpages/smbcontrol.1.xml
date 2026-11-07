@@ -131,8 +131,14 @@
 	but don't disconnect users that are still allowed to access
 	the share. It can safely be sent to all smbds after changing
 	share access controls. It will only affect users who have been
-	denied access since having connected initially. This message
-	can only be sent to <constant>smbd</constant>.</para>
+	denied access since having connected initially. This command also
+	re-checks both the global and share-specific
+	<parameter>hosts allow</parameter> and <parameter>hosts deny</parameter>
+	lists using the stored peer address. Note that running
+	<command>smbcontrol all reload-config</command> alone does not revoke
+	access for existing client connections; this command must be run
+	afterwards to enforce the updated lists. This message can only be
+	sent to <constant>smbd</constant>.</para>
 	</listitem>
 	</varlistentry>
 
