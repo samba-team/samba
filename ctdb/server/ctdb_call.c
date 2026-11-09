@@ -2042,12 +2042,13 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 		DEBUG(DEBUG_ERR,("Failed to allocate deferred call structure for revoking record\n"));
 		return -1;
 	}
-
-	deferred_call->ctdb = ctdb;
-	deferred_call->hdr  = talloc_steal(deferred_call, hdr);
-	deferred_call->fn   = fn;
-	deferred_call->ctx  = call_context;
-	deferred_call->rev_hdl   = rev_hdl;
+	*deferred_call = (struct revokechild_deferred_call){
+		.ctdb = ctdb,
+		.hdr = talloc_move(deferred_call, &hdr),
+		.fn = fn,
+		.ctx = call_context,
+		.rev_hdl = rev_hdl,
+	};
 
 	talloc_set_destructor(deferred_call, deferred_call_destructor);
 
