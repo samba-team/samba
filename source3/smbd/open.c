@@ -896,6 +896,11 @@ static bool fsp_is_automount_mountpoint(struct files_struct *fsp, int old_fd)
 		return true;
 	}
 
+	/* sharing from a NFS mount with crossmnt enabled */
+	if (sbuf.f_type == NFS_SUPER_MAGIC) {
+		return true;
+	}
+
 	/* Check for additional filesystem types from configuration */
 	fs_types_list = lp_automount_fs_types();
 	if (fs_types_list == NULL) {
