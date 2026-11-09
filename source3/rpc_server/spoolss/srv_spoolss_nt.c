@@ -6268,8 +6268,8 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
-	if (secdesc_ctr == NULL) {
-		DEBUG(10,("update_printer_sec: secdesc_ctr is NULL !\n"));
+	if (secdesc_ctr == NULL || secdesc_ctr->sd == NULL) {
+		DBG_DEBUG("Invalid security descriptor\n");
 		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
