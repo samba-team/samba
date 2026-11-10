@@ -1,5 +1,4 @@
-How to contribute a patch to Samba
-----------------------------------
+# How to contribute a patch to Samba
 
 Please see https://wiki.samba.org/index.php/Contribute
 for detailed set-by-step instructions on how to submit a patch
@@ -7,8 +6,7 @@ for Samba via GitLab.
 
 Samba's GitLab mirror is at https://gitlab.com/samba-team/samba
 
-Ownership of the contributed code
----------------------------------
+## Ownership of the contributed code
 
 Samba is a project with distributed copyright ownership, which means
 we prefer the copyright on parts of Samba to be held by individuals
@@ -40,8 +38,7 @@ whereas the Linux kernel uses GPLv2.
 
 The process is called signing.
 
-How to sign your work
----------------------
+## How to sign your work
 
 Once you have permission to contribute to Samba from
 your employer, simply email a copy of the following text
