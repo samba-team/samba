@@ -1194,10 +1194,25 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	/* pack all the strings */
 
 	for (i=0; i<num_subkeys; i++) {
+		const char *subkey = regsubkey_ctr_specific_key(ctr, i);
 		size_t thistime;
 
-		thistime = tdb_pack(buffer+len, buflen-len, "f",
-				    regsubkey_ctr_specific_key(ctr, i));
+		/*
+		 * The readers use tdb_unpack() with "f", which
+		 * only supports up to 255 bytes plus the
+		 * terminating nul byte (fstring). A longer name
+		 * would make the subkey list of the parent
+		 * unreadable.
+		 */
+		if (strlen(subkey) >= sizeof(fstring)) {
+			DBG_WARNING("subkey name of key [%s] too long "
+				    "(%zu bytes): %s\n",
+				    keyname, strlen(subkey), subkey);
+			werr = WERR_INVALID_PARAMETER;
+			goto done;
+		}
+
+		thistime = tdb_pack(buffer+len, buflen-len, "f", subkey);
 		if (len+thistime > buflen) {
 			size_t thistime2;
 			/*
@@ -1214,9 +1229,8 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 				goto done;
 			}
 			buflen = (len+thistime)*2;
-			thistime2 = tdb_pack(
-				buffer+len, buflen-len, "f",
-				regsubkey_ctr_specific_key(ctr, i));
+			thistime2 = tdb_pack(buffer+len, buflen-len, "f",
+					     subkey);
 			if (thistime2 != thistime) {
 				DEBUG(0, ("tdb_pack failed\n"));
 				werr = WERR_CAN_NOT_COMPLETE;
