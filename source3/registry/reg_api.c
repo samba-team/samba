@@ -769,6 +769,18 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 		return WERR_ACCESS_DENIED;
 	}
 
+	/*
+	 * struct regval_blob and the tdb_unpack() "f" format
+	 * used to read the values from registry.tdb only support
+	 * up to 255 bytes plus the terminating nul byte (fstring),
+	 * so we fail instead of silently truncating the name.
+	 */
+	if ((name != NULL) && (strlen(name) >= sizeof(fstring))) {
+		DBG_WARNING("value name too long (%zu bytes): %s\n",
+			    strlen(name), name);
+		return WERR_INVALID_PARAMETER;
+	}
+
 	err = regdb_transaction_start();
 	if (!W_ERROR_IS_OK(err)) {
 		DEBUG(0, ("reg_setvalue: Failed to start transaction: %s\n",
