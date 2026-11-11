@@ -148,6 +148,22 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 	int len;
 	NTSTATUS status;
 
+	/*
+	 * The readers use tdb_unpack() with "f" for the name
+	 * and comment, which only supports up to 255 bytes plus
+	 * the terminating nul byte (fstring). Longer strings
+	 * would make the mapping unreadable.
+	 */
+	if ((strlen(map->nt_name) >= sizeof(fstring)) ||
+	    (strlen(map->comment) >= sizeof(fstring)))
+	{
+		DBG_WARNING("nt_name (%zu bytes) or comment (%zu bytes) "
+			    "too long\n",
+			    strlen(map->nt_name),
+			    strlen(map->comment));
+		return false;
+	}
+
 	key = group_mapping_key(talloc_tos(), &map->sid);
 	if (key == NULL) {
 		return false;
