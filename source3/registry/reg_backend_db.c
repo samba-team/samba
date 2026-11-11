@@ -1523,6 +1523,7 @@ static NTSTATUS regdb_create_subkey_action(struct db_context *db,
 		DEBUG(0, (__location__ " failed to store new subkey list for "
 			 "parent key %s: %s\n", create_ctx->key,
 			 win_errstr(werr)));
+		goto done;
 	}
 
 	werr = regdb_store_subkey_list(db, create_ctx->key, create_ctx->subkey);
