@@ -1257,6 +1257,13 @@ static NTSTATUS smbXsrv_connection_get_rto_usecs(struct smbXsrv_connection *xcon
 	uint32_t rto_usecs = 1000000;
 
 #ifdef __HAVE_TCP_INFO_RTO
+	/*
+	 * TCP_INFO is only available for TCP, a QUIC
+	 * socket fails it with ENOPROTOOPT, so QUIC
+	 * uses the default above.
+	 */
+	if (xconn->transport.type == SMB_TRANSPORT_TYPE_TCP ||
+	    xconn->transport.type == SMB_TRANSPORT_TYPE_NBT)
 	{
 		struct tcp_info info;
 		socklen_t ilen = sizeof(info);
