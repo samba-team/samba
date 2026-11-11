@@ -480,7 +480,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user4(struct dcerpc_binding_handle *h,
 	uint8_t old_nt_key_data[16] = {0};
 	gnutls_datum_t old_nt_key = {
 		.data = old_nt_key_data,
-		.size = sizeof(old_nt_key),
+		.size = sizeof(old_nt_key_data),
 	};
 	struct samr_EncryptedPasswordAES pwd_buf = {
 		.cipher_len = 0,
