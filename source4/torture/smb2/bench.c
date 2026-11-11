@@ -36,6 +36,27 @@
 #include "librpc/gen_ndr/security.h"
 #include "lib/events/events.h"
 
+/*
+ * The benchmarks measure latencies with the monotonic clock: the wall
+ * clock can be stepped backwards, as by time synchronization in a
+ * virtual machine, which makes latencies negative and trips the
+ * SMB_ASSERT()s on them.
+ */
+static struct timeval timeval_current_mono(void)
+{
+	struct timespec ts;
+
+	clock_gettime_mono(&ts);
+	return convert_timespec_to_timeval(ts);
+}
+
+static double timeval_elapsed_mono(const struct timeval *tv)
+{
+	struct timeval now = timeval_current_mono();
+
+	return timeval_elapsed2(tv, &now);
+}
+
 #define FNAME "test_create.dat"
 #define DNAME "smb2_open"
 
@@ -235,7 +256,7 @@ static void test_smb2_bench_echo_loop_do(
 	struct test_smb2_bench_echo_state *state = loop->state;
 
 	loop->num_started += 1;
-	loop->starttime = timeval_current();
+	loop->starttime = timeval_current_mono();
 	loop->req = smb2cli_echo_send(state->loops,
 				      state->tctx->ev,
 				      loop->conn->tree->session->transport->conn,
@@ -257,7 +278,7 @@ static void test_smb2_bench_echo_loop_done(struct tevent_req *req)
 		(struct test_smb2_bench_echo_loop *)
 		_tevent_req_callback_data(req);
 	struct test_smb2_bench_echo_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->starttime);
+	double latency = timeval_elapsed_mono(&loop->starttime);
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	torture_assert_goto(state->tctx, loop->req == req,
@@ -374,7 +395,7 @@ static void test_smb2_bench_echo_progress(struct tevent_context *ev,
 		torture_comment(state->tctx,
 				"%.2f second: "
 				"echo[num/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]      \r",
-				timeval_elapsed(&state->starttime),
+				timeval_elapsed_mono(&state->starttime),
 				uint64_comma_str(&num_buf, num_echos),
 				avs_echo_latency,
 				min_echo_latency,
@@ -388,7 +409,7 @@ static void test_smb2_bench_echo_progress(struct tevent_context *ev,
 	torture_comment(state->tctx,
 			"%.2f second: "
 			"echo[num/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]\n",
-			timeval_elapsed(&state->starttime),
+			timeval_elapsed_mono(&state->starttime),
 			uint64_comma_str(&num_buf, num_echos),
 			avs_echo_latency,
 			state->min_latency,
@@ -506,7 +527,7 @@ static bool test_smb2_bench_echo(struct torture_context *tctx,
 
 	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
 
-	state->starttime = timeval_current();
+	state->starttime = timeval_current_mono();
 	state->pending_loops = state->num_loops;
 
 	te = tevent_add_timer(tctx->ev,
@@ -521,7 +542,7 @@ static bool test_smb2_bench_echo(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
 	}
 
-	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed_mono(&state->starttime));
 	TALLOC_FREE(state);
 	return ret;
 }
@@ -627,7 +648,7 @@ static void test_smb2_bench_path_contention_loop_open(
 	}
 
 	loop->opens.num_started += 1;
-	loop->opens.starttime = timeval_current();
+	loop->opens.starttime = timeval_current_mono();
 	loop->opens.req = smb2_create_send(loop->conn->tree, &loop->opens.io);
 	torture_assert_goto(state->tctx, loop->opens.req != NULL,
 			    state->ok, asserted, "smb2_create_send");
@@ -648,7 +669,7 @@ static void test_smb2_bench_path_contention_loop_opened(struct smb2_request *req
 		(struct test_smb2_bench_path_contention_shared_loop *)
 		req->async.private_data;
 	struct test_smb2_bench_path_contention_shared_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->opens.starttime);
+	double latency = timeval_elapsed_mono(&loop->opens.starttime);
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	torture_assert_goto(state->tctx, loop->opens.req == req,
@@ -698,7 +719,7 @@ static void test_smb2_bench_path_contention_loop_close(
 	struct test_smb2_bench_path_contention_shared_state *state = loop->state;
 
 	loop->closes.num_started += 1;
-	loop->closes.starttime = timeval_current();
+	loop->closes.starttime = timeval_current_mono();
 	loop->closes.io.in.file = loop->opens.io.out.file;
 	loop->closes.req = smb2_close_send(loop->conn->tree, &loop->closes.io);
 	torture_assert_goto(state->tctx, loop->closes.req != NULL,
@@ -717,7 +738,7 @@ static void test_smb2_bench_path_contention_loop_closed(struct smb2_request *req
 		(struct test_smb2_bench_path_contention_shared_loop *)
 		req->async.private_data;
 	struct test_smb2_bench_path_contention_shared_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->closes.starttime);
+	double latency = timeval_elapsed_mono(&loop->closes.starttime);
 
 	torture_assert_goto(state->tctx, loop->closes.req == req,
 			    state->ok, asserted, __location__);
@@ -860,7 +881,7 @@ static void test_smb2_bench_path_contention_progress(struct tevent_context *ev,
 				"%.2f second: "
 				"open[num/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f] "
 				"close[num/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]     \r",
-				timeval_elapsed(&state->starttime),
+				timeval_elapsed_mono(&state->starttime),
 				uint64_comma_str(&open_buf, num_opens),
 				avs_open_latency,
 				min_open_latency,
@@ -881,7 +902,7 @@ static void test_smb2_bench_path_contention_progress(struct tevent_context *ev,
 			"%.2f second: "
 			"open[num/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f] "
 			"close[num/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]\n",
-			timeval_elapsed(&state->starttime),
+			timeval_elapsed_mono(&state->starttime),
 			uint64_comma_str(&open_buf, num_opens),
 			avs_open_latency,
 			state->opens.min_latency,
@@ -1029,7 +1050,7 @@ bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 
 	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
 
-	state->starttime = timeval_current();
+	state->starttime = timeval_current_mono();
 
 	te = tevent_add_timer(tctx->ev,
 			      state,
@@ -1043,7 +1064,7 @@ bool test_smb2_bench_path_contention_shared(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
 	}
 
-	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed_mono(&state->starttime));
 	TALLOC_FREE(state);
 	return ret;
 }
@@ -1124,7 +1145,7 @@ static void test_smb2_bench_read_loop_do(
 	timeout_msec = loop->conn->tree->session->transport->options.request_timeout * 1000;
 
 	loop->num_started += 1;
-	loop->starttime = timeval_current();
+	loop->starttime = timeval_current_mono();
 	loop->req = smb2cli_read_send(state->loops,
 				      state->tctx->ev,
 				      loop->conn->tree->session->transport->conn,
@@ -1154,7 +1175,7 @@ static void test_smb2_bench_read_loop_done(struct tevent_req *req)
 		(struct test_smb2_bench_read_loop *)
 		_tevent_req_callback_data(req);
 	struct test_smb2_bench_read_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->starttime);
+	double latency = timeval_elapsed_mono(&loop->starttime);
 	TALLOC_CTX *frame = talloc_stackframe();
 	uint8_t *data = NULL;
 	uint32_t data_length = 0;
@@ -1276,7 +1297,7 @@ static void test_smb2_bench_read_progress(struct tevent_context *ev,
 		torture_comment(state->tctx,
 				"%.2f second: "
 				"read[num/s=%s;bytes/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]      \r",
-				timeval_elapsed(&state->starttime),
+				timeval_elapsed_mono(&state->starttime),
 				uint64_comma_str(&num_buf, num_reads),
 				uint64_comma_str(&bytes_buf, num_reads*state->io_size),
 				avs_read_latency,
@@ -1291,7 +1312,7 @@ static void test_smb2_bench_read_progress(struct tevent_context *ev,
 	torture_comment(state->tctx,
 			"%.2f second: "
 			"read[num/s=%s;bytes/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]\n",
-			timeval_elapsed(&state->starttime),
+			timeval_elapsed_mono(&state->starttime),
 			uint64_comma_str(&num_buf, num_reads),
 			uint64_comma_str(&bytes_buf, num_reads*state->io_size),
 			avs_read_latency,
@@ -1456,7 +1477,7 @@ static bool test_smb2_bench_read(struct torture_context *tctx,
 
 	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
 
-	state->starttime = timeval_current();
+	state->starttime = timeval_current_mono();
 	state->pending_loops = state->num_loops;
 
 	te = tevent_add_timer(tctx->ev,
@@ -1471,7 +1492,7 @@ static bool test_smb2_bench_read(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
 	}
 
-	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed_mono(&state->starttime));
 	TALLOC_FREE(state);
 	smb2_deltree(tree, dname);
 	return ret;
@@ -1554,7 +1575,7 @@ static void test_smb2_bench_write_loop_do(
 	timeout_msec = loop->conn->tree->session->transport->options.request_timeout * 1000;
 
 	loop->num_started += 1;
-	loop->starttime = timeval_current();
+	loop->starttime = timeval_current_mono();
 	loop->req = smb2cli_write_send(state->loops,
 				       state->tctx->ev,
 				       loop->conn->tree->session->transport->conn,
@@ -1585,7 +1606,7 @@ static void test_smb2_bench_write_loop_done(struct tevent_req *req)
 		(struct test_smb2_bench_write_loop *)
 		_tevent_req_callback_data(req);
 	struct test_smb2_bench_write_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->starttime);
+	double latency = timeval_elapsed_mono(&loop->starttime);
 	uint32_t data_length = 0;
 
 	torture_assert_goto(state->tctx, loop->req == req,
@@ -1703,7 +1724,7 @@ static void test_smb2_bench_write_progress(struct tevent_context *ev,
 		torture_comment(state->tctx,
 				"%.2f second: "
 				"write[num/s=%s;bytes/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]      \r",
-				timeval_elapsed(&state->starttime),
+				timeval_elapsed_mono(&state->starttime),
 				uint64_comma_str(&num_buf, num_writes),
 				uint64_comma_str(&bytes_buf, num_writes*state->io_size),
 				avs_write_latency,
@@ -1718,7 +1739,7 @@ static void test_smb2_bench_write_progress(struct tevent_context *ev,
 	torture_comment(state->tctx,
 			"%.2f second: "
 			"write[num/s=%s;bytes/s=%s;avslat=%.6f;minlat=%.6f;maxlat=%.6f]\n",
-			timeval_elapsed(&state->starttime),
+			timeval_elapsed_mono(&state->starttime),
 			uint64_comma_str(&num_buf, num_writes),
 			uint64_comma_str(&bytes_buf, num_writes*state->io_size),
 			avs_write_latency,
@@ -1885,7 +1906,7 @@ static bool test_smb2_bench_write(struct torture_context *tctx,
 
 	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
 
-	state->starttime = timeval_current();
+	state->starttime = timeval_current_mono();
 	state->pending_loops = state->num_loops;
 
 	te = tevent_add_timer(tctx->ev,
@@ -1900,7 +1921,7 @@ static bool test_smb2_bench_write(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
 	}
 
-	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed_mono(&state->starttime));
 	TALLOC_FREE(state);
 	smb2_deltree(tree, dname);
 	return ret;
@@ -2003,7 +2024,7 @@ static void test_smb2_bench_session_setup_loop_do_setup(
 	talloc_steal(state->conns, loop->conn->transport);
 
 	loop->setups.num_started += 1;
-	loop->setups.starttime = timeval_current();
+	loop->setups.starttime = timeval_current_mono();
 	loop->setups.req = smb2_session_setup_spnego_send(loop->session,
 							  state->tctx->ev,
 							  loop->session,
@@ -2030,7 +2051,7 @@ static void test_smb2_bench_session_setup_loop_done_setup(struct tevent_req *sub
 		(struct test_smb2_bench_session_setup_shared_loop *)
 		tevent_req_callback_data_void(subreq);
 	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->setups.starttime);
+	double latency = timeval_elapsed_mono(&loop->setups.starttime);
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	torture_assert_goto(state->tctx, loop->setups.req == subreq,
@@ -2075,7 +2096,7 @@ static void test_smb2_bench_session_setup_loop_do_logoff(
 	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
 
 	loop->logoffs.num_started += 1;
-	loop->logoffs.starttime = timeval_current();
+	loop->logoffs.starttime = timeval_current_mono();
 	loop->logoffs.req = smb2_logoff_send(loop->session);
 	torture_assert_goto(state->tctx, loop->logoffs.req != NULL,
 			    state->ok, asserted, "smb2_logoff_send");
@@ -2093,7 +2114,7 @@ static void test_smb2_bench_session_setup_loop_done_logoff(struct smb2_request *
 		(struct test_smb2_bench_session_setup_shared_loop *)
 		req->async.private_data;
 	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
-	double latency = timeval_elapsed(&loop->logoffs.starttime);
+	double latency = timeval_elapsed_mono(&loop->logoffs.starttime);
 
 	torture_assert_goto(state->tctx, loop->logoffs.req == req,
 			    state->ok, asserted, __location__);
@@ -2237,7 +2258,7 @@ static void test_smb2_bench_session_setup_progress(struct tevent_context *ev,
 				"%.2f second: "
 				"setup[num/s=%s,avslat=%.6f,minlat=%.6f,maxlat=%.6f] "
 				"logoff[num/s=%s,avslat=%.6f,minlat=%.6f,maxlat=%.6f]     \r",
-				timeval_elapsed(&state->starttime),
+				timeval_elapsed_mono(&state->starttime),
 				uint64_comma_str(&setup_buf, num_setups),
 				avs_setup_latency,
 				min_setup_latency,
@@ -2258,7 +2279,7 @@ static void test_smb2_bench_session_setup_progress(struct tevent_context *ev,
 			"%.2f second: "
 			"setup[num/s=%s,avslat=%.6f,minlat=%.6f,maxlat=%.6f] "
 			"logoff[num/s=%s,avslat=%.6f,minlat=%.6f,maxlat=%.6f]\n",
-			timeval_elapsed(&state->starttime),
+			timeval_elapsed_mono(&state->starttime),
 			uint64_comma_str(&setup_buf, num_setups),
 			avs_setup_latency,
 			state->setups.min_latency,
@@ -2378,7 +2399,7 @@ static bool test_smb2_bench_session_setup(struct torture_context *tctx,
 
 	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
 
-	state->starttime = timeval_current();
+	state->starttime = timeval_current_mono();
 
 	te = tevent_add_timer(tctx->ev,
 			      state,
@@ -2392,7 +2413,7 @@ static bool test_smb2_bench_session_setup(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
 	}
 
-	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed_mono(&state->starttime));
 	TALLOC_FREE(state);
 	return ret;
 }
