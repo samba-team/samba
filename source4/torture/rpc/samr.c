@@ -3066,7 +3066,7 @@ bool test_ChangePasswordUser4(struct dcerpc_pipe *p,
 	uint8_t old_nt_key_data[16] = {0};
 	gnutls_datum_t old_nt_key = {
 		.data = old_nt_key_data,
-		.size = sizeof(old_nt_key),
+		.size = sizeof(old_nt_key_data),
 	};
 	uint8_t cek_data[16] = {0};
 	DATA_BLOB cek = {
