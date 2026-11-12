@@ -1393,13 +1393,28 @@ fail:
 	return ret;
 }
 
+/*
+ * ctdbd and its clients copy struct ctdb_ltdb_header with memcpy()
+ * into the local databases and the marshall buffers, so the padding
+ * at the end needs to match sizeof(struct ctdb_ltdb_header), which
+ * depends on the alignment of uint64_t and not on the size of
+ * pointers like ctdb_padding_len(): it's 4 bytes on 64-bit
+ * platforms and on 32-bit platforms aligning uint64_t to 8 bytes
+ * (e.g. x32 and armhf) and 0 bytes on i386.
+ */
+#define CTDB_LTDB_HEADER_FIELDS_LEN (sizeof(uint64_t) + 3 * sizeof(uint32_t))
+#define CTDB_LTDB_HEADER_PADDING_LEN \
+	(sizeof(struct ctdb_ltdb_header) - CTDB_LTDB_HEADER_FIELDS_LEN)
+BUILD_ASSERT(CTDB_LTDB_HEADER_PADDING_LEN == 0 ||
+	     CTDB_LTDB_HEADER_PADDING_LEN == 4);
+
 size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *in)
 {
 	return ctdb_uint64_len(&in->rsn) +
 		ctdb_uint32_len(&in->dmaster) +
 		ctdb_uint32_len(&in->reserved1) +
 		ctdb_uint32_len(&in->flags) +
-		ctdb_padding_len(4);
+		CTDB_LTDB_HEADER_PADDING_LEN;
 }
 
 void ctdb_ltdb_header_push(struct ctdb_ltdb_header *in, uint8_t *buf,
@@ -1419,8 +1434,8 @@ void ctdb_ltdb_header_push(struct ctdb_ltdb_header *in, uint8_t *buf,
 	ctdb_uint32_push(&in->flags, buf+offset, &np);
 	offset += np;
 
-	ctdb_padding_push(4, buf+offset, &np);
-	offset += np;
+	memset(buf+offset, 0, CTDB_LTDB_HEADER_PADDING_LEN);
+	offset += CTDB_LTDB_HEADER_PADDING_LEN;
 
 	*npush = offset;
 }
@@ -1456,11 +1471,10 @@ int ctdb_ltdb_header_pull(uint8_t *buf, size_t buflen,
 	}
 	offset += np;
 
-	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
-	if (ret != 0) {
-		return ret;
+	if (buflen-offset < CTDB_LTDB_HEADER_PADDING_LEN) {
+		return EMSGSIZE;
 	}
-	offset += np;
+	offset += CTDB_LTDB_HEADER_PADDING_LEN;
 
 	*npull = offset;
 	return 0;
