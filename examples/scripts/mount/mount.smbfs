@@ -54,7 +54,7 @@ parse_mount_options () {
 	workgroup=""
 	password=""
 
-	for option in $@; do
+	for option in $1; do
 		case "$option" in
 		sockopt=* | scope=* | codepage=* | ttl=* | debug=*)
 			echo "Warning: ignoring deprecated smbfs option '$option'" >&2
