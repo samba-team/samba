@@ -30,7 +30,7 @@ run_cmd_nooutput()
 {
 	CMD="$1"
 
-	out=$(eval ${CMD} >TESTOUT 2>&1)
+	eval ${CMD} >TESTOUT 2>&1
 	if [ $? != 0 ]; then
 		cat TESTOUT
 		rm -f TESTOUT
