@@ -363,7 +363,7 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
-	struct tdb_context *tdb = ctx->wtdb->tdb;
+	struct tdb_context *wtdb = ctx->wtdb->tdb;
 	bool db_persistent = (rec->db->flags & DBWRAP_FLAG_PER_REC_PERSISTENT);
 	int num_dbufs = db_persistent ? orig_num_dbufs + 1 : orig_num_dbufs;
 	TDB_DATA _dbufs[num_dbufs];
@@ -399,13 +399,9 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 	/* Make sure not to confuse tdb with any other flag */
 	tdb_flag = flag & DBWRAP_TDB_FLAGS;
 
-	ret = tdb_storev(ctx->wtdb->tdb,
-			 rec->key,
-			 dbufs,
-			 num_dbufs,
-			 tdb_flag);
+	ret = tdb_storev(wtdb, rec->key, dbufs, num_dbufs, tdb_flag);
 	if (ret != 0) {
-		enum TDB_ERROR err = tdb_error(tdb);
+		enum TDB_ERROR err = tdb_error(wtdb);
 		status = map_nt_error_from_tdb(err);
 		return status;
 	}
@@ -426,7 +422,7 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 
 	ret = tdb_transaction_start(ctx->ptdb->tdb);
 	if (ret != 0) {
-		enum TDB_ERROR err = tdb_error(tdb);
+		enum TDB_ERROR err = tdb_error(wtdb);
 		status = map_nt_error_from_tdb(err);
 		goto fail;
 	}
@@ -439,14 +435,14 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 				 num_dbufs,
 				 tdb_flag);
 		if (ret != 0) {
-			enum TDB_ERROR err = tdb_error(tdb);
+			enum TDB_ERROR err = tdb_error(wtdb);
 			status = map_nt_error_from_tdb(err);
 			goto fail;
 		}
 	} else {
 		ret = tdb_delete(ctx->ptdb->tdb, rec->key);
 		if (ret != 0) {
-			enum TDB_ERROR err = tdb_error(tdb);
+			enum TDB_ERROR err = tdb_error(wtdb);
 			status = map_nt_error_from_tdb(err);
 			goto fail;
 		}
@@ -455,7 +451,7 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 	ret = tdb_transaction_commit(ctx->ptdb->tdb);
 	in_txn = false;
 	if (ret != 0) {
-		enum TDB_ERROR err = tdb_error(tdb);
+		enum TDB_ERROR err = tdb_error(wtdb);
 		status = map_nt_error_from_tdb(err);
 		goto fail;
 	}
