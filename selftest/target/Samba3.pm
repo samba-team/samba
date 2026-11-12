@@ -634,7 +634,7 @@ sub setup_clusteredmember
 			$count++;
 		} while ($rc != 0 && $count < 10);
 
-		if ($count == 10) {
+		if ($rc != 0) {
 			print "NMBD not reachable after 10 retries\n";
 			teardown_env($self, $node_ret);
 			teardown_env($self, $ctdb_data);
