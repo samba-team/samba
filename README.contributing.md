@@ -119,3 +119,84 @@ licensed under Creative Commons Attribution-ShareAlike 4.0 License as found
 at https://creativecommons.org/licenses/by-sa/4.0/legalcode and based on
 "Developer's Certificate of Origin 1.1" as found at
 http://web.archive.org/web/20070306195036/http://osdlab.org/newsroom/press_releases/2004/2004_05_24_dco.html
+
+## Policy on the Use of AI Development Tools
+
+### Preface
+
+The Samba project recognises the broader social and environmental
+concerns surrounding AI. These are important issues that we, as a
+society, need to address. Allowing the use of AI tools in Samba
+development is not an endorsement of every aspect of the technology or
+the way it is being developed and deployed. We can make pragmatic use of
+these tools while continuing to question and work towards improving
+their broader impact.
+
+### Scope
+
+This policy describes the requirements for using AI tools when
+developing and contributing to Samba. It applies to contributors who use
+such tools to assist with code, tests, documentation, or other project
+contributions.
+
+### Contribution Requirements
+
+Human interaction and communication are central to the Samba
+community. They are also part of the engineering process by which we
+convey design intent, establish correctness, and maintain
+accountability.
+
+AI tools can help produce code and other contributions, but they do not
+replace the contributor's responsibility to understand, verify, explain,
+and maintain the submitted work. Contributors are expected to engage
+personally in technical discussions and take responsibility for their
+contributions.
+
+All contributions must follow the project's established policies and
+processes, including:
+
+- [How to do Samba:
+  Nicely](https://wiki.samba.org/index.php/How_to_do_Samba:_Nicely)
+- [Samba Contribution
+  Howto](https://wiki.samba.org/index.php/Contribute)
+- [Samba Developer
+  Documentation](https://wiki.samba.org/index.php/Developer_Documentation)
+
+### Copyright and Licensing
+
+All contributions must comply with Samba's licensing requirements and
+applicable project policies.
+
+- Submissions must be suitable for inclusion under the applicable Samba
+  project licences, including GPL-3.0-or-later and LGPL-3.0-or-later, as
+  appropriate.
+- Contributors must ensure that submitted material does not introduce
+  incompatible licensing terms or improperly reproduce third-party
+  material.
+
+See [Samba's copyright
+policy](https://www.samba.org/samba/devel/copyright-policy.html) for
+further details.
+
+### Developer Certification
+
+Every contribution must satisfy Samba's requirements for the [Samba
+Developer's
+Declaration](https://www.samba.org/samba/devel/copyright-policy.html).
+
+Before submitting AI-assisted work, the contributor must:
+- Review and understand the submitted changes.
+- Check the contribution for correctness and compliance with Samba's
+  development and licensing requirements.
+- Add their own `Signed-off-by` tag to certify compliance with the Samba
+  Developer's Declaration.
+- Accept responsibility for the contribution, including any material
+  produced with AI assistance.
+
+### Disclosure of AI Assistance
+
+Disclose AI assistance in the merge request description when a
+significant portion of the contribution was generated or substantially
+rewritten by an AI tool. A brief note is sufficient; the goal is
+transparency, not restriction.
+
