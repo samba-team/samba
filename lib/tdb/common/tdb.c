@@ -327,9 +327,12 @@ _PUBLIC_ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 	hash = tdb->hash_fn(&key);
 
 	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec))) {
-		/* record not found */
+		/*
+		 * Record not found or error. tdb_find() has set
+		 * tdb->ecode to TDB_ERR_NOEXIST for a plain miss,
+		 * don't overwrite other errors.
+		 */
 		tdb_trace_1rec_ret(tdb, "tdb_parse_record", key, -1);
-		tdb->ecode = TDB_ERR_NOEXIST;
 		return -1;
 	}
 	tdb_trace_1rec_ret(tdb, "tdb_parse_record", key, 0);
