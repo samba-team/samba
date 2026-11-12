@@ -482,8 +482,8 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 				   ? SEC_DESC_DACL_PROTECTED
 				   : 0,
 
-		.num_entries = PULL_LE_U32(buf, PAI_V1_NUM_ENTRIES_OFFSET),
-		.num_def_entries = PULL_LE_U32(
+		.num_entries = PULL_LE_U16(buf, PAI_V1_NUM_ENTRIES_OFFSET),
+		.num_def_entries = PULL_LE_U16(
 			buf, PAI_V1_NUM_DEFAULT_ENTRIES_OFFSET),
 	};
 
