@@ -393,6 +393,7 @@ int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
 			tdb->lockrecs,
 			sizeof(*tdb->lockrecs) * (tdb->num_lockrecs+1));
 		if (new_lck == NULL) {
+			tdb->ecode = TDB_ERR_OOM;
 			errno = ENOMEM;
 			return -1;
 		}
