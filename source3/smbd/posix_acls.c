@@ -431,12 +431,13 @@ static bool get_pai_owner_type(struct pai_entry *paie, const char *entry_offset)
 ************************************************************************/
 
 static const char *create_pai_v1_entries(struct pai_val *paiv,
+				unsigned int num_entries,
 				const char *entry_offset,
 				bool def_entry)
 {
 	unsigned int i;
 
-	for (i = 0; i < paiv->num_entries; i++) {
+	for (i = 0; i < num_entries; i++) {
 		struct pai_entry *paie = talloc(talloc_tos(), struct pai_entry);
 		if (!paie) {
 			return NULL;
@@ -493,12 +494,18 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 		  paiv->num_entries,
 		  paiv->num_def_entries);
 
-	entry_offset = create_pai_v1_entries(paiv, entry_offset, false);
+	entry_offset = create_pai_v1_entries(paiv,
+					     paiv->num_entries,
+					     entry_offset,
+					     false);
 	if (entry_offset == NULL) {
 		free_inherited_info(paiv);
 		return NULL;
 	}
-	entry_offset = create_pai_v1_entries(paiv, entry_offset, true);
+	entry_offset = create_pai_v1_entries(paiv,
+					     paiv->num_def_entries,
+					     entry_offset,
+					     true);
 	if (entry_offset == NULL) {
 		free_inherited_info(paiv);
 		return NULL;
