@@ -99,7 +99,7 @@ ubuntu2604:
 debian12:
   extends: .build_image_template
 
-fedora44:
+fedora45:
   extends: .build_image_template
 
 debian12-32bit:

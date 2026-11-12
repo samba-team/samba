@@ -98,7 +98,6 @@ packages:
   - rsync
   - sed
   - shellcheck
-  - shfmt
   - sudo
   - tar
   - tree

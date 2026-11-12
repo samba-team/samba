@@ -109,7 +109,6 @@ apt-get -y install \
     rsync \
     sed \
     shellcheck \
-    shfmt \
     sudo \
     tar \
     tree \

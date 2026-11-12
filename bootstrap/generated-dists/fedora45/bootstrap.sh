@@ -75,6 +75,7 @@ dnf install -y \
     libxslt \
     lmdb \
     lmdb-devel \
+    lsb-release \
     make \
     mingw64-gcc \
     mold \
@@ -108,13 +109,11 @@ dnf install -y \
     python3-varlink \
     quota-devel \
     readline-devel \
-    redhat-lsb \
     rng-tools \
     rpcgen \
     rpcsvc-proto-devel \
     rsync \
     sed \
-    shfmt \
     sudo \
     systemd-devel \
     tar \

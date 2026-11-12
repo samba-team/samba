@@ -60,7 +60,6 @@ COMMON = [
     'rng-tools',
     'rsync',
     'sed',
-    'shfmt',
     'sudo',  # docker images has no sudo by default
     'tar',
     'tree',
@@ -508,7 +507,6 @@ RPM_DISTS = {
             'liburing-devel': '', # not available yet, Add me back, once available!
             'mold': '',
             'ShellCheck': '',
-            'shfmt': '',
             'codespell': '',
             'libvarlink-devel': '', # not available
         }
@@ -526,7 +524,6 @@ RPM_DISTS = {
             'perl-FindBin': '',
             'mold': '',
             'ShellCheck': '',
-            'shfmt': '',
             'codespell': '',
             'libcephfs-devel': '',  # not available anymore
             'curl': '',  # Use installed curl-minimal
@@ -534,12 +531,11 @@ RPM_DISTS = {
             'python3-varlink': '', # not available
         }
     },
-    'fedora44': {
-        'docker_image': 'quay.io/fedora/fedora-minimal:44',
-        'vagrant_box': 'fedora/44-cloud-base',
+    'fedora45': {
+        'docker_image': 'quay.io/fedora/fedora-minimal:45',
+        'vagrant_box': 'fedora/45-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
-            'lsb-release': 'redhat-lsb',
             'perl-FindBin': '',
             'python3-iso8601': 'python3-dateutil',
         }
@@ -574,7 +570,6 @@ RPM_DISTS = {
             'gnutls-utils': 'gnutls',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mold': '',
-            'shfmt': '',
             'yum-utils': '',
             'libvarlink-devel': '', # not available
             'python3-varlink': '', # not available
