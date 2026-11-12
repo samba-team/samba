@@ -480,44 +480,55 @@ static NTSTATUS db_tdb_delete_persistent(struct db_record *rec)
 						       struct db_tdb_ctx);
 	struct tdb_context *ptdb = ctx->ptdb->tdb;
 	bool in_txn = false;
+	NTSTATUS status;
 	int ret;
 
 	ret = tdb_transaction_start(ptdb);
 	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(ptdb);
+		status = map_nt_error_from_tdb(err);
 		goto fail;
 	}
 	in_txn = true;
 
 	ret = tdb_delete(ptdb, rec->key);
-	if ((ret != 0) && (tdb_error(ptdb) != TDB_ERR_NOEXIST)) {
+	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(ptdb);
+		if (err != TDB_ERR_NOEXIST) {
+			status = map_nt_error_from_tdb(err);
+			goto fail;
+		}
 		/*
 		 * A missing backup copy is not an error, we still
 		 * want to delete the record in the wtdb.
 		 */
-		goto fail;
 	}
 
 	ret = tdb_transaction_commit(ptdb);
 	in_txn = false;
 	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(ptdb);
+		status = map_nt_error_from_tdb(err);
 		goto fail;
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
 fail:
 	if (in_txn) {
 		ret = tdb_transaction_cancel(ptdb);
 		SMB_ASSERT(ret == 0);
 	}
-	return NT_STATUS_UNSUCCESSFUL;
+	return status;
 }
 
 static NTSTATUS db_tdb_delete(struct db_record *rec)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
+	struct tdb_context *wtdb = ctx->wtdb->tdb;
 	NTSTATUS status;
+	int ret;
 
 	if (rec->flags.persistent) {
 		status = db_tdb_delete_persistent(rec);
@@ -526,15 +537,13 @@ static NTSTATUS db_tdb_delete(struct db_record *rec)
 		}
 	}
 
-	if (tdb_delete(ctx->wtdb->tdb, rec->key) == 0) {
-		return NT_STATUS_OK;
+	ret = tdb_delete(wtdb, rec->key);
+	if (ret != 0) {
+		enum TDB_ERROR err = tdb_error(wtdb);
+		return map_nt_error_from_tdb(err);
 	}
 
-	if (tdb_error(ctx->wtdb->tdb) == TDB_ERR_NOEXIST) {
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	return NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS db_tdb_storev_deny(struct db_record *rec,
