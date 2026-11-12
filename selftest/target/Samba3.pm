@@ -623,6 +623,7 @@ sub setup_clusteredmember
 		}
 
 		my $nmblookup = Samba::bindir_path($self, "nmblookup");
+		$count = 0;
 		do {
 			print "Waiting for the LOGON SERVER registration ...\n";
 			$rc = system("$nmblookup $node_ret->{CONFIGURATION} " .
