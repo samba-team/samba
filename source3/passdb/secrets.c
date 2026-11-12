@@ -449,7 +449,7 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 
 	i = ntohl(keyfile->nkeys);
 
-	if (i > SECRETS_AFS_MAXKEYS) {
+	if ((i == 0) || (i > SECRETS_AFS_MAXKEYS)) {
 		BURN_FREE(keyfile, sizeof(*keyfile));
 		return False;
 	}
