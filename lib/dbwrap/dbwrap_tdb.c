@@ -441,8 +441,14 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 		ret = tdb_delete(ptdb, rec->key);
 		if (ret != 0) {
 			enum TDB_ERROR err = tdb_error(ptdb);
-			status = map_nt_error_from_tdb(err);
-			goto fail;
+			if (err != TDB_ERR_NOEXIST) {
+				status = map_nt_error_from_tdb(err);
+				goto fail;
+			}
+			/*
+			 * The backup copy is already gone, which is
+			 * what we want.
+			 */
 		}
 	}
 
@@ -479,7 +485,11 @@ static NTSTATUS db_tdb_delete_persistent(struct db_record *rec)
 	in_txn = true;
 
 	ret = tdb_delete(ptdb, rec->key);
-	if (ret != 0) {
+	if ((ret != 0) && (tdb_error(ptdb) != TDB_ERR_NOEXIST)) {
+		/*
+		 * A missing backup copy is not an error, we still
+		 * want to delete the record in the wtdb.
+		 */
 		goto fail;
 	}
 
@@ -495,9 +505,6 @@ fail:
 	if (in_txn) {
 		ret = tdb_transaction_cancel(ptdb);
 		SMB_ASSERT(ret == 0);
-	}
-	if (tdb_error(ptdb) == TDB_ERR_NOEXIST) {
-		return NT_STATUS_NOT_FOUND;
 	}
 	return NT_STATUS_UNSUCCESSFUL;
 }
