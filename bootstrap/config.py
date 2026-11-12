@@ -451,28 +451,6 @@ end
 """
 
 DEB_DISTS = {
-    'debian11': {
-        'docker_image': 'debian:11-slim',
-        'vagrant_box': 'debian/bullseye64',
-        'replace': {
-            'language-pack-en': '',   # included in locales
-            'shfmt': '',
-            'cargo': '', # included cargo is broken
-            'landscape-common': '',
-            'mold': '',
-        }
-    },
-    'debian11-32bit': {
-        'docker_image': 'debian:11-slim',  # specify the platform in .gitlab-ci.yaml
-        'vagrant_box': 'debian/bullseye32',
-        'replace': {
-            'language-pack-en': '',   # included in locales
-            'shfmt': '',
-            'cargo': '', # included cargo is broken
-            'landscape-common': '',
-            'mold': '',
-        }
-    },
     'debian12': {
         'docker_image': 'debian:12-slim',
         'vagrant_box': 'debian/bookworm64',

@@ -96,16 +96,13 @@ ubuntu2404:
 ubuntu2604:
   extends: .build_image_template
 
-debian11:
-  extends: .build_image_template
-
 debian12:
   extends: .build_image_template
 
 fedora44:
   extends: .build_image_template
 
-debian11-32bit:
+debian12-32bit:
   extends: .build_image_template
   variables:
     SAMBA_CI_TEST_JOB: "samba-32bit"

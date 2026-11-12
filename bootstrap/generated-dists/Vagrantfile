@@ -17,20 +17,6 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "centos9s/locale.sh"
     end
 
-    config.vm.define "debian11" do |v|
-        v.vm.box = "debian/bullseye64"
-        v.vm.hostname = "debian11"
-        v.vm.provision :shell, path: "debian11/bootstrap.sh"
-        v.vm.provision :shell, path: "debian11/locale.sh"
-    end
-
-    config.vm.define "debian11-32bit" do |v|
-        v.vm.box = "debian/bullseye32"
-        v.vm.hostname = "debian11-32bit"
-        v.vm.provision :shell, path: "debian11-32bit/bootstrap.sh"
-        v.vm.provision :shell, path: "debian11-32bit/locale.sh"
-    end
-
     config.vm.define "debian12" do |v|
         v.vm.box = "debian/bookworm64"
         v.vm.hostname = "debian12"
