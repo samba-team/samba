@@ -759,24 +759,33 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *r
 	overall_len = rec->key_len + rec->data_len;
 	if (overall_len < rec->data_len) {
 		/* overflow */
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 
 	if (overall_len > rec->rec_len) {
 		/* invalid record */
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 
+	/*
+	 * Probing tdb_oob() does not set tdb->ecode for a record
+	 * extending beyond the end of the file.
+	 */
 	ret = tdb_oob(tdb, offset, rec->key_len, 1);
 	if (ret == -1) {
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 	ret = tdb_oob(tdb, offset, rec->data_len, 1);
 	if (ret == -1) {
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 	ret = tdb_oob(tdb, offset, rec->rec_len, 1);
 	if (ret == -1) {
+		tdb->ecode = TDB_ERR_CORRUPT;
 		return -1;
 	}
 
