@@ -1,0 +1,2 @@
+^samba3.smb2.bench.smb-over-quic-ko-tstream.oplock1.fileserver
+^samba3.smb2.bench.smb-over-quic-ngtcp2.oplock1.fileserver

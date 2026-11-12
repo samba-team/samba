@@ -2960,6 +2960,16 @@ static int qwrap_getsockopt(int s, int level, int optname,
 	ngtcp2_ssize nwrite;
 	int ret;
 
+	if (si != NULL && level == IPPROTO_TCP) {
+		/*
+		 * An IPPROTO_QUIC socket of the kernel has no
+		 * IPPROTO_TCP options, don't let socket_wrapper
+		 * answer them (e.g. TCP_INFO) instead.
+		 */
+		errno = ENOPROTOOPT;
+		return -1;
+	}
+
 	if (si == NULL || level != SOL_QUIC) {
 		return next_getsockopt(s,
 				       level,
