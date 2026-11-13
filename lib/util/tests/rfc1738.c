@@ -376,6 +376,7 @@ static void test_escape(void **state)
 static void gen_spectrum(void)
 {
 	int i, j = 0;
+	size_t k;
 	const char *lut = "0123456789ABCDEF";
 	for (i = 1; i < 256; i++) {
 		spectrum[i - 1] = i;
@@ -396,6 +397,16 @@ static void gen_spectrum(void)
 	}
 	spectrum[i - 1] = '\0';
 	spectrum_escaped[j] = '\0';
+
+	/*
+	 * The unreserved characters are not escaped,
+	 * so the escaped string is shorter than 255 * 3.
+	 */
+	for (k = 0; k < ARRAY_SIZE(examples); k++) {
+		if (examples[k].escaped == spectrum_escaped) {
+			examples[k].esc_len = j;
+		}
+	}
 }
 
 int main(int argc, const char **argv)
