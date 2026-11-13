@@ -285,6 +285,18 @@ unless (defined($ENV{VALGRIND})) {
 	$ENV{MALLOC_CHECK_} = 3;
 }
 
+#
+# Overwrite freed talloc memory and freshly allocated and freed
+# malloc memory, so that use after free and the use of
+# uninitialized heap memory fail in a deterministic way.
+#
+# This doesn't hide anything from valgrind: talloc marks freed
+# memory as NOACCESS and reused memory as UNDEFINED and valgrind
+# replaces malloc().
+#
+$ENV{TALLOC_FREE_FILL} //= "0xa5";
+$ENV{MALLOC_PERTURB_} //= "165";
+
 # make all our python scripts unbuffered
 $ENV{PYTHONUNBUFFERED} = 1;
 
