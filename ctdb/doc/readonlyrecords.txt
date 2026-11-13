@@ -91,14 +91,9 @@ revokation is completed.
 This flags is set by the main ctdb daemon when it starts revoking this record.
 
 REVOKE_COMPLETE
-The actual revoke of records is done by a child process, spawned from the main ctdb
-daemon when it starts the process to revoke the records.
-Once the child process has finished revoking all delegations it will set the flag
-REVOKE_COMPLETE for this record to signal to the main daemon that the record has been
-successfully revoked.
-At this stage the child process will also trigger an event in the main daemon that
-revoke is complete and that the main daemon should start re-processing all deferred
-requests.
+The main ctdb daemon revokes the records asynchronously, without a child process.
+Once it has revoked all delegations it sets the flag REVOKE_COMPLETE for this record
+and starts re-processing all deferred requests.
 
 
 
@@ -256,17 +251,14 @@ When receiving a ctdb_call without the WANT_READONLY flag:
 If this is the DMASTER for the this might trigger a migration. If there exists
 delegations we must first revoke these before allowing the Read-Write request from
 proceeding. So,
-IF the record has HAVE_DELEGATIONS set, we create a child process and defer processing
-of this PDU until the child process has completed.
+IF the record has HAVE_DELEGATIONS set, we start a revoke and defer processing
+of this PDU until the revoke has completed.
 
-From the child process we will call out to all nodes that have delegations for this
-record and tell them to invalidate this record by clearing the HAVE_READONLY_LOCK from
-the record.
-Once all delegated nodes respond back, the child process signals back to the main daemon
-the revoke has completed. (child process may not access the tracking tdb since it is
-lockless)
+The revoke calls out to all nodes that have delegations for this record and tells
+them to invalidate this record by clearing the HAVE_READONLY_LOCK from the record.
+Once all delegated nodes respond back, the revoke has completed.
 
-Main process is triggered to re-process the PDU once the child process has finished.
+Main daemon then re-processes the PDU.
 Main daemon deletes the corresponding record in the tracking database, clears the
 HAVE_DELEGATIONS flag for the record and then proceeds to perform the migration as usual.
 
