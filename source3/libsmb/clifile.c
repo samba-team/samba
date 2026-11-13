@@ -1208,8 +1208,9 @@ NTSTATUS cli_chmod_recv(struct tevent_req *req)
 		tevent_req_received(req);
 		return status;
 	}
+	status = state->fchmod_status;
 	tevent_req_received(req);
-	return state->fchmod_status;
+	return status;
 }
 
 NTSTATUS cli_chmod(struct cli_state *cli, const char *fname, mode_t mode)
