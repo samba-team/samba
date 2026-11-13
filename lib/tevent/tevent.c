@@ -431,6 +431,13 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		DLIST_REMOVE(ev->immediate_events, ie);
 	}
 
+	for (ie = ev->detached_immediate_events; ie; ie = in) {
+		in = ie->next;
+		tevent_trace_immediate_callback(ev, ie, TEVENT_EVENT_TRACE_DETACH);
+		ie->detach_ev_ctx = NULL;
+		DLIST_REMOVE(ev->detached_immediate_events, ie);
+	}
+
 	for (se = ev->signal_events; se; se = sn) {
 		sn = se->next;
 		tevent_trace_signal_callback(se->event_ctx, se, TEVENT_EVENT_TRACE_DETACH);

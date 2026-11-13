@@ -336,6 +336,13 @@ struct tevent_context {
 	/* list of immediate events - used by common code */
 	struct tevent_immediate *immediate_events;
 
+	/*
+	 * list of running immediate events, which were
+	 * cancelled and wait for TEVENT_EVENT_TRACE_DETACH
+	 * after the handler returned - used by common code
+	 */
+	struct tevent_immediate *detached_immediate_events;
+
 	/* list of fd events - used by common code */
 	struct tevent_fd *fd_events;
 

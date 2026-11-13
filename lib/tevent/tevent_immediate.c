@@ -44,6 +44,7 @@ void tevent_common_immediate_cancel(struct tevent_immediate *im)
 	if (im->detach_ev_ctx != NULL) {
 		detach_ev_ctx = im->detach_ev_ctx;
 		im->detach_ev_ctx = NULL;
+		DLIST_REMOVE(detach_ev_ctx->detached_immediate_events, im);
 		tevent_trace_immediate_callback(detach_ev_ctx,
 						im,
 						TEVENT_EVENT_TRACE_DETACH);
@@ -80,6 +81,16 @@ void tevent_common_immediate_cancel(struct tevent_immediate *im)
 		.tag			= tag,
 		.detach_ev_ctx		= detach_ev_ctx,
 	};
+
+	if (detach_ev_ctx != NULL) {
+		/*
+		 * The handler might free the tevent_context,
+		 * so tevent_common_context_destructor() needs
+		 * to find the immediate event in order to
+		 * reset im->detach_ev_ctx.
+		 */
+		DLIST_ADD(detach_ev_ctx->detached_immediate_events, im);
+	}
 
 	if (!busy) {
 		talloc_set_destructor(im, NULL);
@@ -204,6 +215,7 @@ int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
 	if (im->detach_ev_ctx != NULL) {
 		struct tevent_context *detach_ev_ctx = im->detach_ev_ctx;
 		im->detach_ev_ctx = NULL;
+		DLIST_REMOVE(detach_ev_ctx->detached_immediate_events, im);
 		tevent_trace_immediate_callback(detach_ev_ctx,
 						im,
 						TEVENT_EVENT_TRACE_DETACH);

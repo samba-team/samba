@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include <talloc.h>
 #include <tevent.h>
@@ -225,6 +226,48 @@ static void immediate_handler_free(struct tevent_context *ctx,
 	assert_int_equal(tag, tctx->current_tag);
 	TALLOC_FREE(im);
 	assert_true(tctx->detach);
+	return;
+}
+
+static void immediate_handler_fork_free_ev(struct tevent_context *ctx,
+					   struct tevent_immediate *im,
+					   void *private_data)
+{
+	struct test_ctx *tctx = (struct test_ctx *)private_data;
+	uint64_t tag = tevent_immediate_get_tag(im);
+	int status = 0;
+	pid_t pid;
+	pid_t ret;
+
+	assert_true(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_false(tctx->handler_called);
+	assert_false(tctx->detach);
+	tctx->handler_called = true;
+	assert_int_equal(tag, tctx->current_tag);
+
+	pid = fork();
+	assert_return_code(pid, errno);
+	if (pid == 0) {
+		bool detached;
+
+		/*
+		 * Like the child processes of ctdbd: free the
+		 * tevent_context in the handler and the immediate
+		 * event afterwards. The immediate event must not
+		 * use the freed tevent_context.
+		 */
+		TALLOC_FREE(tctx->ev);
+		detached = tctx->detach;
+		TALLOC_FREE(im);
+		_exit(detached ? 0 : 1);
+	}
+
+	ret = waitpid(pid, &status, 0);
+	assert_int_equal(ret, pid);
+	assert_true(WIFEXITED(status));
+	assert_int_equal(WEXITSTATUS(status), 0);
+	assert_false(tctx->detach);
 	return;
 }
 
@@ -933,6 +976,32 @@ static void test_trace_event_immediate__free_in_handler(void **state)
 	assert_true(tctx->detach);
 }
 
+static void test_trace_event_immediate__free_ev_in_handler(void **state)
+{
+	struct test_ctx *tctx = (struct test_ctx *)(*state);
+	struct tevent_immediate *im;
+
+	tctx->get_tag = immediate_get_tag;
+	tctx->set_tag = immediate_set_tag;
+	tevent_set_trace_immediate_callback(tctx->ev, (tevent_trace_immediate_callback_t)trace_event_cb, tctx);
+
+	im = tevent_create_immediate(tctx);
+	assert_non_null(im);
+
+	tevent_schedule_immediate(im, tctx->ev, immediate_handler_fork_free_ev, tctx);
+	assert_true(tctx->attach);
+	assert_false(tctx->before_handler);
+	assert_false(tctx->handler_called);
+	assert_false(tctx->detach);
+
+	tevent_loop_once(tctx->ev);
+	assert_true(tctx->attach);
+	assert_true(tctx->before_handler);
+	assert_true(tctx->handler_called);
+	/* immediate events are self detaching */
+	assert_true(tctx->detach);
+}
+
 static void test_trace_event_immediate__reschedule(void **state)
 {
 	struct test_ctx *tctx = (struct test_ctx *)(*state);
@@ -1308,6 +1377,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__reset, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__free, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__free_in_handler, test_setup, test_teardown),
+		cmocka_unit_test_setup_teardown(test_trace_event_immediate__free_ev_in_handler, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_event_immediate__reschedule, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_queue__loop, test_setup, test_teardown),
 		cmocka_unit_test_setup_teardown(test_trace_queue__extra, test_setup, test_teardown),
