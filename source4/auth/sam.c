@@ -1898,22 +1898,27 @@ get_transaction:
 	 * transaction case
 	 */
 exit:
-	TALLOC_FREE(mem_ctx);
-
 	if (txn_active == false) {
+		TALLOC_FREE(mem_ctx);
 		return status;
 	}
 
 	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != LDB_SUCCESS) {
+		/*
+		 * msg might be the re-read message,
+		 * which is allocated on mem_ctx.
+		 */
 		DBG_ERR("Error (%d) %s, committing transaction,"
 			" while updating successful logon accounting"
 			" for (%s)\n",
 			ret,
 			ldb_errstring(sam_ctx),
 			ldb_dn_get_linearized(msg->dn));
+		TALLOC_FREE(mem_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+	TALLOC_FREE(mem_ctx);
 	return status;
 
 error:
