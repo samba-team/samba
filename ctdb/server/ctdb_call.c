@@ -1626,49 +1626,49 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 }
 
 
-struct revokechild_deferred_call {
-	struct revokechild_deferred_call *prev, *next;
+struct revoke_deferred_call {
+	struct revoke_deferred_call *prev, *next;
 	struct ctdb_context *ctdb;
 	struct ctdb_req_header *hdr;
 	deferred_requeue_fn fn;
 	void *ctx;
-	struct revokechild_handle *rev_hdl;
+	struct revoke_handle *rev_hdl;
 };
 
-struct revokechild_handle {
-	struct revokechild_handle *next, *prev;
+struct revoke_handle {
+	struct revoke_handle *next, *prev;
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
 	int status;
 	TDB_DATA key;
-	struct revokechild_deferred_call *deferred_call_list;
+	struct revoke_deferred_call *deferred_call_list;
 };
 
 static void deferred_call_requeue(struct tevent_context *ev,
 				  struct tevent_timer *te,
 				  struct timeval t, void *private_data)
 {
-	struct revokechild_deferred_call *dcall = talloc_get_type_abort(
-		private_data, struct revokechild_deferred_call);
+	struct revoke_deferred_call *dcall = talloc_get_type_abort(
+		private_data, struct revoke_deferred_call);
 
 	dcall->fn(dcall->ctx, dcall->hdr);
 	TALLOC_FREE(dcall);
 }
 
-static int deferred_call_destructor(struct revokechild_deferred_call *dcall)
+static int deferred_call_destructor(struct revoke_deferred_call *dcall)
 {
-	struct revokechild_handle *rev_hdl = dcall->rev_hdl;
+	struct revoke_handle *rev_hdl = dcall->rev_hdl;
 
 	DLIST_REMOVE(rev_hdl->deferred_call_list, dcall);
 	return 0;
 }
 
-static int revokechild_destructor(struct revokechild_handle *rev_hdl)
+static int revoke_destructor(struct revoke_handle *rev_hdl)
 {
-	DLIST_REMOVE(rev_hdl->ctdb_db->revokechild_active, rev_hdl);
+	DLIST_REMOVE(rev_hdl->ctdb_db->revoke_active, rev_hdl);
 
 	while (rev_hdl->deferred_call_list != NULL) {
-		struct revokechild_deferred_call *dcall = NULL;
+		struct revoke_deferred_call *dcall = NULL;
 		struct tevent_timer *te = NULL;
 		struct timeval when = tevent_timeval_current_ofs(1, 0);
 
@@ -1967,8 +1967,8 @@ static int ctdb_revoke_ro_recv(struct tevent_req *req)
 
 static void ctdb_revoke_ro_done(struct tevent_req *subreq)
 {
-	struct revokechild_handle *rev_hdl = tevent_req_callback_data(
-		subreq, struct revokechild_handle);
+	struct revoke_handle *rev_hdl = tevent_req_callback_data(
+		subreq, struct revoke_handle);
 	int ret;
 
 	ret = ctdb_revoke_ro_recv(subreq);
@@ -1989,7 +1989,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 				TDB_DATA data)
 {
 	TDB_DATA tdata;
-	struct revokechild_handle *rev_hdl = NULL;
+	struct revoke_handle *rev_hdl = NULL;
 	struct tevent_req *req = NULL;
 
 	header->flags &= ~(CTDB_REC_RO_REVOKING_READONLY |
@@ -1999,9 +1999,9 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 	header->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	header->rsn   -= 1;
 
-	rev_hdl = talloc_zero(ctdb_db, struct revokechild_handle);
+	rev_hdl = talloc_zero(ctdb_db, struct revoke_handle);
 	if (rev_hdl == NULL) {
-		D_ERR("Failed to allocate revokechild_handle\n");
+		D_ERR("Failed to allocate revoke_handle\n");
 		return -1;
 	}
 
@@ -2012,7 +2012,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 	rev_hdl->key.dsize = key.dsize;
 	rev_hdl->key.dptr  = talloc_memdup(rev_hdl, key.dptr, key.dsize);
 	if (rev_hdl->key.dptr == NULL) {
-		D_ERR("Failed to allocate key for revokechild_handle\n");
+		D_ERR("Failed to allocate key for revoke_handle\n");
 		goto err_out;
 	}
 
@@ -2041,8 +2041,8 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 	tevent_req_set_callback(req, ctdb_revoke_ro_done, rev_hdl);
 
 	/* This is an active revoke */
-	DLIST_ADD_END(ctdb_db->revokechild_active, rev_hdl);
-	talloc_set_destructor(rev_hdl, revokechild_destructor);
+	DLIST_ADD_END(ctdb_db->revoke_active, rev_hdl);
+	talloc_set_destructor(rev_hdl, revoke_destructor);
 
 	return 0;
 err_out:
@@ -2052,10 +2052,10 @@ err_out:
 
 int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context)
 {
-	struct revokechild_handle *rev_hdl;
-	struct revokechild_deferred_call *deferred_call;
+	struct revoke_handle *rev_hdl;
+	struct revoke_deferred_call *deferred_call;
 
-	for (rev_hdl = ctdb_db->revokechild_active;
+	for (rev_hdl = ctdb_db->revoke_active;
 	     rev_hdl;
 	     rev_hdl = rev_hdl->next) {
 		if (rev_hdl->key.dsize == 0) {
@@ -2074,12 +2074,12 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 		return -1;
 	}
 
-	deferred_call = talloc(call_context, struct revokechild_deferred_call);
+	deferred_call = talloc(call_context, struct revoke_deferred_call);
 	if (deferred_call == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate deferred call structure for revoking record\n"));
 		return -1;
 	}
-	*deferred_call = (struct revokechild_deferred_call){
+	*deferred_call = (struct revoke_deferred_call){
 		.ctdb = ctdb,
 		.hdr = talloc_move(deferred_call, &hdr),
 		.fn = fn,

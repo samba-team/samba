@@ -540,8 +540,8 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 			ctdb_db_reset_readonly(ctdb_db);
 		}
 
-		while (ctdb_db->revokechild_active != NULL) {
-			talloc_free(ctdb_db->revokechild_active);
+		while (ctdb_db->revoke_active != NULL) {
+			talloc_free(ctdb_db->revoke_active);
 		}
 	}
 

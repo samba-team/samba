@@ -361,7 +361,7 @@ struct ctdb_db_context {
 	struct ctdb_vacuum_handle *vacuum_handle;
 	char *unhealthy_reason;
 	int pending_requests;
-	struct revokechild_handle *revokechild_active;
+	struct revoke_handle *revoke_active;
 	struct ctdb_persistent_state *persistent_state;
 	struct trbt_tree *delete_queue;
 	struct trbt_tree *fetch_queue;

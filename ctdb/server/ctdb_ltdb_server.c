@@ -1294,8 +1294,8 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 
 	/* Terminate any revokes */
-	while (ctdb_db->revokechild_active) {
-		talloc_free(ctdb_db->revokechild_active);
+	while (ctdb_db->revoke_active) {
+		talloc_free(ctdb_db->revoke_active);
 	}
 
 	/* Close readonly tracking database */
