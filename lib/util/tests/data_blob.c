@@ -54,6 +54,17 @@ static bool test_zero(struct torture_context *tctx)
 	return true;
 }
 
+/*
+ * With TALLOC_FREE_FILL or MALLOC_PERTURB_ the freed memory is
+ * overwritten by talloc or malloc, so we can't check that the
+ * _s functions cleared it.
+ */
+static bool freed_memory_is_overwritten(void)
+{
+	return (getenv("TALLOC_FREE_FILL") != NULL) ||
+	       (getenv("MALLOC_PERTURB_") != NULL);
+}
+
 static bool test_zero_s(struct torture_context *tctx)
 {
 	DATA_BLOB z = data_blob_talloc_zero_s(tctx, 4);
@@ -67,6 +78,9 @@ static bool test_zero_s(struct torture_context *tctx)
 	p = z.data; /* store pointer that will be freed */
 	torture_assert_int_equal(tctx, *p, 'a', "contents");
 	data_blob_free(&z);
+	if (freed_memory_is_overwritten()) {
+		return true;
+	}
 	/* coverity[use_after_free] */
 	torture_assert_int_equal(tctx, *p, 0, "contents");
 	return true;
@@ -83,6 +97,9 @@ static bool test_talloc_s(struct torture_context *tctx)
 		torture_assert_int_not_equal(tctx, z.data[i], 0, "data");
 	p = z.data; /* store pointer that will be freed */
 	data_blob_free(&z);
+	if (freed_memory_is_overwritten()) {
+		return true;
+	}
 	for (i = 0; i < 5; i++)
 		/* coverity[use_after_free] */
 		torture_assert_int_equal(tctx, p[i], 0, "data");
@@ -101,6 +118,9 @@ static bool test_dup_talloc_s(struct torture_context *tctx)
 		torture_assert_int_equal(tctx, z.data[i], b.data[i], "data");
 	p = z.data; /* store pointer that will be freed */
 	data_blob_free(&z);
+	if (freed_memory_is_overwritten()) {
+		return true;
+	}
 	for (i = 0; i < b.length; i++)
 		/* coverity[use_after_free] */
 		torture_assert_int_equal(tctx, p[i], 0, "data");

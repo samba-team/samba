@@ -82,8 +82,15 @@ static void test_talloc_keep_secret(void ** state)
 	ptr2 = talloc_size(pool, ptr1_size);
 	assert_ptr_equal(ptr1, ptr2);
 
-	for (i = 1; i < ptr1_size; i++) {
-		assert_int_not_equal(ptr2[0], ptr2[i]);
+	/*
+	 * memset_explicit() is mocked, so the secret is still
+	 * there, unless TALLOC_FREE_FILL overwrites the freed
+	 * memory.
+	 */
+	if (getenv("TALLOC_FREE_FILL") == NULL) {
+		for (i = 1; i < ptr1_size; i++) {
+			assert_int_not_equal(ptr2[0], ptr2[i]);
+		}
 	}
 
 	ptr3 = talloc_zero(pool, char);
