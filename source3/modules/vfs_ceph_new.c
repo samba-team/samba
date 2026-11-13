@@ -2854,8 +2854,8 @@ static ssize_t vfs_ceph_pread(struct vfs_handle_struct *handle,
 
 	result = vfs_ceph_ll_read(handle, cfh, offset, n, data);
 out:
-	DBG_DEBUG("[CEPH] pread: fsp_name=%s n=%" PRIu64 "offset=%" PRIu64
-		  " result=%" PRIu64 "\n",
+	DBG_DEBUG("[CEPH] pread: fsp_name=%s n=%zu offset=%jd"
+		  " result=%zd\n",
 		  fsp_str_dbg(fsp),
 		  n,
 		  (intmax_t)offset,
@@ -2940,7 +2940,7 @@ static void vfs_ceph_aio_complete(struct ceph_ll_io_info *io_info)
 	}
 
 	DBG_DEBUG("[CEPH] aio_complete: ino=%" PRIu64
-		  " fd=%d off=%jd len=%ju result=%jd\n",
+		  " fd=%d off=%jd len=%zu result=%jd\n",
 		  state->cfh->iref.ino,
 		  state->cfh->fd,
 		  state->off,
@@ -2977,7 +2977,7 @@ static void vfs_ceph_aio_submit(struct vfs_handle_struct *handle,
 		req, struct vfs_ceph_aio_state);
 	int64_t res;
 
-	DBG_DEBUG("[CEPH] aio_send: ino=%" PRIu64 " fd=%d off=%jd len=%ju\n",
+	DBG_DEBUG("[CEPH] aio_send: ino=%" PRIu64 " fd=%d off=%jd len=%zu\n",
 		  state->cfh->iref.ino,
 		  state->cfh->fd,
 		  state->off,
@@ -3020,7 +3020,7 @@ static void vfs_ceph_aio_done(struct tevent_context *ev,
 		req, struct vfs_ceph_aio_state);
 
 	DBG_DEBUG("[CEPH] aio_done: ino=%" PRIu64
-		  " fd=%d off=%jd len=%ju result=%jd\n",
+		  " fd=%d off=%jd len=%zu result=%jd\n",
 		  state->cfh->iref.ino,
 		  state->cfh->fd,
 		  state->off,
@@ -3091,11 +3091,11 @@ static struct tevent_req *vfs_ceph_pread_send(struct vfs_handle_struct *handle,
 	struct vfs_ceph_aio_state *state = NULL;
 	int ret = -1;
 
-	DBG_DEBUG("[CEPH] pread_send: fsp_name=%s data=%p n=%zu offset=%zd\n",
+	DBG_DEBUG("[CEPH] pread_send: fsp_name=%s data=%p n=%zu offset=%jd\n",
 		  fsp_str_dbg(fsp),
 		  data,
 		  n,
-		  offset);
+		  (intmax_t)offset);
 
 	req = tevent_req_create(mem_ctx, &state, struct vfs_ceph_aio_state);
 	if (req == NULL) {
@@ -3146,7 +3146,7 @@ static ssize_t vfs_ceph_pread_recv(struct tevent_req *req,
 
 	DBG_DEBUG("[CEPH] pread_recv: bytes_read=%zd"
 		  " ino=%" PRIu64
-		  " fd=%d off=%jd len=%ju\n",
+		  " fd=%d off=%jd len=%zu\n",
 		  state->result,
 		  state->cfh->iref.ino,
 		  state->cfh->fd,
@@ -3183,8 +3183,8 @@ static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
 	}
 	result = vfs_ceph_ll_write(handle, cfh, offset, n, data);
 out:
-	DBG_DEBUG("[CEPH] pwrite: fsp_name=%s data=%p n=%" PRIu64
-		  " offset=%" PRIu64 "\n",
+	DBG_DEBUG("[CEPH] pwrite: fsp_name=%s data=%p n=%zu"
+		  " offset=%jd\n",
 		  fsp_str_dbg(fsp),
 		  data,
 		  n,
@@ -3205,11 +3205,11 @@ static struct tevent_req *vfs_ceph_pwrite_send(struct vfs_handle_struct *handle,
 	struct vfs_ceph_aio_state *state = NULL;
 	int ret = -1;
 
-	DBG_DEBUG("[CEPH] pwrite_send: fsp_name=%s data=%p n=%zu offset=%zd\n",
+	DBG_DEBUG("[CEPH] pwrite_send: fsp_name=%s data=%p n=%zu offset=%jd\n",
 		  fsp_str_dbg(fsp),
 		  data,
 		  n,
-		  offset);
+		  (intmax_t)offset);
 
 	req = tevent_req_create(mem_ctx, &state, struct vfs_ceph_aio_state);
 	if (req == NULL) {
@@ -3262,7 +3262,7 @@ static ssize_t vfs_ceph_pwrite_recv(struct tevent_req *req,
 
 	DBG_DEBUG("[CEPH] pwrite_recv: bytes_written=%zd"
 		  " ino=%" PRIu64
-		  " fd=%d off=%jd len=%ju\n",
+		  " fd=%d off=%jd len=%zu\n",
 		  state->result,
 		  state->cfh->iref.ino,
 		  state->cfh->fd,
@@ -3299,9 +3299,9 @@ static off_t vfs_ceph_lseek(struct vfs_handle_struct *handle,
 
 	result = vfs_ceph_ll_lseek(handle, cfh, offset, whence);
 out:
-	DBG_DEBUG("[CEPH] lseek: fsp_name=%s offset=%zd whence=%d\n",
+	DBG_DEBUG("[CEPH] lseek: fsp_name=%s offset=%jd whence=%d\n",
 		  fsp_str_dbg(fsp),
-		  offset,
+		  (intmax_t)offset,
 		  whence);
 	END_PROFILE_X(syscall_lseek);
 	return lstatus_code(result);
@@ -3317,12 +3317,12 @@ static ssize_t vfs_ceph_sendfile(struct vfs_handle_struct *handle,
 	/*
 	 * We cannot support sendfile because libcephfs is in user space.
 	 */
-	DBG_DEBUG("[CEPH] sendfile: tofd=%d fromfsp_name=%s hdr=%p offset=%zd "
+	DBG_DEBUG("[CEPH] sendfile: tofd=%d fromfsp_name=%s hdr=%p offset=%jd "
 		  "n=%zu\n",
 		  tofd,
 		  fsp_str_dbg(fromfsp),
 		  hdr,
-		  offset,
+		  (intmax_t)offset,
 		  n);
 	errno = ENOTSUP;
 	return -1;
@@ -3337,10 +3337,10 @@ static ssize_t vfs_ceph_recvfile(struct vfs_handle_struct *handle,
 	/*
 	 * We cannot support recvfile because libcephfs is in user space.
 	 */
-	DBG_DEBUG("[CEPH] recvfile: fromfd=%d tofsp_name=%s offset=%zd n=%zu\n",
+	DBG_DEBUG("[CEPH] recvfile: fromfd=%d tofsp_name=%s offset=%jd n=%zu\n",
 		  fromfd,
 		  fsp_str_dbg(tofsp),
-		  offset,
+		  (intmax_t)offset,
 		  n);
 	errno = ENOTSUP;
 	return -1;
@@ -3459,7 +3459,7 @@ static int vfs_ceph_fsync_recv(struct tevent_req *req,
 
 	DBG_DEBUG("[CEPH] fsync_recv: error=%d duration=%" PRIu64
 		  " ino=%" PRIu64
-		  " fd=%d off=%jd len=%ju result=%ld\n",
+		  " fd=%d off=%jd len=%zu result=%zd\n",
 		  state->vfs_aio_state.error,
 		  state->vfs_aio_state.duration,
 		  state->cfh->iref.ino,
@@ -3882,7 +3882,7 @@ static int vfs_ceph_ftruncate(struct vfs_handle_struct *handle,
 	int result = -1;
 
 	START_PROFILE_X(SNUM(handle->conn), syscall_ftruncate);
-	DBG_DEBUG("[CEPH] ftruncate: fsp_name=%s len=%zd\n",
+	DBG_DEBUG("[CEPH] ftruncate: fsp_name=%s len=%jd\n",
 		  fsp_str_dbg(fsp),
 		  (intmax_t)len);
 
@@ -3939,12 +3939,12 @@ static bool vfs_ceph_lock(struct vfs_handle_struct *handle,
 			  off_t count,
 			  int type)
 {
-	DBG_DEBUG("[CEPH] lock(%p, %p, %d, %zd, %zd, %d)\n",
+	DBG_DEBUG("[CEPH] lock(%p, %p, %d, %jd, %jd, %d)\n",
 		  handle,
 		  fsp,
 		  op,
-		  offset,
-		  count,
+		  (intmax_t)offset,
+		  (intmax_t)count,
 		  type);
 	return true;
 }
