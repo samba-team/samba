@@ -94,6 +94,32 @@ db_test_wait_key_dmaster()
 	fi
 }
 
+db_key_flags()
+{
+	local node="$1"
+	local db="$2"
+	local key="$3"
+
+	testprog_onnode "$node" "ctdb-db-test local-read ${db} ${key}"
+	# shellcheck disable=SC2154
+	# $outfile is set above by testprog_onnode()
+	sed -n -e 's/^flags: //p' "$outfile"
+}
+
+db_test_key_has_flag()
+{
+	local node="$1"
+	local db="$2"
+	local key="$3"
+	local flag="$4"
+	local flags
+
+	flags=$(db_key_flags "$node" "$db" "$key")
+	if ! echo "$flags" | grep -Eq " ${flag}( |$)"; then
+		ctdb_test_fail "BAD: node ${node} has no ${flag} flag: ${flags}"
+	fi
+}
+
 db_confirm_key_empty_dmaster()
 {
 	local node="$1"
