@@ -905,6 +905,29 @@ int main(void) {
                            mandatory=True)
         conf.env['EXTRA_LDFLAGS'].extend(conf.env['ADDITIONAL_LDFLAGS'])
 
+    # In developer mode warnings of the compiler are errors
+    # (PICKY_CFLAGS), so we also let the linker fail on warnings
+    # (PICKY_LDFLAGS), e.g. about symbols in version scripts it can't
+    # find. This is checked after adding ADDITIONAL_LDFLAGS, as they
+    # may select a different linker, e.g. -fuse-ld=mold.
+    #
+    # With system Heimdal GNU ld warns that libkrb5.so.3 of MIT
+    # Kerberos, needed by system libraries like libcups and libtirpc
+    # via libgssapi_krb5.so.2, may conflict with libkrb5.so.26 of
+    # Heimdal. There's no way to disable only this warning.
+    system_heimdal = (conf.env.KRB5_VENDOR == 'heimdal' and
+                      conf.CONFIG_SET('USING_SYSTEM_KRB5'))
+    if (conf.env.DEVELOPER_MODE and
+        not Options.options.disable_warnings_as_errors and
+        not system_heimdal):
+        fatal_warnings = ['-Wl,--fatal-warnings']
+        if conf.check(fragment='int main(void) { return 0; }\n',
+                      execute=0,
+                      ldflags=conf.env.EXTRA_LDFLAGS + fatal_warnings,
+                      mandatory=False,
+                      msg='Checking linker accepts -Wl,--fatal-warnings'):
+            conf.env.append_value('PICKY_LDFLAGS', fatal_warnings)
+
     if path is None:
         conf.write_config_header('default/config.h', top=True, remove=False)
     else:
@@ -999,6 +1022,18 @@ def CURRENT_CFLAGS(bld, target, cflags,
         ret.extend(list)
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
         ret.append(bld.env.VISIBILITY_CFLAGS)
+    return ret
+
+
+def CURRENT_LDFLAGS(bld, ldflags):
+    '''work out the current ldflags of a target
+
+    Unlike PICKY_CFLAGS, PICKY_LDFLAGS are also used for targets with
+    allow_warnings=True, which only means we expect warnings from the
+    compiler, not from the linker.'''
+    ret = TO_LIST(ldflags)
+    if 'PICKY_LDFLAGS' in bld.env:
+        ret.extend(bld.env['PICKY_LDFLAGS'])
     return ret
 
 

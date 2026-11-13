@@ -318,7 +318,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'))
         vnum = None
 
-    ldflags = TO_LIST(ldflags)
+    ldflags = CURRENT_LDFLAGS(bld, ldflags)
     if bld.env['ENABLE_RELRO'] is True:
         ldflags.extend(TO_LIST('-Wl,-z,relro,-z,now'))
 
@@ -498,7 +498,7 @@ def SAMBA_BINARY(bld, binname, source,
 
     # only specify PIE flags for binaries
     pie_cflags = TO_LIST(cflags)
-    pie_ldflags = TO_LIST(ldflags)
+    pie_ldflags = CURRENT_LDFLAGS(bld, ldflags)
     if bld.env['ENABLE_PIE'] is True:
         pie_cflags.extend(TO_LIST('-fPIE'))
         pie_ldflags.extend(TO_LIST('-pie'))
