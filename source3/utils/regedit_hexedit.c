@@ -126,10 +126,10 @@ void hexedit_set_cursor(struct hexedit *buf)
 	wattron(buf->win, A_REVERSE | A_STANDOUT);
 	wclrtoeol(buf->win);
 	if (buf->cursor_offset < buf->len) {
-		wprintw(buf->win, "Len:%lu Off:%lu Val:0x%X", buf->len,
+		wprintw(buf->win, "Len:%zu Off:%zu Val:0x%X", buf->len,
 			buf->cursor_offset, buf->data[buf->cursor_offset]);
 	} else {
-		wprintw(buf->win, "Len:%lu Off:%lu", buf->len,
+		wprintw(buf->win, "Len:%zu Off:%zu", buf->len,
 			buf->cursor_offset);
 	}
 	wattroff(buf->win, A_REVERSE | A_STANDOUT);
