@@ -368,6 +368,15 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 
 	/* Enter into the list. */
 	if (referring_cli) {
+		/*
+		 * The connection is cached in the list of referring_cli
+		 * and freed by cli_shutdown(), so it needs to live as
+		 * long as referring_cli and not only as long as ctx,
+		 * which might be a short lived talloc_stackframe().
+		 *
+		 * Note that DLIST_ADD_END() might change referring_cli.
+		 */
+		talloc_steal(talloc_parent(referring_cli), cli);
 		DLIST_ADD_END(referring_cli, cli);
 	}
 
