@@ -2540,7 +2540,7 @@ static int tstream_ngtcp2_recv_stream_data_cb(ngtcp2_conn *conn, uint32_t flags,
 	struct tstream_ngtcp2_buffer *cbuf = NULL;
 
 	DBG_DEBUG("Called stream_id[%"PRIi64"] "
-		  "offset[%"PRIu64"] datalen[%"PRIu64"]\n",
+		  "offset[%"PRIu64"] datalen[%zu]\n",
 		  stream_id, offset, datalen);
 
 	if (si->stream_id != stream_id) {
