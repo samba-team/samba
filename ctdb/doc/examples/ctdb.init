@@ -19,6 +19,7 @@
 ### END INIT INFO
 
 # Source function library.
+# shellcheck source=/dev/null
 if [ -f /etc/init.d/functions ]; then
 	# Red Hat
 	. /etc/init.d/functions
