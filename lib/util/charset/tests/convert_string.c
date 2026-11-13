@@ -29,6 +29,28 @@ struct torture_suite *torture_local_string_case_handle(TALLOC_CTX *mem_ctx);
 struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx);
 struct torture_suite *torture_local_string_case(TALLOC_CTX *mem_ctx);
 
+/*
+ * base64_decode_data_blob() doesn't add a terminating nul byte,
+ * but some tests use the data as a string, e.g. with
+ * strlen_m_ext() or strlower_talloc(). The nul byte is not part
+ * of the length.
+ */
+static DATA_BLOB base64_decode_string_blob(const char *s)
+{
+	DATA_BLOB blob = base64_decode_data_blob(s);
+	uint8_t *p = NULL;
+
+	p = talloc_realloc(NULL, blob.data, uint8_t, blob.length + 1);
+	if (p == NULL) {
+		data_blob_free(&blob);
+		return data_blob_null;
+	}
+	p[blob.length] = '\0';
+	blob.data = p;
+
+	return blob;
+}
+
 /* The text below is in ancient and a latin charset transliteration of
  * greek, and an english translation.  It from Apology by Plato and sourced from
  * http://en.wikipedia.org/w/index.php?title=Ancient_Greek&oldid=421361065#Example_text
@@ -155,10 +177,10 @@ static bool test_cp850_high_points(struct torture_context *tctx)
 static bool test_gd_iso8859_cp850_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
-	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
-	DATA_BLOB gd_iso8859_1 = base64_decode_data_blob(gd_iso8859_1_base64);
-	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_utf8 = base64_decode_string_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_string_blob(gd_cp850_base64);
+	DATA_BLOB gd_iso8859_1 = base64_decode_string_blob(gd_iso8859_1_base64);
+	DATA_BLOB gd_utf16le = base64_decode_string_blob(gd_utf16le_base64);
 	DATA_BLOB gd_output;
 	DATA_BLOB gd_output2;
 
@@ -348,9 +370,9 @@ static bool test_gd_iso8859_cp850_handle(struct torture_context *tctx)
 static bool test_gd_minus_1_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
-	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
-	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_utf8 = base64_decode_string_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_string_blob(gd_cp850_base64);
+	DATA_BLOB gd_utf16le = base64_decode_string_blob(gd_utf16le_base64);
 	DATA_BLOB gd_output;
 	DATA_BLOB gd_utf8_terminated;
 	DATA_BLOB gd_cp850_terminated;
@@ -534,10 +556,10 @@ static bool test_gd_minus_1_handle(struct torture_context *tctx)
 static bool test_gd_ascii_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
-	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
-	DATA_BLOB gd_iso8859_1 = base64_decode_data_blob(gd_iso8859_1_base64);
-	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_utf8 = base64_decode_string_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_string_blob(gd_cp850_base64);
+	DATA_BLOB gd_iso8859_1 = base64_decode_string_blob(gd_iso8859_1_base64);
+	DATA_BLOB gd_utf16le = base64_decode_string_blob(gd_utf16le_base64);
 	DATA_BLOB gd_output;
 
 	talloc_steal(tctx, gd_utf8.data);
@@ -609,7 +631,7 @@ static bool test_plato_english_iso8859_cp850_handle(struct torture_context *tctx
 	DATA_BLOB plato_english_utf8 = data_blob_string_const(plato_english_ascii);
 	DATA_BLOB plato_english_cp850 = plato_english_utf8;
 	DATA_BLOB plato_english_iso8859_1 = plato_english_utf8;
-	DATA_BLOB plato_english_utf16le = base64_decode_data_blob(plato_english_utf16le_base64);
+	DATA_BLOB plato_english_utf16le = base64_decode_string_blob(plato_english_utf16le_base64);
 	DATA_BLOB plato_english_output;
 	DATA_BLOB plato_english_output2;
 
@@ -727,7 +749,7 @@ static bool test_plato_english_minus_1_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB plato_english_utf8 = data_blob_string_const(plato_english_ascii);
-	DATA_BLOB plato_english_utf16le = base64_decode_data_blob(plato_english_utf16le_base64);
+	DATA_BLOB plato_english_utf16le = base64_decode_string_blob(plato_english_utf16le_base64);
 	DATA_BLOB plato_english_output;
 	DATA_BLOB plato_english_utf8_terminated;
 	DATA_BLOB plato_english_utf16le_terminated;
@@ -867,8 +889,8 @@ static bool test_plato_english_minus_1_handle(struct torture_context *tctx)
 static bool test_plato_minus_1_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
-	DATA_BLOB plato_utf16le = base64_decode_data_blob(plato_utf16le_base64);
+	DATA_BLOB plato_utf8 = base64_decode_string_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf16le = base64_decode_string_blob(plato_utf16le_base64);
 	DATA_BLOB plato_output;
 	DATA_BLOB plato_utf8_terminated;
 	DATA_BLOB plato_utf16le_terminated;
@@ -983,8 +1005,8 @@ static bool test_plato_minus_1_handle(struct torture_context *tctx)
 static bool test_plato_cp850_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
-	DATA_BLOB plato_utf16le = base64_decode_data_blob(plato_utf16le_base64);
+	DATA_BLOB plato_utf8 = base64_decode_string_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf16le = base64_decode_string_blob(plato_utf16le_base64);
 	DATA_BLOB plato_output;
 	DATA_BLOB plato_output2;
 
@@ -1175,8 +1197,8 @@ static bool test_plato_cp850_utf8_handle(struct torture_context *tctx)
 static bool test_plato_latin_cp850_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB plato_latin_utf8 = base64_decode_data_blob(plato_latin_utf8_base64);
-	DATA_BLOB plato_latin_utf16le = base64_decode_data_blob(plato_latin_utf16le_base64);
+	DATA_BLOB plato_latin_utf8 = base64_decode_string_blob(plato_latin_utf8_base64);
+	DATA_BLOB plato_latin_utf16le = base64_decode_string_blob(plato_latin_utf16le_base64);
 	DATA_BLOB plato_latin_output;
 	DATA_BLOB plato_latin_output2;
 
@@ -1467,9 +1489,9 @@ done:
 static bool test_gd_case_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
-	DATA_BLOB gd_utf8_upper = base64_decode_data_blob(gd_utf8_upper_base64);
-	DATA_BLOB gd_utf8_lower = base64_decode_data_blob(gd_utf8_lower_base64);
+	DATA_BLOB gd_utf8 = base64_decode_string_blob(gd_utf8_base64);
+	DATA_BLOB gd_utf8_upper = base64_decode_string_blob(gd_utf8_upper_base64);
+	DATA_BLOB gd_utf8_lower = base64_decode_string_blob(gd_utf8_lower_base64);
 	char *gd_lower, *gd_upper;
 	talloc_steal(tctx, gd_utf8.data);
 
@@ -1536,9 +1558,9 @@ static bool test_gd_case_utf8_handle(struct torture_context *tctx)
 static bool test_gd_case_cp850_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
-	DATA_BLOB gd_cp850_upper = base64_decode_data_blob(gd_cp850_upper_base64);
-	DATA_BLOB gd_cp850_lower = base64_decode_data_blob(gd_cp850_lower_base64);
+	DATA_BLOB gd_cp850 = base64_decode_string_blob(gd_cp850_base64);
+	DATA_BLOB gd_cp850_upper = base64_decode_string_blob(gd_cp850_upper_base64);
+	DATA_BLOB gd_cp850_lower = base64_decode_string_blob(gd_cp850_lower_base64);
 	char *gd_lower, *gd_upper;
 	talloc_steal(tctx, gd_cp850.data);
 
@@ -1605,7 +1627,7 @@ static bool test_gd_case_cp850_handle(struct torture_context *tctx)
 static bool test_plato_case_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
-	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf8 = base64_decode_string_blob(plato_utf8_base64);
 	char *plato_lower, *plato_upper;
 	talloc_steal(tctx, plato_utf8.data);
 
@@ -1651,10 +1673,10 @@ static bool test_plato_case_utf8_handle(struct torture_context *tctx)
 
 static bool test_gd(struct torture_context *tctx)
 {
-	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
-	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
-	DATA_BLOB gd_iso8859_1 = base64_decode_data_blob(gd_iso8859_1_base64);
-	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_utf8 = base64_decode_string_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_string_blob(gd_cp850_base64);
+	DATA_BLOB gd_iso8859_1 = base64_decode_string_blob(gd_iso8859_1_base64);
+	DATA_BLOB gd_utf16le = base64_decode_string_blob(gd_utf16le_base64);
 	DATA_BLOB gd_output;
 	size_t saved_len;
 
@@ -1744,8 +1766,8 @@ static bool test_gd(struct torture_context *tctx)
 
 static bool test_plato(struct torture_context *tctx)
 {
-	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
-	DATA_BLOB plato_utf16le = base64_decode_data_blob(plato_utf16le_base64);
+	DATA_BLOB plato_utf8 = base64_decode_string_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf16le = base64_decode_string_blob(plato_utf16le_base64);
 	DATA_BLOB plato_output;
 	DATA_BLOB plato_output2;
 
@@ -2008,8 +2030,8 @@ static bool test_short_strings(struct torture_context *tctx)
 
 static bool test_plato_latin(struct torture_context *tctx)
 {
-	DATA_BLOB plato_latin_utf8 = base64_decode_data_blob(plato_latin_utf8_base64);
-	DATA_BLOB plato_latin_utf16le = base64_decode_data_blob(plato_latin_utf16le_base64);
+	DATA_BLOB plato_latin_utf8 = base64_decode_string_blob(plato_latin_utf8_base64);
+	DATA_BLOB plato_latin_utf16le = base64_decode_string_blob(plato_latin_utf16le_base64);
 	DATA_BLOB plato_latin_output;
 
 	talloc_steal(tctx, plato_latin_utf8.data);
@@ -2039,7 +2061,7 @@ static bool test_plato_latin(struct torture_context *tctx)
 
 static bool test_gd_case(struct torture_context *tctx)
 {
-	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	DATA_BLOB gd_utf8 = base64_decode_string_blob(gd_utf8_base64);
 	char *gd_unix;
 	size_t gd_size;
 	char *gd_lower, *gd_upper;
@@ -2099,7 +2121,7 @@ static bool test_gd_case(struct torture_context *tctx)
 
 static bool test_plato_case(struct torture_context *tctx)
 {
-	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf8 = base64_decode_string_blob(plato_utf8_base64);
 	char *plato_unix;
 	size_t plato_length;
 	char *plato_lower, *plato_upper;
