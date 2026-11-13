@@ -63,7 +63,18 @@ static void test_memset_explicit_double_alloc(void ** state)
 {
 	size_t i, found;
 	uintptr_t p, q;
-	char *secret = get_secret(20);
+	char *secret = NULL;
+
+#ifdef M_PERTURB
+	/*
+	 * With MALLOC_PERTURB_ malloc() fills the memory it
+	 * returns, so we would not find the content of the
+	 * freed block again.
+	 */
+	mallopt(M_PERTURB, 0);
+#endif
+
+	secret = get_secret(20);
 	p = (uintptr_t)secret ^ MASK;
 	memset_explicit(secret, 'x', 23);
 	free(secret);
