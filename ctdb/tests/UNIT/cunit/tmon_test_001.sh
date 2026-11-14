@@ -125,8 +125,8 @@ unit_test tmon_ping_test true 3 20 0 "$etimedout" true 3 0 7 0
 
 test_case "Both ping, parent blocks, child ping timeout error"
 ok <<EOF
-parent: blocking sleep start 7
 child: async wait start 20
+parent: blocking sleep start 7
 child: ping timeout
 parent: blocking sleep end
 EOF
@@ -165,8 +165,8 @@ unit_test tmon_ping_test true 7 20 0 "$epipe" true 7 0 3 0
 
 test_case "Both ping, parent blocks for less than ping timeout"
 ok <<EOF
-parent: blocking sleep start 3
 child: async wait start 20
+parent: blocking sleep start 3
 parent: blocking sleep end
 child: pipe closed
 EOF

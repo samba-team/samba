@@ -193,7 +193,6 @@ static int test_one(bool is_parent,
 		count = read(sync_fd, buf, sizeof(buf));
 		assert(count == 1);
 		assert(buf[0] == '\0');
-		close(sync_fd);
 	}
 
 	mem_ctx = talloc_new(NULL);
@@ -222,10 +221,19 @@ static int test_one(bool is_parent,
 		goto done;
 	}
 
+	/*
+	 * The parent sets up first, then the child.  Wait for both
+	 * before running either event loop, so output from setting up
+	 * always comes before output from the event loops.
+	 */
+	count = write(sync_fd, buf, sizeof(buf));
+	assert(count == 1);
 	if (is_parent) {
-		count = write(sync_fd, buf, sizeof(buf));
+		count = read(sync_fd, buf, sizeof(buf));
 		assert(count == 1);
+		assert(buf[0] == '\0');
 	}
+	close(sync_fd);
 
 	status = tevent_req_poll(req, ev);
 	if (!status) {
@@ -257,8 +265,8 @@ static void test(unsigned long parent_timeout,
 	int wstatus;
 	int ret;
 
-	/* Pipe for synchronisation */
-	ret = pipe(sync);
+	/* Socket pair for synchronisation in both directions */
+	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sync);
 	assert(ret == 0);
 
 	ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
