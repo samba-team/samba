@@ -231,22 +231,36 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
  * explanation of read_ips_for_multiple_nodes.
  */
 static void ctdb_test_ipalloc(const char nodestates[],
-			      bool read_ips_for_multiple_nodes)
+			      bool read_ips_for_multiple_nodes,
+			      bool print_num_changed)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	struct ipalloc_state *ipalloc_state;
+	struct public_ip_list *ips = NULL;
+	unsigned int num_changed = 0;
 
 	ctdb_test_init(tmp_ctx, nodestates, &ipalloc_state,
 		       read_ips_for_multiple_nodes);
 
-	print_ctdb_public_ip_list(tmp_ctx, ipalloc(ipalloc_state, NULL));
+	if (print_num_changed) {
+		ips = ipalloc(ipalloc_state, &num_changed);
+	} else {
+		ips = ipalloc(ipalloc_state, NULL);
+	}
+
+	print_ctdb_public_ip_list(tmp_ctx, ips);
+	if (print_num_changed) {
+		printf("Changed IPs: %u\n", num_changed);
+	}
 
 	talloc_free(tmp_ctx);
 }
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: ctdb_takeover_tests <op>\n");
+	fprintf(stderr,
+		"usage: ctdb_takeover_tests ipalloc <nodestates> "
+		"[multi] [num_changed]\n");
 	exit(1);
 }
 
@@ -254,6 +268,9 @@ int main(int argc, const char *argv[])
 {
 	int loglevel;
 	const char *debuglevelstr = getenv("CTDB_TEST_LOGLEVEL");
+	bool multi = false;
+	bool num_changed = false;
+	int i;
 
 	setup_logging("ctdb_takeover_tests", DEBUG_STDERR);
 
@@ -262,20 +279,21 @@ int main(int argc, const char *argv[])
         }
 	debuglevel_set(loglevel);
 
-	if (argc < 2) {
+	if (argc < 3 || strcmp(argv[1], "ipalloc") != 0) {
 		usage();
 	}
 
-	if (argc == 3 &&
-		   strcmp(argv[1], "ipalloc") == 0) {
-		ctdb_test_ipalloc(argv[2], false);
-	} else if (argc == 4 &&
-		   strcmp(argv[1], "ipalloc") == 0 &&
-		   strcmp(argv[3], "multi") == 0) {
-		ctdb_test_ipalloc(argv[2], true);
-	} else {
-		usage();
+	for (i = 3; i < argc; i++) {
+		if (strcmp(argv[i], "multi") == 0) {
+			multi = true;
+		} else if (strcmp(argv[i], "num_changed") == 0) {
+			num_changed = true;
+		} else {
+			usage();
+		}
 	}
+
+	ctdb_test_ipalloc(argv[2], multi, num_changed);
 
 	return 0;
 }
