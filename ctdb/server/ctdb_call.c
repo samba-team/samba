@@ -1899,7 +1899,13 @@ static int ctdb_revoke_ro_store(struct ctdb_revoke_ro_state *state)
 		ret = EIO;
 		goto done;
 	}
-	ret = 0;
+
+	/*
+	 * Fail the revoke even though the record was stored, so the
+	 * deferred calls are delayed instead of immediately starting
+	 * the next revoke.
+	 */
+	ret = state->failed ? EIO : 0;
 done:
 	TALLOC_FREE(data.dptr);
 	return ret;
