@@ -267,6 +267,13 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	struct pthreadpool_tevent_glue_ev_link *ev_link = NULL;
 	int ret;
 
+	/*
+	 * Hold glue_mutex for the whole registration. It does not
+	 * only protect glue_list: Glue objects are talloc children of
+	 * pool, and other threads talloc_free() them with glue_mutex
+	 * held. Allocating a new talloc child of pool without
+	 * glue_mutex corrupts pool's talloc child list.
+	 */
 	ret = pthread_mutex_lock(&pool->glue_mutex);
 	if (ret != 0) {
 		return ret;
@@ -279,18 +286,10 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	 */
 	for (glue = pool->glue_list; glue != NULL; glue = glue->next) {
 		if (glue->ev == ev) {
-			ret = pthread_mutex_unlock(&pool->glue_mutex);
-			if (ret != 0) {
-				return ret;
-			}
-			return 0;
+			goto done;
 		}
 	}
 
-	ret = pthread_mutex_unlock(&pool->glue_mutex);
-	if (ret != 0) {
-		return ret;
-	}
 	/*
 	 * Event context not yet registered - create a new glue
 	 * object containing a tevent_context/tevent_threaded_context
@@ -300,13 +299,13 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	 */
 	glue = talloc_zero(pool, struct pthreadpool_tevent_glue);
 	if (glue == NULL) {
-		return ENOMEM;
+		ret = ENOMEM;
+		goto done;
 	}
 	*glue = (struct pthreadpool_tevent_glue) {
 		.pool = pool,
 		.ev = ev,
 	};
-	talloc_set_destructor(glue, pthreadpool_tevent_glue_destructor);
 
 	/*
 	 * Now allocate the link object to the event context. Note this
@@ -318,33 +317,40 @@ static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
 	ev_link = talloc_zero(ev, struct pthreadpool_tevent_glue_ev_link);
 	if (ev_link == NULL) {
 		TALLOC_FREE(glue);
-		return ENOMEM;
+		ret = ENOMEM;
+		goto done;
 	}
-	ev_link->glue = glue;
-	talloc_set_destructor(ev_link, pthreadpool_tevent_glue_link_destructor);
-
-	glue->ev_link = ev_link;
 
 #ifdef HAVE_PTHREAD
 	glue->tctx = tevent_threaded_context_create(glue, ev);
 	if (glue->tctx == NULL) {
 		TALLOC_FREE(ev_link);
-		return ENOMEM;
+		TALLOC_FREE(glue);
+		ret = ENOMEM;
+		goto done;
 	}
 #endif
 
-	ret = pthread_mutex_lock(&pool->glue_mutex);
-	if (ret != 0) {
-		return ret;
-	}
+	/*
+	 * Only set the destructors once everything is allocated: The
+	 * link destructor takes glue_mutex, which we hold.
+	 */
+	ev_link->glue = glue;
+	glue->ev_link = ev_link;
+	talloc_set_destructor(glue, pthreadpool_tevent_glue_destructor);
+	talloc_set_destructor(ev_link,
+			      pthreadpool_tevent_glue_link_destructor);
 
 	DLIST_ADD(pool->glue_list, glue);
 
-	ret = pthread_mutex_unlock(&pool->glue_mutex);
-	if (ret != 0) {
-		return ret;
+done:
+	{
+		int ret2 = pthread_mutex_unlock(&pool->glue_mutex);
+		if (ret == 0) {
+			ret = ret2;
+		}
 	}
-	return 0;
+	return ret;
 }
 
 static void pthreadpool_tevent_job_fn(void *private_data);
