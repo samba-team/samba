@@ -26,19 +26,23 @@ are the highlights.
 * Maximum Line Width is 80 Characters
   The reason is not about people with low-res screens but rather sticking
   to 80 columns prevents you from easily nesting more than one level of
-  if statements or other code blocks.  Use [source3/script/count_80_col.pl](source3/script/count_80_col.pl)
-  to check your changes.
+  if statements or other code blocks.  Use
+  [source3/script/count_80_col.pl](source3/script/count_80_col.pl)
+  to check your changes. Both this script and `.clang-format` keep lines
+  at 79 characters at most, so the 80th column stays empty.
 
 * Use 8 Space Tabs to Indent
-  No whitespace fillers.
+  Indentation consists of tabs only. Spaces are only used to align
+  continuation lines after the tabs, see below.
 
 * No Trailing Whitespace
-  Use [source3/script/strip_trail_ws.pl](source3/script/strip_trail_ws.pl) to clean up your files before
-  committing.
+  Use [source3/script/strip_trail_ws.pl](source3/script/strip_trail_ws.pl)
+  to clean up your files before committing.
 
-* Follow the K&R guidelines.  We won't go through all of them here. Do you
-  have a copy of "The C Programming Language" anyways right? You can also use
-  the [format_indent.sh script found in source3/script/](source3/script/format_indent.sh) if all else fails.
+* Use `git clang-format`
+  The `.clang-format` file in the tree root encodes most of the layout
+  rules in this document: indentation, line width, brace placement and
+  parameter alignment. See "How to use clang-format" below.
 
 
 
@@ -90,8 +94,9 @@ displaying trailing whitespace:
 
 ### How to use clang-format
 
-Install 'git-format-clang' which is part of the clang suite (Fedora:
-git-clang-format, openSUSE: clang-tools).
+Install `git-clang-format`, which is part of the clang suite (Fedora:
+git-clang-format, openSUSE: clang-tools). It formats according to the
+`.clang-format` file in the tree root.
 
 Now do your changes and stage them with `git add`. Once they are staged
 format the code using `git clang-format` before you commit.
@@ -208,7 +213,7 @@ line. The rationale is that if there are many parameters, each one
 should be on its own line to make tracking interface changes easier.
 
 
-## If, switch, & Code blocks
+### If, switch, & Code blocks
 
 Always follow an `if` keyword with a space but don't include additional
 spaces following or preceding the parentheses in the conditional.
@@ -251,15 +256,15 @@ Good examples:
 		printf("good\n");
 	}
 
-	for (x=1; x<10; x++) {
-		print("%d\n", x);
+	for (x = 1; x < 10; x++) {
+		printf("%d\n", x);
 	}
 
-	for (really_really_really_really_long_var_name=0;
-	     really_really_really_really_long_var_name<10;
+	for (really_really_really_really_long_var_name = 0;
+	     really_really_really_really_long_var_name < 10;
 	     really_really_really_really_long_var_name++)
 	{
-		print("%d\n", really_really_really_really_long_var_name);
+		printf("%d\n", really_really_really_really_long_var_name);
 	}
 
 	do {
@@ -272,17 +277,17 @@ Bad examples:
 ```c
 	while (1)
 	{
-		print("I'm in a loop!\n"); }
+		printf("I'm in a loop!\n"); }
 
-	for (x=1;
-	     x<10;
+	for (x = 1;
+	     x < 10;
 	     x++)
 	{
-		print("no good\n");
+		printf("no good\n");
 	}
 
 	if (i < 10)
-		print("I should be in braces.\n");
+		printf("I should be in braces.\n");
 ```
 
 
@@ -297,57 +302,39 @@ idea.
 Good Examples:
 
 ```c
-	int function foo(int y)
-	{
-		int *z = NULL;
-		int ret = 0;
+int foo(int y)
+{
+	int *z = NULL;
+	int ret = 0;
 
-		if (y < 10) {
-			z = malloc(sizeof(int) * y);
-			if (z == NULL) {
-				ret = 1;
-				goto done;
-			}
+	if (y < 10) {
+		z = malloc(sizeof(int) * y);
+		if (z == NULL) {
+			ret = 1;
+			goto done;
 		}
-
-		print("Allocated %d elements.\n", y);
-
-	 done:
-		if (z != NULL) {
-			free(z);
-		}
-
-		return ret;
 	}
+
+	printf("Allocated %d elements.\n", y);
+
+done:
+	free(z);
+	return ret;
+}
 ```
 
 
 ### Primitive Data Types
 
-Samba has large amounts of historical code which makes use of data types
-commonly supported by the C99 standard. However, at the time such types
-as boolean and exact width integers did not exist and Samba developers
-were forced to provide their own.  Now that these types are guaranteed to
-be available either as part of the compiler C99 support or from
-lib/replace/, new code should adhere to the following conventions:
+Samba has large amounts of historical code which predates C99. Back then
+types such as booleans and exact width integers did not exist, and Samba
+developers were forced to provide their own. Now that these types are
+guaranteed to be available either as part of the compiler C99 support or
+from lib/replace/, new code should adhere to the following conventions:
 
   * Booleans are of type `bool` (not `BOOL`)
   * Boolean values are `true` and `false` (not `True` or `False`)
   * Exact width integers are of type `[u]int[8|16|32|64]_t`
-
-Most of the time a good name for a boolean variable is 'ok'. Here is an
-example we often use:
-
-```c
-	bool ok;
-
-	ok = foo();
-	if (!ok) {
-		/* do something */
-	}
-```
-
-It makes the code more readable and is easy to debug.
 
 ### Typedefs
 
@@ -392,45 +379,47 @@ Bad Example:
 ```
 ### Initialize structs
 
-All structures MUST be at least initialised to 0/NULL.
+All structures MUST be at least initialized to 0/NULL.
 
 Current recommended initialization:
 
 ```c
-        struct somestruct {
-                int ival;
-                bool bval;
-                double dval;
-                char *sval;
-        };
+	struct somestruct {
+		int ival;
+		bool bval;
+		double dval;
+		char *sval;
+	};
 
-        struct somestruct var1 = {};
+	struct somestruct var1 = {};
 ```
 
 avoid:
 
 ```c
-        struct somestruct var1 = {0};
+	struct somestruct var1 = {0};
 ```
 
-as it can be less portable, in particular if the first element of the struct in question is a nested struct.
+as it can be less portable, in particular if the first element of the
+struct in question is a nested struct.
 
-Of course if specific members need non-zero initialization then use something like:
+Of course if specific members need non-zero initialization then use
+something like:
 
 ```c
-        struct bar {
-            int inner;
-        };
-        struct foo {
-                int outer;
-                struct bar nested;
-        };
-        struct foo var2 = {
-                .outer = 5,
-                .nested = {
-                        .inner = 3,
-                },
-        };
+	struct bar {
+		int inner;
+	};
+	struct foo {
+		int outer;
+		struct bar nested;
+	};
+	struct foo var2 = {
+		.outer = 5,
+		.nested = {
+			.inner = 3,
+		},
+	};
 ```
 
 ### Make use of helper variables
@@ -460,6 +449,18 @@ Bad Example:
 ```c
 	ret = some_function_my_name(get_some_name());
 	...
+```
+
+The same applies to functions returning a boolean. Most of the time a
+good name for the helper variable is 'ok':
+
+```c
+	bool ok;
+
+	ok = foo();
+	if (!ok) {
+		/* do something */
+	}
 ```
 
 Please try to avoid passing function return values to if- or
@@ -503,10 +504,10 @@ the debuglevel is not high enough.
 	if (!NT_STATUS_IS_OK(status)) {
 		struct dom_sid_buf sid_buf;
 		struct GUID_txt_buf guid_buf;
-		DBG_WARNING(
-		    "objectSID [%s] for GUID [%s] invalid\n",
-		    dom_sid_str_buf(objectsid, &sid_buf),
-		    GUID_buf_string(&cache->entries[idx], &guid_buf));
+
+		DBG_WARNING("objectSID [%s] for GUID [%s] invalid\n",
+			    dom_sid_str_buf(objectsid, &sid_buf),
+			    GUID_buf_string(&cache->entries[idx], &guid_buf));
 	}
 ```
 
@@ -552,6 +553,10 @@ Don't do this:
 It should be:
 
 ```c
+	struct ldb_message *match = NULL;
+
+	...
+
 	frame = talloc_stackframe();
 
 	if (ret != LDB_SUCCESS) {
@@ -604,8 +609,10 @@ function name.
 
 Use %PRIu32 instead of %u for uint32_t. Do not assume that this is valid:
 
-/usr/include/inttypes.h
-104:# define PRIu32             "u"
+```c
+/* /usr/include/inttypes.h */
+# define PRIu32             "u"
+```
 
 It could be possible to have a platform where "unsigned" is 64-bit. In theory
 even 16-bit. The point is that "unsigned" being 32-bit is nowhere specified.
@@ -614,7 +621,7 @@ The PRIuxx specifiers are standard.
 Example usage:
 
 ```c
-D_DEBUG("Resolving %"PRIu32" SID(s).\n", state->num_sids);
+DBG_DEBUG("Resolving %" PRIu32 " SID(s).\n", state->num_sids);
 ```
 
 Note:
