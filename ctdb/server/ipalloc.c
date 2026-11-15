@@ -27,7 +27,7 @@
 #include "lib/util/debug.h"
 
 #include "common/logging.h"
-#include "common/rb_tree.h"
+#include "lib/util/rbtree.h"
 
 #include "protocol/protocol_util.h"
 
@@ -59,29 +59,91 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 	return ipalloc_state;
 }
 
-static void *add_ip_callback(void *parm, void *data)
+/*
+ * Order IP addresses by ip_key(), comparing 32-bit words from the
+ * start of the key
+ */
+static int ip_key_cmp(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 {
-	struct public_ip_list *this_ip = parm;
-	struct public_ip_list *prev_ip = data;
+	uint32_t k1[IP_KEYLEN];
+	uint32_t *k2 = NULL;
+	unsigned int i;
 
-	if (prev_ip == NULL) {
-		return parm;
-	}
-	if (this_ip->pnn == CTDB_UNKNOWN_PNN) {
-		this_ip->pnn = prev_ip->pnn;
+	/* ip_key() returns a static buffer */
+	memcpy(k1, ip_key(ip1), sizeof(k1));
+	k2 = ip_key(ip2);
+
+	for (i = 0; i < IP_KEYLEN; i++) {
+		if (k1[i] < k2[i]) {
+			return -1;
+		}
+		if (k1[i] > k2[i]) {
+			return 1;
+		}
 	}
 
-	return parm;
+	return 0;
 }
 
-static int getips_count_callback(void *param, void *data)
-{
-	struct public_ip_list **ip_list = (struct public_ip_list **)param;
-	struct public_ip_list *new_ip = (struct public_ip_list *)data;
+struct merged_ip {
+	struct rb_node rb;
+	struct public_ip_list *ip;
+};
 
-	new_ip->next = *ip_list;
-	*ip_list     = new_ip;
-	return 0;
+static struct merged_ip *merged_ip_from_rb(struct rb_node *rb)
+{
+	void *p = (char *)rb - offsetof(struct merged_ip, rb);
+
+	return (struct merged_ip *)p;
+}
+
+/*
+ * Return the entry for addr in tree, adding a new one if the address
+ * has not been seen before
+ */
+static struct public_ip_list *merged_ip_lookup_add(TALLOC_CTX *mem_ctx,
+						   TALLOC_CTX *tree_ctx,
+						   struct rb_root *tree,
+						   ctdb_sock_addr *addr)
+{
+	struct rb_node **p = &tree->rb_node;
+	struct rb_node *parent = NULL;
+	struct merged_ip *m = NULL;
+
+	while (*p != NULL) {
+		int cmp;
+
+		parent = *p;
+		m = merged_ip_from_rb(parent);
+
+		cmp = ip_key_cmp(addr, &m->ip->addr);
+		if (cmp < 0) {
+			p = &parent->rb_left;
+		} else if (cmp > 0) {
+			p = &parent->rb_right;
+		} else {
+			return m->ip;
+		}
+	}
+
+	m = talloc_zero(tree_ctx, struct merged_ip);
+	if (m == NULL) {
+		return NULL;
+	}
+
+	/* This is returned as part of ip_list */
+	m->ip = talloc_zero(mem_ctx, struct public_ip_list);
+	if (m->ip == NULL) {
+		return NULL;
+	}
+
+	m->ip->addr = *addr;
+	m->ip->pnn = CTDB_UNKNOWN_PNN;
+
+	rb_link_node(&m->rb, parent, p);
+	rb_insert_color(&m->rb, tree);
+
+	return m->ip;
 }
 
 /* Nodes only know about those public addresses that they are
@@ -93,15 +155,20 @@ static struct public_ip_list *
 create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 {
 	unsigned int i, j;
-	struct public_ip_list *ip_list;
+	struct public_ip_list *ip_list = NULL;
 	struct ctdb_public_ip_list *public_ips;
-	struct trbt_tree *ip_tree;
-	int ret;
-
-	ip_tree = trbt_create(ipalloc_state, 0);
+	TALLOC_CTX *tree_ctx = NULL;
+	struct rb_root tree = RB_ROOT;
+	struct rb_node *rb = NULL;
 
 	if (ipalloc_state->known_public_ips == NULL) {
-		DEBUG(DEBUG_ERR, ("Known public IPs not set\n"));
+		D_ERR("Known public IPs not set\n");
+		return NULL;
+	}
+
+	tree_ctx = talloc_new(ipalloc_state);
+	if (tree_ctx == NULL) {
+		DBG_ERR("Out of memory\n");
 		return NULL;
 	}
 
@@ -110,41 +177,39 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 		public_ips = &ipalloc_state->known_public_ips[i];
 
 		for (j=0; j < public_ips->num; j++) {
-			struct public_ip_list *tmp_ip;
+			struct ctdb_public_ip *pip = &public_ips->ip[j];
+			struct public_ip_list *ip = NULL;
 
-			/* This is returned as part of ip_list */
-			tmp_ip = talloc_zero(ipalloc_state, struct public_ip_list);
-			if (tmp_ip == NULL) {
-				DEBUG(DEBUG_ERR,
-				      (__location__ " out of memory\n"));
-				talloc_free(ip_tree);
+			ip = merged_ip_lookup_add(ipalloc_state,
+						  tree_ctx,
+						  &tree,
+						  &pip->addr);
+			if (ip == NULL) {
+				DBG_ERR("Out of memory\n");
+				talloc_free(tree_ctx);
 				return NULL;
 			}
 
 			/* Do not use information about IP addresses hosted
 			 * on other nodes, it may not be accurate */
-			if (public_ips->ip[j].pnn == i) {
-				tmp_ip->pnn = public_ips->ip[j].pnn;
-			} else {
-				tmp_ip->pnn = CTDB_UNKNOWN_PNN;
+			if (pip->pnn == i) {
+				ip->pnn = pip->pnn;
 			}
-			tmp_ip->addr = public_ips->ip[j].addr;
-			tmp_ip->next = NULL;
-
-			trbt_insertarray32_callback(ip_tree,
-				IP_KEYLEN, ip_key(&public_ips->ip[j].addr),
-				add_ip_callback,
-				tmp_ip);
 		}
 	}
 
-	ip_list = NULL;
-	ret = trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
-	if (ret != 0) {
-		DBG_ERR("Error traversing the IP tree.\n");
+	/*
+	 * Prepending reverses the order.  This matters because the
+	 * result of deterministic IP allocation depends on it.
+	 */
+	for (rb = rb_first(&tree); rb != NULL; rb = rb_next(rb)) {
+		struct public_ip_list *ip = merged_ip_from_rb(rb)->ip;
+
+		ip->next = ip_list;
+		ip_list = ip;
 	}
 
-	talloc_free(ip_tree);
+	talloc_free(tree_ctx);
 
 	return ip_list;
 }
