@@ -14,14 +14,20 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from wafsamba.tests import TestCase
+import fnmatch
+import os
+import shutil
+import tempfile
+from io import StringIO
 
 from wafsamba.samba_abi import (
+    abi_build_vscript,
+    abi_match_excludes_as_patterns,
     abi_write_vscript,
     normalise_signature,
-    )
-
-from io import StringIO
+    symbol_as_pattern,
+)
+from wafsamba.tests import TestCase
 
 
 class NormaliseSignatureTests(TestCase):
@@ -159,3 +165,238 @@ MYLIB_0.1 {
 \t\t*;
 };
 """)
+
+
+class FakeNode(object):
+
+    def __init__(self, path):
+        self.path = path
+
+    def abspath(self, env=None):
+        return self.path
+
+    def bldpath(self, env=None):
+        return self.path
+
+
+class FakeEnv(object):
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class FakeTask(object):
+
+    def __init__(self, inputs, output, **env):
+        self.inputs = [FakeNode(i) for i in inputs]
+        self.outputs = [FakeNode(output)]
+        self.env = FakeEnv(**env)
+
+
+class BuildVscriptTests(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+        super().tearDown()
+
+    def write_file(self, name, content):
+        path = os.path.join(self.tmpdir, name)
+        with open(path, mode='w') as f:
+            f.write(content)
+        return path
+
+    def build_vscript(self, inputs, abi_match, no_linker_symbols,
+                      private_library=False, version="MYLIB_1.0"):
+        output = os.path.join(self.tmpdir, "mylib.vscript")
+        task = FakeTask(inputs, output,
+                        LIBNAME="MYLIB",
+                        VERSION=version,
+                        ABI_MATCH=abi_match,
+                        PRIVATE_LIBRARY=private_library,
+                        LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS=no_linker_symbols)
+        abi_build_vscript(task)
+        with open(output) as f:
+            return f.read()
+
+    def sigs_files(self):
+        return [
+            self.write_file("MYLIB-0.1.sigs",
+                            "kept_old: int (void)\n"
+                            "removed_old: int (void)\n"
+                            "exc_old: int (void)\n"),
+            self.write_file("MYLIB-1.0.sigs",
+                            "kept_old: int (void)\n"
+                            "new: int (void)\n"),
+        ]
+
+    def test_keep_removed_symbols(self):
+        # Without LD_VERSION_SCRIPT_NO_LINKER_SYMBOLS the removed
+        # symbols stay in the version nodes they were added in.
+        vscript = self.build_vscript(self.sigs_files(),
+                                     ["!exc_*", "*"],
+                                     no_linker_symbols=False)
+        self.assertEqual(vscript, """\
+MYLIB_0.1 {
+\tglobal:
+\t\tkept_old;
+\t\tremoved_old;
+\t\texc_old;
+};
+
+MYLIB_1.0 {
+\tglobal:
+\t\t*;
+\tlocal:
+\t\texc_*;
+\t\t_end;
+\t\t__bss_start;
+\t\t_edata;
+};
+""")
+
+    def test_prune_removed_symbols(self):
+        # removed_old is part of the ABI, but no longer in the
+        # latest ABI file, so it's pruned. exc_old isn't part of
+        # the ABI, so it keeps its original version.
+        vscript = self.build_vscript(self.sigs_files(),
+                                     ["!exc_*", "*"],
+                                     no_linker_symbols=True)
+        self.assertEqual(vscript, """\
+MYLIB_0.1 {
+\tglobal:
+\t\tkept_old;
+\t\texc_old;
+};
+
+MYLIB_1.0 {
+\tglobal:
+\t\t*;
+\tlocal:
+\t\texc_*;
+};
+""")
+
+    def version_script_map(self):
+        return self.write_file("version-script.map", """\
+# comment
+UPSTREAM_1.0 {
+\tglobal:
+\t\tup_func;
+\t\tup_glob_*;
+\tlocal:
+\t\tup_hidden;
+\t\t*;
+};
+""")
+
+    def test_version_script_map(self):
+        vscript = self.build_vscript([self.version_script_map()],
+                                     [],
+                                     no_linker_symbols=False,
+                                     private_library=True,
+                                     version="MYLIB_PRIVATE")
+        self.assertEqual(vscript, """\
+MYLIB_PRIVATE {
+\tglobal:
+\t\tup_func;
+\t\tup_glob_*;
+\tlocal:
+\t\tup_hidden;
+\t\t_end;
+\t\t__bss_start;
+\t\t_edata;
+\t\t*;
+};
+""")
+
+    def test_version_script_map_as_patterns(self):
+        vscript = self.build_vscript([self.version_script_map()],
+                                     [],
+                                     no_linker_symbols=True,
+                                     private_library=True,
+                                     version="MYLIB_PRIVATE")
+        self.assertEqual(vscript, """\
+MYLIB_PRIVATE {
+\tglobal:
+\t\tup_fun[c];
+\t\tup_glob_*;
+\tlocal:
+\t\tup_hidde[n];
+\t\t*;
+};
+""")
+
+    def test_excludes(self):
+        abi_match = ["!exc_name", "!exc_*", "*"]
+        vscript = self.build_vscript(self.sigs_files(), abi_match,
+                                     no_linker_symbols=False)
+        self.assertIn("\t\texc_name;\n", vscript)
+        self.assertIn("\t\texc_*;\n", vscript)
+
+    def test_excludes_as_patterns(self):
+        # The linker doesn't warn about patterns not matching any
+        # symbol, e.g. symbols of modules, which are not linked
+        # statically.
+        abi_match = ["!exc_name", "!exc_*", "*"]
+        vscript = self.build_vscript(self.sigs_files(), abi_match,
+                                     no_linker_symbols=True)
+        self.assertEqual(vscript, """\
+MYLIB_0.1 {
+\tglobal:
+\t\tkept_old;
+\t\texc_old;
+};
+
+MYLIB_1.0 {
+\tglobal:
+\t\t*;
+\tlocal:
+\t\texc_nam[e];
+\t\texc_*;
+};
+""")
+
+
+class AbiMatchExcludesAsPatternsTests(TestCase):
+
+    def test_global_star(self):
+        self.assertEqual(
+            abi_match_excludes_as_patterns(["!priv2ld", "!pdb_*_init"]),
+            ["!priv2l[d]", "!pdb_*_init"])
+        self.assertEqual(
+            abi_match_excludes_as_patterns(["!priv2ld", "*"]),
+            ["!priv2l[d]", "*"])
+
+    def test_global_pattern(self):
+        # A global pattern has precedence over a local pattern,
+        # so the exact name has to stay.
+        self.assertEqual(
+            abi_match_excludes_as_patterns(
+                ["!ndr_table_x", "!other_x", "ndr_*"]),
+            ["!ndr_table_x", "!other_[x]", "ndr_*"])
+
+    def test_includes_unchanged(self):
+        self.assertEqual(
+            abi_match_excludes_as_patterns(["pub_func", "pub_*"]),
+            ["pub_func", "pub_*"])
+
+
+class SymbolAsPatternTests(TestCase):
+
+    def test_symbol(self):
+        self.assertEqual(symbol_as_pattern("foo"), "fo[o]")
+        self.assertTrue(fnmatch.fnmatch("foo", symbol_as_pattern("foo")))
+        self.assertFalse(fnmatch.fnmatch("fo", symbol_as_pattern("foo")))
+        self.assertFalse(fnmatch.fnmatch("foo2", symbol_as_pattern("foo")))
+
+    def test_single_char(self):
+        self.assertEqual(symbol_as_pattern("x"), "[x]")
+
+    def test_pattern(self):
+        self.assertEqual(symbol_as_pattern("foo_*"), "foo_*")
+        self.assertEqual(symbol_as_pattern("fo?"), "fo?")
+        self.assertEqual(symbol_as_pattern("fo[o]"), "fo[o]")
