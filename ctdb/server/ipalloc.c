@@ -193,6 +193,10 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 			/* Do not use information about IP addresses hosted
 			 * on other nodes, it may not be accurate */
 			if (pip->pnn == i) {
+				if (ip->pnn != CTDB_UNKNOWN_PNN) {
+					/* An earlier node also hosts it */
+					ip->multiple_claims = true;
+				}
 				ip->pnn = pip->pnn;
 			}
 		}
@@ -246,7 +250,11 @@ static unsigned int compare_with_prev(struct ipalloc_state *ipalloc_state,
 	unsigned int num_changed = 0;
 
 	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
-		if (prev[i] != ip->pnn) {
+		/*
+		 * An IP hosted by multiple nodes will be released from
+		 * at least one of them
+		 */
+		if (ip->multiple_claims || prev[i] != ip->pnn) {
 			num_changed++;
 		}
 		i++;
