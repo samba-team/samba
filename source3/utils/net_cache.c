@@ -143,7 +143,7 @@ static void delete_cache_entry(const char* keystr, const char* datastr,
  **/
 static time_t parse_timeout(const char* timeout_str)
 {
-	char sign = '\0', *number = NULL, unit = '\0';
+	char sign = '\0', unit = '\0';
 	int len, number_begin, number_end;
 	time_t timeout;
 
@@ -172,10 +172,15 @@ static time_t parse_timeout(const char* timeout_str)
 	/* number detection */
 	len = (sign) ? strlen(&timeout_str[number_begin]) : len;
 	number_end = (unit) ? len - 1 : len;
-	number = SMB_STRNDUP(&timeout_str[number_begin], number_end);
 
 	/* calculate actual timeout value */
-	timeout = (time_t)atoi(number);
+	{
+		char number[number_end + 1];
+
+		memcpy(number, &timeout_str[number_begin], number_end);
+		number[number_end] = '\0';
+		timeout = (time_t)atoi(number);
+	}
 
 	switch (unit) {
 	case 'm': timeout *= 60; break;
@@ -190,7 +195,6 @@ static time_t parse_timeout(const char* timeout_str)
 	default:  timeout += time(NULL); break;
 	}
 
-	if (number) SAFE_FREE(number);
 	return timeout;
 }
 
