@@ -54,3 +54,11 @@ code.
 ## Python
 
 PEP8, compatible with Python 3.6.
+
+## Tests
+
+New SMB-level tests are preferably written in Python
+(`python/samba/tests/libsmb*.py`), extending the
+`samba.samba3.libsmb_samba_internal` bindings in
+`source3/libsmb/pylibsmb.c` where needed. C torture tests
+remain fine where Python would be awkward.
