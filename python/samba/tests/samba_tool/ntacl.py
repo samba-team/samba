@@ -95,6 +95,49 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
         finally:
             os.rename(dest, src)
 
+    def _test_without_share_paths(self, shares):
+        lp = env_loadparm()
+        smb_conf = os.path.join(self.tempdir, "smb.conf")
+        with open(smb_conf, "w") as f:
+            f.write("[global]\n")
+            for p in ("netbios name", "realm", "workgroup", "server role",
+                      "private dir", "state directory", "lock dir",
+                      "cache directory", "binddns dir"):
+                f.write(f"\t{p} = {lp.get(p)}\n")
+            f.write(shares)
+        try:
+            for args in (["sysvolreset", "--use-s3fs"],
+                         ["sysvolreset", "--use-ntvfs"],
+                         ["sysvolreset"],
+                         ["sysvolcheck"]
+            ):
+
+                # This needs a new process, as all LoadParm objects
+                # share a global context, which still has the shares
+                # of the selftest smb.conf.
+                (result, out, err) = self.run_command(["samba-tool", "ntacl",
+                                                       *args, "-s", smb_conf])
+                self.assertNotEqual(result, 0,
+                                    f"succeeded with {args} "
+                                    "without share paths")
+                self.assertNotIn("uncaught exception", err,
+                                 "Shouldn't be uncaught exception")
+                self.assertNotRegex(err, r'^\s*File [^,]+, line \d+, in',
+                                    "Shouldn't be lines of traceback")
+                self.assertIn(f"share with a path in {smb_conf}", err)
+                self.assertEqual(out, "", "Shouldn't be any output messages")
+        finally:
+            os.unlink(smb_conf)
+
+    def test_without_shares(self):
+        self._test_without_share_paths("")
+
+    def test_without_share_paths(self):
+        self._test_without_share_paths("[sysvol]\n"
+                                       "\tread only = no\n"
+                                       "[netlogon]\n"
+                                       "\tread only = no\n")
+
 
 class NtACLCmdGetSetTestCase(SambaToolCmdTest):
     """Tests for samba-tool ntacl get/set subcommands"""

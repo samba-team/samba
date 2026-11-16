@@ -63,6 +63,14 @@ def get_local_domain_sid(lp):
     return domain_sid
 
 
+def get_share_path(lp, share):
+    path = lp.get("path", share)
+    if not path:
+        raise CommandError(f"No [{share}] share with a path in "
+                           f"{lp.configfile}")
+    return path
+
+
 class cmd_ntacl_set(Command):
     """Set ACLs on a file."""
 
@@ -407,7 +415,7 @@ class cmd_ntacl_sysvolreset(Command):
         creds.set_kerberos_state(DONT_USE_KERBEROS)
         logger = self.get_logger()
 
-        sysvol = lp.get("path", "sysvol")
+        sysvol = get_share_path(lp, "sysvol")
         try:
             samdb = SamDB(session_info=system_session(),
                           lp=lp)
@@ -471,8 +479,8 @@ class cmd_ntacl_sysvolcheck(Command):
         creds = credopts.get_credentials(lp)
         creds.set_kerberos_state(DONT_USE_KERBEROS)
 
-        netlogon = lp.get("path", "netlogon")
-        sysvol = lp.get("path", "sysvol")
+        netlogon = get_share_path(lp, "netlogon")
+        sysvol = get_share_path(lp, "sysvol")
         try:
             samdb = SamDB(session_info=system_session(), lp=lp)
         except Exception as e:
