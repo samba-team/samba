@@ -794,8 +794,12 @@ static void cli_read_done(struct tevent_req *subreq)
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-		received = 0;
-		status = NT_STATUS_OK;
+		/*
+		 * There's no buf, don't run into the check below
+		 */
+		state->received = 0;
+		tevent_req_done(req);
+		return;
 	}
 	if (tevent_req_nterror(req, status)) {
 		return;
