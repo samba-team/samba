@@ -1,2 +1,4 @@
 ^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_directory
 ^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_nonempty_directory
+^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlink_reparse_point_empty
+^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlink_reparse_point_set_size_0

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import struct
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import reparse_symlink
 from samba import (ntstatus,NTSTATUSError)
@@ -304,6 +305,133 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         else:
             smb2.close(fd2)
             self.fail("Second open ignored ShareAccess=0 of the first")
+
+    def symlink_conn(self, share):
+        """Connection to create real symlinks with
+
+        SMB1 POSIX by default. Windows has no SMB1 POSIX
+        extensions, there set SYMLINK_VIA_FSCTL=1 to create them
+        with FSCTL_SET_REPARSE_POINT over SMB2.
+        """
+        via_fsctl = samba.tests.env_get_var_value(
+            "SYMLINK_VIA_FSCTL", allow_missing=True)
+        if via_fsctl:
+            return libsmb.Conn(self.server_ip, share, self.lp, self.creds)
+
+        conn = libsmb.Conn(
+            self.server_ip, share, self.lp, self.creds, force_smb1=True)
+        conn.smb1_posix()
+        return conn
+
+    def test_symlink_reparse_point_empty(self):
+        """Test that a symlink opened as reparse point has no data"""
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        if share:
+            # Against Windows both are the same share
+            smb1share = share
+            smb2share = share
+        else:
+            smb1share = "nosymlinks_smb1allow"
+            smb2share = "nosymlinks"
+        smb2 = libsmb.Conn(self.server_ip, smb2share, self.lp, self.creds)
+        lnkconn = self.symlink_conn(smb1share)
+        symlink="syml"
+        target="foo"
+
+        fd = smb2.create(target,
+                         DesiredAccess=sec.SEC_FILE_WRITE_DATA,
+                         CreateDisposition=libsmb.FILE_CREATE)
+        smb2.write(fd, b"0123456789", 0)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, target)
+
+        self.create_symlink(lnkconn, target, symlink)
+        self.verify_symlink(smb2, symlink, target)
+        self.addCleanup(self.clean_file, lnkconn, symlink)
+
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        self.assertEqual(cr['end_of_file'], 0)
+        self.assertEqual(cr['allocation_size'], 0)
+
+        info = smb2.qfileinfo(fd, libsmb.FSCC_FILE_STANDARD_INFORMATION)
+        self.assertEqual(info['end_of_file'], 0)
+        self.assertEqual(info['allocation_size'], 0)
+
+        streams = smb2.qfileinfo(fd, libsmb.FSCC_FILE_STREAM_INFORMATION)
+        self.assertEqual(len(streams), 1)
+        self.assertEqual(streams[0]['name'], "::$DATA")
+        self.assertEqual(streams[0]['size'], 0)
+        self.assertEqual(streams[0]['allocation_size'], 0)
+
+        # cli_read() turns NT_STATUS_END_OF_FILE into an empty read
+        data = self.assertNoNTSTATUSError(smb2.read, fd, 0, 10)
+        self.assertEqual(data, b'')
+
+    def test_symlink_reparse_point_set_size_0(self):
+        """Setting the size a symlink opened as reparse point has works"""
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        if share:
+            # Against Windows both are the same share
+            smb1share = share
+            smb2share = share
+        else:
+            smb1share = "nosymlinks_smb1allow"
+            smb2share = "nosymlinks"
+        smb2 = libsmb.Conn(self.server_ip, smb2share, self.lp, self.creds)
+        lnkconn = self.symlink_conn(smb1share)
+        symlink = "syml"
+        target = "foo"
+
+        fd = smb2.create(target,
+                         DesiredAccess=sec.SEC_FILE_WRITE_DATA,
+                         CreateDisposition=libsmb.FILE_CREATE)
+        smb2.write(fd, b"0123456789", 0)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, target)
+
+        self.create_symlink(lnkconn, target, symlink)
+        self.verify_symlink(smb2, symlink, target)
+        self.addCleanup(self.clean_file, lnkconn, symlink)
+
+        fd = self.assertNoNTSTATUSError(
+            smb2.create,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_WRITE_DATA |
+            sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        # Both levels are a single little-endian 64-bit size, not
+        # worth a pylibsmb wrapper
+        zero = struct.pack("<Q", 0)
+
+        self.assertNoNTSTATUSError(smb2.sfileinfo,
+                                   fd,
+                                   libsmb.SMB2_0_INFO_FILE,
+                                   libsmb.FSCC_FILE_END_OF_FILE_INFORMATION,
+                                   zero)
+        self.assertNoNTSTATUSError(smb2.sfileinfo,
+                                   fd,
+                                   libsmb.SMB2_0_INFO_FILE,
+                                   libsmb.FSCC_FILE_ALLOCATION_INFORMATION,
+                                   zero)
+
+        info = smb2.qfileinfo(fd, libsmb.FSCC_FILE_STANDARD_INFORMATION)
+        self.assertEqual(info['end_of_file'], 0)
+        self.assertEqual(info['allocation_size'], 0)
+
+        # The target is untouched
+        fd2 = smb2.create(target, DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE)
+        info = smb2.qfileinfo(fd2, libsmb.FSCC_FILE_STANDARD_INFORMATION)
+        smb2.close(fd2)
+        self.assertEqual(info['end_of_file'], 10)
 
 if __name__ == '__main__':
     import unittest
