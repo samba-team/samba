@@ -979,7 +979,13 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	}
 
 	if (fsp_get_pathref_fd(fsp) == -1) {
-		if (fsp->fsp_flags.posix_open) {
+		/*
+		 * Without O_PATH a symlink opened as such has no fd,
+		 * don't follow it.
+		 */
+		if (fsp->fsp_flags.posix_open ||
+		    S_ISLNK(saved_stat.st_ex_mode))
+		{
 			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
 		} else {
 			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
