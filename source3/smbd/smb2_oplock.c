@@ -1878,6 +1878,28 @@ static void delay_for_handle_lease_break_below_send_breaks(
 			break;
 		}
 
+		/*
+		 * Watch before sending the break: The holder can
+		 * answer the break and change the record before
+		 * share_mode_watch_send() looks at it, and we would
+		 * miss that change.
+		 */
+		subreq = share_mode_watch_send(state,
+					       state->ev,
+					       &b->id,
+					       (struct server_id){0});
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					delay_for_handle_lease_break_below_done,
+					req);
+		if (!tevent_req_set_endtime(subreq, state->ev, state->timeout)) {
+			tevent_req_oom(req);
+			return;
+		}
+		state->num_watches++;
+
 		e = (struct share_mode_entry) {
 			.share_file_id = b->share_file_id,
 			.pid = b->pid,
@@ -1897,22 +1919,6 @@ static void delay_for_handle_lease_break_below_send_breaks(
 		DBG_DEBUG("Sent h-lease break on file-id [%s] pid [%s]\n",
 			  file_id_str_buf(b->id, &fid_buf),
 			  server_id_str_buf(b->pid, &sid_buf));
-
-		subreq = share_mode_watch_send(state,
-					       state->ev,
-					       &b->id,
-					       (struct server_id){0});
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq,
-					delay_for_handle_lease_break_below_done,
-					req);
-		if (!tevent_req_set_endtime(subreq, state->ev, state->timeout)) {
-			tevent_req_oom(req);
-			return;
-		}
-		state->num_watches++;
 	}
 
 	state->break_id = last_file_id;
