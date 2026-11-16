@@ -935,6 +935,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call *call;
 	struct ctdb_db_context *ctdb_db;
 	int tmp_count, bucket;
+	bool revoking;
 
 	if (buf_len < req_call_header_len ||
 	    c->keylen > buf_len - req_call_header_len  ||
@@ -1024,7 +1025,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* if we are revoking, we must defer all other calls until the revoke
 	 * had completed.
 	 */
-	if (header.flags & CTDB_REC_RO_REVOKING_READONLY) {
+	revoking = ctdb_revoke_in_progress(ctdb_db, call->key, &header, data);
+	if (revoking) {
 		talloc_free(data.dptr);
 		ret = ctdb_ltdb_unlock(ctdb_db, call->key);
 
@@ -2056,10 +2058,10 @@ err_out:
 	return -1;
 }
 
-int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context)
+static struct revoke_handle *find_revoke(struct ctdb_db_context *ctdb_db,
+					 TDB_DATA key)
 {
-	struct revoke_handle *rev_hdl;
-	struct revoke_deferred_call *deferred_call;
+	struct revoke_handle *rev_hdl = NULL;
 
 	for (rev_hdl = ctdb_db->revoke_active;
 	     rev_hdl;
@@ -2074,7 +2076,51 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 			break;
 		}
 	}
+	return rev_hdl;
+}
 
+/*
+ * A failed revoke can leave REVOKING_READONLY in the record, for
+ * example if it could not lock the record. Clear it if no revoke is
+ * running. Called with the record locked.
+ */
+bool ctdb_revoke_in_progress(struct ctdb_db_context *ctdb_db,
+			     TDB_DATA key,
+			     struct ctdb_ltdb_header *header,
+			     TDB_DATA data)
+{
+	struct revoke_handle *rev_hdl = NULL;
+	int ret;
+
+	if (!(header->flags & CTDB_REC_RO_REVOKING_READONLY)) {
+		return false;
+	}
+
+	rev_hdl = find_revoke(ctdb_db, key);
+	if (rev_hdl != NULL) {
+		return true;
+	}
+
+	DBG_NOTICE("Clearing stale REVOKING_READONLY flag\n");
+	header->flags &= ~CTDB_REC_RO_REVOKING_READONLY;
+	ret = ctdb_ltdb_store(ctdb_db, key, header, data);
+	if (ret != 0) {
+		ctdb_fatal(ctdb_db->ctdb, "Failed to clear REVOKING_READONLY");
+	}
+	return false;
+}
+
+int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb,
+				  struct ctdb_db_context *ctdb_db,
+				  TDB_DATA key,
+				  struct ctdb_req_header *hdr,
+				  deferred_requeue_fn fn,
+				  void *call_context)
+{
+	struct revoke_handle *rev_hdl = NULL;
+	struct revoke_deferred_call *deferred_call = NULL;
+
+	rev_hdl = find_revoke(ctdb_db, key);
 	if (rev_hdl == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to add deferred call to revoke list. revoke structure not found\n"));
 		return -1;

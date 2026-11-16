@@ -524,6 +524,11 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 				TDB_DATA key, struct ctdb_ltdb_header *header,
 				TDB_DATA data);
 
+bool ctdb_revoke_in_progress(struct ctdb_db_context *ctdb_db,
+			     TDB_DATA key,
+			     struct ctdb_ltdb_header *header,
+			     TDB_DATA data);
+
 int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb,
 				  struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key, struct ctdb_req_header *hdr,

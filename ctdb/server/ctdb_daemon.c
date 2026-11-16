@@ -746,6 +746,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	struct ctdb_ltdb_header header;
 	TDB_DATA key, data;
 	int ret;
+	bool revoking;
 	struct ctdb_context *ctdb = client->ctdb;
 	struct ctdb_daemon_packet_wrap *w;
 
@@ -834,7 +835,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	/* if we are revoking, we must defer all other calls until the revoke
 	 * had completed.
 	 */
-	if (header.flags & CTDB_REC_RO_REVOKING_READONLY) {
+	revoking = ctdb_revoke_in_progress(ctdb_db, key, &header, data);
+	if (revoking) {
 		talloc_free(data.dptr);
 		ret = ctdb_ltdb_unlock(ctdb_db, key);
 
