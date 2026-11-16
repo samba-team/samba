@@ -434,8 +434,19 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   uint32_t type,
 				   const uint8_t *data_p, size_t size)
 {
-	struct regval_blob *regval = talloc(ctx, struct regval_blob);
+	struct regval_blob *regval = NULL;
 
+	/*
+	 * regval->valuename is an fstring, so we fail
+	 * instead of silently truncating the name.
+	 */
+	if (strlen(name) >= sizeof(regval->valuename)) {
+		DBG_WARNING("value name too long (%zu bytes): %s\n",
+			    strlen(name), name);
+		return NULL;
+	}
+
+	regval = talloc(ctx, struct regval_blob);
 	if (regval == NULL) {
 		return NULL;
 	}
@@ -490,7 +501,10 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint32_t type,
 	ctr->values[ctr->num_values] = regval_compose(ctr, name, type, data_p,
 						      size);
 	if (ctr->values[ctr->num_values] == NULL) {
-		ctr->num_values = 0;
+		/*
+		 * Only this value is missing, the existing
+		 * values are still valid.
+		 */
 		return 0;
 	}
 	ctr->num_values++;
