@@ -1763,6 +1763,9 @@ static struct tevent_req *ctdb_revoke_ro_send(
 	struct tevent_req *req = NULL;
 	struct ctdb_revoke_ro_state *state = NULL;
 	struct ctdb_marshall_buffer *m = NULL;
+	uint32_t timeout = ctdb_db->ctdb->tunable.control_timeout;
+	struct timeval endtime = {};
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct ctdb_revoke_ro_state);
 	if (req == NULL) {
@@ -1770,6 +1773,19 @@ static struct tevent_req *ctdb_revoke_ro_send(
 	}
 	state->ctdb_db = ctdb_db;
 	state->header = *header;
+
+	/*
+	 * Also covers waiting for the record lock. ControlTimeout 0
+	 * disables it, like in ctdb_daemon_send_control().
+	 */
+	if (timeout != 0) {
+		endtime = timeval_current_ofs(timeout, 0);
+		ok = tevent_req_set_endtime(req, ev, endtime);
+		if (!ok) {
+			tevent_req_oom(req);
+			return tevent_req_post(req, ev);
+		}
+	}
 
 	state->key.dptr = talloc_memdup(state, key.dptr, key.dsize);
 	if (tevent_req_nomem(state->key.dptr, req)) {
