@@ -6610,15 +6610,15 @@ static bool test_two_leases(struct torture_context *tctx,
 	lease_break_info.lease_skip_ack = true;
 
 	status = smb2_util_close(tree1, ch1);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_create failed\n");
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ret, done, "smb2_close failed\n");
 	ZERO_STRUCT(ch1);
 
 	CHECK_NO_BREAK(tctx);
 
 	status = smb2_util_close(tree1, ch2);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_create failed\n");
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ret, done, "smb2_close failed\n");
 	ZERO_STRUCT(ch2);
 
 	status = smb2_create_recv(req, tctx, &c);
@@ -6627,8 +6627,8 @@ static bool test_two_leases(struct torture_context *tctx,
 		ret, done, "smb2_create failed\n");
 
 	status = smb2_util_close(tree2, c.out.file.handle);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_create failed\n");
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ret, done, "smb2_close failed\n");
 
 done:
 	if (!smb2_util_handle_empty(h1)) {
