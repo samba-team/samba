@@ -2865,7 +2865,6 @@ static void call_trans2qfileinfo(
 	files_struct *fsp = NULL;
 	struct file_id fileid;
 	NTSTATUS status = NT_STATUS_OK;
-	int ret;
 
 	if (params == NULL) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2922,32 +2921,7 @@ static void call_trans2qfileinfo(
 
 		/* We know this name is ok, it's already passed the checks. */
 
-	} else if(fsp_get_pathref_fd(fsp) == -1) {
-		/*
-		 * This is actually a QFILEINFO on a directory
-		 * handle (returned from an NT SMB). NT5.0 seems
-		 * to do this call. JRA.
-		 */
-		ret = vfs_stat(conn, smb_fname);
-		if (ret != 0) {
-			DBG_NOTICE("vfs_stat of %s failed (%s)\n",
-				   smb_fname_str_dbg(smb_fname),
-				   strerror(errno));
-			reply_nterror(req,
-				      map_nt_error_from_unix(errno));
-			return;
-		}
-
-		if (fsp_getinfo_ask_sharemode(fsp)) {
-			fileid = vfs_file_id_from_sbuf(
-				conn, &smb_fname->st);
-			get_file_infos(fileid, fsp->name_hash,
-				       &delete_pending);
-		}
 	} else {
-		/*
-		 * Original code - this is an open file.
-		 */
 		status = vfs_stat_fsp(fsp);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("fstat of %s failed (%s)\n",

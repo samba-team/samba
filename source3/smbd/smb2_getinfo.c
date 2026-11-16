@@ -366,33 +366,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 
 			/* We know this name is ok, it's already passed the checks. */
 
-		} else if (fsp_get_pathref_fd(fsp) == -1) {
-			/*
-			 * This is actually a QFILEINFO on a directory
-			 * handle (returned from an NT SMB). NT5.0 seems
-			 * to do this call. JRA.
-			 */
-			int ret = vfs_stat(conn, fsp->fsp_name);
-			if (ret != 0) {
-				DBG_NOTICE("vfs_stat of %s failed (%s)\n",
-					 fsp_str_dbg(fsp),
-					 strerror(errno));
-				status = map_nt_error_from_unix(errno);
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
-			}
-
-			if (fsp_getinfo_ask_sharemode(fsp)) {
-				fileid = vfs_file_id_from_sbuf(
-					conn, &fsp->fsp_name->st);
-				get_file_infos(fileid, fsp->name_hash,
-					       &delete_pending);
-			}
 		} else {
-			/*
-			 * Original code - this is an open file.
-			 */
-
 			status = vfs_stat_fsp(fsp);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(3, ("smbd_smb2_getinfo_send: "
