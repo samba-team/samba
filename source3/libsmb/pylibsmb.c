@@ -1506,6 +1506,77 @@ static PyObject *py_cli_qfileinfo(struct py_cli_state *self, PyObject *args)
 	}
 
 	switch (level) {
+	case FSCC_FILE_STANDARD_INFORMATION: {
+		uint64_t allocation_size;
+		uint64_t end_of_file;
+		uint32_t number_of_links;
+		uint8_t delete_pending;
+		uint8_t directory;
+
+		if (num_rdata != 24) {
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+
+		allocation_size = PULL_LE_U64(rdata, 0);
+		end_of_file = PULL_LE_U64(rdata, 8);
+		number_of_links = PULL_LE_U32(rdata, 16);
+		delete_pending = PULL_LE_U8(rdata, 20);
+		directory = PULL_LE_U8(rdata, 21);
+
+		result = Py_BuildValue("{s:K,s:K,s:I,s:O,s:O}",
+				       "allocation_size",
+				       (unsigned long long)allocation_size,
+				       "end_of_file",
+				       (unsigned long long)end_of_file,
+				       "number_of_links",
+				       (unsigned int)number_of_links,
+				       "delete_pending",
+				       delete_pending ? Py_True : Py_False,
+				       "directory",
+				       directory ? Py_True : Py_False);
+		break;
+	}
+	case FSCC_FILE_STREAM_INFORMATION: {
+		struct stream_struct *streams = NULL;
+		unsigned int i, num_streams = 0;
+		bool ok;
+
+		ok = parse_streams_blob(
+			frame, rdata, num_rdata, &num_streams, &streams);
+		if (!ok) {
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+
+		result = PyList_New(num_streams);
+		if (result == NULL) {
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+
+		for (i = 0; i < num_streams; i++) {
+			PyObject *stream = NULL;
+
+			stream = Py_BuildValue(
+				"{s:s,s:K,s:K}",
+				"name",
+				streams[i].name,
+				"size",
+				(unsigned long long)streams[i].size,
+				"allocation_size",
+				(unsigned long long)streams[i].alloc_size);
+			if (stream == NULL) {
+				Py_CLEAR(result);
+				TALLOC_FREE(frame);
+				return NULL;
+			}
+			PyList_SET_ITEM(result, i, stream);
+		}
+		break;
+	}
 	case FSCC_FILE_ATTRIBUTE_TAG_INFORMATION: {
 		uint32_t mode = PULL_LE_U32(rdata, 0);
 		uint32_t tag = PULL_LE_U32(rdata, 4);
