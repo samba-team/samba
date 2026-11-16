@@ -894,9 +894,19 @@ int tfork_status(struct tfork **_t, bool wait)
 	 *
 	 */
 	{
-		size_t nwritten;
+		ssize_t nwritten;
 		nwritten = sys_write(t->status_fd, &(char){0}, sizeof(char));
-		if (nwritten != sizeof(char)) {
+		if ((nwritten == -1) &&
+		    ((errno == EPIPE) || (errno == ECONNRESET))) {
+			/*
+			 * The waiter already exited, e.g. because the
+			 * caller closed the fd returned by
+			 * tfork_event_fd() and the waiter failed to
+			 * write to it. We already have the status of
+			 * the worker, so we just need to reap the
+			 * waiter.
+			 */
+		} else if (nwritten != sizeof(char)) {
 			int saved_errno = errno;
 
 			close(t->status_fd);

@@ -92,6 +92,51 @@ done:
 	return ok;
 }
 
+static bool test_tfork_status_closed_event_fd(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	int status;
+	pid_t child;
+	int fd;
+	bool ok = true;
+
+	t = tfork_create();
+	if (t == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		_exit(123);
+	}
+
+	/*
+	 * The caller owns the event fd and might close it before
+	 * calling tfork_status(), e.g. via tevent_fd_set_auto_close().
+	 * The waiter then fails to write to it and exits, before
+	 * tfork_status() tells it to exit.
+	 */
+	fd = tfork_event_fd(t);
+	close(fd);
+
+	/* Give the waiter time to exit */
+	sleep(1);
+
+	status = tfork_status(&t, true);
+	torture_assert_goto(tctx, status != -1, ok, done,
+			    "tfork_status failed\n");
+	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
+			    "tfork failed\n");
+	torture_assert_goto(tctx, WEXITSTATUS(status) == 123, ok, done,
+			    "tfork failed\n");
+
+done:
+	if (t != NULL) {
+		tfork_destroy(&t);
+	}
+	return ok;
+}
+
 static bool test_tfork_sigign(struct torture_context *tctx)
 {
 	struct tfork *t = NULL;
@@ -921,6 +966,10 @@ struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "tfork_status",
 				      test_tfork_status);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_status_closed_event_fd",
+				      test_tfork_status_closed_event_fd);
 
 	torture_suite_add_simple_test(suite,
 				      "tfork_sigign",
