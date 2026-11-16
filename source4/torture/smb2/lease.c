@@ -6427,6 +6427,76 @@ done:
 	return ret;
 }
 
+struct two_leases_break_info {
+	size_t count;
+	struct smb2_lease_break breaks[2];
+};
+
+static bool test_two_leases_break_handler(struct smb2_transport *transport,
+					  const struct smb2_lease_break *lb,
+					  void *private_data)
+{
+	struct two_leases_break_info *info = private_data;
+
+	if (info->count < ARRAY_SIZE(info->breaks)) {
+		info->breaks[info->count] = *lb;
+	}
+	info->count++;
+	return true;
+}
+
+static void test_two_leases_timeout_cb(struct tevent_context *ev,
+				       struct tevent_timer *te,
+				       struct timeval current_time,
+				       void *private_data)
+{
+	bool *timesup = private_data;
+	*timesup = true;
+}
+
+/*
+ * Run the event loop until info has seen "wanted" breaks or "secs"
+ * seconds have passed
+ */
+static bool test_two_leases_wait(struct torture_context *tctx,
+				 struct two_leases_break_info *info,
+				 uint32_t secs,
+				 size_t wanted)
+{
+	TALLOC_CTX *frame = NULL;
+	struct tevent_timer *te = NULL;
+	struct timeval end;
+	bool timesup = false;
+	bool ok = false;
+	int rc;
+
+	/*
+	 * tevent frees the timer once it fired, so free it via its
+	 * parent
+	 */
+	frame = talloc_stackframe();
+
+	end = tevent_timeval_current_ofs(secs, 0);
+
+	te = tevent_add_timer(
+		tctx->ev, frame, end, test_two_leases_timeout_cb, &timesup);
+	if (te == NULL) {
+		goto done;
+	}
+
+	while (!timesup && (info->count < wanted)) {
+		rc = tevent_loop_once(tctx->ev);
+		if (rc != 0) {
+			goto done;
+		}
+	}
+
+	ok = true;
+done:
+	TALLOC_FREE(frame);
+	return ok;
+}
+
 /*
  * Verify a redispatched deferred open doesn't send a lease break to the client
  *
@@ -6445,17 +6515,19 @@ static bool test_two_leases(struct torture_context *tctx,
 	struct smbcli_options options = _tree->session->transport->options;
 	struct smb2_tree *tree1 = NULL;
 	struct smb2_tree *tree2 = NULL;
+	struct smb2_transport *transport1 = NULL;
 	struct smb2_request *req = NULL;
 	struct smb2_create c;
 	struct smb2_lease ls;
-	uint64_t broken_ls_key;
 	struct smb2_handle h1 = {};
 	struct smb2_handle h2 = {};
 	struct smb2_handle ch1 = {};
 	struct smb2_handle ch2 = {};
+	struct two_leases_break_info binfo = {};
 	char *fname = NULL;
 	int rc;
 	NTSTATUS status;
+	bool ok;
 	bool ret = true;
 
 	fname = talloc_asprintf(mem_ctx, "lease_break-%ld.dat", random());
@@ -6471,10 +6543,9 @@ static bool test_two_leases(struct torture_context *tctx,
 	torture_assert_goto(tctx, ret, ret, done,
 			    "torture_smb2_connection_ext failed\n");
 
-	torture_reset_lease_break_info(tctx, &lease_break_info);
-	lease_break_info.lease_skip_ack = true;
-	tree1->session->transport->lease.handler = torture_lease_handler;
-	tree1->session->transport->lease.private_data = tree1;
+	transport1 = tree1->session->transport;
+	transport1->lease.handler = test_two_leases_break_handler;
+	transport1->lease.private_data = &binfo;
 
 	status = torture_setup_simple_file(tctx, tree1, fname);
 	torture_assert_ntstatus_ok(tctx, status, "setup file failed\n");
@@ -6578,43 +6649,69 @@ static bool test_two_leases(struct torture_context *tctx,
 			    ret, done,
 			    "Expected async interim response\n");
 
-	/* Wait for first break */
-	torture_wait_for_lease_break(tctx);
+	/* Wait for both lease breaks */
+	ok = test_two_leases_wait(tctx, &binfo, 5, 2);
+	torture_assert_goto(
+		tctx, ok, ret, done, "Waiting for lease breaks failed\n");
+	torture_assert_int_equal_goto(
+		tctx, binfo.count, 2, ret, done, "Expected 2 lease breaks\n");
 
-	if (lease_break_info.lease_break.current_lease.lease_key.data[0] == 1) {
-		broken_ls_key = 1;
-		ch1 = h1;
-		ch2 = h2;
-		ZERO_STRUCT(h1);
-		ZERO_STRUCT(h2);
-	} else {
-		broken_ls_key = 2;
-		ch1 = h2;
-		ch2 = h1;
-		ZERO_STRUCT(h1);
-		ZERO_STRUCT(h2);
+	for (size_t i = 0; i < ARRAY_SIZE(binfo.breaks); i++) {
+		struct smb2_lease_break *lb = &binfo.breaks[i];
+
+		CHECK_LEASE_BREAK(lb,
+				  "RH",
+				  "R",
+				  lb->current_lease.lease_key.data[0]);
+		CHECK_VAL(lb->new_epoch, 2);
 	}
 
-	/* Wait for second break */
-	torture_wait_for_lease_break(tctx);
+	if (binfo.breaks[0].current_lease.lease_key.data[0] == 1) {
+		torture_assert_u64_equal_goto(
+			tctx,
+			binfo.breaks[1].current_lease.lease_key.data[0],
+			2,
+			ret,
+			done,
+			"Expected lease key 2 in second break\n");
+		ch1 = h1;
+		ch2 = h2;
+	} else if (binfo.breaks[0].current_lease.lease_key.data[0] == 2) {
+		torture_assert_u64_equal_goto(
+			tctx,
+			binfo.breaks[1].current_lease.lease_key.data[0],
+			1,
+			ret,
+			done,
+			"Expected lease key 1 in second break\n");
+		ch1 = h2;
+		ch2 = h1;
+	} else {
+		torture_fail_goto(tctx,
+				  done,
+				  "Unexpected lease key in first break\n");
+	}
+	ZERO_STRUCT(h1);
+	ZERO_STRUCT(h2);
 
-	CHECK_VAL(lease_break_info.count, 2);
-	lease_break_info.count = 1; /* trick CHECK_BREAK_INFO_V2_NOWAIT() */
-	CHECK_BREAK_INFO_V2_NOWAIT(tree1->session->transport,
-			    "RH",
-			    "R",
-			    broken_ls_key,
-			    2);
-
-	torture_reset_lease_break_info(tctx, &lease_break_info);
-	lease_break_info.lease_skip_ack = true;
+	binfo.count = 0;
 
 	status = smb2_util_close(tree1, ch1);
 	torture_assert_ntstatus_ok_goto(
 		tctx, status, ret, done, "smb2_close failed\n");
 	ZERO_STRUCT(ch1);
 
-	CHECK_NO_BREAK(tctx);
+	/* Verify no break occurred after closing the first handle */
+	ok = test_two_leases_wait(tctx, &binfo, 1, 1);
+	torture_assert_goto(
+		tctx, ok, ret, done, "Waiting for lease breaks failed\n");
+	torture_assert_int_equal_goto(
+		tctx,
+		binfo.count,
+		0,
+		ret,
+		done,
+		"Unexpected lease break after first close\n");
 
 	status = smb2_util_close(tree1, ch2);
 	torture_assert_ntstatus_ok_goto(
