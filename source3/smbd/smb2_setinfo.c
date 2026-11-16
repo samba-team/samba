@@ -211,7 +211,6 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat;
 	NTSTATUS status;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_setinfo_state);
@@ -250,22 +249,18 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		}
 		state->file_info_level = file_info_level;
 
-		if (fsp_get_pathref_fd(fsp) == -1) {
+		if (fsp->fake_file_handle != NULL) {
 			/*
-			 * This is actually a SETFILEINFO on a directory
-			 * handle (returned from an NT SMB). NT5.0 seems
-			 * to do this call. JRA.
+			 * vfs_stat_fsp() succeeds for fake files
+			 * without doing anything. Keep the result of
+			 * the former vfs_stat() of the synthesized name.
 			 */
-			ret = vfs_stat(fsp->conn, fsp->fsp_name);
-			if (ret != 0) {
-				DBG_WARNING("vfs_stat() of %s failed (%s)\n",
-					    fsp_str_dbg(fsp),
-					    strerror(errno));
-				status = map_nt_error_from_unix(errno);
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
-			}
-		} else if (fsp->print_file) {
+			tevent_req_nterror(req,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			return tevent_req_post(req, ev);
+		}
+
+		if (fsp->print_file) {
 			/*
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
@@ -350,6 +345,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		struct file_quota_information info = {0};
 		SMB_NTQUOTA_STRUCT qt = {0};
 		enum ndr_err_code err;
+		int ret;
 
 		if (!fsp->fake_file_handle) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);

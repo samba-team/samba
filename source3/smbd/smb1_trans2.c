@@ -4538,7 +4538,6 @@ static void call_trans2setfileinfo(
 	char *params = *pparams;
 	int data_return_size = 0;
 	NTSTATUS status;
-	int ret;
 
 	if (params == NULL) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -4575,21 +4574,17 @@ static void call_trans2setfileinfo(
 		   info_level,
 		   total_data);
 
-	if (fsp_get_pathref_fd(fsp) == -1) {
+	if (fsp->fake_file_handle != NULL) {
 		/*
-		 * This is actually a SETFILEINFO on a directory
-		 * handle (returned from an NT SMB). NT5.0 seems
-		 * to do this call. JRA.
+		 * vfs_stat_fsp() succeeds for fake files without doing
+		 * anything. Keep the result of the former vfs_stat()
+		 * of the synthesized name.
 		 */
-		ret = vfs_stat(conn, smb_fname);
-		if (ret != 0) {
-			DBG_NOTICE("vfs_stat of %s failed (%s)\n",
-				   smb_fname_str_dbg(smb_fname),
-				   strerror(errno));
-			reply_nterror(req, map_nt_error_from_unix(errno));
-			return;
-		}
-	} else if (fsp->print_file) {
+		reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return;
+	}
+
+	if (fsp->print_file) {
 		/*
 		 * Doing a DELETE_ON_CLOSE should cancel a print job.
 		 */
