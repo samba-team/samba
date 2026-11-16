@@ -472,6 +472,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_read_state);
@@ -542,6 +543,16 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		state->ipc_subreq = subreq;
 		tevent_req_set_cancel_fn(req, smbd_smb2_read_ipc_cancel);
 		return req;
+	}
+
+	ok = smbd_read_at_symlink_eof(fsp);
+	if (ok) {
+		/*
+		 * A symlink opened with FILE_OPEN_REPARSE_POINT has
+		 * an empty data stream, see smbd_file_size().
+		 */
+		tevent_req_nterror(req, NT_STATUS_END_OF_FILE);
+		return tevent_req_post(req, ev);
 	}
 
 	if (!CHECK_READ_SMB2(fsp)) {

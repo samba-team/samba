@@ -701,6 +701,53 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 	return dosmode;
 }
 
+/*
+ * File size and allocation size as seen by Windows clients. A symlink
+ * opened as such has an empty data stream, the size from lstat() is
+ * the length of the link target. POSIX clients get the lstat() values.
+ */
+
+bool smbd_symlink_is_empty(const struct smb_filename *smb_fname)
+{
+	if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
+		return false;
+	}
+	return ((smb_fname->flags & SMB_FILENAME_POSIX_PATH) == 0);
+}
+
+uint64_t smbd_file_size(const struct smb_filename *smb_fname)
+{
+	bool empty = smbd_symlink_is_empty(smb_fname);
+	if (empty) {
+		return 0;
+	}
+	return get_file_size_stat(&smb_fname->st);
+}
+
+uint64_t smbd_allocation_size(struct connection_struct *conn,
+			      struct files_struct *fsp,
+			      const struct smb_filename *smb_fname)
+{
+	bool empty = smbd_symlink_is_empty(smb_fname);
+	if (empty) {
+		return 0;
+	}
+	return SMB_VFS_GET_ALLOC_SIZE(conn, fsp, &smb_fname->st);
+}
+
+/*
+ * Reading from a symlink opened as a reparse point by a Windows
+ * client hits the end of its empty data stream
+ */
+bool smbd_read_at_symlink_eof(const struct files_struct *fsp)
+{
+	bool empty = smbd_symlink_is_empty(fsp->fsp_name);
+	if (!empty) {
+		return false;
+	}
+	return ((fsp->access_mask & (FILE_READ_DATA | FILE_EXECUTE)) != 0);
+}
+
 /****************************************************************************
  Change a unix mode to a dos mode.
  May also read the create timespec into the stat struct in smb_fname

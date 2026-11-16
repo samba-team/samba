@@ -213,6 +213,12 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 uint32_t dos_mode_msdfs(connection_struct *conn,
 			const char *name,
 			const struct stat_ex *st);
+bool smbd_symlink_is_empty(const struct smb_filename *smb_fname);
+uint64_t smbd_file_size(const struct smb_filename *smb_fname);
+uint64_t smbd_allocation_size(struct connection_struct *conn,
+			      struct files_struct *fsp,
+			      const struct smb_filename *smb_fname);
+bool smbd_read_at_symlink_eof(const struct files_struct *fsp);
 uint32_t fdos_mode(struct files_struct *fsp);
 struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,

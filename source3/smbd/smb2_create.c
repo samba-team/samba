@@ -2130,10 +2130,10 @@ static void smbd_smb2_create_finish(struct tevent_req *req)
 		dos_filetime_timespec(&state->out_change_ts);
 	}
 
-	state->out_allocation_size =
-			SMB_VFS_GET_ALLOC_SIZE(smb1req->conn, result,
-					       &(result->fsp_name->st));
-	state->out_end_of_file = result->fsp_name->st.st_ex_size;
+	state->out_allocation_size = smbd_allocation_size(smb1req->conn,
+							  result,
+							  result->fsp_name);
+	state->out_end_of_file = smbd_file_size(result->fsp_name);
 	if (state->out_file_attributes == 0) {
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}

@@ -174,10 +174,10 @@ static void setup_close_full_information(connection_struct *conn,
 		dos_filetime_timespec(out_change_ts);
 	}
 	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
-		*out_end_of_file = get_file_size_stat(&smb_fname->st);
+		*out_end_of_file = smbd_file_size(smb_fname);
 	}
 
-	*out_allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
+	*out_allocation_size = smbd_allocation_size(conn, NULL, smb_fname);
 }
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,

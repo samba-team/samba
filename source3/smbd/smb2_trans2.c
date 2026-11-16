@@ -3087,7 +3087,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		string_replace(dos_fname, '/', '\\');
 	}
 
-	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp, psbuf);
+	allocation_size = smbd_allocation_size(conn, fsp, smb_fname);
 
 	if (fsp == NULL || !fsp->fsp_flags.is_fsa) {
 		/* Do we have this path open ? */
@@ -3095,12 +3095,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		files_struct *fsp1 = file_find_di_first(
 			conn->sconn, fileid, true);
 		if (fsp1 && fsp1->initial_allocation_size) {
-			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp1, psbuf);
+			allocation_size = smbd_allocation_size(conn,
+							       fsp1,
+							       smb_fname);
 		}
 	}
 
 	if (!(mode & FILE_ATTRIBUTE_DIRECTORY)) {
-		file_size = get_file_size_stat(psbuf);
+		file_size = smbd_file_size(smb_fname);
 	}
 
 	if (fsp) {
@@ -3572,10 +3574,32 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				fsp = fsp->base_fsp;
 			}
 
-			status = vfs_fstreaminfo(fsp,
-						mem_ctx,
-						&num_streams,
-						&streams);
+			if (smbd_symlink_is_empty(smb_fname)) {
+				/*
+				 * Just the empty data stream, see
+				 * smbd_file_size(). The VFS would report
+				 * the length of the link target, or
+				 * nothing without O_PATH.
+				 */
+				streams = talloc_zero(mem_ctx,
+						      struct stream_struct);
+				if (streams == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				streams->name = talloc_strdup(streams,
+							      "::$DATA");
+				if (streams->name == NULL) {
+					TALLOC_FREE(streams);
+					return NT_STATUS_NO_MEMORY;
+				}
+				num_streams = 1;
+				status = NT_STATUS_OK;
+			} else {
+				status = vfs_fstreaminfo(fsp,
+							 mem_ctx,
+							 &num_streams,
+							 &streams);
+			}
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_DEBUG("could not get stream info: %s\n",
@@ -3960,16 +3984,29 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	struct file_modified_state state;
 	files_struct *new_fsp = NULL;
+	uint64_t cur_size;
+	bool empty;
 
 	if (!VALID_STAT(*psbuf)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	DBG_INFO("size: %"PRIu64", file_size_stat=%"PRIu64"\n",
-		 (uint64_t)size,
-		 get_file_size_stat(psbuf));
+	cur_size = get_file_size_stat(psbuf);
 
-	if (size == get_file_size_stat(psbuf)) {
+	empty = smbd_symlink_is_empty(smb_fname);
+	if (empty) {
+		/*
+		 * Clients see a symlink opened as reparse point as an
+		 * empty file, see smbd_file_size()
+		 */
+		cur_size = 0;
+	}
+
+	DBG_INFO("size: %" PRIu64 ", cur_size=%" PRIu64 "\n",
+		 (uint64_t)size,
+		 cur_size);
+
+	if (size == cur_size) {
 		/*
 		 * MS-FSA 2.1.5.15.4 FileEndOfFileInformation tells us not to
 		 * update the timestamps, but Windows Server 2022 does it.
@@ -4727,6 +4764,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	uint64_t allocation_size = 0;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *new_fsp = NULL;
+	bool empty;
 
 	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -4748,6 +4786,17 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	DBG_DEBUG("file %s : setting new allocation size to %" PRIu64 "\n",
 		  smb_fname_str_dbg(smb_fname),
 		  allocation_size);
+
+	empty = smbd_symlink_is_empty(smb_fname);
+	if (empty && (allocation_size == 0)) {
+		/*
+		 * Nothing to change on the empty data stream of a
+		 * symlink opened as reparse point, see
+		 * smbd_allocation_size()
+		 */
+		trigger_write_time_update_immediate(fsp, false, true);
+		return NT_STATUS_OK;
+	}
 
 	if (!fsp->fsp_flags.is_pathref && (fsp_get_io_fd(fsp) != -1)) {
 		/* Open file handle. */
