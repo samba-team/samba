@@ -351,7 +351,7 @@ void cluster_level_activate(const struct cluster_level_active *level)
 	 * We should have at least the oldest version we support
 	 * for the clustered case.
 	 */
-	SMB_ASSERT(CLUSTER_LEVEL_ACTIVE(1, 0));
+	SMB_ASSERT(CLUSTER_LEVEL_ACTIVE(LOWEST, MIN));
 }
 
 /*

@@ -279,6 +279,16 @@ interface cluster_level
 	const int CLUSTER_LEVEL_MAJOR_LATEST_MINOR_MAX	=
 		CLUSTER_LEVEL_MAJOR_1_MINOR_MAX;
 
+	/*
+	 * The lowest level a cluster can have,
+	 * the 0.x levels only describe older
+	 * versions without cluster level support.
+	 */
+	const int CLUSTER_LEVEL_MAJOR_LOWEST		=
+		CLUSTER_LEVEL_MAJOR_1;
+	const int CLUSTER_LEVEL_MAJOR_LOWEST_MINOR_MIN	=
+		CLUSTER_LEVEL_MAJOR_1_MINOR_MIN;
+
 	typedef struct {
 		uint32 major;
 		uint32 minor;
