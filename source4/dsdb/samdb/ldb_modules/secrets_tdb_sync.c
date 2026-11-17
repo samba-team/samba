@@ -39,6 +39,7 @@
 #include "param/secrets.h"
 #include "source3/include/secrets.h"
 #include "lib/dbwrap/dbwrap.h"
+#include "source3/lib/dbwrap/dbwrap_open.h"
 #include "dsdb/samdb/samdb.h"
 
 struct dn_list {
@@ -503,6 +504,11 @@ static int secrets_tdb_sync_init(struct ldb_module *module)
 		private_dir = talloc_strdup(data, ".");
 	}
 
+	/*
+	 * The s3 configuration is not loaded here,
+	 * but the path of secrets.tdb is explicit.
+	 */
+	db_open_allow();
 	secrets_init_path(private_dir);
 
 	TALLOC_FREE(private_dir);

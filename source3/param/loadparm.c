@@ -70,6 +70,7 @@
 #include "../libcli/smb/smb_signing.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../lib/util/bitmap.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/dns.h"
@@ -2258,6 +2259,10 @@ static struct smbconf_ctx *lp_smbconf_ctx(void)
 	static struct smbconf_ctx *conf_ctx = NULL;
 
 	if (conf_ctx == NULL) {
+		/*
+		 * smbconf_init_reg() allows registry.tdb to be
+		 * opened while the configuration is loaded.
+		 */
 		err = smbconf_init(NULL, &conf_ctx, "registry:");
 		if (!SBC_ERROR_IS_OK(err)) {
 			DEBUG(1, ("error initializing registry configuration: "
@@ -4185,6 +4190,7 @@ static bool lp_load_ex(const char *pszFname,
 	}
 
 	b_loaded = true;
+	db_open_allow();
 
 	/* Now we check we_are_a_wins_server and set szWINSserver to 127.0.0.1 */
 	/* if we_are_a_wins_server is true and we are in the client            */

@@ -20,6 +20,10 @@
 Tests for samba.smbconf module
 """
 
+import subprocess
+import sys
+import tempfile
+
 from samba.samba3 import param as s3param
 import samba.tests
 
@@ -124,6 +128,29 @@ class SMBConfTests(samba.tests.TestCase):
     def test_init_str_reg(self):
         sconf = self.s3smbconf.init("registry:")
         self.assertTrue(sconf.is_writeable())
+
+    def test_init_reg_without_loaded_config(self):
+        # The registry configuration only needs the paths, callers
+        # may only set them without loading a configuration, see
+        # smbconf_init_reg(). This needs a new process, as this
+        # one already loaded the configuration in setUp().
+        script = (
+            "import sys\n"
+            "from samba.samba3 import param as s3param\n"
+            "import samba.samba3.smbconf as s3smbconf\n"
+            "lp = s3param.get_context()\n"
+            "for p in ['state directory', 'lock directory',\n"
+            "          'cache directory', 'private dir']:\n"
+            "    lp.set(p, sys.argv[1])\n"
+            "sconf = s3smbconf.init_reg(None)\n"
+            "sconf.create_share('foo')\n"
+            "assert 'foo' in sconf.share_names()\n"
+            "sconf = s3smbconf.init('registry:')\n"
+            "assert 'foo' in sconf.share_names()\n"
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            subprocess.run([sys.executable, "-c", script, tmpdir],
+                           check=True)
 
     def test_init_str_file(self):
         sconf = self.s3smbconf.init(f"file:{self.example_conf_default}")

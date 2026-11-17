@@ -28,6 +28,8 @@
 #include "secrets.h"
 #include "idmap.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "lib/dbwrap/dbwrap_open.h"
 
 #ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
@@ -3883,6 +3885,12 @@ static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 		talloc_free(frame);
 		return NULL;
 	}
+
+	/*
+	 * The configuration may not be loaded here,
+	 * but the path of secrets.tdb is explicit.
+	 */
+	db_open_allow();
 
 	/* Initialize secrets database */
 	if (!secrets_init_path(private_dir)) {

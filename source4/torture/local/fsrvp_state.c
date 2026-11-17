@@ -27,6 +27,8 @@
 #include "librpc/gen_ndr/ndr_fsrvp.h"
 #include "librpc/gen_ndr/ndr_fsrvp_c.h"
 #include "source3/rpc_server/fss/srv_fss_private.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "source3/lib/dbwrap/dbwrap_open.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
 
@@ -464,29 +466,44 @@ static bool test_fsrvp_state_none(struct torture_context *tctx)
 	return true;
 }
 
+static bool fsrvp_state_setup(struct torture_context *tctx, void **data)
+{
+	/*
+	 * The s3 configuration is not loaded here,
+	 * but the paths of the databases are explicit.
+	 */
+	db_open_allow();
+	return true;
+}
+
 struct torture_suite *torture_local_fsrvp(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx,
 							   "fsrvp_state");
+	struct torture_tcase *tcase = NULL;
 
 	/* dbwrap uses talloc_tos(), hence we need a stackframe :( */
 	talloc_stackframe();
 
-	torture_suite_add_simple_test(suite,
-				      "state_empty",
-				      test_fsrvp_state_empty);
+	tcase = torture_suite_add_simple_test(suite,
+					      "state_empty",
+					      test_fsrvp_state_empty);
+	torture_tcase_set_fixture(tcase, fsrvp_state_setup, NULL);
 
-	torture_suite_add_simple_test(suite,
-				      "state_single",
-				      test_fsrvp_state_single);
+	tcase = torture_suite_add_simple_test(suite,
+					      "state_single",
+					      test_fsrvp_state_single);
+	torture_tcase_set_fixture(tcase, fsrvp_state_setup, NULL);
 
-	torture_suite_add_simple_test(suite,
-				      "state_multi",
-				      test_fsrvp_state_multi);
+	tcase = torture_suite_add_simple_test(suite,
+					      "state_multi",
+					      test_fsrvp_state_multi);
+	torture_tcase_set_fixture(tcase, fsrvp_state_setup, NULL);
 
-	torture_suite_add_simple_test(suite,
-				      "state_none",
-				      test_fsrvp_state_none);
+	tcase = torture_suite_add_simple_test(suite,
+					      "state_none",
+					      test_fsrvp_state_none);
+	torture_tcase_set_fixture(tcase, fsrvp_state_setup, NULL);
 
 	return suite;
 }

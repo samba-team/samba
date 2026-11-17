@@ -53,6 +53,36 @@ bool db_is_local(const char *name)
 	return true;
 }
 
+static bool db_open_allowed;
+
+/*
+ * Called once the configuration is known, either by lp_load_ex()
+ * or by code passing the paths explicitly, e.g. to
+ * secrets_init_path().
+ *
+ * Note it stays set, also while a later lp_load_ex() loads the
+ * configuration again, e.g. after lp_load_initial_only() skipped
+ * the registry configuration, so db_open_registry_allowed
+ * needs to be checked first.
+ */
+void db_open_allow(void)
+{
+	db_open_allowed = true;
+}
+
+static bool db_open_registry_allowed;
+
+/*
+ * Called by smbconf_init_reg() around opening registry.tdb,
+ * which may happen while the configuration is loaded,
+ * so the configuration is not known yet, even if
+ * db_open_allowed is already set by an earlier load.
+ */
+void db_open_allow_registry(bool allow)
+{
+	db_open_registry_allowed = allow;
+}
+
 /**
  * open a database
  */
@@ -253,9 +283,25 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   uint64_t dbwrap_flags)
 {
 	struct db_context *db = NULL;
+	const char *base = NULL;
 	static bool busy;
 
 	SMB_ASSERT(!busy);
+
+	base = strrchr_m(name, '/');
+	if (base != NULL) {
+		base++;
+	} else {
+		base = name;
+	}
+
+	/*
+	 * The configuration is needed in order to open
+	 * databases, only registry.tdb is opened while
+	 * the configuration is loaded, see smbconf_init_reg().
+	 */
+	SMB_ASSERT(db_open_allowed || (db_open_registry_allowed &&
+				       strequal(base, "registry.tdb")));
 
 	busy = true;
 	db = db_open_ex(mem_ctx,

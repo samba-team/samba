@@ -38,6 +38,11 @@ bool db_is_local(const char *name);
  * backend, based on lp_clustering() and a db-specific
  * settings.
  */
+/**
+ * Allow registry.tdb to be opened while the configuration is loaded.
+ */
+void db_open_allow_registry(bool allow);
+
 struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 			      struct tevent_context *ev_ctx_ex,
 			      struct messaging_context *msg_ctx_ex,
@@ -49,6 +54,11 @@ struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 			      mode_t mode,
 			      enum dbwrap_lock_order lock_order,
 			      uint64_t dbwrap_flags);
+/**
+ * Allow db_open() to be used, once the configuration is known.
+ */
+void db_open_allow(void);
+
 struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
 			   int hash_size,

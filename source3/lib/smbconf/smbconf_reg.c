@@ -28,6 +28,8 @@
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
 #include "../libcli/registry/util_reg.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "lib/dbwrap/dbwrap_open.h"
 
 #define INCLUDES_VALNAME "includes"
 
@@ -1242,7 +1244,21 @@ sbcErr smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	 * source3/registry code.
 	 */
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	sbcErr err = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_reg);
+	sbcErr err;
+
+	/*
+	 * registry.tdb may be opened while the configuration
+	 * is loaded, e.g. for 'include = registry',
+	 * 'config backend = registry' or
+	 * 'registry shares = yes', see lp_smbconf_ctx(),
+	 * or by callers like the python bindings, which only
+	 * set the paths without loading the configuration,
+	 * so db_open() needs to allow it.
+	 */
+	db_open_allow_registry(true);
+	err = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_reg);
+	db_open_allow_registry(false);
+
 	talloc_free(tmp_ctx);
 	return err;
 }
