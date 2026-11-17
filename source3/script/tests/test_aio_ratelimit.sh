@@ -32,6 +32,11 @@ failed=0
 # Prepare
 cd $SELFTEST_TMPDIR || exit 1
 
+now_msec()
+{
+	echo $(($(date +%s%N) / 1000000))
+}
+
 # Test 1: Basic rate limiting
 test_aio_ratelimit_basic()
 {
@@ -44,8 +49,6 @@ test_aio_ratelimit_basic()
 	dd if=/dev/urandom of="${src}" bs=10K count=1
 	stat "$src"
 
-	SECONDS=0
-
 	# Write
 	CLI_FORCE_INTERACTIVE=1 ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} \
 		-U${USER}%${PASSWORD} -c "put ${src} ${dst}"
@@ -55,25 +58,41 @@ test_aio_ratelimit_basic()
 		return 1
 	fi
 
-	# Read 20 times to trigger rate limiting
+	#
+	# Read 30 times within one connection, so that the
+	# tokens are not refilled while smbclient starts.
+	#
+	# The share allows 10 reads and 100K per second with
+	# a burst of 1.5, so 15 reads and 150K are possible
+	# without a delay and the other 15 reads (150K) take
+	# at least 1.5 seconds.
+	#
+	cmds=""
 	count=1
-	while [ $count -le 20 ]; do
-		CLI_FORCE_INTERACTIVE=1 \
-			${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} \
-			-U${USER}%${PASSWORD} -c "get ${dst} ${tgt}"
-		ret=$?
-		if [ $ret != 0 ]; then
-			printf "failed to read file: %s\n" "${ret}"
-			return 1
-		fi
+	while [ $count -le 30 ]; do
+		cmds="${cmds}get ${dst} ${tgt};"
 		(( count++ ))
 	done
 
-	# Expect rate-limiting delay
-	if [ ${SECONDS} -lt 1 ]; then
-		printf "no rate-limiting delay observed: elapsed-secs=%d\n" "${SECONDS}"
+	start_msec=$(now_msec)
+	CLI_FORCE_INTERACTIVE=1 ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} \
+		-U${USER}%${PASSWORD} -c "${cmds}"
+	ret=$?
+	end_msec=$(now_msec)
+	if [ $ret != 0 ]; then
+		printf "failed to read file: %s\n" "${ret}"
 		return 1
 	fi
+
+	# Expect rate-limiting delay
+	elapsed_msec=$((end_msec - start_msec))
+	if [ ${elapsed_msec} -lt 1000 ]; then
+		printf "no rate-limiting delay observed: elapsed-msecs=%d\n" \
+			"${elapsed_msec}"
+		return 1
+	fi
+	printf "rate-limiting delay observed: elapsed-msecs=%d\n" \
+		"${elapsed_msec}"
 
 	# Delete
 	CLI_FORCE_INTERACTIVE=1 ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} \
