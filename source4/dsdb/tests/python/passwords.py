@@ -801,8 +801,12 @@ unicodePwd:: {base64.b64encode('"thatsAcomplPASS2"'.encode('utf-16-le'))
         self.addCleanup(self.ldb.set_minPwdAge, old_min)
         self.addCleanup(self.ldb.set_maxPwdAge, old_max)
 
-        self.ldb.set_minPwdAge(-2000000000)
-        self.ldb.set_maxPwdAge(-2000000001)
+        # 1 day (in 100ns units), so that existing passwords, e.g. of
+        # the Administrator, don't expire on other DCs of the domain,
+        # which may still have these values from replication after
+        # the cleanup already restored them here.
+        self.ldb.set_minPwdAge(-864000000000)
+        self.ldb.set_maxPwdAge(-864000000001)
 
         # as usual, constraint violation for user change,
         # unwillingness for admin reset with policy hints
