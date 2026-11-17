@@ -1,12 +1,9 @@
-# This is just used for the scheduled pipelines in the
-# https://gitlab.com/samba-team/samba configuration
-#
-
-variables:
-  SAMBA_CI_FLAVOR: "coverage"
-  # "--enable-coverage" or ""
-  SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: "--enable-coverage"
-
+# samba-team/samba uses this file for scheduled coverage pipelines.
+# Forks inherit the CI config path but should use the normal configuration.
 include:
-  - /.gitlab-ci-coverage-runners.yml
-  - /.gitlab-ci-main.yml
+  - local: /.gitlab-ci-coverage-pipeline.yml
+    rules:
+      - if: $CI_PROJECT_PATH == "samba-team/samba"
+  - local: /.gitlab-ci.yml
+    rules:
+      - if: $CI_PROJECT_PATH != "samba-team/samba"
