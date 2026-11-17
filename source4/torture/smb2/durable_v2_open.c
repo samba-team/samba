@@ -9147,7 +9147,7 @@ static bool test_persistent_deleteonclose_do(struct torture_context *tctx,
 	ZERO_STRUCT(h);
 
 	if (expire) {
-		sleep(10);
+		sleep(5);
 	}
 
 	/*
