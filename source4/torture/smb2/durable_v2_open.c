@@ -2746,6 +2746,246 @@ done:
 	return ret;
 }
 
+/*
+ * Reconnect a disconnected durable v2 open with its lease and close it, so
+ * that its byte-range locks go with it. Returns false, and the caller keeps
+ * the file, if that fails: the locks of a disconnected open can outlive the
+ * file and turn up on a later file with the same file id. name names the open
+ * in the warning.
+ */
+static bool durable_v2_reconnect_close(struct torture_context *tctx,
+				       struct smb2_tree *tree,
+				       TALLOC_CTX *mem_ctx,
+				       const char *fname,
+				       const char *name,
+				       struct smb2_handle *dh,
+				       struct GUID create_guid,
+				       struct smb2_lease *ls)
+{
+	struct smb2_create io = {
+		.in.fname = fname,
+		.in.durable_handle_v2 = dh,
+		.in.create_guid = create_guid,
+		.in.lease_request_v2 = ls,
+		.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE,
+	};
+	NTSTATUS status;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		status = smb2_util_close(tree, io.out.file.handle);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_warning(tctx, "cleanup: keeping %s, reconnecting and "
+				"closing %s failed: %s\n",
+				fname, name, nt_errstr(status));
+		return false;
+	}
+	return true;
+}
+
+/**
+ * 1. durable open with L1(RWH) => h1
+ * 2. durable open with L1(RWH) => h2
+ * 3. lock byte 0 on h1
+ * 4. disconnect
+ * 5. reconnect
+ * 6. durable reconnect L1(RWH) => h2
+ * 7. durable reconnect L1(RWH) => h1
+ * 8. unlock byte 0 on h1
+ *
+ * The RWH lease keeps both opens durable across the disconnect, and h1
+ * keeps its lock. h2's reconnect finds h1's lock on the file, which must
+ * not stop it, and h1 must then reconnect with its lock, as on Windows.
+ */
+static bool test_durable_v2_open_two_same_lease_lock(
+	struct torture_context *tctx,
+	struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	NTSTATUS status;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_handle disconnected_h1;
+	struct smb2_handle disconnected_h2;
+	bool h1_disconnected = false;
+	struct smb2_create io;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_lease ls;
+	struct smb2_lock lck;
+	struct smb2_lock_element el;
+	uint64_t lease_key;
+	bool ret = true;
+	struct smbcli_options options1;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	mem_ctx = talloc_new(tctx);
+
+	options1 = tree1->session->transport->options;
+
+	smb2_deltree(tree1, __func__);
+	status = torture_smb2_testdir(tree1, __func__, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, dh);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\file_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid1;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid2;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el);
+	lck.in.locks = &el;
+	lck.in.lock_count = 1;
+	lck.in.file.handle = *h1;
+	el.offset = 0;
+	el.length = 1;
+	el.flags = SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree1, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree1);
+	disconnected_h1 = *h1;
+	disconnected_h2 = *h2;
+	h1 = NULL;
+	h2 = NULL;
+	h1_disconnected = true;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &disconnected_h2;
+	io.in.create_guid = create_guid2;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &disconnected_h1;
+	io.in.create_guid = create_guid1;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	h1_disconnected = false;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	/* h1 still holds its lock */
+	lck.in.file.handle = *h1;
+	el.flags = SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree1, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	if (tree1 != NULL) {
+		smb2_keepalive(tree1->session->transport);
+	}
+
+	if (tree1 != NULL && h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (tree1 != NULL && h2 != NULL) {
+		smb2_util_close(tree1, *h2);
+	}
+
+	/*
+	 * h1 must not stay disconnected with its lock when the file goes.
+	 * h2 holds no lock, and deleting the file purges it.
+	 */
+	if (tree1 != NULL &&
+	    (!h1_disconnected ||
+	     durable_v2_reconnect_close(tctx, tree1, mem_ctx, fname, "h1",
+					&disconnected_h1, create_guid1, &ls)))
+	{
+		smb2_deltree(tree1, __func__);
+	}
+
+	TALLOC_FREE(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 /**
  * 1. durable open with L1(RH) => h1
  * 2. durable open with L2(RH) => h2
@@ -5794,6 +6034,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "nonstat-and-lease", test_durable_v2_open_nonstat_and_lease);
 	torture_suite_add_1smb2_test(suite, "statRH-and-lease", test_durable_v2_open_statRH_and_lease);
 	torture_suite_add_1smb2_test(suite, "two-same-lease", test_durable_v2_open_two_same_lease);
+	torture_suite_add_1smb2_test(suite, "two-same-lease-lock", test_durable_v2_open_two_same_lease_lock);
 	torture_suite_add_1smb2_test(suite, "two-different-lease", test_durable_v2_open_two_different_leases);
 	torture_suite_add_2smb2_test(suite, "keep-disconnected-rh-with-stat-open", test_durable_v2_open_keep_disconnected_rh_with_stat_open);
 	torture_suite_add_2smb2_test(suite, "keep-disconnected-rh-with-rh-open", test_durable_v2_open_keep_disconnected_rh_with_rh_open);
