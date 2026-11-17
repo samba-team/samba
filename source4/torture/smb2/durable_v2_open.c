@@ -9117,7 +9117,7 @@ static bool test_persistent_deleteonclose_do(struct torture_context *tctx,
 	c.in.durable_open_v2 = true;
 	c.in.persistent_open = true;
 	c.in.create_guid = create_guid1;
-	c.in.timeout = 1000;
+	c.in.timeout = 2000;
 	if (initial) {
 		c.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 	}
@@ -9127,7 +9127,7 @@ static bool test_persistent_deleteonclose_do(struct torture_context *tctx,
 	h = c.out.file.handle;
 	torture_assert_goto(tctx, c.out.persistent_open == true,
 			    ret, done, "Persistent open not granted\n");
-	torture_assert_int_equal_goto(tctx, c.out.timeout, 1000,
+	torture_assert_int_equal_goto(tctx, c.out.timeout, 2000,
 				      ret, done, "bad timeout\n");
 
 	if (!initial) {
@@ -9148,6 +9148,8 @@ static bool test_persistent_deleteonclose_do(struct torture_context *tctx,
 
 	if (expire) {
 		sleep(5);
+	} else {
+		sleep(1);
 	}
 
 	/*
