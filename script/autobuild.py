@@ -131,7 +131,13 @@ test_tmpdir = "%s/tmp" % testbase
 os.environ['TMPDIR'] = test_tmpdir
 
 if options.enable_coverage:
-    LCOV_CMD = "cd ${TEST_SOURCE_DIR} && lcov --capture --directory . --output-file ${LOG_BASE}/${NAME}.info --rc 'geninfo_adjust_src_path=${TEST_SOURCE_DIR}/'"
+    # geninfo_adjust_src_path is broken in lcov 2.0, which replaces it
+    # with --substitute
+    LCOV_CMD = ("cd ${TEST_SOURCE_DIR} && "
+                "if lcov --version | grep -q 'version 1\\.'; then "
+                "LCOV_ADJUST='--rc geninfo_adjust_src_path=${TEST_SOURCE_DIR}/'; "
+                "else LCOV_ADJUST='--substitute s#^${TEST_SOURCE_DIR}/##'; fi && "
+                "lcov --capture --directory . --output-file ${LOG_BASE}/${NAME}.info $LCOV_ADJUST")
 else:
     LCOV_CMD = 'echo "lcov skipped since no --enable-coverage specified"'
 
