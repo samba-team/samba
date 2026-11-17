@@ -254,8 +254,12 @@ static void _cli_shutdown(struct cli_state *cli)
 	 * can remain active on the peer end, until some (long) timeout period
 	 * later.  This tree disconnect forces the peer to clean up, since the
 	 * connection will be going away.
+	 *
+	 * The peer may be gone already, for example after the client
+	 * resumed from a suspend, so don't wait longer than 1 second.
 	 */
 	if (cli_state_has_tcon(cli)) {
+		cli->timeout = MIN((cli->timeout ? cli->timeout : 1000), 1000);
 		cli_tdis(cli);
 	}
 
