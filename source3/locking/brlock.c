@@ -1480,23 +1480,19 @@ bool brl_reconnect_disconnected(struct files_struct *fsp,
 			if (fsp->op->global->persistent) {
 				continue;
 			}
-			TALLOC_FREE(br_lck);
 			return false;
 		}
 
 		if (!fsp->op->global->persistent) {
 			if (lock->context.tid != TID_FIELD_INVALID) {
-				TALLOC_FREE(br_lck);
 				return false;
 			}
 
 			if (!server_id_is_disconnected(&lock->context.pid)) {
-				TALLOC_FREE(br_lck);
 				return false;
 			}
 
 			if (lock->fnum != FNUM_FIELD_INVALID) {
-				TALLOC_FREE(br_lck);
 				return false;
 			}
 		}

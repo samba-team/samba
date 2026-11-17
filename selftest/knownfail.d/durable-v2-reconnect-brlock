@@ -1,7 +1,6 @@
 #
 # smb2.durable-v2-open.two-same-lease-lock expects what Windows does.
 # Samba refuses the durable reconnect of the second open while the
-# first holds a byte-range lock (bug 16467), and until bug 16464 is
-# fixed that refusal also crashes smbd.
+# first holds a byte-range lock (bug 16467).
 #
 ^samba3.smb2.durable-v2-open.two-same-lease-lock\(
