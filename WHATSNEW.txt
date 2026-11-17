@@ -52,6 +52,17 @@ longer overrides the chosen site with a Domain Controller's own opinion of
 the client's closest site.
 
 
+CTDB changes
+------------
+
+* The "startipreallocate" event is now only run if at least one
+  public IP address will change the node to which it is assigned,
+  including becoming assigned or unassigned.  This avoids
+  unnecessarily putting NFS servers into grace during every public IP
+  address (re)assignment.  Site-local event scripts that use this
+  event may be affected.
+
+
 REMOVED FEATURES
 ================
 
