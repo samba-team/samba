@@ -34,6 +34,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/secdesc.h"
+#include "lib/cluster_support.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -42,6 +43,8 @@
 
 static struct db_context *regdb = NULL;
 static int regdb_refcount;
+static int regdb_transaction_depth;
+static struct cluster_level_active regdb_checked_level;
 
 static bool regdb_key_exists(struct db_context *db, const char *key);
 static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
@@ -719,6 +722,88 @@ done:
 	return werr;
 }
 
+/*
+ * Try the upgrade of the format allowed by the active cluster level.
+ *
+ * The format is a property of the whole database, it's stored in
+ * the INFO/version record and only the upgrade is gated by the
+ * cluster level, so the records are always used in the format the
+ * database has.
+ *
+ * The database may be opened while only a preliminary cluster level
+ * is active, e.g. while the configuration is loaded, or the level of
+ * the cluster may be raised while the database is open, so the
+ * upgrade is tried again on the next regdb_init() or regdb_open()
+ * once the active level differs from the one already checked.
+ */
+static void regdb_try_cluster_level_upgrade(void)
+{
+	const struct cluster_level_active *level = NULL;
+	int32_t version = 0;
+	int32_t vers_id;
+	NTSTATUS status;
+
+	if (regdb_transaction_depth > 0) {
+		/*
+		 * The upgrade needs its own transaction,
+		 * it's tried again later.
+		 */
+		return;
+	}
+
+	if (!cluster_level_global_is_valid()) {
+		/*
+		 * lp_smbconf_ctx() forgets the oldest level used
+		 * while it opened registry.tdb, the next
+		 * db_open_ex() or messaging_init() activates the
+		 * correct level.
+		 */
+		return;
+	}
+
+	level = cluster_level_global_active();
+	if (level->major == regdb_checked_level.major &&
+	    level->minor == regdb_checked_level.minor)
+	{
+		return;
+	}
+
+	/*
+	 * The version of the format the active cluster level allows,
+	 * a future format would be added like this:
+	 *
+	 * if (CLUSTER_LEVEL_ACTIVE(3, 0)) {
+	 *         version = REGDB_VERSION_V4;
+	 * } else if (CLUSTER_LEVEL_ACTIVE(LOWEST, MIN)) {
+	 */
+	if (CLUSTER_LEVEL_ACTIVE(LOWEST, MIN)) {
+		version = REGDB_VERSION_V3;
+	} else {
+		SMB_ASSERT(CLUSTER_LEVEL_ACTIVE(LOWEST, MIN));
+	}
+
+	status = dbwrap_fetch_int32_bystring(regdb,
+					     REGDB_VERSION_KEYNAME,
+					     &vers_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Reading registry version failed: %s\n",
+			    nt_errstr(status));
+		return;
+	}
+
+	if (vers_id >= version) {
+		regdb_checked_level = *level;
+		return;
+	}
+
+	/*
+	 * Future upgrade code gated by the cluster level should go
+	 * here, it needs to fetch INFO/version again within its
+	 * transaction, as other processes may upgrade concurrently,
+	 * and set regdb_checked_level once it's done.
+	 */
+}
+
 /***********************************************************************
  Open the registry database
  ***********************************************************************/
@@ -734,6 +819,7 @@ WERROR regdb_init(void)
 		DEBUG(10, ("regdb_init: incrementing refcount (%d->%d)\n",
 			   regdb_refcount, regdb_refcount+1));
 		regdb_refcount++;
+		regdb_try_cluster_level_upgrade();
 		return WERR_OK;
 	}
 
@@ -808,6 +894,7 @@ WERROR regdb_init(void)
 	}
 
 	if (vers_id == REGDB_CODE_VERSION) {
+		regdb_try_cluster_level_upgrade();
 		return WERR_OK;
 	}
 
@@ -854,6 +941,7 @@ WERROR regdb_init(void)
 		return WERR_REGISTRY_IO_FAILED;
 	}
 
+	regdb_try_cluster_level_upgrade();
 	return WERR_OK;
 }
 
@@ -871,6 +959,7 @@ WERROR regdb_open( void )
 		DEBUG(10, ("regdb_open: incrementing refcount (%d->%d)\n",
 			   regdb_refcount, regdb_refcount+1));
 		regdb_refcount++;
+		regdb_try_cluster_level_upgrade();
 		result = WERR_OK;
 		goto done;
 	}
@@ -899,6 +988,7 @@ WERROR regdb_open( void )
 	DEBUG(10, ("regdb_open: registry db opened. refcount reset (%d)\n",
 		   regdb_refcount));
 
+	regdb_try_cluster_level_upgrade();
 	result = WERR_OK;
 done:
 	TALLOC_FREE(db_path);
@@ -930,18 +1020,32 @@ int regdb_close( void )
 
 WERROR regdb_transaction_start(void)
 {
-	return (dbwrap_transaction_start(regdb) == 0) ?
-		WERR_OK : WERR_REGISTRY_IO_FAILED;
+	if (dbwrap_transaction_start(regdb) != 0) {
+		return WERR_REGISTRY_IO_FAILED;
+	}
+	regdb_transaction_depth++;
+	return WERR_OK;
 }
 
 WERROR regdb_transaction_commit(void)
 {
+	/*
+	 * Callers may commit or cancel without a
+	 * transaction being started, which fails,
+	 * but must not make the depth negative.
+	 */
+	if (regdb_transaction_depth > 0) {
+		regdb_transaction_depth--;
+	}
 	return (dbwrap_transaction_commit(regdb) == 0) ?
 		WERR_OK : WERR_REGISTRY_IO_FAILED;
 }
 
 WERROR regdb_transaction_cancel(void)
 {
+	if (regdb_transaction_depth > 0) {
+		regdb_transaction_depth--;
+	}
 	return (dbwrap_transaction_cancel(regdb) == 0) ?
 		WERR_OK : WERR_REGISTRY_IO_FAILED;
 }
