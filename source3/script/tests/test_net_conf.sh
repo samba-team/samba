@@ -466,7 +466,9 @@ lock directory
 lock dir
 config backend
 include
-clustering"
+clustering
+private dir
+private directory"
 
 	echo '\nTrying to set forbidden parameters' >>$LOG
 

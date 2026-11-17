@@ -42,6 +42,7 @@ s/lock dir/;&/g
 s/config backend/;&/g
 s/include/;&/g
 s/clustering/;&/g
+s/private dir/;&/g
 }"
 
 REGPATH="HKLM\Software\Samba"

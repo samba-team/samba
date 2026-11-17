@@ -106,6 +106,13 @@ bool smbconf_reg_parameter_is_settable(const char *param_name)
 					  * before registry.tdb can be opened.
 					  */
 					 "clustering",
+					 /*
+					  * With clustering, opening
+					  * registry.tdb initializes messaging,
+					  * which uses the private dir.
+					  */
+					 "private dir",
+					 "private directory",
 					 NULL};
 	const char **forbidden = NULL;
 

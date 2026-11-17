@@ -8,6 +8,13 @@
     smbd will use for storing such files as <filename moreinfo="none">smbpasswd</filename>
     and <filename moreinfo="none">secrets.tdb</filename>.
 </para>
+
+<para>This parameter can't be stored in the registry configuration,
+    as with <smbconfoption name="clustering">yes</smbconfoption> opening
+    the registry database initializes the messaging, which uses this
+    directory. Set it in <filename moreinfo="none">smb.conf</filename>
+    before <smbconfoption name="include">registry</smbconfoption>.
+</para>
 </description>
 
 <value type="default">&pathconfig.PRIVATE_DIR;</value>
