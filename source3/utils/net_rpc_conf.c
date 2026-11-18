@@ -1224,6 +1224,11 @@ static NTSTATUS rpc_conf_import_internal(struct net_context *c,
 			goto error;
 		}
 
+		if (!net_conf_service_importable(service)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+
 		num_shares = 1;
 
 	} else {
@@ -1233,6 +1238,13 @@ static NTSTATUS rpc_conf_import_internal(struct net_context *c,
 					  &services);
 		if (!SBC_ERROR_IS_OK(err)) {
 			goto error;
+		}
+
+		for (i = 0; i < num_shares; i++) {
+			if (!net_conf_service_importable(services[i])) {
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto error;
+			}
 		}
 	}
 

@@ -508,6 +508,62 @@ private directory"
 	return 0
 }
 
+#
+# Configurations created by older versions may still contain
+# forbidden parameters, they can be read and deleted, but a failing
+# setparm must not remove them.
+#
+test_conf_setparm_forbidden_existing()
+{
+	echo '\nTrying to overwrite an existing forbidden parameter' >>$LOG
+
+	$NETCMD conf drop
+	log_print $NETCMD conf drop
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD conf setparm global "server string" "forbidden existing"
+	log_print $NETCMD conf setparm global "server string" "forbidden existing"
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD registry setvalue 'HKLM\SOFTWARE\Samba\smbconf\global' \
+		clustering sz no
+	log_print $NETCMD registry setvalue \
+		'HKLM\SOFTWARE\Samba\smbconf\global' clustering sz no
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD conf setparm global clustering yes >$DIR/setparm_forbidden_existing_out 2>&1
+	log_print $NETCMD conf setparm global clustering yes
+	test "x$?" = "x0" && {
+		echo "ERROR: setting forbidden parameter 'clustering' succeeded" | tee -a $LOG
+		return 1
+	}
+
+	OUT=$($NETCMD conf getparm global clustering)
+	log_print $NETCMD conf getparm global clustering
+	test "x$OUT" = "xno" || {
+		echo "ERROR: getparm returned '$OUT', expected 'no'" | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD conf delparm global clustering
+	log_print $NETCMD conf delparm global clustering
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	return 0
+}
+
 test_conf_setparm_usage()
 {
 	echo '\nChecking usage' >>$LOG
@@ -907,6 +963,73 @@ test_conf_import()
 	fi
 }
 
+#
+# An import of a configuration with forbidden parameters, e.g.
+# from 'net conf list' of a configuration created by an older
+# version, has to fail before the existing configuration is changed.
+#
+test_conf_import_forbidden()
+{
+	echo '\nTesting conf import with forbidden parameters' >>$LOG
+
+	$NETCMD conf drop
+	log_print $NETCMD conf drop
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD conf addshare import_forbidden_share /tmp
+	log_print $NETCMD conf addshare import_forbidden_share /tmp
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD conf list >$DIR/conf_import_forbidden_before
+	log_print $NETCMD conf list
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	printf '[global]\n\tclustering = no\n\n[import_forbidden_other]\n\tpath = /tmp\n' \
+		>$DIR/conf_import_forbidden_in
+
+	$NETCMD conf import $DIR/conf_import_forbidden_in >$DIR/conf_import_forbidden_out 2>&1
+	log_print $NETCMD conf import $DIR/conf_import_forbidden_in
+	test "x$?" = "x0" && {
+		echo 'ERROR: import with a forbidden parameter succeeded' | tee -a $LOG
+		return 1
+	}
+
+	SEARCH="Parameter 'clustering' not allowed in registry"
+	grep "$SEARCH" $DIR/conf_import_forbidden_out >/dev/null 2>>$LOG
+	test "x$?" = "x0" || {
+		echo "ERROR: expected '$SEARCH'" | tee -a $LOG
+		cat $DIR/conf_import_forbidden_out | tee -a $LOG
+		return 1
+	}
+
+	$NETCMD conf list >$DIR/conf_import_forbidden_after
+	log_print $NETCMD conf list
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	diff -q $DIR/conf_import_forbidden_before $DIR/conf_import_forbidden_after >>$LOG
+	if [ "$?" != "0" ]; then
+		echo "ERROR: failed import changed the configuration" | tee -a $LOG
+		return 1
+	fi
+
+	$NETCMD conf delshare import_forbidden_share
+	log_print $NETCMD conf delshare import_forbidden_share
+
+	return 0
+}
+
 test_conf_import_usage()
 {
 	echo '\nChecking usage' >>$LOG
@@ -978,6 +1101,10 @@ testit "conf_setparm_forbidden" \
 	test_conf_setparm_forbidden ||
 	failed=$(expr $failed + 1)
 
+testit "conf_setparm_forbidden_existing" \
+	test_conf_setparm_forbidden_existing ||
+	failed=$(expr $failed + 1)
+
 testit "conf_setparm_usage" \
 	test_conf_setparm_usage ||
 	failed=$(expr $failed + 1)
@@ -1032,6 +1159,10 @@ testit "conf_delincludes_usage" \
 
 testit "conf_import" \
 	test_conf_import ||
+	failed=$(expr $failed + 1)
+
+testit "conf_import_forbidden" \
+	test_conf_import_forbidden ||
 	failed=$(expr $failed + 1)
 
 testit "conf_import_usage" \

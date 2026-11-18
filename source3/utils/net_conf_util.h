@@ -30,4 +30,7 @@ bool net_conf_param_valid(const char *service,
 			  const char *param,
 			  const char *valstr);
 
+struct smbconf_service;
+bool net_conf_service_importable(const struct smbconf_service *service);
+
 #endif /* __NET_CONF_UTIL_H__ */

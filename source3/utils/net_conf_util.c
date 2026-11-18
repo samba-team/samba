@@ -67,3 +67,40 @@ bool net_conf_param_valid(const char *service,
 
 	return true;
 }
+
+/*
+ * Configurations created by older versions may contain parameters,
+ * which can't be set in the registry anymore, but are still
+ * listed by 'net conf list'. Check them before an import changes
+ * the registry, so that a failing import keeps the existing
+ * configuration.
+ */
+bool net_conf_service_importable(const struct smbconf_service *service)
+{
+	bool ok = true;
+	uint32_t i;
+
+	for (i = 0; i < service->num_params; i++) {
+		const char *param = service->param_names[i];
+
+		if (!smbconf_reg_parameter_is_valid(param)) {
+			/*
+			 * e.g. 'include' is handled by the import itself
+			 */
+			continue;
+		}
+
+		if (smbconf_reg_parameter_is_settable(param)) {
+			continue;
+		}
+
+		d_fprintf(stderr,
+			  "Parameter '%s' not allowed in registry "
+			  "(section '%s').\n",
+			  param,
+			  service->name != NULL ? service->name : GLOBAL_NAME);
+		ok = false;
+	}
+
+	return ok;
+}

@@ -336,6 +336,10 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			goto done;
 		}
 
+		if (!net_conf_service_importable(service)) {
+			goto done;
+		}
+
 		err = smbconf_transaction_start(conf_ctx);
 		if (!SBC_ERROR_IS_OK(err)) {
 			d_printf(_("error starting transaction: %s\n"),
@@ -362,6 +366,11 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 				 filename,
 				 sbcErrorString(err));
 			goto done;
+		}
+		for (sidx = 0; sidx < num_shares; sidx++) {
+			if (!net_conf_service_importable(services[sidx])) {
+				goto done;
+			}
 		}
 		if (!c->opt_testmode) {
 			err = smbconf_drop(conf_ctx);
