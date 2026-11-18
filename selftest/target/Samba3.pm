@@ -3707,6 +3707,11 @@ sub provision($$)
 	shadow:fixinodes = yes
 	smbd async dosmode = yes
 
+[shadow_nosymlinks]
+	copy = shadow_write
+	comment = previous versions snapshots, symlinks are not followed
+	follow symlinks = no
+
 [shadow_depot]
 	path = $shadow_shrdir
 	comment = previous versions with streams_depot

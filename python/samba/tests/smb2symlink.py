@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+import shutil
 import struct
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import reparse_symlink
@@ -56,7 +58,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             self.creds)
         return (smb1, smb2)
 
-    def create_symlink(self, conn, target, symlink):
+    def create_symlink(self, conn, target, symlink, directory=False):
 
         self.clean_file(conn, symlink)
         if (conn.protocol() < libsmb.PROTOCOL_SMB2_02 and
@@ -64,14 +66,23 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             conn.smb1_symlink(target, symlink)
         else:
             flags = 0 if target[0]=='/' else 1
+            # NTFS needs a directory symlink to be created as a
+            # directory, there is no SMB1 POSIX-like symlink call
+            if directory:
+                attrs = libsmb.FILE_ATTRIBUTE_DIRECTORY
+                opts = (libsmb.FILE_DIRECTORY_FILE |
+                        libsmb.FILE_OPEN_REPARSE_POINT)
+            else:
+                attrs = libsmb.FILE_ATTRIBUTE_NORMAL
+                opts = libsmb.FILE_OPEN_REPARSE_POINT
             syml = conn.create(
                 symlink,
                 DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE|
                 sec.SEC_FILE_WRITE_ATTRIBUTE|
                 sec.SEC_STD_DELETE,
-                FileAttributes=libsmb.FILE_ATTRIBUTE_NORMAL,
+                FileAttributes=attrs,
                 CreateDisposition=libsmb.FILE_OPEN_IF,
-                CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+                CreateOptions=opts)
             b = reparse_symlink.symlink_put(target, target, 0, 1)
             conn.fsctl(syml, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
             conn.close(syml)
@@ -465,6 +476,449 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             cr['file_attributes'] & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
             libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
         self.verify_symlink(smb2, newname, "tfile")
+
+    def dir_symlink_setup(self, fsctl):
+        """Create a directory with a file and a symlink to it
+
+        With fsctl=False the link is a real POSIX symlink (SMB1
+        POSIX), with fsctl=True a reparse point symlink created
+        with FSCTL_SET_REPARSE_POINT over SMB2. Both on a share
+        with follow symlinks = no. Returns the SMB2 connection and
+        the name of the symlink.
+        """
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        via_fsctl = samba.tests.env_get_var_value(
+            "SYMLINK_VIA_FSCTL", allow_missing=True)
+        if share:
+            # Against Windows there are no POSIX symlinks
+            if not fsctl:
+                self.skipTest("No POSIX symlinks on Windows")
+            smb1share = share
+        else:
+            share = "nosymlinks"
+            smb1share = "nosymlinks_smb1allow"
+        smb2 = libsmb.Conn(self.server_ip, share, self.lp, self.creds)
+        if fsctl:
+            lnkconn = smb2
+        else:
+            lnkconn = self.symlink_conn(smb1share)
+        symlink = "dlnk"
+        target = "tdir"
+
+        fd = smb2.create(target,
+                         CreateDisposition=libsmb.FILE_CREATE,
+                         CreateOptions=libsmb.FILE_DIRECTORY_FILE)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, target)
+
+        # Make sure removing the directory instead of the link fails
+        fd = smb2.create(target + "\\f",
+                         CreateDisposition=libsmb.FILE_CREATE)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, target + "\\f")
+
+        # NTFS needs a directory symlink to be created as a
+        # directory, Samba can only store the reparse point in a
+        # regular file
+        self.create_symlink(lnkconn, target, symlink,
+                            directory=bool(via_fsctl))
+        self.verify_symlink(smb2, symlink, target)
+        self.addCleanup(self.clean_file, lnkconn, symlink)
+
+        return smb2, symlink
+
+    def check_directory_symlink_attributes(self, fsctl):
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        # Like NTFS, both attributes
+        attrs = cr['file_attributes']
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+                         libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_DIRECTORY,
+                         libsmb.FILE_ATTRIBUTE_DIRECTORY)
+
+    def test_directory_symlink_attributes(self):
+        """A POSIX symlink to a directory is a directory reparse point"""
+        self.check_directory_symlink_attributes(False)
+
+    def test_directory_symlink_attributes_fsctl(self):
+        """A reparse point symlink to a directory is a directory"""
+        self.check_directory_symlink_attributes(True)
+
+    def check_directory_symlink_setinfo(self, fsctl):
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        fd = self.assertNoNTSTATUSError(
+            smb2.create,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.assertNoNTSTATUSError(
+            smb2.sfileinfo,
+            fd,
+            libsmb.SMB2_0_INFO_FILE,
+            libsmb.FSCC_FILE_BASIC_INFORMATION,
+            libsmb.basic_info_pack(libsmb.FILE_ATTRIBUTE_HIDDEN))
+        smb2.close(fd)
+
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        # Changing attributes must not lose the reparse point and
+        # directory bits. A POSIX symlink has no place to store HIDDEN.
+        want = (libsmb.FILE_ATTRIBUTE_REPARSE_POINT |
+                libsmb.FILE_ATTRIBUTE_DIRECTORY)
+        if fsctl:
+            want |= libsmb.FILE_ATTRIBUTE_HIDDEN
+        self.assertEqual(cr['file_attributes'] & want, want)
+
+    def test_directory_symlink_setinfo(self):
+        """Set info on a POSIX directory symlink keeps DIRECTORY"""
+        self.check_directory_symlink_setinfo(False)
+
+    def test_directory_symlink_setinfo_fsctl(self):
+        """Set info on a reparse point directory symlink keeps DIRECTORY"""
+        self.check_directory_symlink_setinfo(True)
+
+    def check_directory_symlink_follow(self, fsctl):
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        # Entering a directory symlink without FILE_OPEN_REPARSE_POINT
+        # tells the client to follow it, like NTFS does
+        with self.assertRaises(NTSTATUSError) as e:
+            smb2.create_ex(symlink,
+                           DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                           CreateOptions=libsmb.FILE_DIRECTORY_FILE)
+        self.assert_symlink_exception(
+            e.exception,
+            {'unparsed_path_length': 0,
+             'substitute_name': "tdir"})
+
+    def test_directory_symlink_follow(self):
+        """Directory open of a POSIX directory symlink follows it"""
+        self.check_directory_symlink_follow(False)
+
+    def test_directory_symlink_follow_fsctl(self):
+        """Directory open of a reparse point directory symlink follows it"""
+        self.check_directory_symlink_follow(True)
+
+    def remove_local(self, path):
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            pass
+
+    def test_directory_symlink_twrp(self):
+        """A symlink in a snapshot is resolved in that snapshot
+
+        In the live tree "tlnk" points to "tdir", which is a file. In
+        the snapshot "tdir" is a directory. Asking for the snapshot
+        version of "tlnk" must show a directory reparse point.
+        """
+        snap = "@GMT-2015.10.31-19.40.30"
+        root = os.path.join(
+            samba.tests.env_get_var_value("LOCAL_PATH"), "shadow")
+        snapdir = os.path.join(root, ".snapshots", snap)
+
+        os.makedirs(snapdir, exist_ok=True)
+        self.addCleanup(shutil.rmtree, os.path.join(root, ".snapshots"))
+        os.mkdir(os.path.join(snapdir, "tdir"))
+        os.symlink("tdir", os.path.join(snapdir, "tlnk"))
+
+        for name in ["tdir", "tlnk"]:
+            self.addCleanup(self.remove_local, os.path.join(root, name))
+        with open(os.path.join(root, "tdir"), "w"):
+            pass
+        os.symlink("tdir", os.path.join(root, "tlnk"))
+
+        smb2 = libsmb.Conn(self.server_ip, "shadow_nosymlinks", self.lp,
+                           self.creds)
+
+        # The live link points to a file
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            "tlnk",
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        smb2.close(fd)
+        self.assertEqual(cr['file_attributes'] &
+                         libsmb.FILE_ATTRIBUTE_DIRECTORY, 0)
+
+        # The link in the snapshot points to a directory
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            f"{snap}\\tlnk",
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        smb2.close(fd)
+        attrs = cr['file_attributes']
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+                         libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_DIRECTORY,
+                         libsmb.FILE_ATTRIBUTE_DIRECTORY)
+
+        # A directory open of the snapshot link opens the link itself
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            f"{snap}\\tlnk",
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=(libsmb.FILE_DIRECTORY_FILE |
+                           libsmb.FILE_OPEN_REPARSE_POINT))
+        smb2.close(fd)
+        self.assertEqual(cr['file_attributes'] &
+                         libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+                         libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+
+    def test_directory_symlink_posix_names(self):
+        """Names only valid with POSIX pathnames work for the link and target
+
+        "a:b" would be split into a stream, "x*" is a wildcard.
+        """
+        root = os.path.join(
+            samba.tests.env_get_var_value("LOCAL_PATH"), "nosymlinks")
+        tdir = "x*dir"
+        lnk = "a:lnk"
+
+        os.mkdir(os.path.join(root, tdir))
+        self.addCleanup(os.rmdir, os.path.join(root, tdir))
+        os.symlink(tdir, os.path.join(root, lnk))
+        self.addCleanup(os.unlink, os.path.join(root, lnk))
+
+        smb2 = libsmb.Conn(self.server_ip, "nosymlinks", self.lp,
+                           self.creds, posix=True)
+        self.assertTrue(smb2.have_posix())
+
+        wire_mode = libsmb.unix_mode_to_wire(0o644)
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            lnk,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=(libsmb.FILE_OPEN_REPARSE_POINT |
+                           libsmb.FILE_DIRECTORY_FILE),
+            CreateContexts=[(libsmb.SMB2_CREATE_TAG_POSIX,
+                             wire_mode.to_bytes(4, 'little'))])
+        smb2.close(fd)
+
+        # A POSIX open does not get the directory attribute
+        attrs = cr['file_attributes']
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+                         libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_DIRECTORY, 0)
+
+    def test_directory_symlink_rename_fsctl(self):
+        """Renaming a reparse point directory symlink keeps its attributes"""
+        (smb2, symlink) = self.dir_symlink_setup(True)
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        smb1share = share if share else "nosymlinks_smb1allow"
+        smb1 = libsmb.Conn(
+            self.server_ip, smb1share, self.lp, self.creds, force_smb1=True)
+        newname = symlink + "_renamed"
+        self.addCleanup(self.clean_file, smb2, newname)
+
+        self.assertNoNTSTATUSError(smb1.rename, symlink, newname)
+
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            newname,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        want = (libsmb.FILE_ATTRIBUTE_REPARSE_POINT |
+                libsmb.FILE_ATTRIBUTE_DIRECTORY)
+        self.assertEqual(cr['file_attributes'] & want, want)
+
+    def check_directory_symlink_rmdir(self, fsctl):
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        # What RemoveDirectory() and "rmdir" do
+        (fd, _, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            DesiredAccess=sec.SEC_STD_DELETE |
+            sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_DIRECTORY_FILE |
+            libsmb.FILE_OPEN_REPARSE_POINT)
+        self.assertNoNTSTATUSError(smb2.delete_on_close, fd, 1)
+        smb2.close(fd)
+
+        # The link is gone ...
+        with self.assertRaises(NTSTATUSError) as cm:
+            smb2.create(symlink,
+                        DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                        CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.assertEqual(cm.exception.args[0],
+                         ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND)
+
+        # ... but the target is not
+        fd = self.assertNoNTSTATUSError(smb2.create, "tdir\\f")
+        smb2.close(fd)
+
+    def test_directory_symlink_rmdir(self):
+        """RemoveDirectory on a POSIX directory symlink removes the link"""
+        self.check_directory_symlink_rmdir(False)
+
+    def test_directory_symlink_rmdir_fsctl(self):
+        """RemoveDirectory on a reparse point directory symlink"""
+        self.check_directory_symlink_rmdir(True)
+
+    def check_directory_symlink_invalid_disposition(self, fsctl):
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        # Directory opens don't allow these, a symlink is no exception
+        for disposition in [libsmb.FILE_SUPERSEDE,
+                            libsmb.FILE_OVERWRITE,
+                            libsmb.FILE_OVERWRITE_IF]:
+            with self.assertRaises(NTSTATUSError) as cm:
+                smb2.create_ex(
+                    symlink,
+                    DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                    CreateDisposition=disposition,
+                    CreateOptions=libsmb.FILE_DIRECTORY_FILE |
+                    libsmb.FILE_OPEN_REPARSE_POINT)
+            self.assertEqual(cm.exception.args[0],
+                             ntstatus.NT_STATUS_INVALID_PARAMETER)
+
+        # The link is still there
+        (fd, _, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        smb2.close(fd)
+
+    def test_directory_symlink_invalid_disposition(self):
+        """Directory open of a POSIX directory symlink checks disposition"""
+        self.check_directory_symlink_invalid_disposition(False)
+
+    def test_directory_symlink_invalid_disposition_fsctl(self):
+        """Directory open of a reparse point directory symlink checks
+        disposition"""
+        self.check_directory_symlink_invalid_disposition(True)
+
+    def check_directory_symlink_nondir(self, fsctl):
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        # Like NTFS, a non-directory open of a link that is a
+        # directory fails, only a directory open can remove it
+        try:
+            fd = smb2.create(symlink,
+                             DesiredAccess=(sec.SEC_STD_DELETE |
+                                            sec.SEC_FILE_READ_ATTRIBUTE),
+                             CreateOptions=(libsmb.FILE_NON_DIRECTORY_FILE |
+                                            libsmb.FILE_OPEN_REPARSE_POINT))
+        except NTSTATUSError as e:
+            self.assertEqual(e.args[0], ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY)
+        else:
+            smb2.close(fd)
+            self.fail("Non-directory open of a directory symlink succeeded")
+
+        # The link and the target are still there
+        self.verify_symlink(smb2, symlink, "tdir")
+        fd = self.assertNoNTSTATUSError(smb2.create, "tdir\\f")
+        smb2.close(fd)
+
+    def test_directory_symlink_nondir(self):
+        """Non-directory open of a POSIX directory symlink fails"""
+        self.check_directory_symlink_nondir(False)
+
+    def test_directory_symlink_nondir_fsctl(self):
+        """Non-directory open of a reparse point directory symlink fails"""
+        self.check_directory_symlink_nondir(True)
+
+    def test_directory_symlink_nondir_posix(self):
+        """A POSIX client opens a directory symlink as a non-directory
+
+        For a POSIX client the link is a symlink, not a directory.
+        """
+        root = os.path.join(
+            samba.tests.env_get_var_value("LOCAL_PATH"), "nosymlinks")
+        tdir = "pdir"
+        lnk = "plnk"
+
+        os.mkdir(os.path.join(root, tdir))
+        self.addCleanup(os.rmdir, os.path.join(root, tdir))
+        os.symlink(tdir, os.path.join(root, lnk))
+        self.addCleanup(self.remove_local, os.path.join(root, lnk))
+
+        smb2 = libsmb.Conn(self.server_ip, "nosymlinks", self.lp,
+                           self.creds, posix=True)
+        self.assertTrue(smb2.have_posix())
+
+        wire_mode = libsmb.unix_mode_to_wire(0o644)
+        (fd, _, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            lnk,
+            DesiredAccess=(sec.SEC_STD_DELETE |
+                           sec.SEC_FILE_READ_ATTRIBUTE),
+            CreateOptions=(libsmb.FILE_NON_DIRECTORY_FILE |
+                           libsmb.FILE_OPEN_REPARSE_POINT),
+            CreateContexts=[(libsmb.SMB2_CREATE_TAG_POSIX,
+                             wire_mode.to_bytes(4, 'little'))])
+        self.assertNoNTSTATUSError(smb2.delete_on_close, fd, 1)
+        smb2.close(fd)
+
+        # Just the link is gone
+        self.assertFalse(os.path.lexists(os.path.join(root, lnk)))
+        self.assertTrue(os.path.isdir(os.path.join(root, tdir)))
+
+    def check_symlink_to_fake_file(self, fsctl):
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        if share:
+            self.skipTest("Fake files are Samba specific")
+        smb2 = libsmb.Conn(
+            self.server_ip, "nosymlinks", self.lp, self.creds)
+        if fsctl:
+            lnkconn = smb2
+        else:
+            lnkconn = self.symlink_conn("nosymlinks_smb1allow")
+        symlink = "qlnk"
+
+        # The name of the fake quota file. Resolving the target of the
+        # symlink must not hand out the connection's cwd_fsp.
+        target = "$Extend/$Quota:$Q:$INDEX_ALLOCATION"
+
+        self.create_symlink(lnkconn, target, symlink)
+        self.addCleanup(self.clean_file, lnkconn, symlink)
+
+        for i in range(2):
+            (fd, cr, _) = self.assertNoNTSTATUSError(
+                smb2.create_ex,
+                symlink,
+                DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+            smb2.close(fd)
+
+        # A fake file is not a directory
+        self.assertEqual(
+            cr['file_attributes'] & libsmb.FILE_ATTRIBUTE_DIRECTORY, 0)
+
+        # The share root must still be usable
+        fd = smb2.create("tfile", CreateDisposition=libsmb.FILE_OVERWRITE_IF)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, "tfile")
+
+    def test_symlink_to_fake_file(self):
+        """A POSIX symlink to the fake quota file does not harm smbd"""
+        self.check_symlink_to_fake_file(False)
+
+    def test_symlink_to_fake_file_fsctl(self):
+        """A reparse point symlink to the fake quota file"""
+        self.check_symlink_to_fake_file(True)
 
 if __name__ == '__main__':
     import unittest
