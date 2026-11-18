@@ -329,7 +329,11 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 					servicename,
 					&service);
 		if (!SBC_ERROR_IS_OK(err)) {
-			goto cancel;
+			d_printf(_("error getting service %s from '%s': %s\n"),
+				 servicename,
+				 filename,
+				 sbcErrorString(err));
+			goto done;
 		}
 
 		err = smbconf_transaction_start(conf_ctx);
@@ -353,11 +357,19 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 					  &num_shares,
 					  &services);
 		if (!SBC_ERROR_IS_OK(err)) {
-			goto cancel;
+			d_printf(_("error getting the configuration from "
+				   "'%s': %s\n"),
+				 filename,
+				 sbcErrorString(err));
+			goto done;
 		}
 		if (!c->opt_testmode) {
-			if (!SBC_ERROR_IS_OK(smbconf_drop(conf_ctx))) {
-				goto cancel;
+			err = smbconf_drop(conf_ctx);
+			if (!SBC_ERROR_IS_OK(err)) {
+				d_printf(_("error dropping the configuration: "
+					   "%s\n"),
+					 sbcErrorString(err));
+				goto done;
 			}
 		}
 
