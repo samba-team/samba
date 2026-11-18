@@ -1120,7 +1120,8 @@ static bool test_sorted(struct torture_context *tctx, struct smbcli_state *cli)
 
 	printf("Creating %d files\n", num_files);
 
-	for (i=0;i<num_files;i++) {
+	i = 0;
+	while (i < num_files) {
 		char randstr[11];
 		fname = talloc_asprintf(
 			cli,
@@ -1128,14 +1129,29 @@ static bool test_sorted(struct torture_context *tctx, struct smbcli_state *cli)
 			generate_random_str_list_buf(randstr,
 						     sizeof(randstr),
 						     "abcdefgh"));
-		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		fnum = smbcli_open(cli->tree,
+				   fname,
+				   O_CREAT | O_EXCL | O_RDWR,
+				   DENY_NONE);
 		if (fnum == -1) {
+			status = smbcli_nt_error(cli->tree);
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_OBJECT_NAME_COLLISION))
+			{
+
+				/*
+				 * Random name already used, try another one
+				 */
+				TALLOC_FREE(fname);
+				continue;
+			}
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 			ret = false;
 			goto done;
 		}
 		talloc_free(fname);
 		smbcli_close(cli->tree, fnum);
+		i += 1;
 	}
 
 
