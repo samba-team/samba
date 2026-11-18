@@ -8744,6 +8744,106 @@ done:
 }
 
 /*
+ * Verify a replay on a Persistent Handle that has been used still fails after
+ * the handle was disconnected and reconnected.
+ */
+static bool test_persistent_replay_used_reconnect(struct torture_context *tctx,
+						  struct smb2_tree *tree)
+{
+	struct smb2_create io1;
+	struct smb2_create io2;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+	struct smb2_handle h1 = {0};
+	uint32_t caps;
+	struct smbcli_options options = tree->session->transport->options;
+	uint64_t lease1 = random();
+	struct GUID create_guid1 = GUID_random();
+	char *fname = NULL;
+	struct smb2_write wrt;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+	caps = smb2cli_tcon_capabilities(tree->smbXcli);
+	if (!(caps & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY)) {
+		torture_skip(tctx, "PH are not supported\n");
+	}
+
+	fname = talloc_asprintf(tctx, "replay_used_reconnect-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	smb2_lease_v2_create_share(&io1, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease1, NULL,
+				   smb2_util_lease_state("R"), 1);
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = true;
+	io1.in.create_guid = create_guid1;
+	status = smb2_create(tree, tree, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	torture_assert_goto(tctx, io1.out.persistent_open == true,
+			    ret, done, "Persistent open not granted\n");
+	h1 = io1.out.file.handle;
+
+	/*
+	 * Use the handle, this ends replay of the create
+	 */
+	ZERO_STRUCT(wrt);
+	wrt.in.file.handle = h1;
+	wrt.in.offset = 0;
+	wrt.in.data = data_blob_string_const("data");
+
+	status = smb2_write(tree, &wrt);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_write failed\n");
+
+	TALLOC_FREE(tree);
+	sleep(1);
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	smb2_lease_v2_create(&io2, &ls2, false, fname, lease1, NULL,
+			     smb2_util_lease_state("R"), 1);
+	io2.in.durable_handle_v2 = &h1;
+	io2.in.create_guid = create_guid1;
+	io2.in.persistent_open = true;
+	status = smb2_create(tree, tree, &io2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"reconnect failed\n");
+	h1 = io2.out.file.handle;
+
+	/*
+	 * The reconnect must not have made the create replayable again
+	 */
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tree, &io1);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   ret, done,
+					   "replay after reconnect\n");
+
+done:
+	if (!smb2_util_handle_empty(h1) && tree != NULL) {
+		smb2_util_close(tree, h1);
+	}
+	if (fname != NULL && tree != NULL) {
+		smb2_util_unlink(tree, fname);
+	}
+	TALLOC_FREE(tree);
+	return ret;
+}
+
+/*
  * Verify a create can be replayed multiple times and that a replay on a
  * Persistent Handle fails after it has been used.
  */
@@ -9763,6 +9863,7 @@ struct torture_suite *torture_smb2_persistent_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "rename-dir-open-files", test_persistent_rename_dir_open_files);
 	torture_suite_add_1smb2_test(suite, "replay-reconnect", test_persistent_replay_reconnect);
 	torture_suite_add_1smb2_test(suite, "replay-multi", test_persistent_replay_multi);
+	torture_suite_add_1smb2_test(suite, "replay-used-reconnect", test_persistent_replay_used_reconnect);
 	torture_suite_add_1smb2_test(suite, "directory-leaselevels", test_directory_leaselevels);
 	torture_suite_add_1smb2_test(suite, "directory-leaselevels-fo", test_directory_leaselevels_fo);
 	torture_suite_add_1smb2_test(suite, "directory-leaselevels-fo-ca", test_directory_leaselevels_fo_ca);
