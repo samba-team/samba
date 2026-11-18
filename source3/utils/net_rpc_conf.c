@@ -1796,6 +1796,20 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 		goto error;
 	}
 
+	service_name = argv[0];
+	param_name = argv[1];
+	valstr = argv[2];
+
+	/*
+	 * check if parameter is valid for writing,
+	 * before we change anything, as an existing
+	 * value is deleted below
+	 */
+	if (!net_conf_param_valid(service_name, param_name, valstr)) {
+		werr = WERR_INVALID_PARAMETER;
+		goto error;
+	}
+
 	status = rpc_conf_open_conf(frame,
 				    b,
 				    REG_KEY_READ,
@@ -1810,10 +1824,6 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	if (!(W_ERROR_IS_OK(werr))) {
 		goto error;
 	}
-
-	service_name = argv[0];
-	param_name = argv[1];
-	valstr = argv[2];
 
 	key.name = service_name;
 	keyclass.name = "";
@@ -1866,15 +1876,6 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 			}
 
 			break;
-	}
-
-	/*
-	 * check if parameter is valid for writing
-	 */
-
-	if (!net_conf_param_valid(service_name, param_name, valstr)) {
-		werr = WERR_INVALID_PARAMETER;
-		goto error;
 	}
 
 	/* set the parameter */
