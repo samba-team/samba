@@ -405,6 +405,33 @@ failed:
 	state->failed = true;
 }
 
+/*
+ * Abandon a DB push that was started but not confirmed, such as when a
+ * database is thawed during recovery.  This must be called while the
+ * database is still frozen, so the database can be marked unlocked.
+ */
+void ctdb_db_push_cancel(struct ctdb_db_context *ctdb_db)
+{
+	struct db_push_state *state = NULL;
+
+	if (!ctdb_db->push_started) {
+		return;
+	}
+
+	state = (struct db_push_state *)ctdb_db->push_state;
+
+	D_WARNING("Cancelling DB push for %s\n", ctdb_db->db_name);
+
+	if (state != NULL) {
+		srvid_deregister(ctdb_db->ctdb->srv, state->srvid, state);
+		talloc_free(state);
+		ctdb_db->push_state = NULL;
+	}
+
+	ctdb_lockdb_unmark(ctdb_db);
+	ctdb_db->push_started = false;
+}
+
 int32_t ctdb_control_db_push_start(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_pulldb_ext *pulldb_ext;
@@ -441,7 +468,11 @@ int32_t ctdb_control_db_push_start(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
-	state = talloc_zero(ctdb_db, struct db_push_state);
+	/*
+	 * The freeze handle's destructor cancels the push, so the push
+	 * state must not be freed before the freeze handle
+	 */
+	state = talloc_zero(ctdb_db->freeze_handle, struct db_push_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Memory allocation error\n"));
 		return -1;

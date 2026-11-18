@@ -805,6 +805,7 @@ int32_t ctdb_control_db_push_start(struct ctdb_context *ctdb,
 				   TDB_DATA indata);
 int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 				     TDB_DATA indata, TDB_DATA *outdata);
+void ctdb_db_push_cancel(struct ctdb_db_context *ctdb_db);
 
 int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
 

@@ -132,6 +132,9 @@ static int ctdb_db_freeze_handle_destructor(struct ctdb_db_freeze_handle *h)
 	DEBUG(DEBUG_ERR, ("Release freeze handle for db %s\n",
 			  ctdb_db->db_name));
 
+	/* Before the database is marked as not frozen */
+	ctdb_db_push_cancel(ctdb_db);
+
 	/* Cancel any pending transactions */
 	if (ctdb_db->freeze_transaction_started) {
 		db_transaction_cancel_handler(ctdb_db, NULL);
@@ -158,7 +161,7 @@ static void ctdb_db_freeze_handler(void *private_data, bool locked)
 
 	if (h->ctdb_db->freeze_mode == CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR, ("Freeze db child died - unfreezing\n"));
-		h->ctdb_db->freeze_mode = CTDB_FREEZE_NONE;
+		/* The destructor marks the database as not frozen */
 		talloc_free(h);
 		return;
 	}
