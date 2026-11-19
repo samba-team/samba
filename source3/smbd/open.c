@@ -1095,6 +1095,7 @@ static NTSTATUS open_file(
 	const struct vfs_open_how *_how,
 	uint32_t access_mask,	   /* client requested access mask. */
 	uint32_t open_access_mask, /* what we're actually using in the open. */
+	bool open_reparse_point,
 	bool *p_file_created)
 {
 	connection_struct *conn = fsp->conn;
@@ -1109,6 +1110,7 @@ static NTSTATUS open_file(
 		FILE_EXECUTE |
 		SEC_FLAG_SYSTEM_SECURITY;
 	bool creating = !file_existed && (how.flags & O_CREAT);
+	bool data_access = (open_access_mask & need_fd_mask) != 0;
 	bool open_fd = false;
 	bool posix_open = fsp->fsp_flags.posix_open;
 
@@ -1158,8 +1160,19 @@ static NTSTATUS open_file(
 		how.flags &= ~(O_CREAT | O_EXCL);
 	}
 
-	if ((open_access_mask & need_fd_mask) || creating ||
-	    (how.flags & O_TRUNC)) {
+	if (file_existed && open_reparse_point &&
+	    !S_ISREG(smb_fname->st.st_ex_mode))
+	{
+		/*
+		 * A symlink or special file opened as a reparse point
+		 * has no data we could give access to, open it like a
+		 * stat open. The access and share mode checks still
+		 * see the full open_access_mask.
+		 */
+		data_access = false;
+	}
+
+	if (data_access || creating || (how.flags & O_TRUNC)) {
 		open_fd = true;
 	}
 
@@ -1405,7 +1418,15 @@ static NTSTATUS open_file(
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
-	if (file_existed && S_ISLNK(smb_fname->st.st_ex_mode)) {
+	if (!open_fd && file_existed && !S_ISREG(smb_fname->st.st_ex_mode)) {
+		/*
+		 * A symlink or a special file opened as a reparse
+		 * point has no fd and no data to read, write or lock,
+		 * whatever the client asked for. A stat open of a
+		 * regular file keeps the flags, so that the access
+		 * mask checks reject read, write and lock with
+		 * NT_STATUS_ACCESS_DENIED.
+		 */
 		fsp->fsp_flags.can_lock = false;
 		fsp->fsp_flags.can_read = false;
 		fsp->fsp_flags.can_write = false;
@@ -4235,6 +4256,7 @@ static NTSTATUS open_file_ntcreate(
 				     &how,
 				     access_mask,
 				     open_access_mask,
+				     create_options & FILE_OPEN_REPARSE_POINT,
 				     &new_file_created);
 	}
 	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
