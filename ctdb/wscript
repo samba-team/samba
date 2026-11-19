@@ -1129,6 +1129,7 @@ def build(bld):
         'transaction_loop',
         'update_record',
         'update_record_persistent',
+        'db_push_test',
         'lock_tdb',
         'dummy_client',
         'tunnel_test',
