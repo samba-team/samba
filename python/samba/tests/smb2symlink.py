@@ -55,19 +55,15 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             self.creds)
         return (smb1, smb2)
 
-    def create_symlink(self, conn1, conn2, target, symlink,
-                       expect_tgt=None):
+    def create_symlink(self, conn, target, symlink):
 
-        if expect_tgt is None:
-            expect_tgt = target
-
-        self.clean_file(conn1, symlink)
-        if (conn1.protocol() < libsmb.PROTOCOL_SMB2_02 and
-            conn1.have_posix()):
-            conn1.smb1_symlink(target, symlink)
+        self.clean_file(conn, symlink)
+        if (conn.protocol() < libsmb.PROTOCOL_SMB2_02 and
+            conn.have_posix()):
+            conn.smb1_symlink(target, symlink)
         else:
             flags = 0 if target[0]=='/' else 1
-            syml = conn1.create(
+            syml = conn.create(
                 symlink,
                 DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE|
                 sec.SEC_FILE_WRITE_ATTRIBUTE|
@@ -76,15 +72,17 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
                 CreateDisposition=libsmb.FILE_OPEN_IF,
                 CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
             b = reparse_symlink.symlink_put(target, target, 0, 1)
-            conn1.fsctl(syml, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
-            conn1.close(syml)
+            conn.fsctl(syml, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+            conn.close(syml)
 
-        fd = conn2.create(symlink,
-                          DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
-                          CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT,
-                          CreateDisposition=libsmb.FILE_OPEN)
-        blob = conn2.fsctl(fd, libsmb.FSCTL_GET_REPARSE_POINT, b'', 1024)
-        conn2.close(fd)
+    def verify_symlink(self, conn, symlink, expect_tgt):
+        """Check via SMB2 that symlink is a symlink to expect_tgt"""
+        fd = conn.create(symlink,
+                         DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
+                         CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT,
+                         CreateDisposition=libsmb.FILE_OPEN)
+        blob = conn.fsctl(fd, libsmb.FSCTL_GET_REPARSE_POINT, b'', 1024)
+        conn.close(fd)
 
         (tag,(subst,_,_,_)) = reparse_symlink.get(blob)
         self.assertEqual(tag, "IO_REPARSE_TAG_SYMLINK")
@@ -108,7 +106,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         target="foo"
         suffix="bar"
 
-        self.create_symlink(smb1, smb2, target, symlink);
+        self.create_symlink(smb1, target, symlink)
+        self.verify_symlink(smb2, symlink, target)
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}\\{suffix}')
@@ -128,7 +127,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         symlink="syml"
         target="foo"
 
-        self.create_symlink(smb1, smb2, target, symlink);
+        self.create_symlink(smb1, target, symlink)
+        self.verify_symlink(smb2, symlink, target)
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}')
@@ -152,7 +152,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
         for target in ["/etc", "//foo/bar", "/"]:
 
-            self.create_symlink(smb1, smb2, target, symlink)
+            self.create_symlink(smb1, target, symlink)
+            self.verify_symlink(smb2, symlink, target)
 
             with self.assertRaises(NTSTATUSError) as e:
                 fd = smb2.create_ex(f'{symlink}')
@@ -176,7 +177,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         rel_dest="dst"
         target=f'{shareroot}/{rel_dest}'
 
-        self.create_symlink(smb1, smb2, target, symlink, rel_dest)
+        self.create_symlink(smb1, target, symlink)
+        self.verify_symlink(smb2, symlink, rel_dest)
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = smb2.create_ex(f'{symlink}')
@@ -216,7 +218,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         smb1.mkdir("sub")
         self.addCleanup(self.clean_file, smb1, "sub")
 
-        self.create_symlink(smb1, smb2, f'{localpath}/sub1', "sub/lnk")
+        self.create_symlink(smb1, f'{localpath}/sub1', "sub/lnk")
+        self.verify_symlink(smb2, "sub/lnk", f'{localpath}/sub1')
         self.addCleanup(self.clean_file, smb1, "sub/lnk")
 
         smb1.mkdir("sub1")
