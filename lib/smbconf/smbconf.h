@@ -87,6 +87,12 @@ const char *sbcErrorString(sbcErr error);
  * Tell whether the backend requires messaging to be set up
  * for the backend to work correctly.
  *
+ * For the registry backend this is the case with
+ * 'clustering = yes', unless 'ctdb:registry.tdb = no' is
+ * used. Note that with 'clustering = yes' opening other
+ * databases may still initialize messaging, in order to
+ * activate the cluster level.
+ *
  * @param[in] ctx       The smbconf context to check.
  *
  * @return              True if needed, false if not.

@@ -77,10 +77,12 @@ const char *sbcErrorString(sbcErr error)
 	return "unknown sbcErr value";
 }
 
-
 /**
  * Tell whether the backend requires messaging to be set up
  * for the backend to work correctly.
+ *
+ * See smbconf.h, with 'clustering = yes' opening other
+ * databases may still initialize messaging.
  */
 bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx)
 {

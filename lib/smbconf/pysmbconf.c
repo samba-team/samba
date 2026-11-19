@@ -561,10 +561,16 @@ static PyObject *obj_transaction_cancel(py_SMBConf_Object * self,
 	Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR(obj_requires_messaging_doc,
-"requires_messaging() -> bool\n"
-"\n"
-"Returns true if the backend requires interprocess messaging.\n");
+PyDoc_STRVAR(
+	obj_requires_messaging_doc,
+	"requires_messaging() -> bool\n"
+	"\n"
+	"Returns true if the backend requires interprocess messaging.\n"
+	"\n"
+	"For the registry backend this is the case with 'clustering = yes',\n"
+	"unless 'ctdb:registry.tdb = no' is used. With 'clustering = yes'\n"
+	"opening other databases may still initialize messaging, in order\n"
+	"to activate the cluster level.\n");
 
 PyDoc_STRVAR(obj_is_writable_doc,
 "is_writeable() -> bool\n"
