@@ -587,6 +587,21 @@ fail:
 	return status;
 }
 
+/*
+ * Is fsp a regular file holding a reparse point that is a
+ * directory for the client, a symlink to a directory created with
+ * FSCTL_SET_REPARSE_POINT? fsp must be a pathref fsp.
+ */
+bool reparse_file_is_directory(struct files_struct *fsp)
+{
+	uint32_t dosmode;
+
+	dosmode = fdos_mode(fsp);
+
+	return (dosmode & FILE_ATTRIBUTE_REPARSE_POINT) &&
+	       (dosmode & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 static NTSTATUS openat_pathref_fsp_simple_openat(TALLOC_CTX *mem_ctx,
 						 struct files_struct *dirfsp,
 						 const char *name,

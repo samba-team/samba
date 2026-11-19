@@ -22,6 +22,7 @@
 #include "util_reparse.h"
 #include "libcli/smb/reparse.h"
 #include "source3/smbd/proto.h"
+#include "source3/smbd/smbd.h"
 
 static NTSTATUS fsctl_get_reparse_point_reg(struct files_struct *fsp,
 					    TALLOC_CTX *ctx,
@@ -300,6 +301,53 @@ NTSTATUS fsctl_get_reparse_tag(struct files_struct *fsp,
 	return status;
 }
 
+/*
+ * Does the symlink reparse buffer point to an existing directory in
+ * the share? Absolute NT paths and unresolvable targets are not
+ * directories, see symlink_target_is_directory().
+ */
+static bool reparse_symlink_is_directory(struct files_struct *fsp,
+					 const uint8_t *in_data,
+					 uint32_t in_len)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct reparse_data_buffer buf = {};
+	struct symlink_reparse_struct *lnk = NULL;
+	char *substitute = NULL;
+	uint32_t ucf_flags = 0;
+	bool relative;
+	bool is_dir = false;
+	NTSTATUS status;
+
+	status = reparse_data_buffer_parse(frame, &buf, in_data, in_len);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	lnk = &buf.parsed.lnk;
+
+	substitute = talloc_strdup(frame, lnk->substitute_name);
+	if (substitute == NULL) {
+		goto done;
+	}
+	string_replace(substitute, '\\', '/');
+
+	relative = (lnk->flags & SYMLINK_FLAG_RELATIVE);
+
+	if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
+		ucf_flags |= UCF_POSIX_PATHNAMES;
+	}
+
+	is_dir = symlink_target_is_directory(fsp->conn,
+					     fsp->fsp_name->base_name,
+					     substitute,
+					     relative,
+					     ucf_flags,
+					     fsp->fsp_name->twrp);
+done:
+	TALLOC_FREE(frame);
+	return is_dir;
+}
+
 NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 const uint8_t *in_data,
@@ -311,6 +359,7 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 	uint32_t existing_tag;
 	NTSTATUS status;
 	uint32_t dos_mode;
+	bool is_new;
 	int ret;
 
 	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
@@ -351,6 +400,7 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 			  reparse_tag);
 		return NT_STATUS_IO_REPARSE_TAG_MISMATCH;
 	}
+	is_new = !NT_STATUS_IS_OK(status);
 
 	/* Store the data */
 	ret = SMB_VFS_FSETXATTR(
@@ -370,6 +420,31 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 	dos_mode = fdos_mode(fsp);
 	dos_mode &= ~FILE_ATTRIBUTE_NORMAL;
 	dos_mode |= FILE_ATTRIBUTE_REPARSE_POINT;
+
+	if (is_new && (reparse_tag == IO_REPARSE_TAG_SYMLINK)) {
+		bool is_dir;
+
+		/*
+		 * Like on NTFS, whether the symlink is a directory
+		 * is decided when it is created and stays that way,
+		 * an existing link keeps the bit from fdos_mode().
+		 *
+		 * NTFS decides from how the link object was created
+		 * (mklink /D creates a directory first). That never
+		 * reaches us, the reparse buffer has no target type
+		 * and we only get regular files here. So look at the
+		 * target at set time instead. This differs from NTFS
+		 * for a file link to an existing directory (we set
+		 * DIRECTORY) and for a directory link set before its
+		 * target exists (we don't).
+		 */
+		is_dir = reparse_symlink_is_directory(fsp, in_data, in_len);
+		if (is_dir) {
+			dos_mode |= FILE_ATTRIBUTE_DIRECTORY;
+		} else {
+			dos_mode &= ~FILE_ATTRIBUTE_DIRECTORY;
+		}
+	}
 
 	status = SMB_VFS_FSET_DOS_ATTRIBUTES(fsp->conn, fsp, dos_mode);
 
@@ -446,6 +521,14 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 	 */
 	dos_mode = fdos_mode(fsp);
 	dos_mode &= ~FILE_ATTRIBUTE_REPARSE_POINT;
+
+	if (reparse_tag == IO_REPARSE_TAG_SYMLINK) {
+		/*
+		 * fsctl_set_reparse_point() only works on regular
+		 * files, the directory bit was stored for the link.
+		 */
+		dos_mode &= ~FILE_ATTRIBUTE_DIRECTORY;
+	}
 
 	status = SMB_VFS_FSET_DOS_ATTRIBUTES(fsp->conn, fsp, dos_mode);
 

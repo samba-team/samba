@@ -1054,12 +1054,17 @@ int file_set_dosmode(connection_struct *conn,
 
 			/*
 			 * A reparse point stays one, setting attributes
-			 * does not change that. For a stream the
+			 * does not change that, neither does it change a
+			 * symlink being a directory. For a stream the
 			 * attributes are on the base file.
 			 */
 			mfsp = metadata_fsp(smb_fname->fsp);
 			cur = fdos_mode(mfsp);
-			dosmode |= (cur & FILE_ATTRIBUTE_REPARSE_POINT);
+			if (cur & FILE_ATTRIBUTE_REPARSE_POINT) {
+				cur &= (FILE_ATTRIBUTE_REPARSE_POINT |
+					FILE_ATTRIBUTE_DIRECTORY);
+				dosmode |= cur;
+			}
 		}
 	}
 

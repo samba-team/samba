@@ -6752,22 +6752,36 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	 * Dispositions that truncate are invalid for a directory, they
 	 * are left to open_directory() to reject, they must not
 	 * truncate the link.
+	 *
+	 * A reparse point symlink in a regular file is also opened as
+	 * a file without FILE_OPEN_REPARSE_POINT, so that for SMB2
+	 * smbd_smb2_create_after_exec() tells the client to follow
+	 * it. A POSIX symlink does not get here without
+	 * FILE_OPEN_REPARSE_POINT, see smbd_smb2_create_send().
 	 */
 	if ((create_options & FILE_DIRECTORY_FILE) &&
-	    (create_options & FILE_OPEN_REPARSE_POINT) &&
 	    !(create_options & FILE_NON_DIRECTORY_FILE) &&
 	    ((create_disposition == FILE_OPEN) ||
 	     (create_disposition == FILE_CREATE) ||
 	     (create_disposition == FILE_OPEN_IF)) &&
-	    VALID_STAT(smb_fname->st) && S_ISLNK(smb_fname->st.st_ex_mode))
+	    VALID_STAT(smb_fname->st))
 	{
-		bool is_dir;
+		bool reparse = (create_options & FILE_OPEN_REPARSE_POINT);
+		bool smb2 = conn_using_smb2(conn->sconn);
+		bool is_dir = false;
 
-		is_dir = symlink_points_to_directory(conn, smb_fname);
+		if (S_ISLNK(smb_fname->st.st_ex_mode) && reparse) {
+			is_dir = symlink_points_to_directory(conn, smb_fname);
+		} else if (S_ISREG(smb_fname->st.st_ex_mode) &&
+			   fsp->fsp_flags.is_pathref && (reparse || smb2))
+		{
+			is_dir = reparse_file_is_directory(fsp);
+		}
 		if (is_dir) {
 			/*
-			 * open_directory() would follow the link and
-			 * open its target. Open the link itself as a
+			 * open_directory() would follow a POSIX
+			 * symlink and open its target, and it fails on
+			 * a regular file. Open the link itself as a
 			 * file, so that e.g. RemoveDirectory() only
 			 * removes the link.
 			 */
@@ -6791,6 +6805,10 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		if (S_ISLNK(smb_fname->st.st_ex_mode)) {
 			is_dir = symlink_points_to_directory(conn, smb_fname);
+		} else if (S_ISREG(smb_fname->st.st_ex_mode) &&
+			   fsp->fsp_flags.is_pathref)
+		{
+			is_dir = reparse_file_is_directory(fsp);
 		}
 		if (is_dir) {
 			status = NT_STATUS_FILE_IS_A_DIRECTORY;
