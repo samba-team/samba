@@ -875,6 +875,64 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         self.assertFalse(os.path.lexists(os.path.join(root, lnk)))
         self.assertTrue(os.path.isdir(os.path.join(root, tdir)))
 
+    def test_query_directory_symlinks(self):
+        """Query directory shows followed symlinks as their targets
+
+        This is "follow symlinks = yes" behaviour, Samba specific.
+        Windows lists symlinks as reparse points. Only POSIX
+        symlinks are followed, reparse point symlinks created with
+        FSCTL_SET_REPARSE_POINT are listed as reparse points.
+        """
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        if share:
+            self.skipTest("Following symlinks is Samba specific")
+        share = "local_symlinks"
+        smb2 = libsmb.Conn(self.server_ip, share, self.lp, self.creds)
+        lnkconn = libsmb.Conn(
+            self.server_ip, share, self.lp, self.creds, force_smb1=True)
+        lnkconn.smb1_posix()
+
+        fd = smb2.create("tfile",
+                         DesiredAccess=sec.SEC_FILE_WRITE_DATA,
+                         CreateDisposition=libsmb.FILE_CREATE)
+        smb2.write(fd, b"0123456789", 0)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, "tfile")
+
+        fd = smb2.create("tdir",
+                         CreateDisposition=libsmb.FILE_CREATE,
+                         CreateOptions=libsmb.FILE_DIRECTORY_FILE)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, "tdir")
+
+        self.create_symlink(lnkconn, "tfile", "flnk")
+        self.addCleanup(self.clean_file, lnkconn, "flnk")
+        self.create_symlink(lnkconn, "tdir", "dlnk", directory=True)
+        self.addCleanup(self.clean_file, lnkconn, "dlnk")
+        self.create_symlink(lnkconn, "nonexistent", "dangling")
+        self.addCleanup(self.clean_file, lnkconn, "dangling")
+
+        entries = {f['name']: f for f in smb2.list("")}
+
+        # A dangling symlink can't be followed and is hidden
+        self.assertNotIn("dangling", entries)
+
+        for name in ["tfile", "flnk", "tdir", "dlnk"]:
+            self.assertIn(name, entries)
+            self.assertEqual(
+                entries[name]['attrib'] & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+                0, f'{name} is shown as a reparse point')
+            self.assertEqual(entries[name]['reparse_tag'], 0)
+
+        # Followed links look like their targets
+        self.assertEqual(entries["flnk"]['size'], 10)
+        self.assertEqual(
+            entries["flnk"]['attrib'] & libsmb.FILE_ATTRIBUTE_DIRECTORY, 0)
+        self.assertEqual(
+            entries["dlnk"]['attrib'] & libsmb.FILE_ATTRIBUTE_DIRECTORY,
+            libsmb.FILE_ATTRIBUTE_DIRECTORY)
+
     def check_symlink_to_fake_file(self, fsctl):
         share = samba.tests.env_get_var_value(
             "SMB2_SHARE", allow_missing=True)
