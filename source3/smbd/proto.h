@@ -318,6 +318,14 @@ NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
 			      const char *name,
 			      TALLOC_CTX *mem_ctx,
 			      char **found_name);
+bool symlink_target_is_directory(struct connection_struct *conn,
+				 const char *linkname,
+				 const char *substitute,
+				 bool relative,
+				 uint32_t ucf_flags,
+				 NTTIME twrp);
+bool symlink_points_to_directory(struct connection_struct *conn,
+				 const struct smb_filename *smb_fname);
 
 /* The following definitions come from smbd/files.c  */
 

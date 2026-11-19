@@ -1063,6 +1063,133 @@ fail:
 	return status;
 }
 
+/*
+ * Does a symlink named linkname (relative to the share root) with the
+ * given substitute name point to a directory inside the share? This
+ * does not look at "follow symlinks", it only resolves the target
+ * once. Dangling links, links pointing outside the share, chains of
+ * links and absolute substitute names that don't start with a '/'
+ * are not directories.
+ */
+bool symlink_target_is_directory(struct connection_struct *conn,
+				 const char *linkname,
+				 const char *substitute,
+				 bool relative,
+				 uint32_t ucf_flags,
+				 NTTIME twrp)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct files_struct *dirfsp = NULL;
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_rel = NULL;
+	struct reparse_data_buffer *symlink_err = NULL;
+	char *target = NULL;
+	char *safe_target = NULL;
+	bool is_dir = false;
+	NTSTATUS status;
+	int ret;
+
+	if (!relative && (substitute[0] != '/')) {
+		/*
+		 * Not a path we can resolve, for example an NT
+		 * path with a drive letter.
+		 */
+		goto done;
+	}
+
+	ret = symlink_target_path(
+		frame, linkname, 0, substitute, relative, '/', &target);
+	if (ret != 0) {
+		goto done;
+	}
+
+	status = safe_symlink_target_path(
+		frame, conn->connectpath, NULL, target, 0, &safe_target);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = filename_convert_dirfsp_nosymlink(frame,
+						   conn,
+						   conn->cwd_fsp,
+						   safe_target,
+						   ucf_flags,
+						   twrp,
+						   &dirfsp,
+						   &smb_fname,
+						   &smb_fname_rel,
+						   &symlink_err);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/*
+	 * dirfsp is owned by frame. Don't close it here, for a fake
+	 * file path it is conn->cwd_fsp.
+	 */
+	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
+
+done:
+	TALLOC_FREE(frame);
+	return is_dir;
+}
+
+/*
+ * Does the symlink smb_fname point to a directory? Used to give a
+ * POSIX symlink the directory attribute a client expects for a
+ * directory symlink. This also works with "follow symlinks = no".
+ */
+bool symlink_points_to_directory(struct connection_struct *conn,
+				 const struct smb_filename *smb_fname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct files_struct *dirfsp = NULL;
+	struct smb_filename *lnk_fname = NULL;
+	struct smb_filename *lnk_fname_rel = NULL;
+	struct reparse_data_buffer *symlink_err = NULL;
+	struct symlink_reparse_struct *lnk = NULL;
+	uint32_t ucf_flags = 0;
+	uint32_t lnk_ucf_flags;
+	bool relative;
+	bool is_dir = false;
+	NTSTATUS status;
+
+	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
+		ucf_flags |= UCF_POSIX_PATHNAMES;
+	}
+	lnk_ucf_flags = ucf_flags | UCF_LCOMP_LNK_OK;
+
+	status = filename_convert_dirfsp_nosymlink(frame,
+						   conn,
+						   conn->cwd_fsp,
+						   smb_fname->base_name,
+						   lnk_ucf_flags,
+						   smb_fname->twrp,
+						   &dirfsp,
+						   &lnk_fname,
+						   &lnk_fname_rel,
+						   &symlink_err);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (symlink_err == NULL) {
+		goto done;
+	}
+	lnk = &symlink_err->parsed.lnk;
+	relative = lnk->flags & SYMLINK_FLAG_RELATIVE;
+
+	is_dir = symlink_target_is_directory(conn,
+					     smb_fname->base_name,
+					     lnk->substitute_name,
+					     relative,
+					     ucf_flags,
+					     smb_fname->twrp);
+done:
+	TALLOC_FREE(frame);
+	return is_dir;
+}
+
 NTSTATUS filename_convert_dirfsp_rel(TALLOC_CTX *mem_ctx,
 				     connection_struct *conn,
 				     struct files_struct *basedir,
