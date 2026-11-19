@@ -30,6 +30,7 @@
 #include "../libcli/registry/util_reg.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_open.h"
+#include "lib/cluster_support.h"
 
 #define INCLUDES_VALNAME "includes"
 
@@ -1254,10 +1255,28 @@ sbcErr smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	 * or by callers like the python bindings, which only
 	 * set the paths without loading the configuration,
 	 * so db_open() needs to allow it.
+	 *
+	 * It's not known yet whether clustering is enabled,
+	 * e.g. with 'include = registry' before
+	 * 'clustering = yes' or with
+	 * 'config backend = registry', and for registry.tdb
+	 * not using ctdb messaging can't be initialized yet,
+	 * as the private dir may still change. So db_open_ex()
+	 * uses the oldest cluster level as a preliminary level
+	 * for it, unless a level is already active.
+	 * registry.tdb using ctdb initializes messaging, which
+	 * activates the level of the cluster.
 	 */
 	db_open_allow_registry(true);
 	err = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_reg);
 	db_open_allow_registry(false);
+
+	/*
+	 * Forget the preliminary oldest level again, the next
+	 * db_open_ex() or messaging_init() activates the
+	 * correct level, once the configuration is loaded.
+	 */
+	cluster_level_global_reset_preliminary();
 
 	talloc_free(tmp_ctx);
 	return err;

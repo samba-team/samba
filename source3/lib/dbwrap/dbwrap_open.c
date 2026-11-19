@@ -176,6 +176,7 @@ struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 	}
 
 	if (lp_clustering()) {
+		struct messaging_context *msg_ctx = NULL;
 		const char *sockname;
 
 		sockname = lp_ctdbd_socket();
@@ -186,9 +187,42 @@ struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 
+		if (msg_ctx_ex != NULL) {
+			msg_ctx = msg_ctx_ex;
+		} else if ((db_open_allowed && !db_open_registry_allowed) ||
+			   lp_parm_bool(-1, "ctdb", base, true))
+		{
+			/*
+			 * Initialize messaging before getting the ctdb
+			 * connection, as the ctdb connection requires
+			 * messaging to be initialized.
+			 *
+			 * We also do this for databases not using ctdb,
+			 * as messaging_init() activates the cluster level,
+			 * which may be needed to choose the format
+			 * of the records.
+			 */
+			msg_ctx = global_messaging_context();
+			if (msg_ctx == NULL) {
+				DBG_ERR("Failed to initialize messaging\n");
+				return NULL;
+			}
+		} else if (db_open_registry_allowed &&
+			   !cluster_level_global_is_valid())
+		{
+			/*
+			 * But not before the configuration is known,
+			 * see db_open_allow(), for registry.tdb not
+			 * using ctdb, while smbconf_init_reg() opens it,
+			 * as the private dir used by messaging may
+			 * still change. It uses the oldest level until
+			 * smbconf_init_reg() forgets it again.
+			 */
+			cluster_level_activate_oldest();
+		}
+
 		/* allow ctdb for individual databases to be disabled */
 		if (lp_parm_bool(-1, "ctdb", base, true)) {
-			struct messaging_context *msg_ctx = NULL;
 			struct ctdbd_connection *conn = NULL;
 			struct tevent_context *ev_ctx = NULL;
 			bool allow_transactions = persistent;
@@ -199,21 +233,6 @@ struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 				ev_ctx = global_event_context();
 				if (ev_ctx == NULL) {
 					DBG_ERR("global_event_context() failed\n");
-					return NULL;
-				}
-			}
-
-			if (msg_ctx_ex != NULL) {
-				msg_ctx = msg_ctx_ex;
-			} else {
-				/*
-				 * Initialize messaging before getting the ctdb
-				 * connection, as the ctdb connection requires messaging
-				 * to be initialized.
-				 */
-				msg_ctx = global_messaging_context();
-				if (msg_ctx == NULL) {
-					DBG_ERR("Failed to initialize messaging\n");
 					return NULL;
 				}
 			}
@@ -251,6 +270,27 @@ struct db_context *db_open_ex(TALLOC_CTX *mem_ctx,
 			}
 
 			return result;
+		}
+	} else if (!cluster_level_global_is_valid()) {
+		/*
+		 * Without clustering the latest level is
+		 * always the correct one, but it's only
+		 * activated by messaging_init(). Callers
+		 * without a messaging context still need
+		 * to know the level in order to choose the
+		 * format of the records.
+		 *
+		 * But the latest level is only correct once the
+		 * configuration is known, see db_open_allow().
+		 * While smbconf_init_reg() opens registry.tdb,
+		 * clustering may still be enabled by the
+		 * configuration, so the oldest level is used
+		 * until smbconf_init_reg() forgets it again.
+		 */
+		if (db_open_registry_allowed) {
+			cluster_level_activate_oldest();
+		} else if (db_open_allowed) {
+			cluster_level_activate_latest();
 		}
 	}
 

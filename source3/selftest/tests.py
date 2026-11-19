@@ -1834,6 +1834,12 @@ if have_cluster_support:
                       [os.path.join(samba3srcdir,
                                     "script/tests/test_clusterlevel_json.sh"),
                        net, configuration])
+        plantestsuite("samba3.blackbox.registry_config_cluster_level",
+                      "clusteredmember:local",
+                      [os.path.join(samba3srcdir,
+                                    "script/tests",
+                                    "test_registry_config_cluster_level.sh"),
+                       net, configuration])
     plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
                   [os.path.join(samba3srcdir,
                                 "script/tests/test_registry_share.sh"),

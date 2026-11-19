@@ -631,7 +631,34 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
+	/*
+	 * The oldest level is only activated for registry.tdb
+	 * not using ctdb, while smbconf_init_reg() opens it,
+	 * see db_open_allow_registry(), which doesn't
+	 * initialize messaging. A registry.tdb using ctdb
+	 * initializes messaging, but never activates the
+	 * oldest level.
+	 */
+	SMB_ASSERT(!cluster_level_global_is_preliminary());
+
 #ifdef CLUSTER_SUPPORT
+	if (lp_clustering() && cluster_level_global_is_standalone()) {
+		/*
+		 * A database was opened before a configuration
+		 * with clustering was loaded, e.g. secrets.tdb
+		 * by passdb.set_secrets_dir() in the python
+		 * bindings, which activated the latest level
+		 * without clustering. The level of the cluster
+		 * is not known then and this node would not
+		 * register its supported levels, which is not
+		 * supported.
+		 */
+		DBG_ERR("A cluster level was activated before "
+			"clustering was enabled by the configuration\n");
+		status = NT_STATUS_INVALID_SERVER_STATE;
+		goto done;
+	}
+
 	if (lp_clustering()) {
 		struct ctdbd_connection *ctdbd_conn = NULL;
 		const struct cluster_level_active *cl = NULL;

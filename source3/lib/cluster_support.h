@@ -32,8 +32,12 @@ NTSTATUS cluster_level_compatible(
 const struct cluster_level_ranges *cluster_level_supported_ranges(void);
 
 bool cluster_level_global_is_valid(void);
+bool cluster_level_global_is_preliminary(void);
+bool cluster_level_global_is_standalone(void);
 void cluster_level_activate(const struct cluster_level_active *level);
 void cluster_level_activate_latest(void);
+void cluster_level_activate_oldest(void);
+void cluster_level_global_reset_preliminary(void);
 
 const struct cluster_level_active *cluster_level_global_active(void);
 
