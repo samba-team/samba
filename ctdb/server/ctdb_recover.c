@@ -546,6 +546,7 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 	}
 
 	ctdb_lockdb_unmark(ctdb_db);
+	ctdb_db->push_started = false;
 
 	state = (struct db_push_state *)ctdb_db->push_state;
 	if (state == NULL) {
@@ -567,7 +568,6 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 	outdata->dsize = sizeof(uint32_t);
 
 	talloc_free(state);
-	ctdb_db->push_started = false;
 	ctdb_db->push_state = NULL;
 
 	return 0;
