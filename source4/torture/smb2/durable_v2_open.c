@@ -5561,6 +5561,49 @@ done:
 	return ret;
 }
 
+/*
+ * A durable v2 request with an all-zero create GUID. Opening and closing the
+ * file twice in a row has to work both times.
+ */
+static bool test_durable_v2_open_replay_cache_zero_guid(
+	struct torture_context *tctx,
+	struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_create io;
+	NTSTATUS status;
+	bool ret = true;
+	int i;
+
+	snprintf(fname, sizeof(fname), "replay_cache_zero_guid_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	for (i = 0; i < 2; i++) {
+		smb2_oplock_create_share(&io, fname,
+					 smb2_util_share_access("RWD"),
+					 smb2_util_oplock_level(""));
+		io.in.durable_open = false;
+		io.in.durable_open_v2 = true;
+		io.in.persistent_open = false;
+		io.in.create_guid = GUID_zero();
+		io.in.timeout = UINT32_MAX;
+
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		status = smb2_util_close(tree, io.out.file.handle);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+done:
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5571,6 +5614,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "replay-cache-reconnect-v2", test_durable_v2_open_replay_cache_reconnect_v2);
 	torture_suite_add_1smb2_test(suite, "replay-cache-no-durable", test_durable_v2_open_replay_cache_no_durable);
 	torture_suite_add_1smb2_test(suite, "replay-cache-abandon", test_durable_v2_open_replay_cache_abandon);
+	torture_suite_add_1smb2_test(suite, "replay-cache-zero-guid", test_durable_v2_open_replay_cache_zero_guid);
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
