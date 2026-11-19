@@ -1,5 +1,4 @@
 ^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_directory
 ^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_nonempty_directory
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_follow_symlink_reparse_point\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_follow_symlink_reparse_point_nofollow\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlink_reparse_point_share_mode\(
