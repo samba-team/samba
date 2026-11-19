@@ -757,6 +757,7 @@ bool smbd_read_at_symlink_eof(const struct files_struct *fsp)
 uint32_t fdos_mode(struct files_struct *fsp)
 {
 	uint32_t result = 0;
+	bool check_symlink_dir = false;
 	NTSTATUS status = NT_STATUS_OK;
 
 	DBG_DEBUG("%s\n", fsp_str_dbg(fsp));
@@ -774,18 +775,29 @@ uint32_t fdos_mode(struct files_struct *fsp)
 	case S_IFDIR:
 		break;
 	case S_IFLNK:
-		if (fsp->fsp_flags.posix_open &&
-		    !conn_using_smb2(fsp->conn->sconn)) {
+		if (fsp->fsp_flags.posix_open) {
 			/*
-			 * SMB1 posix doesn't like the reparse point flag
+			 * A POSIX client sees a symlink as such, it does
+			 * not need the directory attribute NTFS gives
+			 * a directory symlink.
 			 */
-			result = FILE_ATTRIBUTE_NORMAL;
+			bool smb2 = conn_using_smb2(fsp->conn->sconn);
+			if (smb2) {
+				result = FILE_ATTRIBUTE_REPARSE_POINT;
+			} else {
+				/*
+				 * SMB1 posix doesn't like the reparse
+				 * point flag
+				 */
+				result = FILE_ATTRIBUTE_NORMAL;
+			}
 		} else {
 			/*
 			 * Everybody else wants to see symlinks as
 			 * reparse points
 			 */
 			result = FILE_ATTRIBUTE_REPARSE_POINT;
+			check_symlink_dir = true;
 		}
 
 		break;
@@ -796,6 +808,20 @@ uint32_t fdos_mode(struct files_struct *fsp)
 
 	if (fsp->fsp_name->st.cached_dos_attributes != FILE_ATTRIBUTE_INVALID) {
 		return fsp->fsp_name->st.cached_dos_attributes;
+	}
+
+	if (check_symlink_dir) {
+		bool is_dir;
+
+		/*
+		 * Like NTFS, a symlink to a directory is a
+		 * directory reparse point. This resolves the target,
+		 * so only do it if the result is not cached.
+		 */
+		is_dir = symlink_points_to_directory(fsp->conn, fsp->fsp_name);
+		if (is_dir) {
+			result |= FILE_ATTRIBUTE_DIRECTORY;
+		}
 	}
 
 	/* Get the DOS attributes via the VFS if we can */

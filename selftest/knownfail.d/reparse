@@ -1,14 +1,8 @@
 ^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_directory
 ^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_nonempty_directory
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_attributes\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_attributes_fsctl\(
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_setinfo\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_setinfo_fsctl\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_follow_fsctl\(
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_rmdir\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_rmdir_fsctl\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_rename_fsctl\(
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_twrp\(
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_posix_names\(
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_nondir\(
 ^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_directory_symlink_nondir_fsctl\(

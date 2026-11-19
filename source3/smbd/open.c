@@ -6745,6 +6745,60 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	/*
+	 * A symlink to a directory opened as a reparse point is a
+	 * directory for the client, but we open the link itself, not
+	 * what it points to. That is the same open as for a file
+	 * symlink, which also takes care of deleting just the link.
+	 * Dispositions that truncate are invalid for a directory, they
+	 * are left to open_directory() to reject, they must not
+	 * truncate the link.
+	 */
+	if ((create_options & FILE_DIRECTORY_FILE) &&
+	    (create_options & FILE_OPEN_REPARSE_POINT) &&
+	    !(create_options & FILE_NON_DIRECTORY_FILE) &&
+	    ((create_disposition == FILE_OPEN) ||
+	     (create_disposition == FILE_CREATE) ||
+	     (create_disposition == FILE_OPEN_IF)) &&
+	    VALID_STAT(smb_fname->st) && S_ISLNK(smb_fname->st.st_ex_mode))
+	{
+		bool is_dir;
+
+		is_dir = symlink_points_to_directory(conn, smb_fname);
+		if (is_dir) {
+			/*
+			 * open_directory() would follow the link and
+			 * open its target. Open the link itself as a
+			 * file, so that e.g. RemoveDirectory() only
+			 * removes the link.
+			 */
+			create_options &= ~FILE_DIRECTORY_FILE;
+		}
+	}
+
+	/*
+	 * Like NTFS, refuse a non-directory open of a symlink that is a
+	 * directory for the client, only a directory open can remove
+	 * it. For a POSIX client the link is a symlink, not a
+	 * directory.
+	 */
+	if ((create_options & FILE_NON_DIRECTORY_FILE) &&
+	    !(create_options & FILE_DIRECTORY_FILE) &&
+	    (create_options & FILE_OPEN_REPARSE_POINT) &&
+	    !(smb_fname->flags & SMB_FILENAME_POSIX_PATH) &&
+	    VALID_STAT(smb_fname->st))
+	{
+		bool is_dir = false;
+
+		if (S_ISLNK(smb_fname->st.st_ex_mode)) {
+			is_dir = symlink_points_to_directory(conn, smb_fname);
+		}
+		if (is_dir) {
+			status = NT_STATUS_FILE_IS_A_DIRECTORY;
+			goto fail;
+		}
+	}
+
+	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
