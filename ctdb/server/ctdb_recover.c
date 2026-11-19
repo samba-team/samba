@@ -459,13 +459,7 @@ int32_t ctdb_control_db_push_start(struct ctdb_context *ctdb, TDB_DATA indata)
 		      (__location__ " DB push already started for %s\n",
 		       ctdb_db->db_name));
 
-		/* De-register old state */
-		state = (struct db_push_state *)ctdb_db->push_state;
-		if (state != NULL) {
-			srvid_deregister(ctdb->srv, state->srvid, state);
-			talloc_free(state);
-			ctdb_db->push_state = NULL;
-		}
+		ctdb_db_push_cancel(ctdb_db);
 	}
 
 	/*
