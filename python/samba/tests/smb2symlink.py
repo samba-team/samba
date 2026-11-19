@@ -875,6 +875,83 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         self.assertFalse(os.path.lexists(os.path.join(root, lnk)))
         self.assertTrue(os.path.isdir(os.path.join(root, tdir)))
 
+    def test_directory_symlink_retargeted_to_file(self):
+        """A directory symlink stays a directory if its target becomes a file
+
+        NTFS keeps FILE_ATTRIBUTE_DIRECTORY with the link, it is set
+        when the link is created as a directory and does not depend on
+        what the link points to. This documents that for Windows, set
+        SYMLINK_VIA_FSCTL=1 and SMB2_SHARE. Samba stores the bit with
+        a reparse point symlink as well, but a POSIX symlink has
+        nowhere to keep it, there it is looked up in the target.
+        """
+        via_fsctl = samba.tests.env_get_var_value(
+            "SYMLINK_VIA_FSCTL", allow_missing=True)
+        if not via_fsctl:
+            self.skipTest("Windows only, set SYMLINK_VIA_FSCTL=1")
+
+        (smb2, symlink) = self.dir_symlink_setup(True)
+
+        # Replace the target directory by a file of the same name
+        self.clean_file(smb2, "tdir\\f")
+        self.clean_file(smb2, "tdir")
+        fd = smb2.create("tdir", CreateDisposition=libsmb.FILE_CREATE)
+        smb2.close(fd)
+        self.addCleanup(self.clean_file, smb2, "tdir")
+
+        # The link itself is unchanged
+        self.verify_symlink(smb2, symlink, "tdir")
+
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        attrs = cr['file_attributes']
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+                         libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+        self.assertEqual(attrs & libsmb.FILE_ATTRIBUTE_DIRECTORY,
+                         libsmb.FILE_ATTRIBUTE_DIRECTORY)
+
+        # The client is told to follow the link, not asserted
+        for name, opts in [
+                ("follow link", 0),
+                ("follow link as directory", libsmb.FILE_DIRECTORY_FILE)]:
+            try:
+                fd2 = smb2.create(
+                    symlink,
+                    DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                    CreateOptions=opts)
+                smb2.close(fd2)
+                print(f'{name}: opened')
+            except NTSTATUSError as e:
+                print(f'{name}: {e.args[1]}')
+
+        # "del" on a directory symlink
+        with self.assertRaises(NTSTATUSError) as cm:
+            smb2.create(symlink,
+                        DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                        CreateOptions=libsmb.FILE_NON_DIRECTORY_FILE |
+                        libsmb.FILE_OPEN_REPARSE_POINT)
+        self.assertEqual(cm.exception.args[0],
+                         ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY)
+
+        # RemoveDirectory() removes just the link, the file stays
+        (fd3, _, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            symlink,
+            DesiredAccess=sec.SEC_STD_DELETE |
+            sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_DIRECTORY_FILE |
+            libsmb.FILE_OPEN_REPARSE_POINT)
+        self.assertNoNTSTATUSError(smb2.delete_on_close, fd3, 1)
+        smb2.close(fd3)
+
+        fd4 = self.assertNoNTSTATUSError(smb2.create, "tdir")
+        smb2.close(fd4)
+
     def test_query_directory_symlinks(self):
         """Query directory shows followed symlinks as their targets
 
