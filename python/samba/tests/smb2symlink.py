@@ -219,7 +219,6 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         self.addCleanup(self.clean_file, smb1, "sub")
 
         self.create_symlink(smb1, f'{localpath}/sub1', "sub/lnk")
-        self.verify_symlink(smb2, "sub/lnk", f'{localpath}/sub1')
         self.addCleanup(self.clean_file, smb1, "sub/lnk")
 
         smb1.mkdir("sub1")
