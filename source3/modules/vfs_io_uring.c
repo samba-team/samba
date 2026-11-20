@@ -338,7 +338,7 @@ static void _vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
  *      ->vfs_io_uring_pread_submit() ---------------------------------------
  * }
  *
- * So before calling _vfs_io_uring_queue_run() we backet it with setting
+ * So before calling _vfs_io_uring_queue_run() we bracket it with setting
  * a flag config->busy, and unset it once _vfs_io_uring_queue_run() finally
  * exits the retry loop.
  *

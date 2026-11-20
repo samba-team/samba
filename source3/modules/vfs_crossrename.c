@@ -135,7 +135,7 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 	ts[1] = source->st.st_ex_mtime;
 	ret = futimens(ofd, ts);
 	if (ret == -1) {
-		DBG_DEBUG("Updating the time stamp on destinaton '%s' failed "
+		DBG_DEBUG("Updating the time stamp on destination '%s' failed "
 			  "with '%s'. Rename operation can continue.\n",
 			  dest->base_name,
 			  strerror(errno));

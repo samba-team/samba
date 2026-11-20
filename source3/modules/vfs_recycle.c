@@ -396,7 +396,7 @@ static bool matchdirparam(const char **dir_exclude_list, char *path)
 /**
  * Check if needle is contained in haystack, * and ? patterns are resolved
  * @param haystack list of parameters separated by delimimiter character
- * @param needle string to be matched exectly to haystack including pattern matching
+ * @param needle string to be matched exactly to haystack including pattern matching
  * @return True if found
  **/
 static bool matchparam(const char **haystack_list, const char *needle)
