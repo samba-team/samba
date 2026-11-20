@@ -32,6 +32,9 @@
 #include "lib/util/util_process.h"
 #include "lib/util/sys_rw_data.h"
 #include "source3/lib/substitute.h"
+#include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_rbt.h"
+#include "lib/util/util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SCAVENGER
@@ -42,6 +45,7 @@ struct smbd_scavenger_state {
 	struct server_id parent_id;
 	struct server_id *scavenger_id;
 	bool am_scavenger;
+	struct db_context *timers;
 };
 
 static struct smbd_scavenger_state *smbd_scavenger_state = NULL;
@@ -262,6 +266,13 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 		state->am_scavenger = true;
 		*state->scavenger_id = messaging_server_id(state->msg);
 
+		state->timers = db_open_rbt(state);
+		if (state->timers == NULL) {
+			DBG_ERR("db_open_rbt failed\n");
+			exit_server("db_open_rbt failed");
+			return false;
+		}
+
 		scavenger_setup_sig_term_handler(state->ev);
 
 		ok = scavenger_say_hello(fds[1], *state->scavenger_id);
@@ -452,10 +463,35 @@ void scavenger_schedule_disconnected(struct messaging_context *msg_ctx,
 	}
 }
 
+#define SCAVENGER_TIMER_KEY_LEN 48
+
 struct scavenger_timer_context {
 	struct smbd_scavenger_state *state;
+	uint8_t key_buf[SCAVENGER_TIMER_KEY_LEN];
 	struct scavenger_message msg;
 };
+
+static TDB_DATA scavenger_timer_key(const struct scavenger_message *msg,
+				    const struct timeval *until,
+				    uint8_t buf[SCAVENGER_TIMER_KEY_LEN])
+{
+	PUSH_LE_U64(buf, 0, msg->open_persistent_id);
+	PUSH_LE_U64(buf, 8, msg->file_id.devid);
+	PUSH_LE_U64(buf, 16, msg->file_id.inode);
+	PUSH_LE_U64(buf, 24, msg->file_id.extid);
+	PUSH_LE_U64(buf, 32, (uint64_t)until->tv_sec);
+	PUSH_LE_U64(buf, 40, (uint64_t)until->tv_usec);
+	return make_tdb_data(buf, SCAVENGER_TIMER_KEY_LEN);
+}
+
+static int scavenger_timer_context_destructor(
+	struct scavenger_timer_context *ctx)
+{
+	TDB_DATA key = make_tdb_data(ctx->key_buf, sizeof(ctx->key_buf));
+
+	dbwrap_delete(ctx->state->timers, key);
+	return 0;
+}
 
 struct cleanup_disconnected_state {
 	struct file_id fid;
@@ -651,6 +687,8 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	struct scavenger_timer_context *ctx;
 	const struct smbXsrv_open_global *global = NULL;
 	struct timeval until;
+	uint8_t key_buf[SCAVENGER_TIMER_KEY_LEN];
+	TDB_DATA key;
 	struct file_id_buf idbuf;
 	NTTIME disconnect_time = 0;
 	uint32_t durable_timeout_msec = 0;
@@ -724,6 +762,17 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 			    timeout_usec / 1000000,
 			    timeout_usec % 1000000);
 
+	/*
+	 * A rejected reconnect keeps the disconnect time, so a client retrying
+	 * it asks for the same cleanup over and over again.
+	 */
+	key = scavenger_timer_key(msg, &until, key_buf);
+	if (dbwrap_exists(state->timers, key)) {
+		DBG_DEBUG("cleanup of file %s already scheduled\n",
+			  file_id_str_buf(msg->file_id, &idbuf));
+		goto done;
+	}
+
 	DBG_DEBUG("schedule file %s for cleanup at %s\n",
 		  file_id_str_buf(msg->file_id, &idbuf),
 		  timeval_string(talloc_tos(), &until, true));
@@ -735,6 +784,7 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	}
 
 	ctx->state = state;
+	memcpy(ctx->key_buf, key_buf, sizeof(ctx->key_buf));
 	ctx->msg = *msg;
 
 	te = tevent_add_timer(state->ev,
@@ -750,6 +800,13 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 
 	/* delete context after handler was running */
 	talloc_steal(te, ctx);
+
+	status = dbwrap_store(state->timers, key, (TDB_DATA){}, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("dbwrap_store failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+	talloc_set_destructor(ctx, scavenger_timer_context_destructor);
 
 done:
 	TALLOC_FREE(frame);
