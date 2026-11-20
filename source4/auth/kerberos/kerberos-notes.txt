@@ -551,7 +551,7 @@ In dealing with this model, we use both the traditional file
 keytab and in-MEMORY keytabs.
 
 When dealing with a windows KDC, the behaviour regarding case
-sensitivity and canonacolisation must be accomidated.  This means that
+sensitivity and canonicalization must be accommodated.  This means that
 an incoming request to a member server may have a wide variety of
 service principal names.  These include:
 

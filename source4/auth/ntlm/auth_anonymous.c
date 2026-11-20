@@ -35,7 +35,7 @@ _PUBLIC_ NTSTATUS auth4_anonymous_init(TALLOC_CTX *);
  * Return a anonymous logon for anonymous users (username = "")
  *
  * Typically used as the first module in the auth chain, this allows
- * anonymou logons to be dealt with in one place.  Non-anonymou logons 'fail'
+ * anonymous logons to be dealt with in one place.  Non-anonymous logons 'fail'
  * and pass onto the next module.
  **/
 static NTSTATUS anonymous_want_check(struct auth_method_context *ctx,
@@ -83,7 +83,7 @@ static NTSTATUS anonymous_want_check(struct auth_method_context *ctx,
  * Return a anonymous logon for anonymous users (username = "")
  *
  * Typically used as the first module in the auth chain, this allows
- * anonymou logons to be dealt with in one place.  Non-anonymou logons 'fail'
+ * anonymous logons to be dealt with in one place.  Non-anonymous logons 'fail'
  * and pass onto the next module.
  **/
 

@@ -124,7 +124,7 @@ void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, u
 	dump_data(5, calc_md5_mac, 8);
 	ZERO_ARRAY(calc_md5_mac);
 /*	req->out.hdr[HDR_SS_FIELD+2]=0;
-	Uncomment this to test if the remote server actually verifies signitures...*/
+	Uncomment this to test if the remote server actually verifies signatures...*/
 }
 
 bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac_key, unsigned int seq_num)

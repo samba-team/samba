@@ -2587,7 +2587,7 @@ static void dcerpc_send_read_done(struct tevent_req *subreq)
 	}
 
 	/*
-	 * here we steal into thet connection context,
+	 * here we steal into that connection context,
 	 * but p->transport.recv_data() will steal or free it again
 	 */
 	talloc_steal(p, blob.data);

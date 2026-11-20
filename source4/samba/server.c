@@ -87,7 +87,7 @@ static void recursive_delete(const char *path)
 			continue;
 		}
 		if (unlink(fname) != 0) {
-			DBG_ERR("Unabled to delete '%s' - %s\n",
+			DBG_ERR("Unable to delete '%s' - %s\n",
 				 fname, strerror(errno));
 			smb_panic("unable to cleanup tmp files");
 		}

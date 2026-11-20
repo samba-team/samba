@@ -663,7 +663,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALL
 	c->private_data = s;
 
 	/* prepare pipe open parameters and store them in state structure
-	   also, verify whether biding endpoint is not null */
+	   also, verify whether binding endpoint is not null */
 	s->io = *io;
 
 	s->path = dcerpc_binding_get_string_option(io->binding, "endpoint");
