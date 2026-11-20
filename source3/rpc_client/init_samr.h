@@ -33,7 +33,7 @@ NTSTATUS init_samr_CryptPassword(const char *pwd,
  * @brief Initialize a AES encrypted password structure.
  *
  * This takes a password and a session key and encrypts the password. The
- * encrypted password is then stored in the encrypted passwors structure.
+ * encrypted password is then stored in the encrypted password structure.
  *
  * @param mem_ctx       The memory context to allocate the password buffer on.
  *

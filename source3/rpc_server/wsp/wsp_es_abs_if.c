@@ -3684,7 +3684,7 @@ static struct tevent_req *wsp_es_get_rows_data_send(TALLOC_CTX *ctx,
 		/*
 		 * #FIXME #TODO #CHECK why am I doing this ???
 		 * surely we should just set *nomorerowstoreturn = true
-		 * and compelete the req and just return ?
+		 * and complete the req and just return ?
 		 */
 		(*state->rowsout) = talloc_zero(ctx,
 					struct backend_getrowsout);

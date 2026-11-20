@@ -552,7 +552,7 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, const char *user)
 			DEBUG(2, ("smb_pam_auth: PAM: Username %s NOT known to Authentication system\n", user));
 			break;
 		case PAM_MAXTRIES:
-			DEBUG(2, ("smb_pam_auth: PAM: One or more authentication modules reports user limit for user %s exceeeded\n", user));
+			DEBUG(2, ("smb_pam_auth: PAM: One or more authentication modules reports user limit for user %s exceeded\n", user));
 			break;
 		case PAM_ABORT:
 			DEBUG(0, ("smb_pam_auth: PAM: One or more PAM modules failed to load for user %s\n", user));

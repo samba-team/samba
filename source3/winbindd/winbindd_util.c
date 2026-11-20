@@ -2339,7 +2339,7 @@ NTSTATUS normalize_name_unmap(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_PROCEDURE_NOT_FOUND;
 	}
 
-	/* Alias support and whitespace replacement are mutally
+	/* Alias support and whitespace replacement are mutually
 	   exclusive */
 
 	/* When mapping from an alias to a username, we don't know the

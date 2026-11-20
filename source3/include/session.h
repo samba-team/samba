@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   session handling for recording currently vailid vuids
+   session handling for recording currently valid vuids
    
    Copyright (C) tridge@samba.org 2001
    Copyright (C) Andew Bartlett <abartlet@samba.org> 2001

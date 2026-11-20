@@ -340,7 +340,7 @@ struct subnet_record {
 	struct subnet_record *prev;
 
 	char  *subnet_name;      /* For Debug identification. */
-	enum subnet_type type;   /* To catagorize the subnet. */
+	enum subnet_type type;   /* To categorize the subnet. */
 
 	struct work_record     *workgrouplist; /* List of workgroups. */
 	struct name_record     *namelist;   /* List of netbios names. */

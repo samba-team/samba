@@ -3187,7 +3187,7 @@ static HRESULT build_es_query(TALLOC_CTX *ctx,
 
 		/*
 		 * some queries can involve property restrictions with EntryId
-		 * and a Scope retriction, The EntryId requires the share
+		 * and a Scope restriction, The EntryId requires the share
 		 * information determined from the Scope restriction but the
 		 * EntryId restriction can be encountered before the the Scope
 		 * one, the following call parses the restriction array but

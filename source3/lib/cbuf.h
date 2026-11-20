@@ -60,7 +60,7 @@ void  cbuf_delete(cbuf* b);
 
 /**
  * Reset the buffer to initial state.
- * Set the write position to the start of buffer, effectivly
+ * Set the write position to the start of buffer, effectively
  * clearing its contents. Doesn't free memory.
  *
  * @param b the buffer to clear
