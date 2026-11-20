@@ -189,8 +189,8 @@ class UserTests(samba.tests.TestCase):
     def _test_unindexed_search(self):
         expressions = [
             ('(&(objectclass=user)(description='
-             'Built-in account for adminstering the computer/domain))'),
-            '(description=Built-in account for adminstering the computer/domain)',
+             'Built-in account for administering the computer/domain))'),
+            '(description=Built-in account for administering the computer/domain)',
             '(objectCategory=*)',
             '(samaccountname=Administrator*)'
         ]

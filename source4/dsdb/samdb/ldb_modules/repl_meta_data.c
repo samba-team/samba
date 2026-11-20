@@ -121,7 +121,7 @@ struct replmd_replicated_request {
 	 */
 	struct la_backlink *la_backlinks;
 
-	/* details for the mode where we apply a bunch of inbound replication meessages */
+	/* details for the mode where we apply a bunch of inbound replication messages */
 	bool apply_mode;
 	uint32_t index_current;
 	struct dsdb_extended_replicated_objects *objs;
@@ -6343,7 +6343,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 		/*
 		 * This looks strange, but we must set this after any
-		 * rename, otherwise the SD propegation will not
+		 * rename, otherwise the SD propagation will not
 		 * happen (which might matter if we have a new parent)
 		 *
 		 * The additional case of calling

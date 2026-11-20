@@ -1129,7 +1129,7 @@ static void ft_scanner_check_trusts_scanned(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		/*
 		 * If there's no msDS-TrustForestTrustInfo
-		 * create the defeault one
+		 * create the default one
 		 */
 		status = dsdb_trust_default_forest_info(state->domains,
 							tdo->sid,

@@ -85,7 +85,7 @@ static int samba_secrets_init(struct ldb_module *module)
 	}
 
 	talloc_free(tmp_ctx);
-	/* Set this as the 'next' module, so that we effectivly append it to module chain */
+	/* Set this as the 'next' module, so that we effectively append it to module chain */
 	ldb_module_set_next(module, module_chain);
 
 	return ldb_next_init(module);

@@ -306,7 +306,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* notify dreplsrv toplogy has changed */
+	/* notify dreplsrv topology has changed */
 	if (notify_dreplsrv) {
 		kccsrv_notify_drepl_server(s, mem_ctx);
 	}
