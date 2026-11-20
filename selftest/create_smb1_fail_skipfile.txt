@@ -178,7 +178,7 @@ index 00000000000..eedfdbb6c35
 +    failing_tests = parse_errors(f)
 +    f.close()
 +    for t in failing_tests:
-+        # adust t fo regex
++        # adjust t for regex
 +        t = t.replace('(', '\\(').replace(')', '\\)')
 +        t = t.replace('[', '\\[').replace(']', '\\]')
 +        t = "^" + t

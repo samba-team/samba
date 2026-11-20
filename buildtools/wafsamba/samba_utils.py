@@ -146,7 +146,7 @@ Build.BuildContext.ASSERT = ASSERT
 
 
 def SUBDIR(bld, subdir, list):
-    '''create a list of files by pre-pending each with a subdir name'''
+    '''create a list of files by prepending each with a subdir name'''
     ret = ''
     for l in TO_LIST(list):
         ret = ret + os.path.normpath(os.path.join(subdir, l)) + ' '

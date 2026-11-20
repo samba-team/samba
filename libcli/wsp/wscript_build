@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#default flex recepie doesn't create a header file
+#default flex recipe doesn't create a header file
 bld.SAMBA_GENERATOR('wsp_flex',
 	source='wsp_aqs_lexer.l',
 	target='wsp_aqs_lexer.h wsp_aqs_lexer.c',
