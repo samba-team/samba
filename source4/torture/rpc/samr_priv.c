@@ -539,7 +539,7 @@ static bool torture_rpc_samr_access(struct torture_context *tctx,
 
 	t->user.username = talloc_asprintf(t, "%s%04d", TEST_ACCOUNT_NAME, 100);
 
-	torture_comment(tctx, "*** Setting up non-privleged user\n"
+	torture_comment(tctx, "*** Setting up non-privileged user\n"
 			      "***\n");
 
 	ok = torture_rpc_samr_access_setup(tctx, p, t);

@@ -511,7 +511,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	}
 
 
-	/* this code is incredibly repititive but doesn't lend itself to loops, so
+	/* this code is incredibly repetitive but doesn't lend itself to loops, so
 	   we use lots of macros to make it less painful */
 
 	/* first off we check the levels that are supposed to be aliases. It will be quite rare for

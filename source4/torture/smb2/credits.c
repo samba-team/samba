@@ -1100,7 +1100,7 @@ static void test_async_notify_loop_do(struct test_notify_async_credit_loop *loop
 
 	return;
 asserted:
-	torture_comment(state->tctx, "Assserted for idx=%zu\n", loop->idx);
+	torture_comment(state->tctx, "Asserted for idx=%zu\n", loop->idx);
 	(void)ok;
 	state->stop = true;
 }

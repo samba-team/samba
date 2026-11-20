@@ -1378,7 +1378,7 @@ done:
  * While another client holds a batch oplock or
  * RWH lease. (client1_level => LEASE or BATCH).
  *
- * There are two modes of this test one, with releaseing
+ * There are two modes of this test one, with releasing
  * the oplock/lease of client1 via close or ack.
  * (release_op SMB2_OP_CLOSE/SMB2_OP_BREAK).
  *

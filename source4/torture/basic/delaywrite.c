@@ -1,22 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
-   test suite for delayed write update 
+   test suite for delayed write update
 
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Jeremy Allison 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -546,7 +546,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
 	torture_assert_u64_equal(tctx, finfo3.all_info.out.size, 1,
-					 "file not expaneded");
+					 "file not expanded");
 
 	torture_comment(tctx, "write time %s\n",
 			nt_time_string(tctx, finfo3.all_info.out.write_time));
@@ -581,7 +581,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
  * Do as above, but using 2 connections.
  */
 
-static bool test_delayed_write_update2(struct torture_context *tctx, struct smbcli_state *cli, 
+static bool test_delayed_write_update2(struct torture_context *tctx, struct smbcli_state *cli,
 									   struct smbcli_state *cli2)
 {
 	union smb_fileinfo finfo1, finfo2;
@@ -899,7 +899,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
  * nasty....
  */
 
-static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_state *cli, 
+static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_state *cli,
 								   struct smbcli_state *cli2)
 {
 	union smb_fileinfo finfo1, finfo2;
@@ -948,7 +948,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 
 	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		torture_result(tctx, TORTURE_FAIL, __location__": failed to open 2nd time - %s", 
+		torture_result(tctx, TORTURE_FAIL, __location__": failed to open 2nd time - %s",
 		       smbcli_errstr(cli2->tree));
 		ret = false;
 		goto done;
@@ -957,7 +957,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
 
 	if (written != 1) {
-		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", 
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1",
 		       (int)written);
 		ret = false;
 		goto done;
@@ -969,7 +969,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_pathinfo(cli2->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", 
+		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s",
 			  nt_errstr(status));
 		ret = false;
 		goto done;
@@ -985,7 +985,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	if (finfo1.basic_info.out.write_time ==
 	    finfo2.basic_info.out.write_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": write_time unchanged:\n"
-					   "write time conn 1 = %s, conn 2 = %s", 
+					   "write time conn 1 = %s, conn 2 = %s",
 		       nt_time_string(tctx, finfo1.basic_info.out.write_time),
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		ret = false;
@@ -2113,7 +2113,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 	torture_assert_u64_equal(tctx,
 				 pinfo6.all_info.out.write_time,
 				 finfo5.all_info.out.write_time,
-				 "Server update writed time when closing");
+				 "Server updated write time when closing");
 
  done:
 	if (fnum1 != -1)
@@ -2563,7 +2563,7 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 	NTSTATUS status;
 	int fnum1 = -1;
 	bool ret = true;
-	TALLOC_CTX *mem_ctx; 
+	TALLOC_CTX *mem_ctx;
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update7 (timestamp resolution test)\n");
 
@@ -2615,7 +2615,7 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo3);
 
 	if (finfo2.basic_info.out.write_time != finfo3.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, 
+		torture_result(tctx, TORTURE_FAIL,
 			"qpathinfo time doesn't match fileinfo time");
 		ret = false;
 	}

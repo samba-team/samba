@@ -406,7 +406,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					     smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 	}
 
-	/* Decode and verify the signaure on the PAC */
+	/* Decode and verify the signature on the PAC */
 	nt_status = kerberos_decode_pac(mem_ctx, 
 					tmp_blob,
 					smb_krb5_context->krb5_context,
@@ -594,7 +594,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
-		torture_fail(tctx, "(saved test) regnerated PAC create failed");
+		torture_fail(tctx, "(saved test) regenerated PAC create failed");
 	}
 
 	dump_data(10,validate_blob.data,validate_blob.length);

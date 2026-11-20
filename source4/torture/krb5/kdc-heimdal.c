@@ -384,7 +384,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 				} else {
 					torture_assert_int_equal(test_context->tctx,
 								 *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
-							 0, "Unexpecedly got a RODC number in the KVNO");
+							 0, "Unexpectedly got a RODC number in the KVNO");
 				}
 			}
 			free_AS_REP(&test_context->as_rep);
