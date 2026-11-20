@@ -2003,7 +2003,7 @@ static void ads_dump_modlist(ADS_MODLIST *mods)
 	size_t i, j;
 	char *buf = NULL;
 
-	if (mods == NULL || DEBUGLEVEL < DBGLVL_DEBUG) {
+	if (DEBUGLEVEL < DBGLVL_DEBUG) {
 		return;
 	}
 
