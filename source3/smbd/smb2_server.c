@@ -2868,7 +2868,7 @@ static void smb2srv_update_crypto_flags(struct smbd_smb2_request *req,
 					bool *update_session_globalp,
 					bool *update_tcon_globalp)
 {
-	/* Default: assume unecrypted and unsigned */
+	/* Default: assume unencrypted and unsigned */
 	struct smbXsrv_session *session = req->session;
 	struct smbXsrv_tcon *tcon = req->tcon;
 	uint8_t encrypt_flag = SMBXSRV_PROCESSED_UNENCRYPTED_PACKET;

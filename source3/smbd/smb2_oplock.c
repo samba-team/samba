@@ -1730,7 +1730,7 @@ static void delay_for_handle_lease_break_fsp_done(struct tevent_req *subreq)
 	state->lck = get_existing_share_mode_lock(state, state->fsp->file_id);
 	/*
 	 * This could potentially end up looping for some if a client
-	 * aggressively reaquires H-leases on the file, but we have a
+	 * aggressively reacquires H-leases on the file, but we have a
 	 * timeout on the tevent req as upper bound.
 	 */
 	delay_for_handle_lease_break_check(req);

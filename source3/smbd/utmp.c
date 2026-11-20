@@ -260,7 +260,7 @@ static char *uw_pathname(TALLOC_CTX *ctx,
 static void pututline_my(const char *uname, struct utmp *u, bool claim)
 {
 	DEBUG(1,("pututline_my: not yet implemented\n"));
-	/* BSD implementor: may want to consider (or not) adjusting "lastlog" */
+	/* BSD implementer: may want to consider (or not) adjusting "lastlog" */
 }
 #endif /* HAVE_PUTUTLINE */
 

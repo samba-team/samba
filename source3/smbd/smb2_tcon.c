@@ -531,7 +531,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	 * to request Persistent Handles (PH) basically implementing the
 	 * restrictions from the data model: we currently don't implement a
 	 * persistent leases.tdb (for performance reasons) and hence we can't
-	 * grant more than R leases (R lease is reaquired when reconnecting a
+	 * grant more than R leases (R lease is reacquired when reconnecting a
 	 * Persistent Handle if leases.tdb record was lost due to a node failure
 	 * (SO scenario), or wiped with clear-if-first semantics (non-SO,
 	 * failover scenario).

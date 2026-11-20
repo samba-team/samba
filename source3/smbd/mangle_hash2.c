@@ -803,7 +803,7 @@ static const struct mangle_fns mangle_hash2_fns = {
 /* return the methods for this mangling implementation */
 const struct mangle_fns *mangle_hash2_init(void)
 {
-	/* the mangle prefix can only be in the mange 1 to 6 */
+	/* the mangle prefix can only be in the range 1 to 6 */
 	mangle_prefix = lp_mangle_prefix();
 	if (mangle_prefix > 6) {
 		mangle_prefix = 6;
