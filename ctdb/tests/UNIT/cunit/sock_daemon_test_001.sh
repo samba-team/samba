@@ -94,6 +94,7 @@ unit_test sock_daemon_test "$pidfile" "$sockpath" 6
 ok <<EOF
 daemon started, pid=PID
 startup completed successfully
+listening on $sockpath
 Received signal $(sigcode SIGTERM)
 Shutting down
 EOF

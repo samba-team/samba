@@ -1394,7 +1394,8 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 /*
  * test7
  *
- * Start daemon twice, confirm PID file contention
+ * Start daemon twice, confirm PID file contention and that the second
+ * daemon doesn't remove the first daemon's socket
  */
 
 static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
@@ -1408,6 +1409,8 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 	struct tevent_context *ev;
 	struct sock_daemon_context *sockd;
 	ssize_t n;
+	int i;
+	bool sock_exists;
 
 	/* Reuse test2 funcs for the startup synchronisation */
 	test7_funcs = (struct sock_daemon_funcs) {
@@ -1432,6 +1435,12 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 					&test7_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
+		ret = sock_daemon_add_unix(sockd,
+					   sockpath,
+					   &dummy_socket_funcs,
+					   NULL);
+		assert(ret == 0);
+
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
@@ -1449,6 +1458,17 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(ret == 0);
 	assert(S_ISREG(st.st_mode));
 
+	/* The socket is created after startup */
+	for (i = 0; i < 100; i++) {
+		ret = stat(sockpath, &st);
+		if (ret == 0) {
+			break;
+		}
+		usleep(100000);
+	}
+	assert(ret == 0);
+	assert(S_ISSOCK(st.st_mode));
+
 	ev = tevent_context_init(mem_ctx);
 	assert(ev != NULL);
 
@@ -1456,8 +1476,18 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 				&test7_funcs, &fd[1], &sockd);
 	assert(ret == 0);
 
+	ret = sock_daemon_add_unix(sockd, sockpath, &dummy_socket_funcs, NULL);
+	assert(ret == 0);
+
 	ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 	assert(ret == EEXIST);
+
+	/* Freeing the daemon frees its socket */
+	TALLOC_FREE(sockd);
+
+	/* Check after stopping the first daemon, so a failure can't hang */
+	ret = stat(sockpath, &st);
+	sock_exists = (ret == 0 && S_ISSOCK(st.st_mode));
 
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
@@ -1471,6 +1501,8 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(WEXITSTATUS(ret) == 0);
 
 	close(fd[0]);
+
+	assert(sock_exists);
 }
 
 /*

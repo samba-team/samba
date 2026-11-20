@@ -253,8 +253,7 @@ static int socket_setup(const char *sockpath, bool remove_before_use)
 		if (ret != 0) {
 			D_ERR("Unable to secure (chown) socket '%s'\n",
 			      sockpath);
-			close(fd);
-			return -1;
+			goto fail;
 		}
 	}
 
@@ -262,20 +261,24 @@ static int socket_setup(const char *sockpath, bool remove_before_use)
 	ret = chmod(sockpath, 0700);
 	if (ret != 0) {
 		D_ERR("Unable to secure (chmod) socket '%s'\n", sockpath);
-		close(fd);
-		return -1;
+		goto fail;
 	}
 
 	ret = listen(fd, 10);
 	if (ret != 0) {
 		D_ERR("socket listen failed - %s\n", sockpath);
-		close(fd);
-		return -1;
+		goto fail;
 	}
 
 	D_NOTICE("listening on %s\n", sockpath);
 
 	return fd;
+
+fail:
+	/* Bound above, so this daemon created it */
+	close(fd);
+	unlink(sockpath);
+	return -1;
 }
 
 static int sock_socket_destructor(struct sock_socket *sock);
@@ -318,12 +321,13 @@ static int sock_socket_destructor(struct sock_socket *sock)
 {
 	TALLOC_FREE(sock->req);
 
+	/* Don't remove a socket created by another daemon */
 	if (sock->fd != -1) {
 		close(sock->fd);
 		sock->fd = -1;
+		unlink(sock->sockpath);
 	}
 
-	unlink(sock->sockpath);
 	return 0;
 }
 
