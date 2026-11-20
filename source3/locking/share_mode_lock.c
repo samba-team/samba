@@ -594,7 +594,7 @@ static struct share_mode_data *parse_share_mode_data(
 	const uint8_t *buf,
 	size_t buflen)
 {
-	struct share_mode_dataB data_blob;
+	struct share_mode_dataB data_blob = {};
 	struct share_mode_data *d = NULL;
 	struct file_id_buf idbuf;
 	enum ndr_err_code ndr_err;
