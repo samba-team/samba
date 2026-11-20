@@ -1,7 +1,7 @@
 # Makefile.internal.in for building the libsmbclient examples
 # from within a samba build.
 #
-# Use Makfile for building the examples with a libsmbclient
+# Use Makefile for building the examples with a libsmbclient
 # installed to /usr/local/samba
 
 CC = @CC@

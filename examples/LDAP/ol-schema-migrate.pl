@@ -9,15 +9,15 @@
 # - 6 Dec 2005
 # - objectclass element ordering
 #
-# Second Release : Alyseo <info@alyseo.com> 05 Februrary 2006
+# Second Release : Alyseo <info@alyseo.com> 05 February 2006
 #    Francois Billard <francois@alyseo.com>
 #    Yacine Kheddache <yacine@alyseo.com>
 #    http://www.alyseo.com/
 #
-# - 05 Februrary 2006
+# - 05 February 2006
 #  - parsing improvement to accept non-RFC compliant schemas (like ISPMAN)
 #  - adding RFC element : Usage, No-user-modification, collective keywords
-# - 08 Februrary 2006
+# - 08 February 2006
 #  - adding help & usage
 #  - now this script can also beautify your schemas: "-b"
 #  - count attributes and objects class: "-c"

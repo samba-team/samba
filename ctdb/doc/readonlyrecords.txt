@@ -21,7 +21,7 @@ Desired properties
 We can not make backward incompatible changes the ctdb_ltdb header for the records.
 
 A Read-Only lock enabled ctdb demon must be able to interoperate with a non-Read-Only
-lock enbled daemon.
+lock enabled daemon.
 
 Getting a Read-Only lock should not be slower than getting a Read-Write lock.
 

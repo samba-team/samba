@@ -49,7 +49,7 @@ search_wildcard()
 
 search_unindexed()
 {
-	${NET} ads search '(description=Built-in account for adminstering the computer/domain)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
+	${NET} ads search '(description=Built-in account for administering the computer/domain)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} >/dev/null
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
 		exit 1

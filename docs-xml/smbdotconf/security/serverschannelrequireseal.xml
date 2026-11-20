@@ -13,7 +13,7 @@
 
 	<para>
 	This option controls whether the netlogon server, will reject the usage
-	of netlogon secure channel without privacy/enryption.
+	of netlogon secure channel without privacy/encryption.
 	</para>
 
 	<para>
