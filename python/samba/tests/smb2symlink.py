@@ -433,6 +433,39 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         smb2.close(fd2)
         self.assertEqual(info['end_of_file'], 10)
 
+    def test_symlink_rename_fsctl(self):
+        """Renaming a reparse point symlink keeps it a reparse point"""
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        smb1share = share if share else "nosymlinks_smb1allow"
+        smb2 = libsmb.Conn(
+            self.server_ip,
+            share if share else "nosymlinks",
+            self.lp,
+            self.creds)
+        smb1 = libsmb.Conn(
+            self.server_ip, smb1share, self.lp, self.creds, force_smb1=True)
+        symlink = "flnk"
+        newname = "flnk_renamed"
+
+        self.create_symlink(smb2, "tfile", symlink)
+        self.addCleanup(self.clean_file, smb2, symlink)
+        self.addCleanup(self.clean_file, smb2, newname)
+
+        self.assertNoNTSTATUSError(smb1.rename, symlink, newname)
+
+        (fd, cr, _) = self.assertNoNTSTATUSError(
+            smb2.create_ex,
+            newname,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        self.addCleanup(smb2.close, fd)
+
+        self.assertEqual(
+            cr['file_attributes'] & libsmb.FILE_ATTRIBUTE_REPARSE_POINT,
+            libsmb.FILE_ATTRIBUTE_REPARSE_POINT)
+        self.verify_symlink(smb2, newname, "tfile")
+
 if __name__ == '__main__':
     import unittest
     unittest.main()
