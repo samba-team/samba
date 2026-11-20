@@ -1754,6 +1754,9 @@ plantestsuite("samba3.blackbox.smb1_lanman_plaintext", "nt4_member:local",
 plantestsuite("samba3.blackbox.winbind_ignore_domain", "ad_member_idmap_ad:local",
               [os.path.join(samba3srcdir, "script/tests/test_winbind_ignore_domains.sh")])
 
+planpythontestsuite("nt4_dc:local", "samba.tests.blackbox.durable_file_id",
+                    name="samba3.blackbox.durable_file_id")
+
 plantestsuite("samba3.blackbox.durable_v2_delay", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_durable_handle_reconnect.sh")])
 
