@@ -241,7 +241,7 @@ do_current_version_mod()
 	if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 		# Confirm (in combination with the ldbsearch below) that
 		# changing the attribute with current Samba fixes it, and that
-		# a fixed attriute isn't unfixed by dbcheck.
+		# a fixed attribute isn't unfixed by dbcheck.
 		tmpldif=$release_dir/sudoers2-mod.ldif
 		$ldbmodify -H tdb://$PREFIX/${RELEASE}/private/sam.ldb $tmpldif
 	fi

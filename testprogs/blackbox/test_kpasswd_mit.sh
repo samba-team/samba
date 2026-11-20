@@ -1,5 +1,5 @@
 #!/bin/sh
-# Blackbox tests for chainging passwords with kinit and kpasswd
+# Blackbox tests for changing passwords with kinit and kpasswd
 #
 # Copyright (c) 2006-2007 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (c) 2006-2008 Andrew Bartlett <abartlet@samba.org>
