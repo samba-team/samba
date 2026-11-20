@@ -107,7 +107,7 @@ class SDTestCase(BaseSDTestCase):
             "38 00 "        # size
             "20 00 00 00 "  # mask
             "03 00 00 00 "  #flags
-            "bf 3b 0e f3 f0 9f d1 11 " # objct GUID
+            "bf 3b 0e f3 f0 9f d1 11 " # object GUID
             "b6 03 00 00 f8 03 67 c1 "
             "a5 7a 96 bf e6 0d d0 11 " # inherited GUID
             "a2 85 00 aa 00 30 49 e2 "

@@ -856,7 +856,7 @@ class SamrContext(object):
 
 
 class Conversation(object):
-    """Details of a converation between a simulated client and a server."""
+    """Details of a conversation between a simulated client and a server."""
     def __init__(self, start_time=None, endpoints=None, seq=(),
                  conversation_id=None):
         self.start_time = start_time
@@ -1101,7 +1101,7 @@ class DnsHammer(Conversation):
 
 
 def ingest_summaries(files, dns_mode='count'):
-    """Load a summary traffic summary file and generated Converations from it.
+    """Load a summary traffic summary file and generated Conversations from it.
     """
 
     dns_counts = defaultdict(int)
@@ -2162,7 +2162,7 @@ class GroupAssignments(object):
             self.assignments[group].append(user)
             self.count += 1
 
-        # check if there'a cap on how big the groups can grow
+        # check if there's a cap on how big the groups can grow
         if self.max_members:
             self.cap_group_membership(group, self.max_members)
 
@@ -2180,7 +2180,7 @@ class GroupAssignments(object):
         if group_memberships <= 0:
             return
 
-        # Calculate the number of group menberships required
+        # Calculate the number of group memberships required
         group_memberships = math.ceil(
             float(group_memberships) *
             (float(users_added) / float(number_of_users)))

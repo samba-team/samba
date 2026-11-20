@@ -439,7 +439,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
     # Test: samba-tool user list --locked-only
     # This test does not verify that the command lists the locked user, it just
-    # tests that it does not list unlocked users. The funcional test, which
+    # tests that it does not list unlocked users. The functional test, which
     # lists locked users, is located in the 'samba4.ldap.password_lockout' test
     # in source8/dsdb/tests/python/password_lockout.py
     def test_list_locked(self):

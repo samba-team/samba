@@ -215,7 +215,7 @@ def update_policyids(names, samdb):
     """Update policy ids that could have changed after sam update
 
     :param names: List of key provision parameters
-    :param samdb: An Ldb object conntected with the sam DB
+    :param samdb: An Ldb object connected with the sam DB
     """
     # policy guid
     res = samdb.search(expression="(displayName=Default Domain Policy)",
