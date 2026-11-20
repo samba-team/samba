@@ -42,6 +42,13 @@ static int db_transaction_cancel_handler(struct ctdb_db_context *ctdb_db,
 {
 	int ret;
 
+	/*
+	 * Cancelling the transaction releases all of the locks,
+	 * including the lock marks of an unconfirmed push, so cancel
+	 * the push first
+	 */
+	ctdb_db_push_cancel(ctdb_db);
+
 	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 	ret = tdb_transaction_cancel(ctdb_db->ltdb->tdb);
 	if (ret != 0) {
@@ -61,15 +68,11 @@ static int db_transaction_start_handler(struct ctdb_db_context *ctdb_db,
 	bool freeze_transaction_started = *(bool *)private_data;
 	int ret;
 
-	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 	if (freeze_transaction_started) {
-		ret = tdb_transaction_cancel(ctdb_db->ltdb->tdb);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,
-			      ("Failed to cancel transaction for db %s\n",
-			       ctdb_db->db_name));
-		}
+		db_transaction_cancel_handler(ctdb_db, NULL);
 	}
+
+	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 	ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
 	tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 	if (ret != 0) {
@@ -132,13 +135,15 @@ static int ctdb_db_freeze_handle_destructor(struct ctdb_db_freeze_handle *h)
 	DEBUG(DEBUG_ERR, ("Release freeze handle for db %s\n",
 			  ctdb_db->db_name));
 
-	/* Before the database is marked as not frozen */
-	ctdb_db_push_cancel(ctdb_db);
-
-	/* Cancel any pending transactions */
+	/*
+	 * Cancel any pending transaction and unconfirmed push, before
+	 * the database is marked as not frozen
+	 */
 	if (ctdb_db->freeze_transaction_started) {
 		db_transaction_cancel_handler(ctdb_db, NULL);
 		ctdb_db->freeze_transaction_started = false;
+	} else {
+		ctdb_db_push_cancel(ctdb_db);
 	}
 	ctdb_db->freeze_mode = CTDB_FREEZE_NONE;
 	ctdb_db->freeze_handle = NULL;
