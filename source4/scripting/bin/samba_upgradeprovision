@@ -1479,7 +1479,7 @@ def sync_calculated_attributes(samdb, names):
 #    the upper limit for usn modified during provision.
 #    This is done before potential SD recalculation because we do not want
 #    SD modified during recalculation to be marked as modified during provision
-#    (and so possibly remplaced at next upgradeprovision)
+#    (and so possibly replaced at next upgradeprovision)
 # 18)Rebuilt SD if the flag indicate to do so
 # 19)Check difference between SD of reference provision and those of the
 #    current provision. The check is done by getting the sddl representation

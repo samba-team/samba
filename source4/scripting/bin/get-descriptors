@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Unix SMB/CIFS implementation.
-# A script to compare differences of security descriotors between
+# A script to compare differences of security descriptors between
 # a remote host and the local Ldb
 # Needs the local domain, the remote domain, IP of the remote host
 # Username and password for the remote domain, must be at least
