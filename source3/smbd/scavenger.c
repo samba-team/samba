@@ -672,12 +672,23 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	}
 
 	if (global != NULL) {
+		/*
+		 * A reconnect may have claimed the open in the meantime. If it
+		 * is rejected, the open is given back and scheduled again,
+		 * unless the smbd that claimed it is gone.
+		 */
 		if (!global->persistent) {
 			if (!server_id_is_disconnected(&global->server_id)) {
-				DBG_ERR("Open [0x%"PRIx64"] fileid [%s] is "
-					"not marked disconnected\n",
-					msg->open_persistent_id,
-					file_id_str_buf(msg->file_id, &idbuf));
+				int lvl = serverid_exists(&global->server_id)
+						  ? DBGLVL_NOTICE
+						  : DBGLVL_ERR;
+
+				DBG_PREFIX(lvl,
+					   ("Open [0x%" PRIx64 "] fileid [%s] "
+					    "is not marked disconnected\n",
+					    msg->open_persistent_id,
+					    file_id_str_buf(msg->file_id,
+							    &idbuf)));
 				goto done;
 			}
 			if (global->disconnect_time == 0) {
@@ -689,12 +700,14 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 		} else {
 			if (serverid_exists(&global->server_id)) {
 				struct server_id_buf sidbuf;
-				DBG_ERR("Open [0x%"PRIx64"] fileid [%s] pid [%s] "
-					"still around\n",
-					msg->open_persistent_id,
-					file_id_str_buf(msg->file_id, &idbuf),
-					server_id_str_buf(global->server_id,
-							  &sidbuf));
+				DBG_NOTICE("Open [0x%" PRIx64
+					   "] fileid [%s] pid [%s] "
+					   "still around\n",
+					   msg->open_persistent_id,
+					   file_id_str_buf(msg->file_id,
+							   &idbuf),
+					   server_id_str_buf(global->server_id,
+							     &sidbuf));
 				goto done;
 			}
 		}
