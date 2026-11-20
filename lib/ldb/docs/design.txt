@@ -4,7 +4,7 @@ The list of indexed fields
 dn=@INDEXLIST
 	list of field names that are indexed
 
-	contains fields of type @IDXATTR which contain attriute names
+	contains fields of type @IDXATTR which contain attribute names
 	of indexed fields
 
 

@@ -312,7 +312,7 @@ static PyObject *py_tevent_context_add_timer_internal(TeventContext_Object *self
 	 * The tevent timer can be deallocated in these cases:
 	 *  1) when the context is destroyed
 	 *  2) after the event fires
-	 *  Posssibly, API might be added to cancel (free the tevent timer).
+	 *  Possibly, API might be added to cancel (free the tevent timer).
 	 *
 	 * The Python timer holds a reference to the callback.
 	 */

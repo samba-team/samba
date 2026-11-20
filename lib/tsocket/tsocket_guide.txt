@@ -455,7 +455,7 @@ success, otherwise it returns -1 and sets 'errno'.
 
 In some situations, it is needed to wrap existing file descriptors
 into the tstream abstraction. You can use tstream_bsd_existing_socket()
-for that. But you should read the tsocket_bsd.c code and unterstand it
+for that. But you should read the tsocket_bsd.c code and understand it
 in order use this function. E.g. the fd has to be non blocking already.
 It will return -1 and set errno on error. Otherwise it returns 0
 and sets '*stream' to point to the new tstream_context.

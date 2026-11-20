@@ -200,7 +200,7 @@ static void hexdump( const char * label, const char * s, size_t len )
  * manipulating CFString objects.  We try to minimize the impact by
  * keeping those objects around and re-using them.  We also use
  * external backing store for the CFStrings where this is possible and
- * benficial.
+ * beneficial.
  *
  * The Unicode normalizations forms available at this level are
  * generic, not specifically for the file system.  So they may not be

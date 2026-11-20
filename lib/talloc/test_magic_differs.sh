@@ -1,6 +1,6 @@
 #!/bin/sh
 # This test ensures that two different talloc processes do not use the same
-# magic value to lessen the opportunity for transferrable attacks.
+# magic value to lessen the opportunity for transferable attacks.
 
 echo "test: magic differs"
 

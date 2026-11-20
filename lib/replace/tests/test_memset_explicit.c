@@ -12,7 +12,7 @@
  * appears unused, we meed to be sneaky in our check -- otherwise the
  * check counts as a use.
  *
- * We are sneaky by using a function that seens to take an int
+ * We are sneaky by using a function that seems to take an int
  * argument which is really a pointer, and we hide that it is a
  * pointer by masking it.
  *
