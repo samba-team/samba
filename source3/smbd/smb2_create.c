@@ -1935,6 +1935,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	{
 		state->update_open = true;
 
+		state->op->global->file_id = state->result->file_id;
+		state->op->global->name_hash = state->result->name_hash;
 		state->op->global->durable = true;
 		state->op->global->durable_timeout_msec = state->durable_timeout_msec;
 		if (S_ISDIR(state->result->fsp_name->st.st_ex_mode)) {
