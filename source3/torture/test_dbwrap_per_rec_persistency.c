@@ -506,7 +506,7 @@ static bool test_traverse(struct test_ctx *ctx)
 	int nrecs = 0;
 	bool ok = false;
 
-	/* Initital state: Traverse, expect no records */
+	/* Initial state: Traverse, expect no records */
 
 	status = dbwrap_traverse_read(ctx->db, test_traverse_cb,
 				      NULL, &nrecs);

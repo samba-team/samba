@@ -3453,7 +3453,7 @@ static NTSTATUS list_fn(struct file_info *finfo,
 
 /*
  * Must be run against a share with "smbd async dosmode = yes".
- * Checks we can return DOS attriutes other than "N".
+ * Checks we can return DOS attributes other than "N".
  * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14758
  */
 

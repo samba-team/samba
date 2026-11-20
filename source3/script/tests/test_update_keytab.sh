@@ -501,7 +501,7 @@ test_pwd_change()
 		return 1
 	fi
 
-	# if keytab was updated the bigest vno should be incremented by one
+	# if keytab was updated the biggest vno should be incremented by one
 	get_biggest_vno "$PREFIX/ad_member_idmap_nss/keytab1k"
 
 	if [ ! "$vno" -eq $((old_vno + 1)) ] ; then

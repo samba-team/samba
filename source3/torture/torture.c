@@ -13499,7 +13499,7 @@ static bool run_local_substitute(int dummy)
 	   formatting function. At least covers %t. */
 	ok &= timesubst_test();
 
-	/* Different captialization rules in sub_basic... */
+	/* Different capitalization rules in sub_basic... */
 
 	ok &=  (strcmp(talloc_sub_basic(talloc_tos(), "BLA", "dom", "%U%D"),
 		       "blaDOM") == 0);

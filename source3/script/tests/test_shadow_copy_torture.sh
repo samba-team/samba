@@ -211,8 +211,8 @@ test_shadow_copy_listdir_fix_inodes()
 
 build_files $WORKDIR
 
-# test open for writing and write behaviour of snapshoted files
-test_shadow_copy_write "write behaviour of snapshoted files"
+# test open for writing and write behaviour of snapshotted files
+test_shadow_copy_write "write behaviour of snapshotted files"
 
 test_shadow_copy_stream "reading stream of snapshotted file"
 

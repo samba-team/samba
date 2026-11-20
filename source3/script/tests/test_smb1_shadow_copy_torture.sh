@@ -71,7 +71,7 @@ test_shadow_copy_openroot()
 
 build_files $WORKDIR
 
-# test open for writing and write behaviour of snapshoted files
+# test open for writing and write behaviour of snapshotted files
 test_shadow_copy_openroot "opening root of shadow copy share"
 
 exit $failed
