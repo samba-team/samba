@@ -3715,6 +3715,7 @@ static bool test_smb2_open_quota_fake_file(struct torture_context *tctx,
 {
 	const char *fname = "$Extend\\$Quota:$Q:$INDEX_ALLOCATION";
 	struct smb2_create create;
+	union smb_setfileinfo sfinfo;
 	struct smb2_handle h = {{0}};
 	NTSTATUS status;
 	bool ret = true;
@@ -3763,6 +3764,20 @@ static bool test_smb2_open_quota_fake_file(struct torture_context *tctx,
 				      ret,
 				      done,
 				      "change_time is not 0\n");
+
+	/* There is no metadata to set on the quota fake file */
+	sfinfo = (union smb_setfileinfo){
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = h,
+		.basic_info.in.write_time = 1,
+	};
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(tctx,
+					   status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret,
+					   done,
+					   "setinfo on quota fake file\n");
 
 done:
 	smb2_util_close(tree, h);
