@@ -1776,6 +1776,11 @@ static void share_mode_forall_dump_fn(
 		return;
 	}
 
+	if (ltdb.share_mode_data_len == 0) {
+		DBG_DEBUG("Empty record, ignore\n");
+		return;
+	}
+
 	d = parse_share_mode_data(
 		talloc_tos(),
 		fid,
