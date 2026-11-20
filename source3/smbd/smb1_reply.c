@@ -1764,9 +1764,7 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
-	ucf_flags = filename_create_ucf_flags(req,
-					      create_disposition,
-					      create_options);
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
@@ -1967,9 +1965,7 @@ void reply_open_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	ucf_flags = filename_create_ucf_flags(req,
-					      create_disposition,
-					      create_options);
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
@@ -2406,9 +2402,7 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
-	ucf_flags = filename_create_ucf_flags(req,
-					      create_disposition,
-					      create_options);
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
 	}
@@ -2567,7 +2561,7 @@ void reply_ctemp(struct smb_request *req)
 			goto out;
 		}
 
-		ucf_flags = filename_create_ucf_flags(req, FILE_CREATE, 0);
+		ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
 		if (ucf_flags & UCF_GMT_PATHNAME) {
 			extract_snapshot_token(fname, &twrp);
 		}
@@ -6154,7 +6148,7 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
-	ucf_flags = filename_create_ucf_flags(req, FILE_CREATE, 0);
+	ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(directory, &twrp);
 	}

@@ -642,7 +642,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 		return status;
 	}
 
-	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN, 0);
+	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN);
 	status = filename_convert_dirfsp(talloc_tos(),
 					 fsp->conn,
 					 filename,
@@ -1243,8 +1243,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	ucf_flags = filename_create_ucf_flags(smb1req,
-					      state->in_create_disposition,
-					      state->in_create_options);
+					      state->in_create_disposition);
 
 	if (lp_follow_symlinks(SNUM(smb1req->conn)) &&
 	    (state->posx == NULL)) {
