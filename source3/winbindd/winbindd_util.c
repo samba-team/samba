@@ -2256,7 +2256,6 @@ NTSTATUS lookup_usergroups_cached(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(info3);
 	*p_num_groups = num_groups;
-	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,(": lookup_usergroups_cached succeeded\n"));
 
