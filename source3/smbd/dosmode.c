@@ -1017,10 +1017,25 @@ int file_set_dosmode(connection_struct *conn,
 
 	get_acl_group_bits(conn, smb_fname->fsp, &smb_fname->st.st_ex_mode);
 
-	if (S_ISDIR(smb_fname->st.st_ex_mode))
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
-	else
+	} else {
 		dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
+
+		if (S_ISREG(smb_fname->st.st_ex_mode)) {
+			struct files_struct *mfsp = NULL;
+			uint32_t cur;
+
+			/*
+			 * A reparse point stays one, setting attributes
+			 * does not change that. For a stream the
+			 * attributes are on the base file.
+			 */
+			mfsp = metadata_fsp(smb_fname->fsp);
+			cur = fdos_mode(mfsp);
+			dosmode |= (cur & FILE_ATTRIBUTE_REPARSE_POINT);
+		}
+	}
 
 	/* Store the DOS attributes in an EA by preference. */
 	status = SMB_VFS_FSET_DOS_ATTRIBUTES(conn,
