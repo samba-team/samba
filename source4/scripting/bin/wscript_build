@@ -12,3 +12,4 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
 if bld.CONFIG_SET('HAVE_ADS'):
     bld.SAMBA_SCRIPT('samba-tool', pattern='samba-tool', installdir='.')
 bld.SAMBA_SCRIPT('samba-gpupdate', pattern='samba-gpupdate', installdir='.')
+bld.SAMBA_SCRIPT('pysmbtest', pattern='pysmbtest', installdir='.')

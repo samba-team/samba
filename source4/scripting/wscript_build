@@ -21,4 +21,11 @@ if bld.CONFIG_SET('HAVE_ADS'):
                   'bin/samba-tool',
                   chmod=MODE_755, python_fixup=True, flat=True)
 
+if bld.PYTHON_BUILD_IS_ENABLED():
+    bld.INSTALL_FILES('${BINDIR}',
+                      'bin/pysmbtest',
+                      chmod=MODE_755, python_fixup=True, flat=True)
+    if 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
+        bld.MANPAGES('man/pysmbtest.1', True)
+
 bld.RECURSE('bin')

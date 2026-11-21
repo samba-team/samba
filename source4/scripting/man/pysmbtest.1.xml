@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+<refentry id="pysmbtest.1">
+
+<refmeta>
+	<refentrytitle>pysmbtest</refentrytitle>
+	<manvolnum>1</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">Test Suite</refmiscinfo>
+	<refmiscinfo class="version">4.26</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>pysmbtest</refname>
+	<refpurpose>Run Samba's python SMB tests against a SMB
+		server</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>pysmbtest</command>
+		<arg choice="req">//server/share</arg>
+		<arg choice="req">-U [DOMAIN\]user[%pass]</arg>
+		<arg choice="opt">-e VAR=VALUE</arg>
+		<arg choice="req">TEST1</arg>
+		<arg choice="opt">TEST2</arg>
+		<arg choice="opt">...</arg>
+	</cmdsynopsis>
+
+	<cmdsynopsis>
+		<command>pysmbtest</command>
+		<arg choice="req">--list</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>pysmbtest runs the python SMB tests from Samba's test
+		suite against an arbitrary SMB server, for example a
+		Windows server, to compare its behaviour with Samba's.
+		Samba's selftest runs these tests only against its own
+		test servers.</para>
+
+	<para>The tests take the server, share and credentials from
+		environment variables that selftest normally sets.
+		pysmbtest sets them from its command line and runs the
+		given tests with verbose unittest output.</para>
+
+	<para>Any number of tests can be specified on the
+		command-line. A test is a python module, a test class
+		or a single test method, for example
+		<command>libsmb-basic</command>,
+		<command>libsmb_lock.Smb2LockTests</command> or
+		<command>libsmb-basic.LibsmbTestCase.test_OpenClose</command>.
+		Names not starting with <command>samba.</command> are
+		looked up below <command>samba.tests</command>.</para>
+
+	<para><command>--list</command> lists all tests of classes
+		derived from
+		<command>samba.tests.libsmb.LibsmbTests</command>, one per
+		line, in the form the command line takes.</para>
+
+	<para>The expected failures of Samba's selftest do not apply,
+		every failing test is reported as such.</para>
+
+	<refsect2>
+		<title>UNC Format</title>
+
+		<para>The UNC format is:</para>
+
+		<para>//server/share</para>
+
+		<para>Backslashes work as well. All tests connect to this
+			share, instead of the shares Samba's selftest
+			provides.</para>
+	</refsect2>
+
+</refsect1>
+
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry><term>-U [DOMAIN\]user[%pass]</term>
+			<listitem><para>Use the specified username/password
+				combination as the default credentials for
+				logging in to the server. Some tests replace
+				them with their own selftest accounts, for
+				example the
+				<command>ntacl_resource_attr_ace</command>
+				tests. Without a password, pysmbtest asks for
+				it. Without a domain, the domain is
+				empty.</para></listitem>
+		</varlistentry>
+		<varlistentry><term>-e VAR=VALUE</term>
+			<listitem><para>Set the environment variable
+				<replaceable>VAR</replaceable> for the tests.
+				Some tests change their behaviour based on
+				such variables, for example
+				<command>SMB1=1</command> makes the
+				reparsepoints tests use SMB1. Can be given
+				more than once.</para></listitem>
+		</varlistentry>
+		<varlistentry><term>--list</term>
+			<listitem><para>List the available tests and
+				exit.</para></listitem>
+		</varlistentry>
+		<varlistentry><term>-h, --help</term>
+			<listitem><para>Show a short usage
+				summary.</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>ENVIRONMENT</title>
+
+	<para>pysmbtest sets these variables for the tests:
+		SERVER and SERVER_IP from the server part of the UNC,
+		SHARENAME, SMB1_SHARE, SMB2_SHARE and NOTIFY_SHARE from
+		the share part, DOMAIN, USERNAME and PASSWORD from
+		<command>-U</command>, and SMB_CONF_PATH and
+		SERVERCONFFILE to an empty temporary smb.conf.</para>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>List the tests:</para>
+
+	<para><command>pysmbtest --list</command></para>
+
+	<para>Run the byte range lock tests against a Windows
+		server:</para>
+
+	<para><command>pysmbtest //winsrv/share -U 'DOM\administrator'
+		libsmb_lock</command></para>
+
+	<para>Run all listed tests:</para>
+
+	<para><command>pysmbtest //winsrv/share -U 'DOM\administrator'
+		$(pysmbtest --list)</command></para>
+</refsect1>
+
+<refsect1>
+	<title>LIMITATIONS</title>
+
+	<para>Tests that look at the server's file system directly
+		(they need LOCAL_PATH), or that need Samba-only features
+		like the SMB1 UNIX extensions, SMB3 POSIX extensions or
+		specially configured shares fail against other
+		servers.</para>
+
+	<para>In the Samba build tree, run pysmbtest as
+		<command>bin/pysmbtest</command> from the top
+		directory.</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4.26 of the Samba
+		suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+
+	<para><citerefentry><refentrytitle>smbtorture</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry></para>
+
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>This utility is part of the
+		<ulink url="http://www.samba.org/">Samba</ulink> suite,
+		which is developed by the global
+		<ulink url="http://www.samba.org/samba/team/">Samba
+		Team</ulink>.</para>
+
+</refsect1>
+
+</refentry>

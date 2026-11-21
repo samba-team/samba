@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+#
+# Run python SMB tests against an arbitrary server
+#
+# Copyright (C) Volker Lendecke 2026
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Run python SMB tests against an arbitrary server
+
+The python SMB tests take their target from environment variables
+that selftest sets. This sets them from a smbtorture-like command
+line and runs the tests, for example:
+
+  pysmbtest //win/share -U 'DOM\\administrator%Passw0rd' \\
+      -e SMB1=1 reparsepoints.ReparsePoints
+
+In the build tree, run it as bin/pysmbtest from the top directory.
+
+Test names without a "samba." prefix are looked up below
+samba.tests. selftest's knownfail lists don't apply here. --list
+lists the tests derived from LibsmbTests.
+"""
+
+import sys
+
+# Find right direction when running from source tree
+sys.path.insert(0, "bin/python")
+
+import argparse
+import getpass
+import importlib
+import os
+import tempfile
+import unittest
+
+# Different test modules read the share name from different variables
+SHARE_VARS = ["SHARENAME", "SMB1_SHARE", "SMB2_SHARE", "NOTIFY_SHARE"]
+
+
+def list_tests():
+    import samba.tests.libsmb
+    base = samba.tests.libsmb.LibsmbTests
+
+    loader = unittest.TestLoader()
+    testsdir = os.path.dirname(samba.tests.__file__)
+
+    for fname in sorted(os.listdir(testsdir)):
+        modname, ext = os.path.splitext(fname)
+        path = os.path.join(testsdir, fname)
+        if ext != ".py" or not os.path.isfile(path):
+            continue
+        with open(path) as f:
+            if "LibsmbTests" not in f.read():
+                continue
+        try:
+            mod = importlib.import_module("samba.tests." + modname)
+        except Exception as e:
+            print("%s: %s" % (modname, e), file=sys.stderr)
+            continue
+        for name, cls in sorted(vars(mod).items()):
+            if not isinstance(cls, type) or cls is base:
+                continue
+            if not issubclass(cls, base) or cls.__module__ != mod.__name__:
+                continue
+            for method in loader.getTestCaseNames(cls):
+                print("%s.%s.%s" % (modname, name, method))
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run python SMB tests against a server")
+    parser.add_argument("--list", action="store_true",
+                        help="list the available tests")
+    parser.add_argument("unc", nargs="?", help="//server/share")
+    parser.add_argument("-U", "--user",
+                        help="[DOMAIN\\]user[%%password]")
+    parser.add_argument("-e", "--env", action="append", default=[],
+                        metavar="VAR=VALUE",
+                        help="extra environment variable for the tests")
+    parser.add_argument("tests", nargs="*",
+                        help="test module, class or method")
+    args = parser.parse_args()
+
+    if not args.list:
+        if not args.unc:
+            parser.error("//server/share is required")
+        parts = args.unc.replace("\\", "/").lstrip("/").split("/")
+        if len(parts) != 2 or not parts[0] or not parts[1]:
+            parser.error("expected //server/share, got %s" % args.unc)
+        server, share = parts
+        if not args.tests:
+            parser.error("no tests given, --list lists them")
+        if not args.user:
+            parser.error("-U is required")
+
+    try:
+        import samba.tests
+    except ImportError as e:
+        sys.exit("Can't find the samba python modules: %s" % e)
+
+    if args.list:
+        list_tests()
+        return
+
+    user, sep, password = args.user.partition("%")
+    if not sep:
+        password = getpass.getpass()
+    domain = ""
+    for c in "\\/":
+        if c in user:
+            domain, user = user.split(c, 1)
+            break
+
+    # The tests load a client smb.conf and take the server's conf
+    # dir for global_inject.conf. Neither matters against a remote
+    # server, an empty file serves both.
+    confdir = tempfile.TemporaryDirectory(prefix="pysmbtest-")
+    conf = os.path.join(confdir.name, "smb.conf")
+    open(conf, "w").close()
+
+    env = {
+        "SERVER": server,
+        "SERVER_IP": server,
+        "DOMAIN": domain,
+        "USERNAME": user,
+        "PASSWORD": password,
+        "SMB_CONF_PATH": conf,
+        "SERVERCONFFILE": conf,
+    }
+    for var in SHARE_VARS:
+        env[var] = share
+    for e in args.env:
+        var, sep, value = e.partition("=")
+        if not sep:
+            parser.error("expected VAR=VALUE, got %s" % e)
+        env[var] = value
+
+    os.environ.update(env)
+
+    tests = []
+    for t in args.tests:
+        if not t.startswith("samba."):
+            t = "samba.tests." + t
+        tests.append(t)
+
+    prog = unittest.main(module=None,
+                         argv=[sys.argv[0], "-v"] + tests,
+                         exit=False)
+    confdir.cleanup()
+    sys.exit(not prog.result.wasSuccessful())
+
+
+if __name__ == "__main__":
+    main()
