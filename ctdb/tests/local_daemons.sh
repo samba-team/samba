@@ -13,7 +13,7 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 . "${TEST_SCRIPTS_DIR}/common.sh"
 
-if ! $CTDB_TESTS_ARE_INSTALLED ; then
+if ! $CTDB_TESTS_ARE_INSTALLED; then
 	hdir="$CTDB_SCRIPTS_HELPER_BINDIR"
 	export CTDB_EVENTD="${hdir}/ctdb-eventd"
 	export CTDB_EVENT_HELPER="${hdir}/ctdb-event"
@@ -26,30 +26,30 @@ fi
 ########################################
 
 # If the given IP is hosted then print 2 items: maskbits and iface
-have_ip ()
+have_ip()
 {
 	_addr="$1"
 
 	case "$_addr" in
 	*:*) _bits=128 ;;
-	*)   _bits=32  ;;
+	*) _bits=32 ;;
 	esac
 
 	_t=$(ip addr show to "${_addr}/${_bits}")
 	[ -n "$_t" ]
 }
 
-setup_nodes ()
+setup_nodes()
 {
 	_num_nodes="$1"
 	_use_ipv6="$2"
 
 	_have_all_ips=true
-	for _i in $(seq 0 $((_num_nodes - 1)) ) ; do
-		if $_use_ipv6 ; then
-			_j=$(printf "%04x" $((0x5f00 + 1 + _i)) )
+	for _i in $(seq 0 $((_num_nodes - 1))); do
+		if $_use_ipv6; then
+			_j=$(printf "%04x" $((0x5f00 + 1 + _i)))
 			_node_ip="fd00::5357:${_j}"
-			if have_ip "$_node_ip" ; then
+			if have_ip "$_node_ip"; then
 				echo "$_node_ip"
 			else
 				cat >&2 <<EOF
@@ -58,8 +58,8 @@ EOF
 				_have_all_ips=false
 			fi
 		else
-			_c=$(( _i / 100 ))
-			_d=$(( 1 + (_i % 100) ))
+			_c=$((_i / 100))
+			_d=$((1 + (_i % 100)))
 			echo "127.0.${_c}.${_d}"
 		fi
 	done
@@ -68,38 +68,38 @@ EOF
 	$_have_all_ips
 }
 
-setup_public_addresses ()
+setup_public_addresses()
 {
 	_num_nodes="$1"
 	_node_no_ips="$2"
 	_use_ipv6="$3"
 
-	for _i in $(seq 0 $((_num_nodes - 1)) ) ; do
-		if  [ "$_i" -eq "$_node_no_ips" ] ; then
+	for _i in $(seq 0 $((_num_nodes - 1))); do
+		if [ "$_i" -eq "$_node_no_ips" ]; then
 			continue
 		fi
 
 		# 2 public addresses on most nodes, just to make
 		# things interesting
-		if $_use_ipv6 ; then
+		if $_use_ipv6; then
 			printf 'fc00:10::1:%x/64 lo\n' $((1 + _i))
 			printf 'fc00:10::2:%x/64 lo\n' $((1 + _i))
 		else
-			_c1=$(( 100 + (_i / 100) ))
-			_c2=$(( 200 + (_i / 100) ))
-			_d=$(( 1 + (_i % 100) ))
+			_c1=$((100 + (_i / 100)))
+			_c2=$((200 + (_i / 100)))
+			_d=$((1 + (_i % 100)))
 			printf '192.168.%d.%d/24 lo\n' "$_c1" "$_d"
 			printf '192.168.%d.%d/24 lo\n' "$_c2" "$_d"
 		fi
 	done
 }
 
-setup_socket_wrapper ()
+setup_socket_wrapper()
 {
 	_socket_wrapper_so="$1"
 
 	_so="${directory}/libsocket-wrapper.so"
-	if [ ! -f "$_socket_wrapper_so" ] ; then
+	if [ ! -f "$_socket_wrapper_so" ]; then
 		die "$0 setup: Unable to find ${_socket_wrapper_so}"
 	fi
 
@@ -117,7 +117,7 @@ setup_socket_wrapper ()
 	mkdir -p "$_d"
 }
 
-local_daemons_setup_usage ()
+local_daemons_setup_usage()
 {
 	cat >&2 <<EOF
 $0 <directory> setup [ <options>... ]
@@ -137,7 +137,7 @@ EOF
 	exit 1
 }
 
-local_daemons_setup ()
+local_daemons_setup()
 {
 	_commented_config=""
 	_disable_failover=false
@@ -151,22 +151,24 @@ local_daemons_setup ()
 
 	set -e
 
-	while getopts "C:FN:n:P:Rr:S:6h?" _opt ; do
+	while getopts "C:FN:n:P:Rr:S:6h?" _opt; do
 		case "$_opt" in
-		C) _t="${_commented_config}${_commented_config:+|}"
-		   _commented_config="${_t}${OPTARG}"
-		   ;;
+		C)
+			_t="${_commented_config}${_commented_config:+|}"
+			_commented_config="${_t}${OPTARG}"
+			;;
 		F) _disable_failover=true ;;
 		N) _nodes_file="$OPTARG" ;;
 		n) _num_nodes="$OPTARG" ;;
 		P) _public_addresses_file="$OPTARG" ;;
 		R) _cluster_lock_use_command=true ;;
-		r) _cluster_lock_use_command=true
-		   _cluster_lock_recheck_interval="$OPTARG"
-		   ;;
+		r)
+			_cluster_lock_use_command=true
+			_cluster_lock_recheck_interval="$OPTARG"
+			;;
 		S) _socket_wrapper="$OPTARG" ;;
 		6) _use_ipv6=true ;;
-		\?|h) local_daemons_setup_usage ;;
+		\? | h) local_daemons_setup_usage ;;
 		esac
 	done
 	shift $((OPTIND - 1))
@@ -174,7 +176,7 @@ local_daemons_setup ()
 	mkdir -p "$directory"
 
 	_nodes_all="${directory}/nodes"
-	if [ -n "$_nodes_file" ] ; then
+	if [ -n "$_nodes_file" ]; then
 		cp "$_nodes_file" "$_nodes_all"
 	else
 		setup_nodes "$_num_nodes" $_use_ipv6 >"$_nodes_all"
@@ -183,50 +185,50 @@ local_daemons_setup ()
 	# If there are (strictly) greater than 2 nodes then we'll
 	# "randomly" choose a node to have no public addresses
 	_node_no_ips=-1
-	if [ "$_num_nodes" -gt 2 ] ; then
+	if [ "$_num_nodes" -gt 2 ]; then
 		_node_no_ips=$(($$ % _num_nodes))
 	fi
 
 	_public_addresses_all="${directory}/public_addresses"
-	if [ -n "$_public_addresses_file" ] ; then
+	if [ -n "$_public_addresses_file" ]; then
 		cp "$_public_addresses_file" "$_public_addresses_all"
 	else
 		setup_public_addresses "$_num_nodes" \
-				       $_node_no_ips \
-				       "$_use_ipv6" >"$_public_addresses_all"
+			$_node_no_ips \
+			"$_use_ipv6" >"$_public_addresses_all"
 	fi
 
 	_cluster_lock_dir="${directory}/shared/.ctdb"
 	mkdir -p "$_cluster_lock_dir"
 	_cluster_lock="${_cluster_lock_dir}/cluster.lock"
-	if $_cluster_lock_use_command ; then
+	if $_cluster_lock_use_command; then
 		_helper="${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb_mutex_fcntl_helper"
 		_t="! ${_helper} ${_cluster_lock}"
-		if [ -n "$_cluster_lock_recheck_interval" ] ; then
+		if [ -n "$_cluster_lock_recheck_interval" ]; then
 			_t="${_t} ${_cluster_lock_recheck_interval}"
 		fi
 		_cluster_lock="$_t"
 	fi
 
-	if [ -n "$_socket_wrapper" ] ; then
+	if [ -n "$_socket_wrapper" ]; then
 		setup_socket_wrapper "$_socket_wrapper"
 	fi
 
-	for _n in $(seq 0 $((_num_nodes - 1))) ; do
+	for _n in $(seq 0 $((_num_nodes - 1))); do
 		# CTDB_TEST_SUITE_DIR needs to be correctly set so
 		# setup_ctdb_base() finds the etc-ctdb/ subdirectory
 		# and the test event script is correctly installed
 		# shellcheck disable=SC2034
 		CTDB_TEST_SUITE_DIR="$CTDB_TEST_DIR" \
-			   setup_ctdb_base "$directory" "node.${_n}" \
-				functions notify.sh debug-hung-script.sh
+			setup_ctdb_base "$directory" "node.${_n}" \
+			functions notify.sh debug-hung-script.sh
 
 		cp "$_nodes_all" "${CTDB_BASE}/nodes"
 
 		_public_addresses="${CTDB_BASE}/public_addresses"
 
-		if  [ -z "$_public_addresses_file" ] && \
-			    [ "$_node_no_ips" -eq "$_n" ] ; then
+		if [ -z "$_public_addresses_file" ] &&
+			[ "$_node_no_ips" -eq "$_n" ]; then
 			echo "Node ${_n} will have no public IPs."
 			: >"$_public_addresses"
 		else
@@ -236,7 +238,7 @@ local_daemons_setup ()
 		_node_ip=$(sed -n -e "$((_n + 1))p" "$_nodes_all")
 
 		_db_dir="${CTDB_BASE}/db"
-		for _d in "volatile" "persistent" "state" ; do
+		for _d in "volatile" "persistent" "state"; do
 			mkdir -p "${_db_dir}/${_d}"
 		done
 
@@ -263,16 +265,16 @@ EOF
 
 		(
 			IFS='|'
-			for _c in $_commented_config ; do
+			for _c in $_commented_config; do
 				# Quote all backslashes due to double-quotes
 				sed -i -e "s|^\\t\\(${_c}\\) = |\\t# \\1 = |" \
-				    "${CTDB_BASE}/ctdb.conf"
+					"${CTDB_BASE}/ctdb.conf"
 			done
 		)
 	done
 }
 
-local_daemons_ssh_usage ()
+local_daemons_ssh_usage()
 {
 	cat >&2 <<EOF
 usage: $0 <directory> ssh [ -n ] <ip> <command>
@@ -281,51 +283,51 @@ EOF
 	exit 1
 }
 
-local_daemons_ssh ()
+local_daemons_ssh()
 {
-	if [ $# -lt 2 ] ; then
+	if [ $# -lt 2 ]; then
 		local_daemons_ssh_usage
 	fi
 
 	# Only try to respect ssh -n option, others can't be used so discard them
 	_close_stdin=false
-	while getopts "nh?" _opt ; do
+	while getopts "nh?" _opt; do
 		case "$_opt" in
 		n) _close_stdin=true ;;
-		\?|h) local_daemons_ssh_usage ;;
+		\? | h) local_daemons_ssh_usage ;;
 		*) : ;;
 		esac
 	done
 	shift $((OPTIND - 1))
 
-	if [ $# -lt 2 ] ; then
+	if [ $# -lt 2 ]; then
 		local_daemons_ssh_usage
 	fi
 
 	_nodes="${directory}/nodes"
 
 	# IP address of node. onnode can pass hostnames but not in these tests
-	_ip="$1" ; shift
+	_ip="$1"
+	shift
 	# "$*" is command
-
 
 	# Determine the correct CTDB base directory
 	_num=$(awk -v ip="$_ip" '$1 == ip { print NR }' "$_nodes")
 	_node=$((_num - 1))
 	export CTDB_BASE="${directory}/node.${_node}"
 
-	if [ ! -d "$CTDB_BASE" ] ; then
+	if [ ! -d "$CTDB_BASE" ]; then
 		die "$0 ssh: Unable to find base for node ${_ip}"
 	fi
 
-	if $_close_stdin ; then
+	if $_close_stdin; then
 		exec sh -c "$*" </dev/null
 	else
 		exec sh -c "$*"
 	fi
 }
 
-onnode_common ()
+onnode_common()
 {
 	# onnode will execute this, which fakes ssh against local daemons
 	export ONNODE_SSH="${0} ${directory} ssh"
@@ -334,7 +336,7 @@ onnode_common ()
 	export CTDB_BASE="$directory"
 }
 
-local_daemons_generic_usage ()
+local_daemons_generic_usage()
 {
 	cat >&2 <<EOF
 usage: $0 <directory> ${1} <nodes>
@@ -345,21 +347,21 @@ EOF
 	exit 1
 }
 
-local_daemons_start_socket_wrapper ()
+local_daemons_start_socket_wrapper()
 {
 	_so="${directory}/libsocket-wrapper.so"
 	_d="${directory}/sw"
 
-	if [ -d "$_d" ] && [ -f "$_so" ] ; then
+	if [ -d "$_d" ] && [ -f "$_so" ]; then
 		export SOCKET_WRAPPER_DIR="$_d"
 		export LD_PRELOAD="$_so"
 		export SOCKET_WRAPPER_DIR_ALLOW_ORIG="1"
 	fi
 }
 
-local_daemons_start ()
+local_daemons_start()
 {
-	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
 		local_daemons_generic_usage "start"
 	fi
 
@@ -372,9 +374,9 @@ local_daemons_start ()
 	onnode -i "$_nodes" "${VALGRIND:-} ctdbd"
 }
 
-local_daemons_stop ()
+local_daemons_stop()
 {
-	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
 		local_daemons_generic_usage "stop"
 	fi
 
@@ -388,7 +390,7 @@ local_daemons_stop ()
 		 fi"
 }
 
-local_daemons_onnode_usage ()
+local_daemons_onnode_usage()
 {
 	cat >&2 <<EOF
 usage: $0 <directory> onnode <nodes> <command>...
@@ -399,9 +401,9 @@ EOF
 	exit 1
 }
 
-local_daemons_onnode ()
+local_daemons_onnode()
 {
-	if [ $# -lt 2 ] || [ "$1" = "-h" ] ; then
+	if [ $# -lt 2 ] || [ "$1" = "-h" ]; then
 		local_daemons_onnode_usage
 	fi
 
@@ -413,9 +415,9 @@ local_daemons_onnode ()
 	onnode "$_nodes" "$@"
 }
 
-local_daemons_print_socket ()
+local_daemons_print_socket()
 {
-	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
 		local_daemons_generic_usage "print-socket"
 	fi
 
@@ -428,9 +430,9 @@ local_daemons_print_socket ()
 	onnode -q "$_nodes" "${VALGRIND:-} ${_path} socket ctdbd"
 }
 
-local_daemons_print_log ()
+local_daemons_print_log()
 {
-	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
 		local_daemons_generic_usage "print-log"
 	fi
 
@@ -442,13 +444,13 @@ local_daemons_print_log ()
 	# shellcheck disable=SC2016
 	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
 	onnode -q "$_nodes" 'cat ${CTDB_BASE}/log.ctdb' |
-	sort
+		sort
 
 }
 
-local_daemons_tail_log ()
+local_daemons_tail_log()
 {
-	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+	if [ $# -ne 1 ] || [ "$1" = "-h" ]; then
 		local_daemons_generic_usage "tail-log"
 	fi
 
@@ -463,7 +465,7 @@ local_daemons_tail_log ()
 	tail -f $(onnode -q "$_nodes" 'echo ${CTDB_BASE}/log.ctdb')
 }
 
-usage ()
+usage()
 {
 	cat <<EOF
 usage: $0 <directory> <command> [ <options>... ]
@@ -485,7 +487,7 @@ EOF
 	exit 1
 }
 
-if [ $# -lt 2 ] ; then
+if [ $# -lt 2 ]; then
 	usage
 fi
 
