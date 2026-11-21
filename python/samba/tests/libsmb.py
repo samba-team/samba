@@ -46,6 +46,17 @@ class LibsmbTests(samba.tests.TestCase):
         self.server = samba.tests.env_get_var_value("SERVER")
         self.server_ip = samba.tests.env_get_var_value("SERVER_IP")
 
+    def share_name(self, default):
+        """Share to connect to
+
+        The tests default to the shares selftest provides. Against
+        other servers, SHARENAME selects one share for all of them.
+        """
+        share = samba.tests.env_get_var_value("SHARENAME", allow_missing=True)
+        if not share:
+            share = default
+        return share
+
     def assertNoNTSTATUSError(self, fn, *args, **kwargs):
         """Call fn, turning an NTSTATUSError into a test failure."""
         try:

@@ -31,7 +31,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             smb1share = samba.tests.env_get_var_value(
                 "SMB1_SHARE", allow_missing=True)
             if not smb1share:
-                smb1share = "nosymlinks_smb1allow"
+                smb1share = self.share_name("nosymlinks_smb1allow")
 
         try:
             smb1 = libsmb.Conn(
@@ -49,7 +49,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             smb2share = samba.tests.env_get_var_value(
                 "SMB2_SHARE", allow_missing=True)
             if not smb2share:
-                smb2share = "nosymlinks"
+                smb2share = self.share_name("nosymlinks")
 
         smb2 = libsmb.Conn(
             self.server_ip,
@@ -222,7 +222,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
     def test_bug15505(self):
         """Test an absolute intermediate symlink inside the share"""
-        (smb1,smb2) = self.connections(smb1share="tmp",smb2share="tmp")
+        (smb1, smb2) = self.connections(smb1share=self.share_name("tmp"),
+                                        smb2share=self.share_name("tmp"))
         symlink="syml"
 
         localpath=samba.tests.env_get_var_value("LOCAL_PATH")
@@ -343,8 +344,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             smb1share = share
             smb2share = share
         else:
-            smb1share = "nosymlinks_smb1allow"
-            smb2share = "nosymlinks"
+            smb1share = self.share_name("nosymlinks_smb1allow")
+            smb2share = self.share_name("nosymlinks")
         smb2 = libsmb.Conn(self.server_ip, smb2share, self.lp, self.creds)
         lnkconn = self.symlink_conn(smb1share)
         symlink="syml"
@@ -393,8 +394,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             smb1share = share
             smb2share = share
         else:
-            smb1share = "nosymlinks_smb1allow"
-            smb2share = "nosymlinks"
+            smb1share = self.share_name("nosymlinks_smb1allow")
+            smb2share = self.share_name("nosymlinks")
         smb2 = libsmb.Conn(self.server_ip, smb2share, self.lp, self.creds)
         lnkconn = self.symlink_conn(smb1share)
         symlink = "syml"
@@ -448,10 +449,11 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         """Renaming a reparse point symlink keeps it a reparse point"""
         share = samba.tests.env_get_var_value(
             "SMB2_SHARE", allow_missing=True)
-        smb1share = share if share else "nosymlinks_smb1allow"
+        smb1share = share if share else self.share_name(
+            "nosymlinks_smb1allow")
         smb2 = libsmb.Conn(
             self.server_ip,
-            share if share else "nosymlinks",
+            share if share else self.share_name("nosymlinks"),
             self.lp,
             self.creds)
         smb1 = libsmb.Conn(
@@ -496,8 +498,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
                 self.skipTest("No POSIX symlinks on Windows")
             smb1share = share
         else:
-            share = "nosymlinks"
-            smb1share = "nosymlinks_smb1allow"
+            share = self.share_name("nosymlinks")
+            smb1share = self.share_name("nosymlinks_smb1allow")
         smb2 = libsmb.Conn(self.server_ip, share, self.lp, self.creds)
         if fsctl:
             lnkconn = smb2
@@ -722,7 +724,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         (smb2, symlink) = self.dir_symlink_setup(True)
         share = samba.tests.env_get_var_value(
             "SMB2_SHARE", allow_missing=True)
-        smb1share = share if share else "nosymlinks_smb1allow"
+        smb1share = share if share else self.share_name(
+            "nosymlinks_smb1allow")
         smb1 = libsmb.Conn(
             self.server_ip, smb1share, self.lp, self.creds, force_smb1=True)
         newname = symlink + "_renamed"
@@ -802,6 +805,8 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             "SMB2_SHARE", allow_missing=True)
         if share:
             smb1share = share
+        else:
+            smb1share = self.share_name(smb1share)
         smb1 = libsmb.Conn(
             self.server_ip, smb1share, self.lp, self.creds, force_smb1=True)
 

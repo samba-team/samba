@@ -55,7 +55,7 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
         c = libsmb.Conn(
             self.server_ip,
-            "tmp",
+            self.share_name("tmp"),
             self.lp,
             self.creds,
             multi_threaded=True,
@@ -80,7 +80,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
         self.creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
 
-        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("tmp"),
+                        self.lp,
+                        self.creds)
 
         c.mkdir(test_dir)
         c.rmdir(test_dir)
@@ -92,7 +95,7 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
         c = libsmb.Conn(
             self.server_ip,
-            "tmp",
+            self.share_name("tmp"),
             self.lp,
             self.creds,
             force_smb1=True)
@@ -104,8 +107,14 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
         dstdir = "\\dst-subdir"
 
-        c1 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
-        c2 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c1 = libsmb.Conn(self.server_ip,
+                         self.share_name("tmp"),
+                         self.lp,
+                         self.creds)
+        c2 = libsmb.Conn(self.server_ip,
+                         self.share_name("tmp"),
+                         self.lp,
+                         self.creds)
 
         try:
             c1.deltree(dstdir)
@@ -132,7 +141,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
             pass
 
     def test_libsmb_CreateContexts(self):
-        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("tmp"),
+                        self.lp,
+                        self.creds)
         cc_in = [(libsmb.SMB2_CREATE_TAG_MXAC, b'')]
         fnum,cr,cc = c.create_ex("",CreateContexts=cc_in)
         self.assertEqual(
@@ -147,7 +159,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         filename = "file"
         filepath = testdir + "/" + filename
 
-        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("tmp"),
+                        self.lp,
+                        self.creds)
 
         try:
             c.deltree(testdir)
@@ -200,7 +215,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         target differing only in case must replace the existing file,
         not create a second directory entry.
         """
-        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("tmp"),
+                        self.lp,
+                        self.creds)
         basedir = "test_rename_replace_case"
 
         try:
@@ -225,7 +243,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
             c.deltree(basedir)
 
     def test_libsmb_TortureDirCaseSensitive(self):
-        c = libsmb.Conn(self.server_ip, "lowercase", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("lowercase"),
+                        self.lp,
+                        self.creds)
         c.mkdir("subdir")
         c.mkdir("subdir/b")
         ret = c.chkpath("SubDir/b")
@@ -234,19 +255,28 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         self.assertTrue(ret)
 
     def test_libsmb_shadow_depot(self):
-        c = libsmb.Conn(self.server_ip, "shadow_depot", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("shadow_depot"),
+                        self.lp,
+                        self.creds)
         try:
             fnum = self.assertNoNTSTATUSError(
                 c.create, "x:y", CreateDisposition=libsmb.FILE_CREATE)
             self.assertNoNTSTATUSError(c.close, fnum)
         finally:
             # "c" might have crashed, get a new connection
-            c1 = libsmb.Conn(self.server_ip, "shadow_depot", self.lp, self.creds)
+            c1 = libsmb.Conn(self.server_ip,
+                             self.share_name("shadow_depot"),
+                             self.lp,
+                             self.creds)
             c1.unlink("x")
             c1 = None
 
     def test_gencache_pollution_bz15481(self):
-        c = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("tmp"),
+                        self.lp,
+                        self.creds)
         fh = c.create("file",
                       DesiredAccess=security.SEC_STD_DELETE,
                       CreateDisposition=libsmb.FILE_CREATE)
@@ -273,7 +303,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(directory[0]['name'], 'File')
 
     def test_stream_close_with_full_information(self):
-        c = libsmb.Conn(self.server_ip, "streams_xattr", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("streams_xattr"),
+                        self.lp,
+                        self.creds)
 
         try:
             c.deltree("teststreams")
@@ -296,7 +329,7 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         share = samba.tests.env_get_var_value(
             "SMB2_SHARE", allow_missing=True)
         if not share:
-            share = "streams_xattr"
+            share = self.share_name("streams_xattr")
         c = libsmb.Conn(self.server_ip, share, self.lp, self.creds)
         self.clean_file(c, name)
         self.addCleanup(self.clean_file, c, name)
@@ -384,7 +417,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         the rename syscall will still return ENAMETOOLONG. Handle that
         properly for the src filename to allow the base rename.
         """
-        c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("vfs_fruit"),
+                        self.lp,
+                        self.creds)
 
         srcname = "s" * 254
         dstname = "d" * 10
@@ -427,7 +463,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         driving the ._ sidecar over ENAMETOOLONG. Make sure that the
         base file rename did not happen at all.
         """
-        c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("vfs_fruit"),
+                        self.lp,
+                        self.creds)
 
         srcname = "s" * 10
         dstname = "d" * 254
@@ -468,7 +507,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
         EISDIR in the rename() syscall, which happens only after the
         sidecar rename has already succeeded.
         """
-        c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("vfs_fruit"),
+                        self.lp,
+                        self.creds)
 
         srcname = "datafile"
         dstname = "somefolder"
@@ -536,7 +578,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
                 pass
 
     def fruit_trailing_setup(self):
-        c = libsmb.Conn(self.server_ip, "vfs_fruit", self.lp, self.creds)
+        c = libsmb.Conn(self.server_ip,
+                        self.share_name("vfs_fruit"),
+                        self.lp,
+                        self.creds)
         testdir = "test_fruit_trailing_dot_space"
 
         try:
@@ -635,8 +680,14 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
                      libsmb.FILE_SHARE_WRITE |
                      libsmb.FILE_SHARE_DELETE)
 
-        c1 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
-        c2 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        c1 = libsmb.Conn(self.server_ip,
+                         self.share_name("tmp"),
+                         self.lp,
+                         self.creds)
+        c2 = libsmb.Conn(self.server_ip,
+                         self.share_name("tmp"),
+                         self.lp,
+                         self.creds)
 
         self.clean_file(c1, filename)
 
@@ -658,7 +709,10 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
             # A new connection gets a fresh smbd. It recreates the
             # share mode record, denying write access.
-            c3 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+            c3 = libsmb.Conn(self.server_ip,
+                             self.share_name("tmp"),
+                             self.lp,
+                             self.creds)
             f3 = c3.create(filename,
                            DesiredAccess=security.SEC_FILE_READ_DATA,
                            ShareAccess=libsmb.FILE_SHARE_READ)

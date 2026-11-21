@@ -46,13 +46,13 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             share1 = samba.tests.env_get_var_value(
                 "SHARE1", allow_missing=True)
             if not share1:
-                share1 = "tmp"
+                share1 = self.share_name("tmp")
 
         if not share2:
             share2 = samba.tests.env_get_var_value(
                 "SHARE2", allow_missing=True)
             if not share2:
-                share2 = "tmp"
+                share2 = self.share_name("tmp")
 
         conn1 = libsmb.Conn(
             self.server_ip,
@@ -73,7 +73,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_negotiate_context_posix(self):
         c = libsmb.Conn(
             self.server_ip,
-            "tmp",
+            self.share_name("tmp"),
             self.lp,
             self.creds,
             posix=True)
@@ -83,7 +83,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         with self.assertRaises(NTSTATUSError) as cm:
             c = libsmb.Conn(
                 self.server_ip,
-                "tmp",
+                self.share_name("tmp"),
                 self.lp,
                 self.creds,
                 negotiate_contexts=[(0x100, b'01234')])
@@ -94,7 +94,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_negotiate_context_posix_invalid_blob(self):
         c = libsmb.Conn(
             self.server_ip,
-            "tmp",
+            self.share_name("tmp"),
             self.lp,
             self.creds,
             negotiate_contexts=[(0x100, b'0123456789012345')])
@@ -103,7 +103,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_posix_create_context(self):
         c = libsmb.Conn(
             self.server_ip,
-            "tmp",
+            self.share_name("tmp"),
             self.lp,
             self.creds,
             posix=True)
@@ -118,7 +118,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_posix_create_invalid_context_length(self):
         c = libsmb.Conn(
             self.server_ip,
-            "tmp",
+            self.share_name("tmp"),
             self.lp,
             self.creds,
             posix=True)
@@ -137,7 +137,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         try:
             c = libsmb.Conn(
                 self.server_ip,
-                "smb3_posix_share",
+                self.share_name("smb3_posix_share"),
                 self.lp,
                 self.creds,
                 posix=True)
@@ -168,7 +168,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_posix_reserved_char(self):
         c = libsmb.Conn(
             self.server_ip,
-            "smb3_posix_share",
+            self.share_name("smb3_posix_share"),
             self.lp,
             self.creds,
             posix=True)
@@ -207,7 +207,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_posix_delete_on_close(self):
         c = libsmb.Conn(
             self.server_ip,
-            "smb3_posix_share",
+            self.share_name("smb3_posix_share"),
             self.lp,
             self.creds,
             posix=True)
@@ -225,7 +225,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         try:
             c = libsmb.Conn(
                 self.server_ip,
-                "smb3_posix_share",
+                self.share_name("smb3_posix_share"),
                 self.lp,
                 self.creds,
                 posix=True)
@@ -261,7 +261,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         try:
             c = libsmb.Conn(
                 self.server_ip,
-                "smb3_posix_share",
+                self.share_name("smb3_posix_share"),
                 self.lp,
                 self.creds,
                 posix=True)
@@ -349,7 +349,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
     def test_share_root_null_sids_fid(self):
         c = libsmb.Conn(
             self.server_ip,
-            "smb3_posix_share",
+            self.share_name("smb3_posix_share"),
             self.lp,
             self.creds,
             posix=True)
@@ -372,7 +372,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         try:
             c = libsmb.Conn(
                 self.server_ip,
-                "smb3_posix_share",
+                self.share_name("smb3_posix_share"),
                 self.lp,
                 self.creds,
                 posix=True)
@@ -434,7 +434,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         try:
             c = libsmb.Conn(
                 self.server_ip,
-                "smb3_posix_share",
+                self.share_name("smb3_posix_share"),
                 self.lp,
                 self.creds,
                 posix=True)

@@ -29,13 +29,13 @@ class OplockTests(samba.tests.libsmb.LibsmbTests):
 
     def test_get_oplock_break(self):
         holder = libsmb.Conn(self.server_ip,
-                             "tmp",
+                             self.share_name("tmp"),
                              self.lp,
                              self.creds,
                              multi_threaded=True,
                              force_smb1=True)
         other = libsmb.Conn(self.server_ip,
-                            "tmp",
+                            self.share_name("tmp"),
                             self.lp,
                             self.creds,
                             multi_threaded=True,

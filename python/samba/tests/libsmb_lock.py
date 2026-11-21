@@ -59,7 +59,7 @@ class LockTests:
     def setUp(self):
         super().setUp()
         self.conn = libsmb.Conn(self.server_ip,
-                                "tmp",
+                                self.share_name("tmp"),
                                 self.lp,
                                 self.creds,
                                 force_smb1=self.force_smb1)
@@ -168,11 +168,14 @@ class CrossProtocolLockTests(samba.tests.libsmb.LibsmbTests):
     def setUp(self):
         super().setUp()
         self.smb1 = libsmb.Conn(self.server_ip,
-                                "tmp",
+                                self.share_name("tmp"),
                                 self.lp,
                                 self.creds,
                                 force_smb1=True)
-        self.smb2 = libsmb.Conn(self.server_ip, "tmp", self.lp, self.creds)
+        self.smb2 = libsmb.Conn(self.server_ip,
+                                self.share_name("tmp"),
+                                self.lp,
+                                self.creds)
 
     def check_high_offset(self, fname, holder, other, deny_status):
         offset = 0x100000000
@@ -227,7 +230,7 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
     def setUp(self):
         super().setUp()
         self.conn = libsmb.Conn(self.server_ip,
-                                "posix_share",
+                                self.share_name("posix_share"),
                                 self.lp,
                                 self.creds,
                                 force_smb1=True)
@@ -304,7 +307,7 @@ class Smb1PosixLockTests(samba.tests.libsmb.LibsmbTests):
     def test_two_files_close_other_open(self):
         # With OFD locks fd_close_posix() ignores lock_ref_count
         conn = libsmb.Conn(self.server_ip,
-                           "posix_process_locks",
+                           self.share_name("posix_process_locks"),
                            self.lp,
                            self.creds,
                            force_smb1=True)

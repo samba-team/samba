@@ -26,7 +26,7 @@ class Smb1PosixTests(samba.tests.libsmb.LibsmbTests):
         """Test that in smb1 posix dirs are case sensitive"""
         conn = libsmb.Conn(
             self.server_ip,
-            "posix_share",
+            self.share_name("posix_share"),
             self.lp,
             self.creds,
             force_smb1=True)
@@ -51,7 +51,7 @@ class Smb1PosixTests(samba.tests.libsmb.LibsmbTests):
         """Test SMB1 posix mknod"""
         conn = libsmb.Conn(
             self.server_ip,
-            "posix_share",
+            self.share_name("posix_share"),
             self.lp,
             self.creds,
             force_smb1=True)

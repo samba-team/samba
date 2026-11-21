@@ -47,7 +47,9 @@ class NtaclResourceAttrAceTests(samba.tests.libsmb.LibsmbTests):
     def setUp(self):
         super().setUp()
         self.share = samba.tests.env_get_var_value("SHARE",
-                                                   allow_missing=True) or "tmp"
+                                                   allow_missing=True)
+        if not self.share:
+            self.share = self.share_name("tmp")
 
         # Use a user with SeSecurityPrivilege, so that we can set a
         # SACL

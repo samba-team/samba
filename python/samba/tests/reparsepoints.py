@@ -28,9 +28,7 @@ def posix_context(mode):
 class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
     def connection(self, posix=False):
-        share = samba.tests.env_get_var_value("SHARENAME", allow_missing=True)
-        if not share:
-            share = "tmp"
+        share = self.share_name("tmp")
         smb1 = samba.tests.env_get_var_value("SMB1", allow_missing=True)
         conn = libsmb.Conn(
             self.server_ip,
@@ -42,9 +40,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         return conn
 
     def connection_posix(self):
-        share = samba.tests.env_get_var_value("SHARENAME", allow_missing=True)
-        if not share:
-            share = "posix_share"
+        share = self.share_name("posix_share")
         conn = libsmb.Conn(
             self.server_ip,
             share,
