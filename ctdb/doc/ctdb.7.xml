@@ -1129,6 +1129,25 @@ correct CIFS semantics to clients.
 
   </refsect1>
 
+  <refsect1>
+    <title>UPGRADING CTDB</title>
+    <para>
+      When upgrading CTDB on an individual node, stop CTDB on that
+      node before installing a new version, then start it again.
+      Installing a new version while CTDB is running is not supported:
+      running daemons may run helpers and scripts from the new
+      version, which may be installed in different places or behave
+      differently.
+    </para>
+
+    <para>
+      Online upgrade (e.g. one node at a time) of clustered Samba
+      (with CTDB) is supported when upgrading from Samba 4.25.0 or
+      later.  See the <command>clusterlevel</command> subcommand of
+      the <citerefentry><refentrytitle>net</refentrytitle>
+      <manvolnum>8</manvolnum></citerefentry> command for details.
+    </para>
+  </refsect1>
 
   <refsect1>
     <title>SEE ALSO</title>
@@ -1145,6 +1164,9 @@ correct CIFS semantics to clients.
 
       <citerefentry><refentrytitle>ltdbtool</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>net</refentrytitle>
+      <manvolnum>8</manvolnum></citerefentry>,
 
       <citerefentry><refentrytitle>onnode</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
