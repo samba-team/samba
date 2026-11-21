@@ -331,6 +331,19 @@ static void eventd_dead_handler(struct tevent_context *ev,
 	exit(1);
 }
 
+void ctdb_eventd_child_close(struct ctdb_context *ctdb)
+{
+	if (ctdb->ectx == NULL) {
+		return;
+	}
+
+	/*
+	 * ctdb_fork() frees the event context, but that leaves the
+	 * socket open.  Freeing the fd event closes it.
+	 */
+	TALLOC_FREE(ctdb->ectx->eventd_fde);
+}
+
 void ctdb_stop_eventd(struct ctdb_context *ctdb)
 {
 	struct eventd_context *ectx = ctdb->ectx;

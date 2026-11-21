@@ -1029,6 +1029,7 @@ int32_t ctdb_control_vacuum_fetch(struct ctdb_context *ctdb, TDB_DATA indata);
 /* from eventscript.c */
 
 int ctdb_start_eventd(struct ctdb_context *ctdb);
+void ctdb_eventd_child_close(struct ctdb_context *ctdb);
 void ctdb_stop_eventd(struct ctdb_context *ctdb);
 
 int ctdb_event_script_callback(struct ctdb_context *ctdb,

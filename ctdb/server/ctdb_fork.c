@@ -83,6 +83,12 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 		if (ctdb->methods != NULL && ctdb->methods->shutdown != NULL) {
 			ctdb->methods->shutdown(ctdb);
 		}
+		/*
+		 * The event daemon notices this process exiting when
+		 * its end of the socket is closed, so children must
+		 * not hold it open
+		 */
+		ctdb_eventd_child_close(ctdb);
 
 		/* The child does not need to be realtime */
 		if (ctdb->do_setsched) {
