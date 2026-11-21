@@ -85,6 +85,13 @@ WRITER OK
 EOF
 	unit_test tmon_test "....." false 3 false
 
+	test_case "no packets for 5s, 3s timeout, then write fails"
+	ok <<EOF
+READER ERR=$etimedout
+WRITER ERR=$epipe
+EOF
+	unit_test tmon_test ".....!" false 3 false
+
 	test_case "no packets for 5s, 3s timeout, timeout ok"
 	ok <<EOF
 READER OK

@@ -111,10 +111,11 @@ static int test_write_callback(void *private_data, struct tmon_pkt *pkt)
 	 * rather than writing extra test code and test cases.
 	 */
 
-	status = tmon_write(state->req, pkt);
-	if (!status) {
-		return EIO;
-	}
+	/*
+	 * A failed tmon_write() completes the request with its error,
+	 * so don't return a different one
+	 */
+	(void)tmon_write(state->req, pkt);
 
 	return TMON_STATUS_SKIP;
 }
@@ -152,6 +153,12 @@ static struct tevent_req *test_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, test_tmon_done, req);
+	/*
+	 * In write-skip mode, a failed tmon_write() completes the
+	 * request from within the write callback.  Freeing it there
+	 * would leave tmon's write loop using a freed request.
+	 */
+	tevent_req_defer_callback(subreq, ev);
 
 	/* Nasty hack, but OK to cheapen testing - see test_write_callback() */
 	state->req = subreq;
@@ -334,6 +341,9 @@ static void test(const char *write_data,
 
 	/* Parent */
 	close(fd[0]);
+
+	/* Writing after the reader has exited fails with EPIPE */
+	signal(SIGPIPE, SIG_IGN);
 
 	req = test_write_send(mem_ctx,
 			      ev,
