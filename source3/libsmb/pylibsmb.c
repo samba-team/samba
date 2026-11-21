@@ -1473,6 +1473,26 @@ fail:
 	return result;
 }
 
+static PyObject *py_basic_info_pack(PyObject *module,
+				    PyObject *args,
+				    PyObject *kwds)
+{
+	static const char *kwlist[] = {"attributes", NULL};
+	struct timespec omit = make_omit_timespec();
+	unsigned int attr = 0;
+	uint8_t buf[40];
+	bool ok;
+
+	ok = ParseTupleAndKeywords(args, kwds, "I", kwlist, &attr);
+	if (!ok) {
+		return NULL;
+	}
+
+	prep_basic_information_buf(buf, omit, omit, omit, omit, attr);
+
+	return PyBytes_FromStringAndSize((char *)buf, sizeof(buf));
+}
+
 static PyObject *py_cli_qfileinfo(struct py_cli_state *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -3882,6 +3902,16 @@ static PyMethodDef py_libsmb_methods[] = {
 		"afpinfo_pack(finder_info) -> bytes\n\n"
 		"\t\tPack an AfpInfo structure for the AFP_AfpInfo "
 		"stream with a caller supplied 32 byte Finder Info blob.",
+	},
+	{
+		"basic_info_pack",
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_basic_info_pack),
+		METH_VARARGS | METH_KEYWORDS,
+		"basic_info_pack(attributes) -> bytes\n\n"
+		"\t\tPack FILE_BASIC_INFORMATION for sfileinfo(), leaving "
+		"all timestamps unchanged.\n"
+		"\t\tLike cli_setfileinfo_ext(), 0 clears all attributes, "
+		"FILE_ATTRIBUTE_NORMAL leaves them unchanged.",
 	},
 	{0},
 };

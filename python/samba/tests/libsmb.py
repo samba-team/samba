@@ -25,7 +25,6 @@ from samba import (ntstatus,NTSTATUSError)
 import samba.tests
 import os
 import stat
-import struct
 
 class LibsmbTests(samba.tests.TestCase):
 
@@ -79,12 +78,11 @@ class LibsmbTests(samba.tests.TestCase):
             CreateDisposition=libsmb.FILE_OPEN,
             DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE)
 
-        blob = struct.pack("<QQQQII", 0, 0, 0, 0,
-                           libsmb.FILE_ATTRIBUTE_NORMAL, 0)
+        # 0 clears all attributes, sent as FILE_ATTRIBUTE_NORMAL
         conn.sfileinfo(h,
                        libsmb.SMB2_0_INFO_FILE,
                        libsmb.FSCC_FILE_BASIC_INFORMATION,
-                       blob)
+                       libsmb.basic_info_pack(0))
         conn.close(h)
         self.clean_file(conn, filename, retry=False)
 

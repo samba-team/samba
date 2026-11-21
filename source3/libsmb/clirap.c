@@ -539,13 +539,12 @@ NTSTATUS cli_oem_change_password(struct cli_state *cli,
 	return status;
 }
 
-static void prep_basic_information_buf(
-	uint8_t buf[40],
-	struct timespec create_time,
-	struct timespec access_time,
-	struct timespec write_time,
-	struct timespec change_time,
-	uint32_t attr)
+void prep_basic_information_buf(uint8_t buf[40],
+				struct timespec create_time,
+				struct timespec access_time,
+				struct timespec write_time,
+				struct timespec change_time,
+				uint32_t attr)
 {
 	char *p = (char *)buf;
 	/*

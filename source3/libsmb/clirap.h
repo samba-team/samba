@@ -43,6 +43,12 @@ NTSTATUS cli_oem_change_password(struct cli_state *cli,
 				 const char *user,
 				 const char *new_password,
 				 const char *old_password);
+void prep_basic_information_buf(uint8_t buf[40],
+				struct timespec create_time,
+				struct timespec access_time,
+				struct timespec write_time,
+				struct timespec change_time,
+				uint32_t attr);
 NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 			     struct timespec create_time,
 			     struct timespec access_time,
