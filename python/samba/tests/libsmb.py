@@ -74,7 +74,7 @@ class LibsmbTests(samba.tests.TestCase):
 
         # Reset READ-ONLY attribute so we can delete the file
         h,_,_ = conn.create_ex(
-            'test_delete_read_only_attr',
+            filename,
             CreateDisposition=libsmb.FILE_OPEN,
             DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE)
 
