@@ -171,7 +171,10 @@ send_notifies()
 		# Write the state as a host order 32-bit integer.  See
 		# note at top of function about state.
 		_out="${_sip_dir}/state"
-		"$_helper" "state" "$_state" >"$_out"
+		if ! "$_helper" "state" "$_state" >"$_out"; then
+			rm -rf "$_sip_dir"
+			continue
+		fi
 
 		# The ownership of the directory and contents should
 		# match the system's statd sm directory, so that
