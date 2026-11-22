@@ -50,6 +50,7 @@ static void print_monitor_line(const char *client_ip,
 static void print_state(const char *state_str)
 {
 	int state = atoi(state_str);
+	ssize_t count = 0;
 
 	/*
 	 * Uncomplicated binary output.  sm-notify just reads this as
@@ -57,7 +58,11 @@ static void print_state(const char *state_str)
 	 * created in a local temporary directory and is consumed by
 	 * sm-notify locally, so no inter-node endianness issues.
 	 */
-	sys_write(STDOUT_FILENO, &state, sizeof(state));
+	count = sys_write_full(STDOUT_FILENO, &state, sizeof(state));
+	if (count == -1) {
+		perror("failed to print state");
+		exit(1);
+	}
 }
 
 static void usage(const char *prog)
