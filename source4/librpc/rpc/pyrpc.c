@@ -43,7 +43,13 @@ static PyTypeObject *ndr_syntax_id_Type;
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 {
 	NTSTATUS status;
-	status = GUID_from_string(PyUnicode_AsUTF8(object), uuid);
+	const char *guid_string = PyUnicode_AsUTF8(object);
+
+	if (guid_string == NULL) {
+		return false;
+	}
+
+	status = GUID_from_string(guid_string, uuid);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS(status);
 		return false;
@@ -258,6 +264,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	PyObject *ret;
 	PyObject *object = NULL;
 	struct GUID object_guid;
+	bool object_present = false;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	uint32_t out_flags = 0;
 	const char *kwnames[] = { "opnum", "data", "object", NULL };
@@ -273,13 +280,15 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 
 	ZERO_STRUCT(data_out);
 
-	if (object != NULL && !PyString_AsGUID(object, &object_guid)) {
+	object_present = (object != NULL && object != Py_None);
+	if (object_present && !PyString_AsGUID(object, &object_guid)) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	status = dcerpc_binding_handle_raw_call(iface->binding_handle,
-						object?&object_guid:NULL,
+						object_present ? &object_guid
+							       : NULL,
 						opnum,
 						0, /* in_flags */
 						data_in.data,

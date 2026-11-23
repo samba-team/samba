@@ -55,6 +55,10 @@ class RpcEchoTests(RpcInterfaceTestCase):
     def test_manual_request(self):
         self.assertEqual(b"\x01\x00\x00\x00", self.conn.request(0, chr(0) * 4))
 
+    def test_manual_request_object_none(self):
+        self.assertEqual(b"\x01\x00\x00\x00",
+                         self.conn.request(0, chr(0) * 4, object=None))
+
     def test_server_name(self):
         self.assertEqual(None, self.conn.server_name)
 
