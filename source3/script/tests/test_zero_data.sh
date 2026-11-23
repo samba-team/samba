@@ -4,9 +4,9 @@
 #
 # Copyright (C) 2019 Christof Schmitt
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 5 ]; then
 	cat <<EOF
-Usage: test_zero_data.sh SERVER_IP USERNAME PASSWORD LOCAL_PATH
+Usage: test_zero_data.sh SERVER_IP USERNAME PASSWORD LOCAL_PATH SMBCLIENT
 EOF
 	exit 1
 fi
@@ -15,6 +15,7 @@ SERVER=${1}
 USERNAME=${2}
 PASSWORD=${3}
 LOCAL_PATH=${4}
+SMBCLIENT=${5}
 
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 failed=0
@@ -48,6 +49,21 @@ testit "zero-data" $VALGRIND $BINDIR/smbtorture //$SERVER_IP/tmp \
 
 alloc_kb=$(du -k $TESTDIR/testfile | sed -e 's/\t.*//')
 testit "check allocation after zero-data" test $alloc_kb -eq 0 ||
+	failed=$(expr $failed + 1)
+
+#
+# Delete via smbd, not just locally: The share stores DOS attributes
+# in xattr_tdb, keyed by device and inode. A local rm leaves the
+# FILE_ATTRIBUTE_SPARSE record behind, a later file reusing the inode
+# number would inherit it.
+#
+cleanup()
+{
+	$VALGRIND $SMBCLIENT //$SERVER_IP/tmp -U$USERNAME%$PASSWORD \
+		-c 'del zero_data/testfile; rmdir zero_data'
+}
+
+testit "cleanup" cleanup ||
 	failed=$(expr $failed + 1)
 
 rm -rf $TESTDIR

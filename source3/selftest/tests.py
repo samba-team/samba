@@ -831,7 +831,8 @@ for env in ["fileserver"]:
 		'$SERVER', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3, smbcontrol])
     plantestsuite("samba3.blackbox.zero-data", env,
                   [os.path.join(samba3srcdir, "script/tests/test_zero_data.sh"),
-                   '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH'])
+                   '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH',
+                   smbclient3])
     plantestsuite("samba3.blackbox.timestamps", env,
                   [os.path.join(samba3srcdir, "script/tests/test_timestamps.sh"),
                    '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3])
