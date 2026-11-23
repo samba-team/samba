@@ -6240,10 +6240,14 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
+	/*
+	 * Like reply_unlink(), remove a symlink, not its target.
+	 * create_file_unixpath() opens a directory symlink itself.
+	 */
 	status = filename_convert_dirfsp(ctx,
 					 conn,
 					 directory,
-					 ucf_flags,
+					 ucf_flags | UCF_LCOMP_LNK_OK,
 					 twrp,
 					 &dirfsp,
 					 &smb_dname);
