@@ -32,8 +32,38 @@ share_test_dir="$LOCAL_PATH"
 
 rm -rf "$share_test_dir/testdir"
 
-mkdir -p "$share_test_dir/testdir/dir"
-touch "$share_test_dir/testdir/file"
+#
+# Create the directories and the file via smbd, not locally: The share
+# stores DOS attributes in xattr_tdb, keyed by device and inode. A
+# locally created file can inherit a stale record left behind by an
+# earlier test for a file that had the same inode number. Clear
+# FILE_ATTRIBUTE_ARCHIVE that the SMB create sets, the symlink is
+# expected to show up as 'N'.
+#
+emptyfile="$PREFIX/symlink_dosmode_empty"
+touch "$emptyfile"
+
+smbclient_cmds()
+{
+	$SMBCLIENT -U"$USERNAME%$PASSWORD" "//$SERVER/local_symlinks" \
+		-I"$SERVER_IP" -c "$1"
+}
+
+create_testdir()
+{
+	smbclient_cmds "mkdir testdir; mkdir testdir/dir; \
+put $emptyfile testdir/file; setmode testdir/file -a"
+}
+
+remove_testdir()
+{
+	smbclient_cmds "del testdir/file; rmdir testdir/dir; rmdir testdir"
+}
+
+testit "create testdir" create_testdir ||
+	failed=$((failed + 1))
+rm -f "$emptyfile"
+
 ln -s "../file" "$share_test_dir/testdir/dir/symlink"
 
 test_symlink_dosmode()
@@ -67,6 +97,14 @@ EOF
 
 testit "symlink_dosmode" \
 	test_symlink_dosmode ||
+	failed=$((failed + 1))
+
+#
+# Remove the symlink locally, the rest via smbd so that xattr_tdb
+# drops its records.
+#
+rm -f "$share_test_dir/testdir/dir/symlink"
+testit "remove testdir" remove_testdir ||
 	failed=$((failed + 1))
 
 rm -rf "$share_test_dir/testdir"
