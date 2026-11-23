@@ -1135,7 +1135,18 @@ done:
 			     fsp_get_smb2_lease(smb_fname->fsp));
 	}
 	if (ret == 0) {
+		struct files_struct *mfsp = metadata_fsp(smb_fname->fsp);
+
 		smb_fname->st.st_ex_mode = unixmode;
+
+		if (mfsp != smb_fname->fsp) {
+			/*
+			 * We wrote the attributes of the base file, its
+			 * cached copy is stale now.
+			 */
+			mfsp->fsp_name->st.cached_dos_attributes =
+				FILE_ATTRIBUTE_INVALID;
+		}
 	}
 
 	return( ret );
