@@ -962,6 +962,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		smb_fname = cp_smb_filename(mem_ctx,
 					    smb_fname_rel->fsp->fsp_name);
 		if (smb_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 		status = move_smb_fname_fsp_link(smb_fname, smb_fname_rel);
@@ -1002,6 +1003,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		smb_fname = cp_smb_filename(mem_ctx,
 					    smb_fname_rel->fsp->fsp_name);
 		if (smb_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 		status = move_smb_fname_fsp_link(smb_fname, smb_fname_rel);
