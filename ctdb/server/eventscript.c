@@ -352,11 +352,27 @@ void ctdb_stop_eventd(struct ctdb_context *ctdb)
 		return;
 	}
 
-	TALLOC_FREE(ectx->eventd_fde);
+	/*
+	 * Send SIGTERM and allow the event daemon to exit before
+	 * closing the socket.  Otherwise, it can notice the socket
+	 * closing first and log that this process has gone away.
+	 * The event loop is not run here, so eventd_dead_handler()
+	 * can not be called.
+	 */
 	if (ectx->eventd_pid != -1) {
+		int i;
+
 		kill(ectx->eventd_pid, SIGTERM);
+		for (i = 0; i < 100; i++) {
+			pid_t pid = waitpid(ectx->eventd_pid, NULL, WNOHANG);
+			if (pid != 0) {
+				break;
+			}
+			usleep(10000);
+		}
 		ectx->eventd_pid = -1;
 	}
+	TALLOC_FREE(ectx->eventd_fde);
 	TALLOC_FREE(ctdb->ectx);
 }
 
