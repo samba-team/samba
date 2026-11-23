@@ -747,8 +747,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		&fname_rel,
 		&streamname);
 	if (!ok) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+		goto nomem;
 	}
 
 	if ((streamname != NULL) &&
@@ -869,8 +868,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		twrp,
 		posix ? SMB_FILENAME_POSIX_PATH : 0);
 	if (smb_fname_rel == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+		goto nomem;
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS) &&
@@ -943,8 +941,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		smb_fname = full_path_from_dirfsp_atname(
 			mem_ctx, smb_dirname->fsp, smb_fname_rel);
 		if (smb_fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
+			goto nomem;
 		}
 		goto done;
 	}
@@ -962,8 +959,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		smb_fname = cp_smb_filename(mem_ctx,
 					    smb_fname_rel->fsp->fsp_name);
 		if (smb_fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
+			goto nomem;
 		}
 		status = move_smb_fname_fsp_link(smb_fname, smb_fname_rel);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1003,8 +999,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		smb_fname = cp_smb_filename(mem_ctx,
 					    smb_fname_rel->fsp->fsp_name);
 		if (smb_fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
+			goto nomem;
 		}
 		status = move_smb_fname_fsp_link(smb_fname, smb_fname_rel);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1023,8 +1018,7 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 		smb_fname = full_path_from_dirfsp_atname(
 			mem_ctx, smb_dirname->fsp, smb_fname_rel);
 		if (smb_fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
+			goto nomem;
 		}
 		/*
 		 * When open_stream_pathref_fsp() returns
@@ -1052,6 +1046,8 @@ done:
 	*_smb_fname_rel = smb_fname_rel;
 	return NT_STATUS_OK;
 
+nomem:
+	status = NT_STATUS_NO_MEMORY;
 fail:
 	*_symlink_err = symlink_err;
 
