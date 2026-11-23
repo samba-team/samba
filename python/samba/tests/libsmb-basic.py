@@ -291,6 +291,91 @@ class LibsmbTestCase(samba.tests.libsmb.LibsmbTests):
 
         c.deltree("teststreams")
 
+    def stream_attr_setup(self, name):
+        # SMB2_SHARE to run against Windows
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        if not share:
+            share = "streams_xattr"
+        c = libsmb.Conn(self.server_ip, share, self.lp, self.creds)
+        self.clean_file(c, name)
+        self.addCleanup(self.clean_file, c, name)
+
+        # Create the stream first, creating it sets ARCHIVE
+        fh = c.create(name + ":s",
+                      DesiredAccess=security.SEC_FILE_WRITE_DATA,
+                      CreateDisposition=libsmb.FILE_CREATE)
+        c.close(fh)
+
+        fh = c.create(name,
+                      DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE)
+        c.sfileinfo(fh,
+                    libsmb.SMB2_0_INFO_FILE,
+                    libsmb.FSCC_FILE_BASIC_INFORMATION,
+                    libsmb.basic_info_pack(0))
+        c.close(fh)
+
+        sh = c.create(name + ":s",
+                      DesiredAccess=(security.SEC_FILE_WRITE_DATA |
+                                     security.SEC_FILE_WRITE_ATTRIBUTE))
+        self.addCleanup(c.close, sh)
+
+        return (c, sh)
+
+    def base_file_attributes(self, c, name):
+        (fh, cr, _) = c.create_ex(
+            name,
+            DesiredAccess=security.SEC_FILE_READ_ATTRIBUTE,
+            ShareAccess=(libsmb.FILE_SHARE_READ |
+                         libsmb.FILE_SHARE_WRITE |
+                         libsmb.FILE_SHARE_DELETE))
+        c.close(fh)
+        return cr['file_attributes'] & (libsmb.FILE_ATTRIBUTE_HIDDEN |
+                                        libsmb.FILE_ATTRIBUTE_ARCHIVE)
+
+    def test_stream_write_then_clear_attributes(self):
+        """Clearing ARCHIVE after a stream write clears it on the base"""
+        name = "stream_write_clear_attr.txt"
+        (c, sh) = self.stream_attr_setup(name)
+
+        # Samba sets ARCHIVE on the base file right away, Windows
+        # doesn't while the handle is open
+        c.write(sh, b"x", 0)
+
+        self.assertNoNTSTATUSError(
+            c.sfileinfo,
+            sh,
+            libsmb.SMB2_0_INFO_FILE,
+            libsmb.FSCC_FILE_BASIC_INFORMATION,
+            libsmb.basic_info_pack(0))
+        self.assertEqual(self.base_file_attributes(c, name), 0)
+
+    def test_stream_set_write_set_attributes(self):
+        """Setting attributes before and after a stream write"""
+        name = "stream_set_write_set_attr.txt"
+        (c, sh) = self.stream_attr_setup(name)
+        hidden = libsmb.basic_info_pack(libsmb.FILE_ATTRIBUTE_HIDDEN)
+
+        self.assertNoNTSTATUSError(
+            c.sfileinfo,
+            sh,
+            libsmb.SMB2_0_INFO_FILE,
+            libsmb.FSCC_FILE_BASIC_INFORMATION,
+            hidden)
+
+        # Samba adds ARCHIVE on the base file right away, Windows
+        # doesn't while the handle is open
+        c.write(sh, b"x", 0)
+
+        self.assertNoNTSTATUSError(
+            c.sfileinfo,
+            sh,
+            libsmb.SMB2_0_INFO_FILE,
+            libsmb.FSCC_FILE_BASIC_INFORMATION,
+            hidden)
+        self.assertEqual(self.base_file_attributes(c, name),
+                         libsmb.FILE_ATTRIBUTE_HIDDEN)
+
     def test_fruit_rename_long_to_short_name(self):
         """
         Test renaming a long src name to a short one where the
