@@ -775,6 +775,112 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         """RemoveDirectory on a reparse point directory symlink"""
         self.check_directory_symlink_rmdir(True)
 
+    def smb1_delete_directory_symlink(self, fsctl, smb1share, rmdir):
+        """Delete a directory symlink with SMBunlink or SMBrmdir
+
+        Returns the status of the delete and whether the link and
+        the file in the target directory still exist. Against
+        Windows set SYMLINK_VIA_FSCTL=1 and SMB2_SHARE, SMB1 has to
+        be enabled on the server.
+        """
+        (smb2, symlink) = self.dir_symlink_setup(fsctl)
+
+        # A file symlink would behave differently, see
+        # SYMLINK_VIA_FSCTL in dir_symlink_setup()
+        (fd, cr, _) = smb2.create_ex(
+            symlink,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+            CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+        smb2.close(fd)
+        self.assertEqual(
+            cr['file_attributes'] & libsmb.FILE_ATTRIBUTE_DIRECTORY,
+            libsmb.FILE_ATTRIBUTE_DIRECTORY,
+            "Not a directory symlink, against Windows set "
+            "SYMLINK_VIA_FSCTL=1")
+
+        share = samba.tests.env_get_var_value(
+            "SMB2_SHARE", allow_missing=True)
+        if share:
+            smb1share = share
+        smb1 = libsmb.Conn(
+            self.server_ip, smb1share, self.lp, self.creds, force_smb1=True)
+
+        status = 0
+        try:
+            if rmdir:
+                smb1.rmdir(symlink)
+            else:
+                smb1.unlink(symlink)
+        except NTSTATUSError as e:
+            status = e.args[0]
+
+        link_exists = True
+        try:
+            fd = smb2.create(symlink,
+                             DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE,
+                             CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT)
+            smb2.close(fd)
+        except NTSTATUSError as e:
+            if e.args[0] != ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND:
+                raise
+            link_exists = False
+
+        target_exists = True
+        try:
+            fd = smb2.create("tdir\\f")
+            smb2.close(fd)
+        except NTSTATUSError as e:
+            if e.args[0] != ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND:
+                raise
+            target_exists = False
+
+        return (status, link_exists, target_exists)
+
+    def check_directory_symlink_smb1_unlink(self, fsctl, smb1share):
+        result = self.smb1_delete_directory_symlink(
+            fsctl, smb1share, rmdir=False)
+        # Like DeleteFile on NTFS: a directory link is no file
+        self.assertEqual(
+            result,
+            (ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY, True, True),
+            "(status, link exists, target exists)")
+
+    def check_directory_symlink_smb1_rmdir(self, fsctl, smb1share):
+        result = self.smb1_delete_directory_symlink(
+            fsctl, smb1share, rmdir=True)
+        # Like RemoveDirectory on NTFS: the link goes, the
+        # (non-empty) target stays
+        self.assertEqual(
+            result,
+            (0, False, True),
+            "(status, link exists, target exists)")
+
+    def test_directory_symlink_smb1_unlink(self):
+        """SMB1 unlink of a POSIX directory symlink fails"""
+        self.check_directory_symlink_smb1_unlink(False, "nosymlinks")
+
+    def test_directory_symlink_smb1_unlink_follow(self):
+        """SMB1 unlink of a POSIX directory symlink fails, following"""
+        self.check_directory_symlink_smb1_unlink(
+            False, "nosymlinks_smb1allow")
+
+    def test_directory_symlink_smb1_unlink_fsctl(self):
+        """SMB1 unlink of a reparse point directory symlink fails"""
+        self.check_directory_symlink_smb1_unlink(True, "nosymlinks")
+
+    def test_directory_symlink_smb1_rmdir(self):
+        """SMB1 rmdir removes a POSIX directory symlink"""
+        self.check_directory_symlink_smb1_rmdir(False, "nosymlinks")
+
+    def test_directory_symlink_smb1_rmdir_follow(self):
+        """SMB1 rmdir removes a POSIX directory symlink, following"""
+        self.check_directory_symlink_smb1_rmdir(
+            False, "nosymlinks_smb1allow")
+
+    def test_directory_symlink_smb1_rmdir_fsctl(self):
+        """SMB1 rmdir removes a reparse point directory symlink"""
+        self.check_directory_symlink_smb1_rmdir(True, "nosymlinks")
+
     def check_directory_symlink_invalid_disposition(self, fsctl):
         (smb2, symlink) = self.dir_symlink_setup(fsctl)
 
