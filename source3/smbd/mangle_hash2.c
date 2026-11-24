@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    new hash based name mangling implementation
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Simo Sorce 2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -41,7 +41,7 @@
 
   This file deliberately uses non-multibyte string functions in many places. This
   is *not* a mistake. This code is multi-byte safe, but it gets this property
-  through some very subtle knowledge of the way multi-byte strings are encoded 
+  through some very subtle knowledge of the way multi-byte strings are encoded
   and the fact that this mangling algorithm only supports ascii characters in
   8.3 names.
 
@@ -269,9 +269,9 @@ static const uint8_t base_reverse[256] = {
 
 #endif /* DYNAMIC_MANGLE_TABLES */
 
-/* 
+/*
    hash a string of the specified length. The string does not need to be
-   null terminated 
+   null terminated
 
    this hash needs to be fast with a low collision rate (what hash doesn't?)
 */
@@ -301,7 +301,7 @@ static unsigned int mangle_hash(const char *key, unsigned int length)
 
 	/* note that we force it to a 31 bit hash, to keep within the limits
 	   of the 36^6 mangle space */
-	return value & ~0x80000000;  
+	return value & ~0x80000000;
 }
 
 /*
@@ -340,12 +340,12 @@ static char *cache_lookup(TALLOC_CTX *mem_ctx, unsigned int hash)
 }
 
 
-/* 
+/*
    determine if a string is possibly in a mangled format, ignoring
-   case 
+   case
 
    In this algorithm, mangled names use only pure ascii characters (no
-   multi-byte) so we can avoid doing a UCS2 conversion 
+   multi-byte) so we can avoid doing a UCS2 conversion
  */
 static bool is_mangled_component(const char *name, size_t len)
 {
@@ -371,14 +371,14 @@ static bool is_mangled_component(const char *name, size_t len)
 			}
 		}
 	}
-	
+
 	/* check lead characters */
 	for (i=0;i<mangle_prefix;i++) {
 		if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
 			return False;
 		}
 	}
-	
+
 	/* check rest of hash */
 	if (! FLAG_CHECK(name[7], FLAG_BASECHAR)) {
 		return False;
@@ -396,12 +396,12 @@ static bool is_mangled_component(const char *name, size_t len)
 
 
 
-/* 
+/*
    determine if a string is possibly in a mangled format, ignoring
-   case 
+   case
 
    In this algorithm, mangled names use only pure ascii characters (no
-   multi-byte) so we can avoid doing a UCS2 conversion 
+   multi-byte) so we can avoid doing a UCS2 conversion
 
    NOTE! This interface must be able to handle a path with unix
    directory separators. It should return true if any component is
@@ -419,13 +419,13 @@ static bool is_mangled(const char *name, const struct share_params *parm)
 			return True;
 		}
 	}
-	
+
 	/* and the last part ... */
 	return is_mangled_component(s,strlen(s));
 }
 
 
-/* 
+/*
    see if a filename is an allowable 8.3 name to return to the client.
    Note this is not testing if this is a valid Samba mangled name, so
    the rules are different for is_mangled.
@@ -672,7 +672,7 @@ static bool must_mangle(const char *name,
 }
 
 /*
-  the main forward mapping function, which converts a long filename to 
+  the main forward mapping function, which converts a long filename to
   a 8.3 name
 
   if cache83 is not set then we don't cache the result
