@@ -115,7 +115,7 @@ NTSTATUS dcerpc_pipe_open_roh_recv(struct tevent_req *req,
 					 &roh_stream_ctx,
 					 struct tstream_roh_context,
 					 __location__);
-	if (!stream) {
+	if (*stream == NULL) {
 		tevent_req_received(req);
 		return NT_STATUS_NO_MEMORY;
 	}
