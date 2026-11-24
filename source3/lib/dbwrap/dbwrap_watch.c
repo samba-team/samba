@@ -407,12 +407,12 @@ static void db_watched_record_fini(struct db_watched_record *wrec)
 	}
 
 	/*
-	 * We don't want to wake up others just because
-	 * we added ourself as new watcher. But if we
-	 * removed outself from the first position
-	 * we need to alert the next one.
+	 * Storing just the watcher array, e.g. because we added
+	 * ourselves, is no reason to wake anyone. Decide "nobody",
+	 * unless that's already decided or the new first watcher
+	 * needs the wakeup.
 	 */
-	if (!wrec->removed_first_watcher) {
+	if (!wrec->wakeup.decided && !wrec->removed_first_watcher) {
 		dbwrap_watched_watch_skip_alerting(rec);
 	}
 
