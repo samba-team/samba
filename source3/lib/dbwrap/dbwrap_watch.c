@@ -150,7 +150,12 @@ struct db_watched_record {
 	} backend;
 	bool force_fini_store;
 	struct dbwrap_watcher added;
-	bool removed_first;
+	/*
+	 * We removed our own watcher from the first position. The
+	 * new first watcher has to be woken, even if we don't store
+	 * any data.
+	 */
+	bool removed_first_watcher;
 	struct {
 		/*
 		 * The is the number of watcher records
@@ -168,20 +173,19 @@ struct db_watched_record {
 		 * Note it might be NULL, if count is 0.
 		 */
 		uint8_t *first;
-		/*
-		 * This remembers if we already
-		 * notified the watchers.
-		 *
-		 * As we only need to do that once during:
-		 *   do_locked
-		 * or:
-		 *   between rec = fetch_locked
-		 *   and
-		 *   TALLOC_FREE(rec)
-		 */
-		bool alerted;
 	} watchers;
 	struct {
+		/*
+		 * Whom to wake in this record's lifetime has been
+		 * decided and is in "watcher". watcher.instance == 0
+		 * means nobody, real watchers start at instance 1, see
+		 * dbwrap_watched_watch_add_instance(). The first store
+		 * decides, or the caller via
+		 * dbwrap_watched_watch_{skip,force}_alerting(); later
+		 * stores don't change it. The message is sent when the
+		 * record is freed.
+		 */
+		bool decided;
 		struct dbwrap_watcher watcher;
 	} wakeup;
 };
@@ -408,7 +412,7 @@ static void db_watched_record_fini(struct db_watched_record *wrec)
 	 * removed outself from the first position
 	 * we need to alert the next one.
 	 */
-	if (!wrec->removed_first) {
+	if (!wrec->removed_first_watcher) {
 		dbwrap_watched_watch_skip_alerting(rec);
 	}
 
@@ -501,13 +505,13 @@ static void dbwrap_watched_record_prepare_wakeup(
 	struct db_watched_record *wrec)
 {
 	/*
-	 * Wakeup only needs to happen once (if at all)
+	 * Only the first call decides whom to wake
 	 */
-	if (wrec->watchers.alerted) {
-		/* already done */
+	if (wrec->wakeup.decided) {
+		/* already decided */
 		return;
 	}
-	wrec->watchers.alerted = true;
+	wrec->wakeup.decided = true;
 
 	if (wrec->watchers.count == 0) {
 		DBG_DEBUG("No watchers\n");
@@ -1040,7 +1044,7 @@ void dbwrap_watched_watch_remove_instance(struct db_record *rec, uint64_t instan
 				  wrec->watchers.count);
 			wrec->watchers.first += DBWRAP_WATCHER_BUF_LENGTH;
 			wrec->watchers.count -= 1;
-			wrec->removed_first = true;
+			wrec->removed_first_watcher = true;
 			return;
 		}
 		if (i == (wrec->watchers.count-1)) {
@@ -1079,7 +1083,7 @@ void dbwrap_watched_watch_skip_alerting(struct db_record *rec)
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 
 	wrec->wakeup.watcher = (struct dbwrap_watcher) { .instance = 0, };
-	wrec->watchers.alerted = true;
+	wrec->wakeup.decided = true;
 }
 
 void dbwrap_watched_watch_reset_alerting(struct db_record *rec)
@@ -1087,7 +1091,7 @@ void dbwrap_watched_watch_reset_alerting(struct db_record *rec)
 	struct db_watched_record *wrec = db_record_get_watched_record(rec);
 
 	wrec->wakeup.watcher = (struct dbwrap_watcher) { .instance = 0, };
-	wrec->watchers.alerted = false;
+	wrec->wakeup.decided = false;
 }
 
 void dbwrap_watched_watch_force_alerting(struct db_record *rec)
