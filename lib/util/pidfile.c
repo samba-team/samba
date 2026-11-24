@@ -83,7 +83,7 @@ retry:
 			if (existing_pid != NULL) {
 				*existing_pid = lck.l_pid;
 			}
-			return EAGAIN;
+			ret = EAGAIN;
 		}
 		goto fail;
 	}
