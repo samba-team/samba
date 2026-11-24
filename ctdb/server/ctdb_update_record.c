@@ -372,10 +372,18 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	/* need to keep the control structure around */
 	talloc_steal(state, c);
 
-	/* but we won't wait forever */
-	tevent_add_timer(ctdb->ev, state,
-			 timeval_current_ofs(ctdb->tunable.control_timeout, 0),
-			 ctdb_persistent_lock_timeout, state);
+	/*
+	 * but we won't wait forever, unless ControlTimeout 0 disables
+	 * the timeout like in ctdb_daemon_send_control()
+	 */
+	if (ctdb->tunable.control_timeout != 0) {
+		tevent_add_timer(
+			ctdb->ev,
+			state,
+			timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			ctdb_persistent_lock_timeout,
+			state);
+	}
 
 	return 0;
 }
