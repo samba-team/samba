@@ -9,6 +9,7 @@ fi
 
 DIR="${1}"
 
+echo "codespell version $(codespell --version)"
 codespell "${DIR}"
 ret=$?
 
