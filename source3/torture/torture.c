@@ -16260,6 +16260,10 @@ static struct {
 		.fn    = run_dbwrap_watch4,
 	},
 	{
+		.name  = "LOCAL-DBWRAP-WATCH5",
+		.fn    = run_dbwrap_watch5,
+	},
+	{
 		.name  = "LOCAL-DBWRAP-DO-LOCKED1",
 		.fn    = run_dbwrap_do_locked1,
 	},

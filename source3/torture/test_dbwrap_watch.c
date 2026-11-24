@@ -465,3 +465,131 @@ fail:
 	TALLOC_FREE(ev);
 	return ret;
 }
+
+/*
+ * A store wakes the first watcher, also if we add a watcher after
+ * the store on the same record
+ */
+
+static bool dbwrap_watch5_one(struct tevent_context *ev,
+			      struct db_context *db,
+			      const char *keystr,
+			      bool store_first)
+{
+	TDB_DATA key = string_term_tdb_data(keystr);
+	struct db_record *rec = NULL;
+	struct tevent_req *req1 = NULL;
+	struct tevent_req *req2 = NULL;
+	NTSTATUS status;
+	bool ret = false;
+	bool ok;
+
+	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		fprintf(stderr, "dbwrap_fetch_locked failed\n");
+		goto fail;
+	}
+	req1 = dbwrap_watched_watch_send(
+		talloc_tos(), ev, rec, 0, (struct server_id){.pid = 0});
+	if (req1 == NULL) {
+		fprintf(stderr, "dbwrap_watched_watch_send failed\n");
+		goto fail;
+	}
+	TALLOC_FREE(rec);
+
+	ok = tevent_req_set_endtime(req1, ev, timeval_current_ofs(5, 0));
+	if (!ok) {
+		fprintf(stderr, "tevent_req_set_endtime failed\n");
+		goto fail;
+	}
+
+	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		fprintf(stderr, "dbwrap_fetch_locked failed\n");
+		goto fail;
+	}
+
+	if (store_first) {
+		status = dbwrap_record_store(rec, key, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr,
+				"dbwrap_record_store failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+	}
+
+	req2 = dbwrap_watched_watch_send(
+		talloc_tos(), ev, rec, 0, (struct server_id){.pid = 0});
+	if (req2 == NULL) {
+		fprintf(stderr, "dbwrap_watched_watch_send failed\n");
+		goto fail;
+	}
+
+	if (!store_first) {
+		status = dbwrap_record_store(rec, key, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr,
+				"dbwrap_record_store failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+	}
+
+	TALLOC_FREE(rec);
+
+	ok = tevent_req_poll(req1, ev);
+	if (!ok) {
+		fprintf(stderr, "tevent_req_poll failed\n");
+		goto fail;
+	}
+	status = dbwrap_watched_watch_recv(req1, NULL, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"%s: first watcher returned %s\n",
+			store_first ? "store, watch" : "watch, store",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(req2);
+	TALLOC_FREE(req1);
+	TALLOC_FREE(rec);
+	return ret;
+}
+
+bool run_dbwrap_watch5(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct db_context *backend = NULL;
+	struct db_context *db = NULL;
+	bool ret = false;
+	bool ok;
+
+	ok = test_dbwrap_watch_init(
+		talloc_tos(), "test_watch.tdb", &ev, &msg, &backend, &db);
+	if (!ok) {
+		goto fail;
+	}
+
+	ok = dbwrap_watch5_one(ev, db, "watch5a", false);
+	if (!ok) {
+		goto fail;
+	}
+
+	ok = dbwrap_watch5_one(ev, db, "watch5b", true);
+	if (!ok) {
+		goto fail;
+	}
+
+	(void)unlink("test_watch.tdb");
+	ret = true;
+fail:
+	TALLOC_FREE(db);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
