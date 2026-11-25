@@ -720,6 +720,38 @@ class DnsCmdTestCase(SambaToolCmdTest):
         self.assertIn("Record does not exist; record could not be deleted",
                       err)
 
+    def test_delete_missing_record_allow_missing(self):
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       "testrecord", "A", self.testip, self.creds_string)
+
+        # An existing record is deleted as without --allow-missing
+        result, out, err = self.runsubcmd("dns", "delete",
+                                          os.environ["SERVER"],
+                                          self.zone, "testrecord",
+                                          "A", self.testip,
+                                          self.creds_string,
+                                          "--allow-missing",
+                                          catch_error=True)
+        self.assertCmdSuccess(result, out, err)
+        self.assertIn("Record deleted successfully", out)
+        result, out, err = self.runsubcmd("dns", "query",
+                                          os.environ["SERVER"],
+                                          self.zone, "testrecord",
+                                          "A", self.creds_string)
+        self.assertCmdFail(result)
+
+        # Deleting it again, or a record that never existed, is fine
+        for name in ["testrecord", "testrecord2"]:
+            result, out, err = self.runsubcmd("dns", "delete",
+                                              os.environ["SERVER"],
+                                              self.zone, name,
+                                              "A", self.testip,
+                                              self.creds_string,
+                                              "--allow-missing",
+                                              catch_error=True)
+            self.assertCmdSuccess(result, out, err)
+            self.assertIn("Record does not exist", out)
+
     def test_cleanup_record(self):
         """
         Test dns cleanup command is working fine.
