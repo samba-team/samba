@@ -748,6 +748,14 @@ The <constant>--verbose</constant> includes more, probably useless, information.
 <refsect3>
 	<title>dns delete <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT</replaceable> <replaceable>data</replaceable></title>
 	<para>Delete a DNS record.</para>
+	<variablelist>
+	<varlistentry>
+	<term>--allow-missing</term>
+	<listitem><para> Do not treat a missing record as an error.
+	Nothing is deleted, but the message and samba-tool return
+	code will not indicate error. </para></listitem>
+	</varlistentry>
+	</variablelist>
 </refsect3>
 
 <refsect3>

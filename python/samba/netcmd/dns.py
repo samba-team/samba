@@ -1311,7 +1311,13 @@ class cmd_delete_record(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
+    takes_options = [
+        Option("--allow-missing", help="no error if record does not exist",
+               action="store_true"),
+    ]
+
+    def run(self, server, zone, name, rtype, data, allow_missing=False,
+            sambaopts=None, credopts=None, versionopts=None):
 
         if rtype.upper() not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SRV', 'TXT'):
             raise CommandError('Deleting record of type %s is not supported' % rtype)
@@ -1334,14 +1340,22 @@ class cmd_delete_record(Command):
                 'Record does not exist; record could not be deleted. '
                 f'zone[{zone}] name[{name}]')
         }
-        dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                     0,
-                                     server,
-                                     zone,
-                                     name,
-                                     None,
-                                     del_rec_buf,
-                                     messages=messages)
+        try:
+            dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                         0,
+                                         server,
+                                         zone,
+                                         name,
+                                         None,
+                                         del_rec_buf,
+                                         messages=messages)
+        except CommandError as e:
+            werr = e.inner_exception.args[0]
+            if (allow_missing and
+                    werr == werror.WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST):
+                self.outf.write('Record does not exist, not deleting\n')
+                return
+            raise
 
         self.outf.write('Record deleted successfully\n')
 
