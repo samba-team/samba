@@ -127,6 +127,7 @@ static int smb_pam_conv(int num_msg,
 		    struct pam_response **resp,
 		    void *appdata_ptr)
 {
+	int i = 0;
 	int replies = 0;
 	struct pam_response *reply = NULL;
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
@@ -179,6 +180,9 @@ static int smb_pam_conv(int num_msg,
 
 			default:
 				/* Must be an error of some sort... */
+				for (i = 0; i < replies; i++) {
+					SAFE_FREE(reply[i].resp);
+				}
 				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 		}
