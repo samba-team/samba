@@ -705,6 +705,8 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           self.zone, "testrecord",
                                           "A", self.testip, self.creds_string)
         self.assertCmdFail(result)
+        self.assertIn("Record does not exist; record could not be deleted",
+                      err)
         result, out, err = self.runsubcmd("dns", "query",
                                           os.environ["SERVER"],
                                           self.zone, "testrecord",
@@ -715,6 +717,8 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           self.zone, "testrecord2",
                                           "A", self.testip, self.creds_string)
         self.assertCmdFail(result)
+        self.assertIn("Record does not exist; record could not be deleted",
+                      err)
 
     def test_cleanup_record(self):
         """

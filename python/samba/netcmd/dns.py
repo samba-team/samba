@@ -1183,7 +1183,7 @@ class cmd_add_record(Command):
         messages = {
             werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: (
                 'Zone does not exist; record could not be added. '
-                f'zone[{zone}] name[{name}'),
+                f'zone[{zone}] name[{name}]'),
             werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS: (
                 'Record already exists; record could not be added. '
                 f'zone[{zone}] name[{name}]')
@@ -1329,9 +1329,9 @@ class cmd_delete_record(Command):
         messages = {
             werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST: (
                 'Zone does not exist; record could not be deleted. '
-                f'zone[{zone}] name[{name}'),
-            werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS: (
-                'Record already exists; record could not be deleted. '
+                f'zone[{zone}] name[{name}]'),
+            werror.WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST: (
+                'Record does not exist; record could not be deleted. '
                 f'zone[{zone}] name[{name}]')
         }
         dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
