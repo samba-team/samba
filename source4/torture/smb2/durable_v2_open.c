@@ -5604,6 +5604,53 @@ done:
 	return ret;
 }
 
+/*
+ * Leave a disconnected durable handle on durable_v2_file_id.dat behind.
+ * samba3.blackbox.durable_file_id passes the create GUID in
+ * torture:create_guid and checks the file id and name hash in the open record.
+ */
+static bool test_durable_v2_open_file_id_disconnect(
+	struct torture_context *tctx,
+	struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = "durable_v2_file_id.dat";
+	const char *guid_str = NULL;
+	struct smb2_create io;
+	struct GUID create_guid;
+	NTSTATUS status;
+	bool ret = true;
+
+	guid_str = torture_setting_string(tctx, "create_guid", NULL);
+	if (guid_str == NULL) {
+		torture_skip(tctx, "only run by samba3.blackbox.durable_file_id\n");
+	}
+	status = GUID_from_string(guid_str, &create_guid);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = 10000;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io.out.durable_open_v2, true);
+
+	/* disconnect, leaving the durable handle */
+	TALLOC_FREE(tree);
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5647,6 +5694,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
 	torture_suite_add_2smb2_test(suite, "reconnect-twice", test_reconnect_twice);
+	torture_suite_add_1smb2_test(suite, "file-id-disconnect", test_durable_v2_open_file_id_disconnect);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-V2-OPEN tests");
 
