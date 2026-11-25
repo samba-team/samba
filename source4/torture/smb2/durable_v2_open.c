@@ -5651,6 +5651,114 @@ done:
 	return ret;
 }
 
+/*
+ * A reconnect that is rejected by the lease check, after the file was
+ * reopened, must not extend the lifetime of the handle.
+ *
+ * Reject a reconnect every 500ms for twice the handle timeout, then check the
+ * handle expired on time.
+ */
+static bool test_durable_v2_open_reconnect_reject_no_renew(
+	struct torture_context *tctx,
+	struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smbcli_options options = tree->session->transport->options;
+	char fname[256];
+	struct smb2_handle h = {};
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct GUID create_guid = GUID_random();
+	uint64_t lease_key = random();
+	int timeout_s = 5;
+	struct timespec ts1;
+	struct timespec ts2;
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	snprintf(fname, sizeof(fname), "reconnect_reject_no_renew_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_lease_v2_create(&io, &ls, false, fname, lease_key, 0,
+			     smb2_util_lease_state("RWH"), 0);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = timeout_s * 1000;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.timeout, timeout_s * 1000);
+
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
+	clock_gettime_mono(&ts1);
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * A wrong lease key is only noticed after the file was reopened. Once
+	 * the handle expires the same request is answered with the same
+	 * error, so the loop does not have to tell the two apart.
+	 */
+	while (true) {
+		clock_gettime_mono(&ts2);
+		if (timespec_elapsed2(&ts1, &ts2) > (double)(timeout_s * 2)) {
+			break;
+		}
+
+		smb_msleep(500);
+
+		smb2_lease_v2_create(&io, &ls, false, fname, lease_key + 1, 0,
+				     smb2_util_lease_state("RWH"), 0);
+		io.in.durable_handle_v2 = &h;
+		io.in.create_guid = create_guid;
+
+		status = smb2_create(tree, mem_ctx, &io);
+		if (NT_STATUS_IS_OK(status)) {
+			smb2_util_close(tree, io.out.file.handle);
+		}
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	}
+
+	/*
+	 * The handle was disconnected more than twice its timeout ago, so it
+	 * has to be gone.
+	 */
+	smb2_lease_v2_create(&io, &ls, false, fname, lease_key, 0,
+			     smb2_util_lease_state("RWH"), 0);
+	io.in.durable_handle_v2 = &h;
+	io.in.create_guid = create_guid;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		smb2_util_close(tree, io.out.file.handle);
+	}
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+done:
+	if (tree != NULL) {
+		smb2_util_unlink(tree, fname);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5695,6 +5803,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
 	torture_suite_add_2smb2_test(suite, "reconnect-twice", test_reconnect_twice);
 	torture_suite_add_1smb2_test(suite, "file-id-disconnect", test_durable_v2_open_file_id_disconnect);
+	torture_suite_add_1smb2_test(suite, "reconnect-reject-no-renew", test_durable_v2_open_reconnect_reject_no_renew);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-V2-OPEN tests");
 
