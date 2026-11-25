@@ -328,6 +328,14 @@ sub setup_nt4_dc
 
 	$vars or return undef;
 
+	$vars->{DOMSID} = $vars->{SAMSID};
+	$vars->{DC_SERVER} = $vars->{SERVER};
+	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
+	$vars->{DC_SERVER_IPV6} = $vars->{SERVER_IPV6};
+	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
+	$vars->{DC_USERNAME} = $vars->{USERNAME};
+	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
+
 	if (not $self->check_or_start(
 		env_vars => $vars,
 		samba_dcerpcd => "yes",
@@ -336,14 +344,6 @@ sub setup_nt4_dc
 		smbd => "yes")) {
 	       return undef;
 	}
-
-	$vars->{DOMSID} = $vars->{SAMSID};
-	$vars->{DC_SERVER} = $vars->{SERVER};
-	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
-	$vars->{DC_SERVER_IPV6} = $vars->{SERVER_IPV6};
-	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
-	$vars->{DC_USERNAME} = $vars->{USERNAME};
-	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
 	return $vars;
 }
@@ -390,14 +390,6 @@ sub setup_nt4_dc_schannel
 
 	$vars or return undef;
 
-	if (not $self->check_or_start(
-		env_vars => $vars,
-		nmbd => "yes",
-		winbindd => "yes",
-		smbd => "yes")) {
-	       return undef;
-	}
-
 	$vars->{DOMSID} = $vars->{SAMSID};
 	$vars->{DC_SERVER} = $vars->{SERVER};
 	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
@@ -405,6 +397,14 @@ sub setup_nt4_dc_schannel
 	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
+
+	if (not $self->check_or_start(
+		env_vars => $vars,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
+	       return undef;
+	}
 
 	return $vars;
 }
@@ -477,14 +477,6 @@ sub setup_nt4_member
 	    return undef;
 	}
 
-	if (not $self->check_or_start(
-		env_vars => $ret,
-		nmbd => "yes",
-		winbindd => "yes",
-		smbd => "yes")) {
-	       return undef;
-	}
-
 	$ret->{DOMSID} = $nt4_dc_vars->{DOMSID};
 	$ret->{DC_SERVER} = $nt4_dc_vars->{SERVER};
 	$ret->{DC_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
@@ -492,6 +484,14 @@ sub setup_nt4_member
 	$ret->{DC_NETBIOSNAME} = $nt4_dc_vars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $nt4_dc_vars->{USERNAME};
 	$ret->{DC_PASSWORD} = $nt4_dc_vars->{PASSWORD};
+
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
+	       return undef;
+	}
 
 	return $ret;
 }
@@ -591,6 +591,9 @@ sub setup_clusteredmember
 			teardown_env($self, $ctdb_data);
 			return undef;
 		}
+
+		# Needed by finish_setup_after_start() on node 0.
+		$node_ret->{DOMSID} = $dcvars->{DOMSID};
 
 		my $registry_share_template = "$node_ret->{SERVERCONFFILE}.registry_share_template";
 		unless (open(REGISTRYCONF, ">$registry_share_template")) {
