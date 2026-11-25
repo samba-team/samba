@@ -86,8 +86,8 @@ static bool smb_copy_files(TALLOC_CTX *tctx,
 				const char *dst_fpath,
 				struct test_driver_info *dinfo)
 {
-	FILE *fp;
-	int smbfp = 0;
+	FILE *fp = NULL;
+	int smbfp = -1;
 	char *buffer = NULL;
 	int maxwrite = 64512;
 	size_t nread;
@@ -120,10 +120,14 @@ static bool smb_copy_files(TALLOC_CTX *tctx,
 
 		total_read += nread;
 	}
-
-	fclose(fp);
-	smbcli_close(dinfo->cli->tree, smbfp);
 done:
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+	if (smbfp != -1) {
+		smbcli_close(dinfo->cli->tree, smbfp);
+	}
 
 	TALLOC_FREE(buffer);
 	return ok;
