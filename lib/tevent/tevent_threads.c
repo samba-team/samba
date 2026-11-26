@@ -474,6 +474,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	const char *create_location = im->create_location;
 	struct tevent_context *main_ev = NULL;
 	struct tevent_wrapper_glue *glue = NULL;
+	bool need_wakeup;
 	int ret, wakeup_fd;
 
 	ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
@@ -529,6 +530,14 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 		abort();
 	}
 
+	/*
+	 * If the list is not empty, the main thread has not activated
+	 * the immediates queued so far. Whoever queued the first one
+	 * has written the wakeup or will do so under its
+	 * event_ctx_mutex, and tevent_common_threaded_activate_immediate()
+	 * picks up ours together with it.
+	 */
+	need_wakeup = (main_ev->scheduled_immediates == NULL);
 	DLIST_ADD_END(main_ev->scheduled_immediates, im);
 	wakeup_fd = main_ev->wakeup_fd;
 
@@ -552,7 +561,9 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	 * so tevent_common_threaded_activate_immediate()
 	 * in the main thread is not blocked by the write.
 	 */
-	tevent_common_wakeup_fd(wakeup_fd);
+	if (need_wakeup) {
+		tevent_common_wakeup_fd(wakeup_fd);
+	}
 
 	ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
 	if (ret != 0) {
