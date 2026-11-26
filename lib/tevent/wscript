@@ -142,6 +142,12 @@ def build(bld):
                      deps='cmocka tevent',
                      install=False)
 
+    if bld.CONFIG_SET('HAVE_PTHREAD'):
+        bld.SAMBA_BINARY('test_tevent_threaded_wakeup',
+                         source='tests/test_tevent_threaded_wakeup.c',
+                         deps='cmocka tevent talloc pthread dl',
+                         install=False)
+
 def test(ctx):
     '''test tevent'''
     print("The tevent testsuite is part of smbtorture in samba4")
@@ -156,6 +162,10 @@ def test(ctx):
         'test_tevent_tag',
         'test_tevent_trace',
     ]
+
+    env = samba_utils.LOAD_ENVIRONMENT()
+    if env.HAVE_PTHREAD:
+        unit_tests.append('test_tevent_threaded_wakeup')
 
     for unit_test in unit_tests:
         unit_test_cmd = os.path.join(Context.g_module.out, unit_test)

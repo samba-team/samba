@@ -509,6 +509,10 @@ if with_pam:
                    pam_options])
 
 
+if "HAVE_PTHREAD" in config_hash:
+    plantestsuite("samba.unittests.tevent_threaded_wakeup", "none",
+                  [os.path.join(bindir(), "test_tevent_threaded_wakeup")])
+
 plantestsuite("samba.unittests.krb5samba", "none",
               [os.path.join(bindir(), "default/testsuite/unittests/test_krb5samba")])
 plantestsuite("samba.unittests.lib_util_modules", "none",
