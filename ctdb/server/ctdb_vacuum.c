@@ -1469,7 +1469,7 @@ static int vacuum_db_child(TALLOC_CTX *mem_ctx,
 		if (ret != 0) {
 			DBG_ERR("ERROR: failed to switch vacuum daemon "
 				"into client mode.\n");
-			return EIO;
+			_exit(1);
 		}
 
 		cc = ctdb_vacuum_and_repack_db(ctdb_db, full_vacuum_run);
