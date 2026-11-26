@@ -537,22 +537,27 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 		abort();
 	}
 
+	/*
+	 * The wakeup needs to happen while we still hold
+	 * tctx->event_ctx_mutex: tevent_threaded_context_destructor()
+	 * and tevent_common_context_destructor() take it before
+	 * tevent_common_wakeup_fini() closes the wakeup fd.
+	 *
+	 * Otherwise the main thread could run the immediate without
+	 * needing the wakeup, free the event context and the fd
+	 * number could already be reused for a file or socket,
+	 * which would get our 8 bytes written into it.
+	 *
+	 * We still don't hold main_ev->scheduled_mutex here,
+	 * so tevent_common_threaded_activate_immediate()
+	 * in the main thread is not blocked by the write.
+	 */
+	tevent_common_wakeup_fd(wakeup_fd);
+
 	ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
 	if (ret != 0) {
 		abort();
 	}
-
-	/*
-	 * We might want to wake up the main thread under the lock. We
-	 * had a slightly similar situation in pthreadpool, changed
-	 * with 1c4284c7395f23. This is not exactly the same, as the
-	 * wakeup is only a last-resort thing in case the main thread
-	 * is sleeping. Doing the wakeup under the lock can easily
-	 * lead to a contended mutex, which is much more expensive
-	 * than a noncontended one. So I'd opt for the lower footprint
-	 * initially. Maybe we have to change that later.
-	 */
-	tevent_common_wakeup_fd(wakeup_fd);
 #else
 	/*
 	 * tevent_threaded_context_create() returned NULL with ENOSYS...
