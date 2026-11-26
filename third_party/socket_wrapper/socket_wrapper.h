@@ -47,7 +47,7 @@
    Applications with the need to alter their behaviour when
    socket wrapper is active, can link use these functions.
 
-   By default it's required for applications to use any of these
+   By default it's not required for applications to use any of these
    functions as libsocket_wrapper.so is injected at runtime via
    LD_PRELOAD.
 
@@ -68,7 +68,7 @@ bool socket_wrapper_enabled(void);
  *
  * socket_wrapper may not be able to intercept the __close_nocancel()
  * syscall made from within libc.so. As result it's possible
- * that the in memory meta date of socket_wrapper references
+ * that the in memory meta data of socket_wrapper references
  * stale file descriptors, which are already reused for unrelated
  * kernel objects, e.g. files, directories, ...
  *

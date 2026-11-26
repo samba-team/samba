@@ -53,6 +53,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h>
 #endif
@@ -296,10 +297,12 @@ enum swrap_dbglvl_e {
 
 #define SOCKET_WRAPPER_MAX_SOCKETS_LIMIT 262140
 
-/* This limit is to avoid broadcast sendto() needing to stat too many
- * files.  It may be raised (with a performance cost) to up to 254
- * without changing the format above */
-#define MAX_WRAPPED_INTERFACES 64
+/*
+ * This limit bounds the valid interface IDs and the number of files a
+ * broadcast sendto() needs to stat. It may be raised (with a performance
+ * cost) to up to 254 without changing the format above.
+ */
+#define MAX_WRAPPED_INTERFACES 128
 
 struct swrap_address {
 	socklen_t sa_socklen;
@@ -7438,6 +7441,10 @@ ssize_t recvfrom(int s, void *buf, size_t len, int flags,
  *   SENDTO
  ***************************************************************************/
 
+static int swrap_bcast_ifaces(const char *swrap_dir,
+			      unsigned int prt,
+			      bool bcast_iface[static const MAX_WRAPPED_INTERFACES + 1]);
+
 static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 			    const struct sockaddr *to, socklen_t tolen)
 {
@@ -7486,7 +7493,7 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 	len = msg.msg_iov[0].iov_len;
 
 	if (bcast) {
-		struct stat st;
+		bool bcast_iface[MAX_WRAPPED_INTERFACES + 1];
 		unsigned int iface;
 		unsigned int prt = ntohs(((const struct sockaddr_in *)(const void *)to)->sin_port);
 		char type;
@@ -7499,13 +7506,22 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 			return -1;
 		}
 
+		rc = swrap_bcast_ifaces(swrap_dir, prt, bcast_iface);
+		if (rc < 0) {
+			int saved_errno = errno;
+			SAFE_FREE(swrap_dir);
+			errno = saved_errno;
+			return -1;
+		}
+
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+			if (!bcast_iface[iface]) continue;
+
 			swrap_un_path(&un_addr.sa.un,
 				      swrap_dir,
 				      type,
 				      iface,
 				      prt);
-			if (stat(un_addr.sa.un.sun_path, &st) != 0) continue;
 
 			/* ignore the any errors in broadcast sends */
 			libc_sendto(s,
@@ -8209,7 +8225,7 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 	}
 
 	if (bcast) {
-		struct stat st;
+		bool bcast_iface[MAX_WRAPPED_INTERFACES + 1];
 		unsigned int iface;
 		unsigned int prt = ntohs(((const struct sockaddr_in *)(const void *)to)->sin_port);
 		char type;
@@ -8260,9 +8276,22 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 			return -1;
 		}
 
+		rc = swrap_bcast_ifaces(swrap_dir, prt, bcast_iface);
+		if (rc < 0) {
+			int saved_errno = errno;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+			SAFE_FREE(msg.msg_control);
+#endif
+			SAFE_FREE(buf);
+			SAFE_FREE(swrap_dir);
+			errno = saved_errno;
+			return -1;
+		}
+
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+			if (!bcast_iface[iface]) continue;
+
 			swrap_un_path(&un_addr, swrap_dir, type, iface, prt);
-			if (stat(un_addr.sun_path, &st) != 0) continue;
 
 			msg.msg_name = &un_addr;           /* optional address */
 			msg.msg_namelen = sizeof(un_addr); /* size of address */
@@ -8444,7 +8473,7 @@ fail_libc:
 			struct msghdr *msg = &msgvec[i].msg_hdr;
 			struct sockaddr_un *un_addr = &tmp[i].un_addr;
 			const struct sockaddr *to = tmp[i].to;
-			struct stat st;
+			bool bcast_iface[MAX_WRAPPED_INTERFACES + 1];
 			unsigned int iface;
 			unsigned int prt = ntohs(((const struct sockaddr_in *)(const void *)to)->sin_port);
 			char type;
@@ -8479,9 +8508,19 @@ fail_libc:
 
 			type = SOCKET_TYPE_CHAR_UDP;
 
+			rc = swrap_bcast_ifaces(swrap_dir, prt, bcast_iface);
+			if (rc < 0) {
+				int saved_errno_scan = errno;
+				SAFE_FREE(buf);
+				errno = saved_errno_scan;
+				ret = -1;
+				goto fail_swrap;
+			}
+
 			for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+				if (!bcast_iface[iface]) continue;
+
 				swrap_un_path(un_addr, swrap_dir, type, iface, prt);
-				if (stat(un_addr->sun_path, &st) != 0) continue;
 
 				msg->msg_name = un_addr;             /* optional address */
 				msg->msg_namelen = sizeof(*un_addr); /* size of address */
@@ -8545,6 +8584,159 @@ int sendmmsg(int s, struct mmsghdr *msgvec, unsigned int vlen, int flags)
 	return swrap_sendmmsg(s, msgvec, vlen, flags);
 }
 #endif /* HAVE_SENDMMSG */
+
+static bool swrap_bcast_name_iface(const char *name,
+				   unsigned int prt,
+				   unsigned int *_iface);
+static bool swrap_hex_to_uint(const char *s, size_t n, unsigned int *_value);
+
+/*
+ * Find the interfaces with a UDP socket bound to a port.
+ *
+ * Reads swrap_dir once instead of calling stat() for every possible
+ * interface. Only names that match SOCKET_FORMAT for a UDP socket on port
+ * are considered. The file type is not checked, the same as the stat()
+ * based lookup this replaces.
+ *
+ * @param[in]  swrap_dir   The socket_wrapper directory.
+ *
+ * @param[in]  port         The port in host byte order.
+ *
+ * @param[out] bcast_iface bcast_iface[iface] is set for every interface that
+ *                         has a UDP socket bound to port. All entries are
+ *                         cleared first.
+ *
+ * @return 0 on success, -1 with errno set if the directory can't be read.
+ */
+static int swrap_bcast_ifaces(const char *swrap_dir,
+			      unsigned int port,
+			      bool bcast_iface[static const MAX_WRAPPED_INTERFACES + 1])
+{
+	DIR *dir = NULL;
+	struct dirent *de = NULL;
+	int saved_errno;
+
+	memset(bcast_iface, 0, (MAX_WRAPPED_INTERFACES + 1) * sizeof(bool));
+
+	dir = opendir(swrap_dir);
+	if (dir == NULL) {
+		return -1;
+	}
+
+	/*
+	 * readdir() returns NULL for both the end of the directory and an
+	 * error. Only errno tells them apart, so it must be cleared right
+	 * before every call.
+	 */
+	errno = 0;
+	de = readdir(dir);
+	while (de != NULL) {
+		unsigned int iface = 0;
+		bool match;
+
+		match = swrap_bcast_name_iface(de->d_name, port, &iface);
+		if (match) {
+			bcast_iface[iface] = true;
+		}
+
+		errno = 0;
+		de = readdir(dir);
+	}
+
+	/* Fail closed: a read error must not look like "no receivers" */
+	saved_errno = errno;
+	closedir(dir);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Check if a directory entry is a UDP socket bound to a port.
+ *
+ * @param[in]  name    The directory entry name.
+ *
+ * @param[in]  port    The port in host byte order.
+ *
+ * @param[out] _iface  The interface of the socket, only set on a match.
+ *
+ * @return true if name is a UDP socket on port and a valid interface.
+ */
+static bool swrap_bcast_name_iface(const char *name,
+				   unsigned int port,
+				   unsigned int *_iface)
+{
+	/* One type character, two hex digits for the interface, four for the port */
+	const size_t name_len = 1 + 2 + 4;
+	uint32_t iface = 0;
+	uint32_t iface_port = 0;
+	size_t len;
+	bool ok;
+
+	if (name == NULL || name[0] != SOCKET_TYPE_CHAR_UDP) {
+		return false;
+	}
+
+	len = strlen(name);
+	if (len != name_len) {
+		return false;
+	}
+
+	ok = swrap_hex_to_uint(name + 3, 4, &iface_port);
+	if (!ok || iface_port != port) {
+		return false;
+	}
+
+	ok = swrap_hex_to_uint(name + 1, 2, &iface);
+	if (!ok || iface > MAX_WRAPPED_INTERFACES) {
+		return false;
+	}
+
+	*_iface = iface;
+
+	return true;
+}
+
+/*
+ * Parse upper case hex digits.
+ *
+ * This is much faster than sscanf().
+ *
+ * @param[in]  s       The digits, not necessarily NUL terminated.
+ *
+ * @param[in]  n       The number of digits to parse.
+ *
+ * @param[out] _value  The parsed value, only set on success.
+ *
+ * @return true if the first n characters of s are all hex digits.
+ */
+static bool swrap_hex_to_uint(const char *s, size_t n, uint32_t *_value)
+{
+	uint32_t value = 0;
+	size_t i;
+
+	for (i = 0; i < n; i++) {
+		char c = s[i];
+		uint32_t digit;
+
+		if (c >= '0' && c <= '9') {
+			digit = c - '0';
+		} else if (c >= 'A' && c <= 'F') {
+			digit = c - 'A' + 10;
+		} else {
+			return false;
+		}
+
+		value = (value << 4U) | digit;
+	}
+
+	*_value = value;
+
+	return true;
+}
 
 /****************************************************************************
  *   READV
