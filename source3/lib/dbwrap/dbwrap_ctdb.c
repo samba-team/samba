@@ -368,7 +368,7 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 	size_t m_size, r_size;
 	struct ctdb_marshall_buffer *m2 = NULL;
 
-	r = db_ctdb_marshall_record(talloc_tos(), reqid, key, header, data);
+	r = db_ctdb_marshall_record(mem_ctx, reqid, key, header, data);
 	if (r == NULL) {
 		talloc_free(m);
 		return NULL;
