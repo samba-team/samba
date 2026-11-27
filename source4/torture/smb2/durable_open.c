@@ -2358,8 +2358,10 @@ static bool test_durable_open_lock_oplock(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
  done:
-	smb2_util_close(tree, h);
-	smb2_util_unlink(tree, fname);
+	if (tree != NULL) {
+		smb2_util_close(tree, h);
+		smb2_util_unlink(tree, fname);
+	}
 	talloc_free(tree);
 
 	return ret;
@@ -2457,8 +2459,10 @@ static bool test_durable_open_lock_lease(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
  done:
-	smb2_util_close(tree, h);
-	smb2_util_unlink(tree, fname);
+	if (tree != NULL) {
+		smb2_util_close(tree, h);
+		smb2_util_unlink(tree, fname);
+	}
 	talloc_free(tree);
 
 	return ret;
@@ -2551,8 +2555,10 @@ static bool test_durable_open_lock_noW_lease(struct torture_context *tctx,
 	h = io.out.file.handle;
 
  done:
-	smb2_util_close(tree, h);
-	smb2_util_unlink(tree, fname);
+	if (tree != NULL) {
+		smb2_util_close(tree, h);
+		smb2_util_unlink(tree, fname);
+	}
 	talloc_free(tree);
 
 	return ret;
